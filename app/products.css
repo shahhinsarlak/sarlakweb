@@ -1,0 +1,122 @@
+.page-title {
+    font-size: 24px;
+    font-weight: 400;
+    letter-spacing: 1px;
+    margin-bottom: 16px;
+    color: var(--accent-color);
+}
+
+.products-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 32px;
+}
+
+.product-card {
+    border: 1px solid var(--border-color);
+    transition: var(--transition);
+    overflow: hidden;
+}
+
+.product-card:hover {
+    border-color: var(--accent-color);
+}
+
+.product-image {
+    aspect-ratio: 16/10;
+    background: var(--hover-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.placeholder-image {
+    font-size: 12px;
+    opacity: 0.4;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.product-info {
+    padding: 24px;
+}
+
+.product-title {
+    font-size: 14px;
+    margin-bottom: 8px;
+    color: var(--accent-color);
+}
+
+.product-description {
+    font-size: 12px;
+    opacity: 0.7;
+    line-height: 1.4;
+    margin-bottom: 20px;
+}
+
+.product-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.product-price {
+    font-size: 16px;
+    font-weight: 400;
+    color: var(--accent-color);
+}
+
+.buy-button {
+    background: var(--accent-color);
+    color: var(--bg-color);
+    border: none;
+    padding: 8px 16px;
+    font-family: inherit;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.buy-button:hover {
+    opacity: 0.8;
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 24px;
+}
+
+.info-card {
+    padding: 24px;
+    border: 1px solid var(--border-color);
+}
+
+.info-title {
+    font-size: 12px;
+    margin-bottom: 8px;
+    color: var(--accent-color);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.info-description {
+    font-size: 11px;
+    opacity: 0.7;
+    line-height: 1.4;
+}
+
+@media (max-width: 600px) {
+    .products-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .product-meta {
+        flex-direction: column;
+        gap: 12px;
+        align-items: flex-start;
+    }
+}
