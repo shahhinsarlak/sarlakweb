@@ -34,7 +34,7 @@ const ConwaysGameOfLife = () => {
       grid[i] = [];
       for (let j = 0; j < GRID_WIDTH; j++) {
         // 25% chance of a cell being alive initially
-        grid[i][j] = Math.random() < 0.25 ? 1 : 0;
+        grid[i][j] = Math.random() < 0.125 ? 1 : 0;
       }
     }
     return grid;
