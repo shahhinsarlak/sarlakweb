@@ -1,0 +1,85 @@
+'use client';
+import { useEffect } from 'react';
+import Header from '../components/Header';
+import Footer from '../components/Footer';
+import Link from 'next/link';
+
+export default function Home() {
+  useEffect(() => {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.style.opacity = '1';
+          entry.target.style.transform = 'translateY(0)';
+        }
+      });
+    });
+
+    document.querySelectorAll('.section').forEach((section, index) => {
+      section.style.opacity = '0';
+      section.style.transform = 'translateY(20px)';
+      section.style.transition = `opacity 0.6s ease ${index * 0.1}s, transform 0.6s ease ${index * 0.1}s`;
+      observer.observe(section);
+    });
+
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <>
+      <Header />
+      <main className="main-content">
+        <section className="section">
+          <div className="status">
+            <span className="status-dot"></span>
+            Available for work
+          </div>
+          <p className="intro-text">
+            Building digital experiences through code and design. 
+            This space will showcase creative works, software projects, and experimental ideas.
+          </p>
+        </section>
+
+        <section className="section">
+          <h2 className="section-title">Current Focus</h2>
+          <div className="grid">
+            <div className="card">
+              <div className="card-title">Software Development</div>
+              <div className="card-description">Creating efficient, minimal solutions</div>
+            </div>
+            <div className="card">
+              <div className="card-title">Creative Projects</div>
+              <div className="card-description">Exploring digital art and design</div>
+            </div>
+          </div>
+        </section>
+
+        <section className="section">
+          <h2 className="section-title">Projects</h2>
+          <div className="grid">
+            <div className="card">
+              <div className="card-title">Coming Soon</div>
+              <div className="card-description">Future projects will be showcased here</div>
+            </div>
+            <div className="card">
+              <div className="card-title">In Development</div>
+              <div className="card-description">Currently building something new</div>
+            </div>
+          </div>
+        </section>
+
+        <section className="section">
+          <h2 className="section-title">Connect</h2>
+          <div className="links">
+            <Link href="/products" className="link">Products</Link>
+            <a href="#" className="link">Email</a>
+            <a href="#" className="link">GitHub</a>
+            <a href="#" className="link">LinkedIn</a>
+            <a href="#" className="link">Twitter</a>
+          </div>
+        </section>
+      </main>
+      <Footer />
+    </>
+  );
+}
