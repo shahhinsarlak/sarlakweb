@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import ConwaysGameOfLife from '../components/ConwaysGameOfLife';
+import CursorShadow from '../components/CursorShadow';
 import Link from 'next/link';
 
 export default function Home() {
@@ -31,6 +32,9 @@ export default function Home() {
     <>
       {/* Conway's Game of Life Background */}
       <ConwaysGameOfLife />
+      
+      {/* Cursor Shadow Effect */}
+      <CursorShadow />
       
       {/* Main Content */}
       <div style={{ position: 'relative', zIndex: 1 }}>
