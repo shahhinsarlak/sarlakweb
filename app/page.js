@@ -2,10 +2,12 @@
 import { useEffect } from 'react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+import ConwaysGameOfLife from '../components/ConwaysGameOfLife';
 import Link from 'next/link';
 
 export default function Home() {
   useEffect(() => {
+    // Add entrance animations
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
@@ -27,59 +29,65 @@ export default function Home() {
 
   return (
     <>
-      <Header />
-      <main className="main-content">
-        <section className="section">
-          <div className="status">
-            <span className="status-dot"></span>
-            Available for work
-          </div>
-          <p className="intro-text">
-            Building digital experiences through code and design. 
-            This space will showcase creative works, software projects, and experimental ideas.
-          </p>
-        </section>
+      {/* Conway's Game of Life Background */}
+      <ConwaysGameOfLife />
+      
+      {/* Main Content */}
+      <div style={{ position: 'relative', zIndex: 1 }}>
+        <Header />
+        <main className="main-content">
+          <section className="section">
+            <div className="status">
+              <span className="status-dot"></span>
+              Available for work
+            </div>
+            <p className="intro-text">
+              Building digital experiences through code and design. 
+              This space will showcase creative works, software projects, and experimental ideas.
+            </p>
+          </section>
 
-        <section className="section">
-          <h2 className="section-title">Current Focus</h2>
-          <div className="grid">
-            <div className="card">
-              <div className="card-title">Software Development</div>
-              <div className="card-description">Creating efficient, minimal solutions</div>
+          <section className="section">
+            <h2 className="section-title">Current Focus</h2>
+            <div className="grid">
+              <div className="card">
+                <div className="card-title">Software Development</div>
+                <div className="card-description">Creating efficient, minimal solutions</div>
+              </div>
+              <div className="card">
+                <div className="card-title">Creative Projects</div>
+                <div className="card-description">Exploring digital art and design</div>
+              </div>
             </div>
-            <div className="card">
-              <div className="card-title">Creative Projects</div>
-              <div className="card-description">Exploring digital art and design</div>
-            </div>
-          </div>
-        </section>
+          </section>
 
-        <section className="section">
-          <h2 className="section-title">Projects</h2>
-          <div className="grid">
-            <div className="card">
-              <div className="card-title">Coming Soon</div>
-              <div className="card-description">Future projects will be showcased here</div>
+          <section className="section">
+            <h2 className="section-title">Projects</h2>
+            <div className="grid">
+              <div className="card">
+                <div className="card-title">Coming Soon</div>
+                <div className="card-description">Future projects will be showcased here</div>
+              </div>
+              <div className="card">
+                <div className="card-title">In Development</div>
+                <div className="card-description">Currently building something new</div>
+              </div>
             </div>
-            <div className="card">
-              <div className="card-title">In Development</div>
-              <div className="card-description">Currently building something new</div>
-            </div>
-          </div>
-        </section>
+          </section>
 
-        <section className="section">
-          <h2 className="section-title">Connect</h2>
-          <div className="links">
-            <Link href="/products" className="link">Products</Link>
-            <a href="#" className="link">Email</a>
-            <a href="#" className="link">GitHub</a>
-            <a href="#" className="link">LinkedIn</a>
-            <a href="#" className="link">Twitter</a>
-          </div>
-        </section>
-      </main>
-      <Footer />
+          <section className="section">
+            <h2 className="section-title">Connect</h2>
+            <div className="links">
+              <Link href="/products" className="link">Products</Link>
+              <a href="#" className="link">Email</a>
+              <a href="#" className="link">GitHub</a>
+              <a href="#" className="link">LinkedIn</a>
+              <a href="#" className="link">Twitter</a>
+            </div>
+          </section>
+        </main>
+        <Footer />
+      </div>
     </>
   );
 }
