@@ -265,3 +265,80 @@ body {
         order: 2;
     }
 }
+
+.logo-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  color: var(--accent-color);
+  transition: var(--transition);
+}
+
+.logo-container:hover {
+  opacity: 0.8;
+}
+
+.logo-symbol {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  transition: var(--transition);
+}
+
+.logo-icon {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transition: var(--transition);
+  /* For PNG logos, ensure crisp rendering */
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+}
+
+.logo-text {
+  font-size: 24px;
+  font-weight: 400;
+  letter-spacing: 2px;
+  font-family: inherit;
+}
+
+/* Hover effects */
+.logo-container:hover .logo-symbol {
+  transform: scale(1.05);
+}
+
+.logo-container:hover .logo-icon {
+  color: var(--accent-color);
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+  .logo-text {
+    font-size: 20px;
+    letter-spacing: 1px;
+  }
+  
+  .logo-symbol {
+    width: 24px;
+    height: 24px;
+  }
+}
+
+/* Animation for future logo loading */
+.logo-symbol {
+  animation: logoFadeIn 0.6s ease-out;
+}
+
+@keyframes logoFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
