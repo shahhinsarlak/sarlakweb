@@ -143,9 +143,9 @@ export default function OdooDemo() {
             </div>
             
             {/* Uncomment and modify this when you have your Odoo instance running */}
-            {/* 
+            {
             <iframe
-              src="http://your-odoo-instance:8069"
+              src="https://sedemo.odoo.com/"
               style={{
                 width: '100%',
                 height: '100%',
@@ -153,7 +153,7 @@ export default function OdooDemo() {
               }}
               title="Odoo ERP Demo"
             />
-            */}
+            }
           </div>
         )}
       </main>
