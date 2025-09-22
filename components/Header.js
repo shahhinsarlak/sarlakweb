@@ -29,8 +29,8 @@ export default function Header() {
         <Link href="/" className={`nav-link ${pathname === '/' ? 'active' : ''}`}>
           Home
         </Link>
-        <Link href="/products" className={`nav-link ${pathname === '/products' ? 'active' : ''}`}>
-          Products
+        <Link href="/apps" className={`nav-link ${pathname === '/apps' ? 'active' : ''}`}>
+          Apps
         </Link>
       </nav>
       <button className="theme-toggle" onClick={toggleTheme}>

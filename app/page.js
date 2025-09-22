@@ -82,7 +82,7 @@ export default function Home() {
           <section className="section">
             <h2 className="section-title">Connect</h2>
             <div className="links">
-              <Link href="/products" className="link">Products</Link>
+              <Link href="/apps" className="link">Web Apps</Link>
               <a href="#" className="link">Email</a>
               <a href="#" className="link">GitHub</a>
               <a href="#" className="link">LinkedIn</a>
