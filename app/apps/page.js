@@ -62,9 +62,14 @@ export default function Apps() {
                 </div>
               </div>
               <div className="app-actions">
-                <Link href="/apps/odoo_demo" className="app-button primary">
+                <a 
+                  href="https://sedemo.odoo.com/" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="app-button primary"
+                >
                   Launch Demo
-                </Link>
+                </a>
                 <a href="#" className="app-button secondary">
                   View Source
                 </a>
