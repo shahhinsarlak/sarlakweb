@@ -145,7 +145,7 @@ export default function OdooDemo() {
             {/* Uncomment and modify this when you have your Odoo instance running */}
             {
             <iframe
-              src="https://sedemo.odoo.com/"
+              src="https://sedemo.odoo.com/odoo/stock-report"
               style={{
                 width: '100%',
                 height: '100%',
