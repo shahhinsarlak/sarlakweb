@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import Header from '../../components/Header';
+import Footer from '../../components/Footer';
 
 export default function Game() {
   const [gameState, setGameState] = useState({
@@ -15,7 +16,6 @@ export default function Game() {
     inventory: [],
     unlockedActions: ['breathe'],
     messages: [],
-    autoActions: {},
     discoveries: []
   });
 
@@ -32,9 +32,19 @@ export default function Game() {
 
   // Initialize game
   useEffect(() => {
-    addMessage("You find yourself in a vast emptiness...", "system");
-    addMessage("There is only darkness, and the faint rhythm of your breath.", "system");
-    addMessage("Type 'breathe' to center yourself.", "hint");
+    const initMessages = [
+      { text: "You find yourself in a vast emptiness...", type: "system" },
+      { text: "There is only darkness, and the faint rhythm of your breath.", type: "system" },
+      { text: "Type 'breathe' to center yourself.", type: "hint" }
+    ];
+    
+    setGameState(prev => ({
+      ...prev,
+      messages: initMessages.map((msg, index) => ({ 
+        ...msg, 
+        id: `init-${index}` 
+      }))
+    }));
   }, []);
 
   const addMessage = (text, type = "normal") => {
@@ -80,7 +90,6 @@ export default function Game() {
   };
 
   const gameActions = {
-    // Stage: Void
     breathe: () => {
       if (gameState.resources.awareness < 5) {
         const messages = [
@@ -93,11 +102,11 @@ export default function Game() {
         addMessage(messages[gameState.resources.awareness] || messages[4], "action");
         updateResources({ awareness: gameState.resources.awareness + 1 });
         
-        if (gameState.resources.awareness === 2) {
+        if (gameState.resources.awareness === 1) {
           unlockAction('listen');
           addMessage("You can now 'listen' to the silence.", "hint");
         }
-        if (gameState.resources.awareness === 4) {
+        if (gameState.resources.awareness === 3) {
           unlockAction('feel');
           addMessage("You can now 'feel' what's around you.", "hint");
         }
@@ -107,7 +116,7 @@ export default function Game() {
     },
 
     listen: () => {
-      if (gameState.resources.awareness < 3) {
+      if (gameState.resources.awareness < 2) {
         addMessage("You need to breathe more before you can truly listen.", "system");
         return;
       }
@@ -121,7 +130,7 @@ export default function Game() {
         addMessage(messages[gameState.resources.compassion], "action");
         updateResources({ compassion: gameState.resources.compassion + 1 });
         
-        if (gameState.resources.compassion === 2) {
+        if (gameState.resources.compassion === 1) {
           unlockAction('forgive');
           addMessage("You can now 'forgive' yourself.", "hint");
         }
@@ -131,7 +140,7 @@ export default function Game() {
     },
 
     feel: () => {
-      if (gameState.resources.awareness < 4) {
+      if (gameState.resources.awareness < 3) {
         addMessage("You must breathe more deeply before you can truly feel.", "system");
         return;
       }
@@ -145,7 +154,7 @@ export default function Game() {
         addMessage(messages[gameState.resources.courage], "action");
         updateResources({ courage: gameState.resources.courage + 1 });
         
-        if (gameState.resources.courage === 2) {
+        if (gameState.resources.courage === 1) {
           unlockAction('face');
           addMessage("You can now 'face' your shadows.", "hint");
         }
@@ -155,7 +164,7 @@ export default function Game() {
     },
 
     forgive: () => {
-      if (gameState.resources.compassion < 2) {
+      if (gameState.resources.compassion < 1) {
         addMessage("You need to listen more deeply before you can forgive.", "system");
         return;
       }
@@ -170,7 +179,7 @@ export default function Game() {
         updateResources({ peace: gameState.resources.peace + 1 });
         addToInventory("Self-Compassion");
         
-        if (gameState.resources.peace === 3) {
+        if (gameState.resources.peace === 2) {
           unlockAction('illuminate');
           addMessage("You can now 'illuminate' your path.", "hint");
         }
@@ -180,7 +189,7 @@ export default function Game() {
     },
 
     face: () => {
-      if (gameState.resources.courage < 2) {
+      if (gameState.resources.courage < 1) {
         addMessage("You need more courage before you can face your shadows.", "system");
         return;
       }
@@ -195,7 +204,7 @@ export default function Game() {
         updateResources({ wisdom: gameState.resources.wisdom + 1 });
         addToInventory("Shadow Integration");
         
-        if (gameState.resources.wisdom === 3) {
+        if (gameState.resources.wisdom === 2) {
           unlockAction('transcend');
           addMessage("You can now 'transcend' your limitations.", "hint");
         }
@@ -205,7 +214,7 @@ export default function Game() {
     },
 
     illuminate: () => {
-      if (gameState.resources.peace < 3) {
+      if (gameState.resources.peace < 2) {
         addMessage("You need more inner peace to illuminate your path.", "system");
         return;
       }
@@ -223,7 +232,7 @@ export default function Game() {
     },
 
     transcend: () => {
-      if (gameState.resources.wisdom < 3) {
+      if (gameState.resources.wisdom < 2) {
         addMessage("You need more wisdom to transcend your limitations.", "system");
         return;
       }
@@ -231,9 +240,9 @@ export default function Game() {
       addMessage("You rise above the illusions that once bound you...", "action");
       addMessage("Your consciousness expands beyond the boundaries of self.", "system");
       updateResources({ 
-        awareness: gameState.resources.awareness + 2,
-        compassion: gameState.resources.compassion + 1,
-        wisdom: gameState.resources.wisdom + 1
+        awareness: Math.min(5, gameState.resources.awareness + 1),
+        compassion: Math.min(5, gameState.resources.compassion + 1),
+        wisdom: Math.min(5, gameState.resources.wisdom + 1)
       });
       addDiscovery("Transcendence");
     },
@@ -259,7 +268,7 @@ export default function Game() {
       }
 
       addMessage("You plant a seed of pure intention. It glows with potential.", "action");
-      updateResources({ wisdom: gameState.resources.wisdom + 1 });
+      updateResources({ wisdom: Math.min(5, gameState.resources.wisdom + 1) });
       addToInventory("Intention Seed");
     },
 
@@ -271,8 +280,8 @@ export default function Game() {
 
       addMessage("You nurture your inner garden with presence and care.", "action");
       updateResources({ 
-        compassion: gameState.resources.compassion + 1,
-        peace: gameState.resources.peace + 1 
+        compassion: Math.min(5, gameState.resources.compassion + 1),
+        peace: Math.min(5, gameState.resources.peace + 1)
       });
     },
 
@@ -293,10 +302,6 @@ export default function Game() {
       addMessage(`Available actions: ${gameState.unlockedActions.join(', ')}`, "hint");
     },
 
-    discoveries: () => {
-      if (gameState.discoveries.length === 0) {
-        addMessage("You haven't made any profound discoveries yet.", "system");
-      } else {
     discoveries: () => {
       if (gameState.discoveries.length === 0) {
         addMessage("You haven't made any profound discoveries yet.", "system");
@@ -326,35 +331,14 @@ export default function Game() {
     }
   };
 
-  const getMessageStyle = (type) => {
-    const baseStyle = {
-      marginBottom: '8px',
-      lineHeight: '1.6',
-      fontSize: '13px'
-    };
-    
-    switch (type) {
-      case 'system': 
-        return { ...baseStyle, color: '#c084fc', fontStyle: 'italic' };
-      case 'action': 
-        return { ...baseStyle, color: '#86efac' };
-      case 'input': 
-        return { ...baseStyle, color: '#93c5fd', fontFamily: 'monospace' };
-      case 'hint': 
-        return { ...baseStyle, color: '#fde047', fontSize: '12px', opacity: 0.8 };
-      default: 
-        return { ...baseStyle, color: '#d1d5db' };
-    }
-  };
-
   const getStageDescription = () => {
     switch (gameState.stage) {
       case 'void':
-        return "The Void - A place of infinite potential";
+        return "The Void";
       case 'path':
-        return "The Path - Illuminated by inner light";
+        return "The Starlit Path";
       case 'garden':
-        return "The Garden - Where intentions bloom";
+        return "The Inner Garden";
       default:
         return "Unknown realm";
     }
@@ -363,86 +347,44 @@ export default function Game() {
   return (
     <>
       <Header />
-      <div style={{ 
-        minHeight: '100vh', 
-        background: '#000000', 
-        color: '#ffffff', 
-        padding: '40px 20px' 
-      }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-          {/* Header */}
-          <div style={{ 
-            borderBottom: '1px solid #374151', 
-            paddingBottom: '16px', 
-            marginBottom: '24px' 
-          }}>
-            <h1 style={{ 
-              fontSize: '32px', 
-              fontFamily: 'monospace', 
-              color: '#c084fc', 
-              marginBottom: '8px',
-              fontWeight: '400'
-            }}>
-              Inner Light
-            </h1>
-            <p style={{ 
-              fontSize: '14px', 
-              color: '#9ca3af', 
-              marginBottom: '4px' 
-            }}>
-              A journey of self-discovery
-            </p>
-            <p style={{ 
-              fontSize: '12px', 
-              color: '#6b7280' 
-            }}>
-              {getStageDescription()}
-            </p>
+      <main className="main-content">
+        <section className="section">
+          <h1 className="page-title">Inner Light</h1>
+          <p className="intro-text">
+            A text-based journey of self-discovery and spiritual growth. 
+            Find yourself through mindful exploration of the inner landscape.
+          </p>
+          <div className="status">
+            <span className="status-dot"></span>
+            Currently in: {getStageDescription()}
           </div>
+        </section>
 
-          {/* Game Interface */}
-          <div style={{ 
-            display: 'grid', 
-            gridTemplateColumns: window.innerWidth > 1024 ? '2fr 1fr' : '1fr',
-            gap: '24px' 
-          }}>
-            {/* Main Game Area */}
-            <div>
-              <div style={{
-                background: '#111827',
-                border: '1px solid #374151',
-                borderRadius: '8px',
-                padding: '16px',
-                marginBottom: '16px',
-                height: '400px',
-                overflowY: 'auto'
-              }}>
+        <section className="section">
+          <div className="game-container">
+            {/* Game Terminal */}
+            <div className="game-terminal">
+              <div className="terminal-header">
+                <div className="terminal-title">Inner Light Console</div>
+              </div>
+              <div className="terminal-content">
                 {gameState.messages.map((msg) => (
-                  <div key={msg.id} style={getMessageStyle(msg.type)}>
+                  <div key={msg.id} className={`message message-${msg.type}`}>
                     {msg.text}
                   </div>
                 ))}
                 <div ref={messagesEndRef} />
               </div>
-
+              
               {/* Command Input */}
-              <div style={{ display: 'flex', gap: '8px' }}>
+              <div className="terminal-input">
+                <span className="prompt">&gt;</span>
                 <input
                   type="text"
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  style={{
-                    flex: 1,
-                    background: '#1f2937',
-                    border: '1px solid #4b5563',
-                    borderRadius: '4px',
-                    padding: '8px 12px',
-                    color: '#ffffff',
-                    fontFamily: 'monospace',
-                    fontSize: '14px',
-                    outline: 'none'
-                  }}
+                  className="command-input"
                   placeholder="Enter command..."
                   autoFocus
                 />
@@ -452,136 +394,58 @@ export default function Game() {
                       handleCommand(inputValue);
                     }
                   }}
-                  style={{
-                    padding: '8px 16px',
-                    background: '#7c3aed',
-                    color: '#ffffff',
-                    border: 'none',
-                    borderRadius: '4px',
-                    fontFamily: 'monospace',
-                    fontSize: '14px',
-                    cursor: 'pointer',
-                    transition: 'background-color 0.2s'
-                  }}
-                  onMouseOver={(e) => e.target.style.background = '#5b21b6'}
-                  onMouseOut={(e) => e.target.style.background = '#7c3aed'}
+                  className="submit-button"
                 >
                   Enter
                 </button>
               </div>
-
-              <div style={{ 
-                marginTop: '8px', 
-                fontSize: '12px', 
-                color: '#6b7280' 
-              }}>
-                Try: {gameState.unlockedActions.slice(0, 3).join(', ')}, help, stats, inventory
+              
+              <div className="terminal-hint">
+                Available: {gameState.unlockedActions.slice(0, 4).join(', ')}, help, stats
               </div>
             </div>
 
-            {/* Sidebar */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {/* Game Stats Sidebar */}
+            <div className="game-sidebar">
               {/* Resources */}
-              <div style={{
-                background: '#111827',
-                border: '1px solid #374151',
-                borderRadius: '8px',
-                padding: '16px'
-              }}>
-                <h3 style={{ 
-                  fontSize: '14px', 
-                  fontFamily: 'monospace', 
-                  color: '#c084fc', 
-                  marginBottom: '12px' 
-                }}>
-                  Inner Resources
-                </h3>
+              <div className="stat-card">
+                <div className="stat-title">Inner Resources</div>
                 {Object.entries(gameState.resources).map(([key, value]) => (
-                  <div key={key} style={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
-                    fontSize: '12px', 
-                    marginBottom: '4px' 
-                  }}>
-                    <span style={{ 
-                      color: '#9ca3af', 
-                      textTransform: 'capitalize' 
-                    }}>
-                      {key}
-                    </span>
-                    <span style={{ color: '#22c55e' }}>
-                      {'●'.repeat(value)}{'○'.repeat(Math.max(0, 5-value))}
-                    </span>
+                  <div key={key} className="stat-row">
+                    <span className="stat-label">{key}</span>
+                    <div className="stat-bar">
+                      {Array.from({ length: 5 }, (_, i) => (
+                        <span key={i} className={`stat-dot ${i < value ? 'filled' : ''}`}>
+                          •
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 ))}
               </div>
 
               {/* Inventory */}
-              <div style={{
-                background: '#111827',
-                border: '1px solid #374151',
-                borderRadius: '8px',
-                padding: '16px'
-              }}>
-                <h3 style={{ 
-                  fontSize: '14px', 
-                  fontFamily: 'monospace', 
-                  color: '#c084fc', 
-                  marginBottom: '12px' 
-                }}>
-                  Spiritual Inventory
-                </h3>
+              <div className="stat-card">
+                <div className="stat-title">Spiritual Inventory</div>
                 {gameState.inventory.length === 0 ? (
-                  <p style={{ 
-                    fontSize: '12px', 
-                    color: '#6b7280', 
-                    fontStyle: 'italic' 
-                  }}>
-                    Empty
-                  </p>
+                  <div className="empty-text">Empty</div>
                 ) : (
                   gameState.inventory.map((item, index) => (
-                    <div key={index} style={{ 
-                      fontSize: '12px', 
-                      color: '#d1d5db', 
-                      marginBottom: '4px' 
-                    }}>
-                      • {item}
+                    <div key={index} className="inventory-item">
+                      {item}
                     </div>
                   ))
                 )}
               </div>
 
               {/* Discoveries */}
-              <div style={{
-                background: '#111827',
-                border: '1px solid #374151',
-                borderRadius: '8px',
-                padding: '16px'
-              }}>
-                <h3 style={{ 
-                  fontSize: '14px', 
-                  fontFamily: 'monospace', 
-                  color: '#c084fc', 
-                  marginBottom: '12px' 
-                }}>
-                  Discoveries
-                </h3>
+              <div className="stat-card">
+                <div className="stat-title">Discoveries</div>
                 {gameState.discoveries.length === 0 ? (
-                  <p style={{ 
-                    fontSize: '12px', 
-                    color: '#6b7280', 
-                    fontStyle: 'italic' 
-                  }}>
-                    None yet
-                  </p>
+                  <div className="empty-text">None yet</div>
                 ) : (
                   gameState.discoveries.map((discovery, index) => (
-                    <div key={index} style={{ 
-                      fontSize: '12px', 
-                      color: '#fde047', 
-                      marginBottom: '4px' 
-                    }}>
+                    <div key={index} className="discovery-item">
                       ✦ {discovery}
                     </div>
                   ))
@@ -589,9 +453,219 @@ export default function Game() {
               </div>
             </div>
           </div>
-        </div>
-      </div>
+        </section>
+      </main>
+      <Footer />
+
+      <style jsx>{`
+        .page-title {
+          font-size: 24px;
+          font-weight: 400;
+          letter-spacing: 1px;
+          margin-bottom: 16px;
+          color: var(--accent-color);
+        }
+
+        .game-container {
+          display: grid;
+          grid-template-columns: 2fr 1fr;
+          gap: 32px;
+          margin-bottom: 40px;
+        }
+
+        .game-terminal {
+          border: 1px solid var(--border-color);
+          background: var(--bg-color);
+        }
+
+        .terminal-header {
+          padding: 12px 16px;
+          border-bottom: 1px solid var(--border-color);
+          background: var(--hover-color);
+        }
+
+        .terminal-title {
+          font-size: 11px;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          color: var(--accent-color);
+        }
+
+        .terminal-content {
+          height: 400px;
+          padding: 16px;
+          overflow-y: auto;
+          font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+          font-size: 13px;
+          line-height: 1.5;
+        }
+
+        .message {
+          margin-bottom: 8px;
+        }
+
+        .message-system {
+          color: var(--accent-color);
+          font-style: italic;
+          opacity: 0.8;
+        }
+
+        .message-action {
+          color: var(--text-color);
+        }
+
+        .message-input {
+          color: var(--accent-color);
+          opacity: 0.7;
+        }
+
+        .message-hint {
+          color: var(--text-color);
+          opacity: 0.5;
+          font-size: 11px;
+        }
+
+        .terminal-input {
+          padding: 12px 16px;
+          border-top: 1px solid var(--border-color);
+          background: var(--hover-color);
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .prompt {
+          color: var(--accent-color);
+          font-family: inherit;
+          font-size: 13px;
+        }
+
+        .command-input {
+          flex: 1;
+          background: transparent;
+          border: none;
+          color: var(--text-color);
+          font-family: inherit;
+          font-size: 13px;
+          outline: none;
+        }
+
+        .submit-button {
+          background: var(--accent-color);
+          color: var(--bg-color);
+          border: none;
+          padding: 4px 8px;
+          font-family: inherit;
+          font-size: 10px;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          cursor: pointer;
+          transition: var(--transition);
+        }
+
+        .submit-button:hover {
+          opacity: 0.8;
+        }
+
+        .terminal-hint {
+          padding: 8px 16px;
+          font-size: 10px;
+          opacity: 0.5;
+          color: var(--text-color);
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+
+        .game-sidebar {
+          display: flex;
+          flex-direction: column;
+          gap: 24px;
+        }
+
+        .stat-card {
+          border: 1px solid var(--border-color);
+          padding: 20px;
+        }
+
+        .stat-title {
+          font-size: 11px;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          color: var(--accent-color);
+          margin-bottom: 16px;
+        }
+
+        .stat-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 8px;
+        }
+
+        .stat-label {
+          font-size: 11px;
+          text-transform: capitalize;
+          color: var(--text-color);
+          opacity: 0.7;
+        }
+
+        .stat-bar {
+          display: flex;
+          gap: 2px;
+        }
+
+        .stat-dot {
+          font-size: 12px;
+          color: var(--border-color);
+          transition: var(--transition);
+        }
+
+        .stat-dot.filled {
+          color: var(--accent-color);
+        }
+
+        .empty-text {
+          font-size: 11px;
+          color: var(--text-color);
+          opacity: 0.5;
+          font-style: italic;
+        }
+
+        .inventory-item {
+          font-size: 11px;
+          color: var(--text-color);
+          margin-bottom: 4px;
+          opacity: 0.8;
+        }
+
+        .discovery-item {
+          font-size: 11px;
+          color: var(--accent-color);
+          margin-bottom: 4px;
+        }
+
+        @media (max-width: 768px) {
+          .game-container {
+            grid-template-columns: 1fr;
+            gap: 24px;
+          }
+          
+          .terminal-content {
+            height: 300px;
+          }
+          
+          .terminal-input {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 8px;
+          }
+          
+          .submit-button {
+            align-self: flex-end;
+            padding: 8px 12px;
+          }
+        }
+      `}</style>
     </>
   );
 }
-  }}
