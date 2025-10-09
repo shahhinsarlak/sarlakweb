@@ -1,671 +1,933 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
+import MeditationModal from './MeditationModal';
+import DebugModal from './DebugModal';
+import ColleagueModal from './ColleagueModal';
+import ExamineModal from './ExamineModal';
+import DimensionalArea from './DimensionalArea';
+import DimensionalUpgradesDisplay from './DimensionalUpgradesDisplay';
+import { createGameActions } from './gameActions';
+import { getDistortionStyle, distortText, getClockTime } from './gameUtils';
+import { saveGame, loadGame, exportToClipboard, importFromClipboard } from './saveSystem';
+import { DIMENSIONAL_MATERIALS, DIMENSIONAL_UPGRADES } from './dimensionalConstants';
+import { 
+  INITIAL_GAME_STATE, 
+  LOCATIONS, 
+  UPGRADES, 
+  ACHIEVEMENTS, 
+  EVENTS,
+  STRANGE_COLLEAGUE_DIALOGUES 
+} from './constants';
 
 export default function Game() {
-  const [gameState, setGameState] = useState({
-    stage: 'void',
-    resources: {
-      awareness: 0,
-      compassion: 0,
-      wisdom: 0,
-      courage: 0,
-      peace: 0
-    },
-    inventory: [],
-    unlockedActions: ['breathe'],
-    messages: [],
-    discoveries: []
-  });
+  const [isMobile, setIsMobile] = useState(false);
+  const [gameState, setGameState] = useState(INITIAL_GAME_STATE);
+  const [showSaveMenu, setShowSaveMenu] = useState(false);
+  const fileInputRef = useState(null);
 
-  const [inputValue, setInputValue] = useState('');
-  const messagesEndRef = useRef(null);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [gameState.messages]);
-
-  // Initialize game
-  useEffect(() => {
-    const initMessages = [
-      { text: "You find yourself in a vast emptiness...", type: "system" },
-      { text: "There is only darkness, and the faint rhythm of your breath.", type: "system" },
-      { text: "Type 'breathe' to center yourself.", type: "hint" }
-    ];
-    
-    setGameState(prev => ({
-      ...prev,
-      messages: initMessages.map((msg, index) => ({ 
-        ...msg, 
-        id: `init-${index}` 
-      }))
-    }));
+  const addMessage = useCallback((msg) => {
+    setGameState(prev => {
+      const maxMessages = prev.maxLogMessages || 15;
+      const updatedMessages = [msg, ...prev.recentMessages];
+      return {
+        ...prev,
+        recentMessages: updatedMessages.slice(0, maxMessages)
+      };
+    });
   }, []);
 
-  const addMessage = (text, type = "normal") => {
-    setGameState(prev => ({
-      ...prev,
-      messages: [...prev.messages, { text, type, id: Date.now() + Math.random() }]
-    }));
-  };
+  const checkAchievements = useCallback(() => {
+    setGameState(prev => {
+      const newAchievements = [...prev.achievements];
+      const achievementMessages = [];
+      let hasNew = false;
 
-  const updateResources = (updates) => {
-    setGameState(prev => ({
-      ...prev,
-      resources: {
-        ...prev.resources,
-        ...updates
-      }
-    }));
-  };
-
-  const unlockAction = (action) => {
-    setGameState(prev => ({
-      ...prev,
-      unlockedActions: [...new Set([...prev.unlockedActions, action])]
-    }));
-  };
-
-  const addToInventory = (item) => {
-    setGameState(prev => ({
-      ...prev,
-      inventory: [...prev.inventory, item]
-    }));
-  };
-
-  const changeStage = (newStage) => {
-    setGameState(prev => ({ ...prev, stage: newStage }));
-  };
-
-  const addDiscovery = (discovery) => {
-    setGameState(prev => ({
-      ...prev,
-      discoveries: [...new Set([...prev.discoveries, discovery])]
-    }));
-  };
-
-  const gameActions = {
-    breathe: () => {
-      if (gameState.resources.awareness < 5) {
-        const messages = [
-          "You take a deep breath. The darkness feels less overwhelming.",
-          "Your breath creates ripples in the void. You feel slightly more present.",
-          "Inhale... exhale... A tiny spark of awareness flickers within.",
-          "With each breath, you anchor yourself to this moment.",
-          "Your breathing steadies. Something stirs in the emptiness."
-        ];
-        addMessage(messages[gameState.resources.awareness] || messages[4], "action");
-        updateResources({ awareness: gameState.resources.awareness + 1 });
-        
-        if (gameState.resources.awareness === 1) {
-          unlockAction('listen');
-          addMessage("You can now 'listen' to the silence.", "hint");
+      ACHIEVEMENTS.forEach(achievement => {
+        if (!newAchievements.includes(achievement.id) && achievement.check(prev)) {
+          newAchievements.push(achievement.id);
+          hasNew = true;
+          achievementMessages.push(`🏆 ACHIEVEMENT: ${achievement.name}`);
         }
-        if (gameState.resources.awareness === 3) {
-          unlockAction('feel');
-          addMessage("You can now 'feel' what's around you.", "hint");
-        }
-      } else {
-        addMessage("Your breath is steady and centered. You've mastered this practice.", "action");
-      }
-    },
-
-    listen: () => {
-      if (gameState.resources.awareness < 2) {
-        addMessage("You need to breathe more before you can truly listen.", "system");
-        return;
-      }
-      
-      if (gameState.resources.compassion < 3) {
-        const messages = [
-          "In the silence, you hear a faint whisper... your own heartbeat.",
-          "Listening deeper, you hear echoes of forgotten dreams.",
-          "The void carries the sound of your own inner voice, long suppressed."
-        ];
-        addMessage(messages[gameState.resources.compassion], "action");
-        updateResources({ compassion: gameState.resources.compassion + 1 });
-        
-        if (gameState.resources.compassion === 1) {
-          unlockAction('forgive');
-          addMessage("You can now 'forgive' yourself.", "hint");
-        }
-      } else {
-        addMessage("You listen with perfect attention, hearing the harmony of existence.", "action");
-      }
-    },
-
-    feel: () => {
-      if (gameState.resources.awareness < 3) {
-        addMessage("You must breathe more deeply before you can truly feel.", "system");
-        return;
-      }
-
-      if (gameState.resources.courage < 3) {
-        const messages = [
-          "You feel the weight of old pain, but also strength beneath it.",
-          "Your hands touch invisible walls built from past fears.",
-          "You sense the warmth of your own resilience, long dormant."
-        ];
-        addMessage(messages[gameState.resources.courage], "action");
-        updateResources({ courage: gameState.resources.courage + 1 });
-        
-        if (gameState.resources.courage === 1) {
-          unlockAction('face');
-          addMessage("You can now 'face' your shadows.", "hint");
-        }
-      } else {
-        addMessage("You feel completely present, connected to your authentic self.", "action");
-      }
-    },
-
-    forgive: () => {
-      if (gameState.resources.compassion < 1) {
-        addMessage("You need to listen more deeply before you can forgive.", "system");
-        return;
-      }
-
-      if (gameState.resources.peace < 3) {
-        const messages = [
-          "You whisper forgiveness to your past self. A weight lifts slightly.",
-          "Forgiving your mistakes, you feel chains of guilt beginning to dissolve.",
-          "With compassion, you embrace all parts of yourself - light and shadow alike."
-        ];
-        addMessage(messages[gameState.resources.peace], "action");
-        updateResources({ peace: gameState.resources.peace + 1 });
-        addToInventory("Self-Compassion");
-        
-        if (gameState.resources.peace === 2) {
-          unlockAction('illuminate');
-          addMessage("You can now 'illuminate' your path.", "hint");
-        }
-      } else {
-        addMessage("You radiate forgiveness, healing old wounds with love.", "action");
-      }
-    },
-
-    face: () => {
-      if (gameState.resources.courage < 1) {
-        addMessage("You need more courage before you can face your shadows.", "system");
-        return;
-      }
-
-      if (gameState.resources.wisdom < 3) {
-        const messages = [
-          "You turn toward your darkest fears. They seem smaller than expected.",
-          "Facing your shadow, you see it holds gifts you've long denied.",
-          "In the darkness of your fears, you find seeds of untapped potential."
-        ];
-        addMessage(messages[gameState.resources.wisdom], "action");
-        updateResources({ wisdom: gameState.resources.wisdom + 1 });
-        addToInventory("Shadow Integration");
-        
-        if (gameState.resources.wisdom === 2) {
-          unlockAction('transcend');
-          addMessage("You can now 'transcend' your limitations.", "hint");
-        }
-      } else {
-        addMessage("You face all aspects of yourself with unwavering presence.", "action");
-      }
-    },
-
-    illuminate: () => {
-      if (gameState.resources.peace < 2) {
-        addMessage("You need more inner peace to illuminate your path.", "system");
-        return;
-      }
-
-      if (gameState.stage === 'void') {
-        addMessage("A gentle light begins to emanate from within you...", "system");
-        addMessage("The void transforms. You see a path of starlight stretching ahead.", "system");
-        changeStage('path');
-        unlockAction('walk');
-        addMessage("You can now 'walk' the illuminated path.", "hint");
-        addDiscovery("Inner Light");
-      } else {
-        addMessage("Your inner light shines brightly, revealing hidden truths.", "action");
-      }
-    },
-
-    transcend: () => {
-      if (gameState.resources.wisdom < 2) {
-        addMessage("You need more wisdom to transcend your limitations.", "system");
-        return;
-      }
-
-      addMessage("You rise above the illusions that once bound you...", "action");
-      addMessage("Your consciousness expands beyond the boundaries of self.", "system");
-      updateResources({ 
-        awareness: Math.min(5, gameState.resources.awareness + 1),
-        compassion: Math.min(5, gameState.resources.compassion + 1),
-        wisdom: Math.min(5, gameState.resources.wisdom + 1)
       });
-      addDiscovery("Transcendence");
-    },
 
-    walk: () => {
-      if (gameState.stage !== 'path') {
-        addMessage("There's nowhere to walk in this emptiness.", "system");
-        return;
+      if (hasNew) {
+        return { 
+          ...prev, 
+          achievements: newAchievements,
+          recentMessages: [...achievementMessages.reverse(), ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
+        };
       }
+      return prev;
+    });
+  }, []);
 
-      addMessage("You walk along the starlit path. Each step brings new understanding.", "action");
-      addMessage("The path leads to a garden where all possibilities bloom.", "system");
-      changeStage('garden');
-      unlockAction('plant');
-      unlockAction('tend');
-      addMessage("You can now 'plant' seeds of intention and 'tend' to your growth.", "hint");
-    },
-
-    plant: () => {
-      if (gameState.stage !== 'garden') {
-        addMessage("You have no soil to plant in yet.", "system");
-        return;
+  // Track theme changes from parent window
+  useEffect(() => {
+    const handleThemeChange = (e) => {
+      if (e.data && e.data.type === 'THEME_TOGGLE') {
+        setGameState(prev => {
+          const currentCount = prev.themeToggleCount || 0;
+          const newCount = currentCount + 1;
+          
+          // Check if portal should unlock
+          if (newCount === 20 && prev.day >= 7 && !prev.portalUnlocked) {
+            const messages = [
+              'Reality shivers. The lights... they respond to you now.',
+              'Something tears open in the fabric of the office.',
+              '🌀 NEW LOCATION: The Portal'
+            ];
+            
+            return {
+              ...prev,
+              themeToggleCount: newCount,
+              portalUnlocked: true,
+              unlockedLocations: [...prev.unlockedLocations, 'portal'],
+              sanity: Math.max(0, prev.sanity - 10),
+              recentMessages: [...messages.reverse(), ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
+            };
+          }
+          
+          // Progress messages
+          let newMessage = null;
+          if (newCount === 10) {
+            newMessage = prev.day >= 7 ? 'The lights flicker in response. They\'re watching...' : 'Progress tracked. Keep going...';
+          } else if (newCount === 15) {
+            newMessage = prev.day >= 7 ? 'Reality feels... thinner. Keep going?' : 'Almost there...';
+          }
+          
+          if (newMessage) {
+            return {
+              ...prev,
+              themeToggleCount: newCount,
+              recentMessages: [newMessage, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
+            };
+          }
+          
+          return {
+            ...prev,
+            themeToggleCount: newCount
+          };
+        });
       }
+    };
 
-      addMessage("You plant a seed of pure intention. It glows with potential.", "action");
-      updateResources({ wisdom: Math.min(5, gameState.resources.wisdom + 1) });
-      addToInventory("Intention Seed");
-    },
+    window.addEventListener('message', handleThemeChange);
+    return () => window.removeEventListener('message', handleThemeChange);
+  }, [addMessage]);
 
-    tend: () => {
-      if (gameState.stage !== 'garden') {
-        addMessage("There's nothing to tend here.", "system");
-        return;
-      }
+  const actions = createGameActions(setGameState, addMessage, checkAchievements);
 
-      addMessage("You nurture your inner garden with presence and care.", "action");
-      updateResources({ 
-        compassion: Math.min(5, gameState.resources.compassion + 1),
-        peace: Math.min(5, gameState.resources.peace + 1)
-      });
-    },
+  const handleSaveGame = () => {
+    saveGame(gameState);
+    addMessage('Game saved to file.');
+    setShowSaveMenu(false);
+  };
 
-    inventory: () => {
-      if (gameState.inventory.length === 0) {
-        addMessage("Your spiritual inventory is empty.", "system");
-      } else {
-        addMessage(`You carry: ${gameState.inventory.join(', ')}`, "system");
-      }
-    },
-
-    stats: () => {
-      const { awareness, compassion, wisdom, courage, peace } = gameState.resources;
-      addMessage(`Awareness: ${awareness} | Compassion: ${compassion} | Wisdom: ${wisdom} | Courage: ${courage} | Peace: ${peace}`, "system");
-    },
-
-    help: () => {
-      addMessage(`Available actions: ${gameState.unlockedActions.join(', ')}`, "hint");
-    },
-
-    discoveries: () => {
-      if (gameState.discoveries.length === 0) {
-        addMessage("You haven't made any profound discoveries yet.", "system");
-      } else {
-        addMessage(`Discoveries: ${gameState.discoveries.join(', ')}`, "system");
-      }
+  const handleLoadGame = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      loadGame(file, setGameState, addMessage);
+      setShowSaveMenu(false);
     }
   };
 
-  const handleCommand = (command) => {
-    const action = command.toLowerCase().trim();
-    addMessage(`> ${command}`, "input");
-    
-    if (gameActions[action]) {
-      gameActions[action]();
+  const handleExportClipboard = async () => {
+    const success = await exportToClipboard(gameState);
+    if (success) {
+      addMessage('Save data copied to clipboard.');
     } else {
-      addMessage("You cannot do that here, or perhaps you haven't learned how yet.", "system");
-      addMessage("Type 'help' to see available actions.", "hint");
+      addMessage('Failed to copy to clipboard.');
     }
+    setShowSaveMenu(false);
+  };
+
+  const handleImportClipboard = async () => {
+    try {
+      await importFromClipboard(setGameState, addMessage);
+      setShowSaveMenu(false);
+    } catch (error) {
+      // Error already handled in importFromClipboard
+    }
+  };
+
+  const purchaseDimensionalUpgrade = (upgrade) => {
+    setGameState(prev => {
+      // Check if can afford
+      const canAfford = Object.entries(upgrade.materials).every(([materialId, required]) => {
+        return (prev.dimensionalInventory?.[materialId] || 0) >= required;
+      });
+
+      if (!canAfford || prev.dimensionalUpgrades?.[upgrade.id]) return prev;
+
+      // Deduct materials
+      const newInventory = { ...prev.dimensionalInventory };
+      Object.entries(upgrade.materials).forEach(([materialId, required]) => {
+        newInventory[materialId] = (newInventory[materialId] || 0) - required;
+      });
+
+      const newState = {
+        ...prev,
+        dimensionalInventory: newInventory,
+        dimensionalUpgrades: { ...(prev.dimensionalUpgrades || {}), [upgrade.id]: true },
+        recentMessages: [`Crafted: ${upgrade.name}`, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
+      };
+
+      // Apply effects
+      if (upgrade.effect === 'ppPerSecond') {
+        newState.ppPerSecond += upgrade.value;
+      } else if (upgrade.effect === 'sanityRegen') {
+        newState.sanityRegenBonus = (prev.sanityRegenBonus || 0) + upgrade.value;
+      } else if (upgrade.effect === 'unlock') {
+        if (upgrade.value === 'drawer') {
+          newState.unlockedLocations = [...prev.unlockedLocations, 'drawer'];
+        }
+      }
+
+      setTimeout(() => checkAchievements(), 50);
+      return newState;
+    });
+  };
+
+  // Main game loop
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setGameState(prev => {
+        let newState = { ...prev };
+        
+        if (prev.restCooldown > 0) {
+          newState.restCooldown = Math.max(0, prev.restCooldown - 0.1);
+        }
+        
+        if (prev.portalCooldown > 0) {
+          newState.portalCooldown = Math.max(0, prev.portalCooldown - 0.1);
+        }
+        
+        if (prev.ppPerSecond > 0) {
+          newState.pp = prev.pp + (prev.ppPerSecond / 10);
+        }
+
+        newState.timeInOffice = prev.timeInOffice + 0.1;
+        if (Math.floor(newState.timeInOffice) % 60 === 0 && Math.floor(newState.timeInOffice) !== Math.floor(prev.timeInOffice)) {
+          newState.day = prev.day + 1;
+        }
+
+        if (prev.phase >= 2) {
+          newState.sanity = Math.max(0, prev.sanity - 0.05);
+        }
+
+        if (prev.upgrades.pills && prev.sanity < 100) {
+          newState.sanity = Math.min(100, prev.sanity + 0.05);
+        }
+
+        if (!prev.strangeColleagueEvent && prev.day >= 3 && prev.location !== 'portal' && Math.random() < 0.005) {
+          const randomDialogue = STRANGE_COLLEAGUE_DIALOGUES[Math.floor(Math.random() * STRANGE_COLLEAGUE_DIALOGUES.length)];
+          newState.strangeColleagueEvent = randomDialogue;
+          addMessage('Someone approaches your desk. You don\'t recognize them.');
+        }
+
+        if (Math.random() < 0.02) {
+          const availableEvents = EVENTS.filter(e => 
+            prev.day >= e.minDay && !prev.discoveredEvents.includes(e.id)
+          );
+          
+          if (availableEvents.length > 0 && Math.random() < 0.3) {
+            const event = availableEvents[Math.floor(Math.random() * availableEvents.length)];
+            if (Math.random() < event.prob) {
+              addMessage(event.message);
+              if (event.pp) newState.pp += event.pp;
+              if (event.energy) newState.energy = Math.max(0, Math.min(100, prev.energy + event.energy));
+              if (event.sanity) newState.sanity = Math.max(0, Math.min(100, prev.sanity + event.sanity));
+              newState.discoveredEvents = [...prev.discoveredEvents, event.id];
+            }
+          }
+        }
+
+        if (prev.phase === 1 && prev.pp > 500) {
+          newState.phase = 2;
+          addMessage('Something has changed. Or has it always been this way?');
+        }
+
+        if (prev.sanity < 30 && Math.random() < 0.1) {
+          const glitchMessages = [
+            'T̷h̷e̷ ̷w̷a̷l̷l̷s̷',
+            'Your name is... what is your name?',
+            '404: REALITY NOT FOUND',
+            'You are doing great! You are doing great! You are doing great!',
+            'The exit is everywhere and nowhere.'
+          ];
+          addMessage(glitchMessages[Math.floor(Math.random() * glitchMessages.length)]);
+        }
+
+        return newState;
+      });
+    }, 100);
+
+    return () => clearInterval(interval);
+  }, [addMessage]);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
     
-    setInputValue('');
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  useEffect(() => {
+    checkAchievements();
+  }, [gameState.pp, gameState.day, gameState.sortCount, gameState.unlockedLocations.length, gameState.disagreementCount, gameState.examinedItems, gameState.sanity, checkAchievements]);
+
+  const currentLocation = LOCATIONS[gameState.location];
+  const availableUpgrades = UPGRADES.filter(u => 
+    !gameState.upgrades[u.id] && 
+    (u.effect !== 'unlock' || gameState.pp >= u.cost * 0.5)
+  );
+
+  const enterDimensionalArea = () => {
+    setGameState(prev => ({ ...prev, inDimensionalArea: true }));
   };
 
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter' && inputValue.trim()) {
-      handleCommand(inputValue);
-    }
+  const exitDimensionalArea = () => {
+    setGameState(prev => ({
+      ...prev,
+      inDimensionalArea: false
+    }));
   };
 
-  const getStageDescription = () => {
-    switch (gameState.stage) {
-      case 'void':
-        return "The Void";
-      case 'path':
-        return "The Starlit Path";
-      case 'garden':
-        return "The Inner Garden";
-      default:
-        return "Unknown realm";
-    }
-  };
+  // Render dimensional area FIRST - completely separate screen
+  if (gameState.inDimensionalArea) {
+    return <DimensionalArea gameState={gameState} setGameState={setGameState} onExit={exitDimensionalArea} />;
+  }
 
+  // Render modals
+  if (gameState.meditating) {
+    return <MeditationModal gameState={gameState} breatheAction={actions.breatheAction} cancelMeditation={actions.cancelMeditation} />;
+  }
+
+  if (gameState.examiningItem) {
+    return <ExamineModal item={gameState.examiningItem} closeExamine={actions.closeExamine} />;
+  }
+
+  if (gameState.strangeColleagueEvent) {
+    return <ColleagueModal event={gameState.strangeColleagueEvent} recentMessages={gameState.recentMessages} respondToColleague={actions.respondToColleague} />;
+  }
+
+  if (gameState.debugMode && gameState.currentBug) {
+    return <DebugModal gameState={gameState} submitDebug={actions.submitDebug} updateDebugCode={actions.updateDebugCode} cancelDebug={actions.cancelDebug} />;
+  }
+
+  // Main game screen
   return (
     <>
       <Header />
-      <main className="main-content">
-        <section className="section">
-          <h1 className="page-title">Inner Light</h1>
-          <p className="intro-text">
-            A text-based journey of self-discovery and spiritual growth. 
-            Find yourself through mindful exploration of the inner landscape.
-          </p>
-          <div className="status">
-            <span className="status-dot"></span>
-            Currently in: {getStageDescription()}
+      <div style={{
+        fontFamily: "'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace",
+        padding: isMobile ? '20px' : '40px 60px',
+        minHeight: 'calc(100vh - 200px)',
+        fontSize: '14px'
+      }}>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          borderBottom: '1px solid var(--border-color)',
+          paddingBottom: '20px',
+          marginBottom: '40px'
+        }}>
+          <div style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.7 }}>
+            {currentLocation.name}
           </div>
-        </section>
+          <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+            <button
+              onClick={() => setShowSaveMenu(!showSaveMenu)}
+              style={{
+                background: 'none',
+                border: '1px solid var(--accent-color)',
+                color: 'var(--accent-color)',
+                padding: '4px 8px',
+                cursor: 'pointer',
+                fontSize: '10px',
+                fontFamily: 'inherit',
+                opacity: 0.8
+              }}
+            >
+              💾 SAVE
+            </button>
+            <button
+              onClick={() => setGameState(prev => ({ ...prev, pp: prev.pp + 100000 }))}
+              style={{
+                background: 'none',
+                border: '1px solid #ff00ff',
+                color: '#ff00ff',
+                padding: '4px 8px',
+                cursor: 'pointer',
+                fontSize: '10px',
+                fontFamily: 'inherit',
+                opacity: 0.5
+              }}
+            >
+              +100K PP
+            </button>
+            <button
+              onClick={() => setGameState(prev => ({ ...prev, day: prev.day + 1, timeInOffice: prev.day * 60 }))}
+              style={{
+                background: 'none',
+                border: '1px solid #00ffff',
+                color: '#00ffff',
+                padding: '4px 8px',
+                cursor: 'pointer',
+                fontSize: '10px',
+                fontFamily: 'inherit',
+                opacity: 0.5
+              }}
+            >
+              +1 DAY
+            </button>
+            <div style={{ fontSize: '12px', textAlign: 'right', opacity: 0.7 }}>
+              <div>{getClockTime(gameState.timeInOffice)}</div>
+              <div style={{ marginTop: '4px' }}>DAY {Math.floor(gameState.day)}</div>
+            </div>
+          </div>
+        </div>
 
-        <section className="section">
-          <div className="game-container">
-            {/* Game Terminal */}
-            <div className="game-terminal">
-              <div className="terminal-header">
-                <div className="terminal-title">Inner Light Console</div>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: isMobile ? '1fr' : '65fr 35fr',
+          gap: '40px'
+        }}>
+          <div>
+            <div style={{ marginBottom: '40px' }}>
+              <p style={{ fontSize: '15px', marginBottom: '20px', opacity: 0.9 }}>
+                {currentLocation.description}
+              </p>
+            </div>
+
+            <div style={{ marginBottom: '40px' }}>
+              <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6, marginBottom: '16px' }}>
+                EVENT LOG
               </div>
-              <div className="terminal-content">
-                {gameState.messages.map((msg) => (
-                  <div key={msg.id} className={`message message-${msg.type}`}>
-                    {msg.text}
+              <div style={{
+                border: '1px solid var(--border-color)',
+                padding: '16px',
+                backgroundColor: 'var(--hover-color)',
+                fontSize: '13px',
+                opacity: 0.7,
+                lineHeight: '1.8',
+                maxHeight: '200px',
+                overflowY: 'auto',
+                minHeight: '120px'
+              }}>
+                {gameState.recentMessages.map((msg, i) => (
+                  <div key={i} style={{ marginBottom: '8px', paddingBottom: '8px', borderBottom: i < gameState.recentMessages.length - 1 ? '1px solid var(--border-color)' : 'none' }}>
+                    {msg}
                   </div>
                 ))}
-                <div ref={messagesEndRef} />
               </div>
-              
-              {/* Command Input */}
-              <div className="terminal-input">
-                <span className="prompt">&gt;</span>
-                <input
-                  type="text"
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  className="command-input"
-                  placeholder="Enter command..."
-                  autoFocus
-                />
+            </div>
+
+            <div style={{ marginBottom: '40px' }}>
+              <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6, marginBottom: '16px' }}>
+                ACTIONS
+              </div>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(200px, 1fr))',
+                gap: '12px'
+              }}>
                 <button
-                  onClick={() => {
-                    if (inputValue.trim()) {
-                      handleCommand(inputValue);
-                    }
+                  onClick={actions.sortPapers}
+                  disabled={gameState.energy < 5}
+                  style={{
+                    ...getDistortionStyle(gameState.sanity),
+                    background: 'none',
+                    border: '1px solid var(--border-color)',
+                    color: 'var(--text-color)',
+                    padding: '20px',
+                    cursor: gameState.energy >= 5 ? 'pointer' : 'not-allowed',
+                    fontSize: '12px',
+                    fontFamily: 'inherit',
+                    letterSpacing: '0.5px',
+                    transition: 'all 0.2s',
+                    opacity: gameState.energy >= 5 ? 1 : 0.4,
+                    textAlign: 'center'
                   }}
-                  className="submit-button"
                 >
-                  Enter
+                  <div>{distortText('SORT PAPERS', gameState.sanity)}</div>
+                  <div style={{ fontSize: '10px', opacity: 0.6, marginTop: '6px' }}>[+{gameState.ppPerClick} PP]</div>
+                </button>
+                <button
+                  onClick={actions.rest}
+                  disabled={gameState.restCooldown > 0}
+                  style={{
+                    ...getDistortionStyle(gameState.sanity),
+                    background: 'none',
+                    border: '1px solid var(--border-color)',
+                    color: 'var(--text-color)',
+                    padding: '20px',
+                    cursor: gameState.restCooldown > 0 ? 'not-allowed' : 'pointer',
+                    fontSize: '12px',
+                    fontFamily: 'inherit',
+                    letterSpacing: '0.5px',
+                    transition: 'all 0.2s',
+                    opacity: gameState.restCooldown > 0 ? 0.4 : 1,
+                    textAlign: 'center'
+                  }}
+                >
+                  <div>{distortText('REST', gameState.sanity)}</div>
+                  <div style={{ fontSize: '10px', opacity: 0.6, marginTop: '6px' }}>
+                    {gameState.restCooldown > 0 ? `[${Math.ceil(gameState.restCooldown)}s]` : '[RESTORE ENERGY]'}
+                  </div>
+                </button>
+                <button
+                  onClick={actions.startMeditation}
+                  disabled={gameState.energy < 10}
+                  style={{
+                    background: 'none',
+                    border: '1px solid var(--border-color)',
+                    color: 'var(--text-color)',
+                    padding: '20px',
+                    cursor: gameState.energy >= 10 ? 'pointer' : 'not-allowed',
+                    fontSize: '12px',
+                    fontFamily: 'inherit',
+                    letterSpacing: '0.5px',
+                    transition: 'all 0.2s',
+                    opacity: gameState.energy >= 10 ? 1 : 0.4,
+                    textAlign: 'center'
+                  }}
+                >
+                  <div>MEDITATE</div>
+                  <div style={{ fontSize: '10px', opacity: 0.6, marginTop: '6px' }}>[-10 ENERGY, +SANITY]</div>
+                </button>
+                {gameState.upgrades.debugger && (
+                  <button
+                    onClick={actions.startDebugSession}
+                    disabled={gameState.energy < 10}
+                    style={{
+                      ...getDistortionStyle(gameState.sanity),
+                      background: 'none',
+                      border: '1px solid var(--border-color)',
+                      color: 'var(--text-color)',
+                      padding: '20px',
+                      cursor: gameState.energy >= 10 ? 'pointer' : 'not-allowed',
+                      fontSize: '12px',
+                      fontFamily: 'inherit',
+                      letterSpacing: '0.5px',
+                      transition: 'all 0.2s',
+                      opacity: gameState.energy >= 10 ? 1 : 0.4,
+                      textAlign: 'center'
+                    }}
+                  >
+                    <div>{distortText('DEBUG', gameState.sanity)}</div>
+                    <div style={{ fontSize: '10px', opacity: 0.6, marginTop: '6px' }}>[-10 ENERGY]</div>
+                  </button>
+                )}
+                {gameState.location === 'portal' && (
+                  <button
+                    onClick={enterDimensionalArea}
+                    disabled={gameState.portalCooldown > 0}
+                    style={{
+                      background: 'none',
+                      border: '1px solid #00ffff',
+                      color: '#00ffff',
+                      padding: '20px',
+                      cursor: gameState.portalCooldown > 0 ? 'not-allowed' : 'pointer',
+                      fontSize: '12px',
+                      fontFamily: 'inherit',
+                      letterSpacing: '0.5px',
+                      transition: 'all 0.2s',
+                      textAlign: 'center',
+                      boxShadow: gameState.portalCooldown > 0 ? 'none' : '0 0 10px rgba(0, 255, 255, 0.3)',
+                      opacity: gameState.portalCooldown > 0 ? 0.4 : 1
+                    }}
+                  >
+                    <div>ENTER PORTAL</div>
+                    <div style={{ fontSize: '10px', opacity: 0.6, marginTop: '6px' }}>
+                      {gameState.portalCooldown > 0 ? `[${Math.ceil(gameState.portalCooldown)}s]` : '[DIMENSIONAL MINING]'}
+                    </div>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {gameState.unlockedLocations.length > 1 && (
+              <div style={{ marginBottom: '40px' }}>
+                <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6, marginBottom: '16px' }}>
+                  LOCATIONS
+                </div>
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(auto-fill, minmax(150px, 1fr))',
+                  gap: '12px'
+                }}>
+                  {gameState.unlockedLocations.map(loc => (
+                    <button
+                      key={loc}
+                      onClick={() => actions.changeLocation(loc)}
+                      disabled={gameState.location === loc}
+                      style={{
+                        background: gameState.location === loc ? 'var(--accent-color)' : 'none',
+                        border: '1px solid var(--border-color)',
+                        color: gameState.location === loc ? 'var(--bg-color)' : 'var(--text-color)',
+                        padding: '14px',
+                        cursor: gameState.location === loc ? 'default' : 'pointer',
+                        fontSize: '11px',
+                        fontFamily: 'inherit',
+                        letterSpacing: '0.5px',
+                        transition: 'all 0.2s',
+                        textAlign: 'center'
+                      }}
+                    >
+                      {LOCATIONS[loc]?.name || 'Unknown Location'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {gameState.location === 'archive' && currentLocation.items && (
+              <div>
+                <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6, marginBottom: '16px' }}>
+                  ARCHIVED ITEMS
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {currentLocation.items.map(item => (
+                    <button
+                      key={item.id}
+                      onClick={() => actions.examineItem(item)}
+                      style={{
+                        background: 'none',
+                        border: '1px solid var(--border-color)',
+                        color: 'var(--text-color)',
+                        padding: '14px 16px',
+                        cursor: 'pointer',
+                        fontSize: '12px',
+                        fontFamily: 'inherit',
+                        textAlign: 'left',
+                        transition: 'all 0.2s',
+                        letterSpacing: '0.5px'
+                      }}
+                    >
+                      📄 {item.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div>
+            <div style={{
+              border: '1px solid var(--border-color)',
+              padding: '24px',
+              marginBottom: '30px',
+              backgroundColor: 'var(--hover-color)'
+            }}>
+              <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6, marginBottom: '20px' }}>
+                RESOURCES
+              </div>
+              <div style={{ fontSize: '14px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
+                  <span>PP</span>
+                  <strong style={{ fontSize: '18px' }}>{Math.floor(gameState.pp)}</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
+                  <span>ENERGY</span>
+                  <strong style={{ fontSize: '18px' }}>{Math.floor(gameState.energy)}%</strong>
+                </div>
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  marginBottom: '16px',
+                  color: gameState.sanity < 30 ? '#ff0000' : 'inherit'
+                }}>
+                  <span>SANITY</span>
+                  <strong style={{ fontSize: '18px' }}>{Math.floor(gameState.sanity)}%</strong>
+                </div>
+                {gameState.ppPerSecond > 0 && (
+                  <div style={{
+                    paddingTop: '16px',
+                    borderTop: '1px solid var(--border-color)',
+                    textAlign: 'center',
+                    opacity: 0.7,
+                    fontSize: '12px'
+                  }}>
+                    +{gameState.ppPerSecond.toFixed(1)} PP/sec
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {Object.keys(gameState.dimensionalInventory || {}).length > 0 && (
+              <div style={{
+                border: '1px solid var(--border-color)',
+                padding: '24px',
+                marginBottom: '30px',
+                backgroundColor: 'var(--hover-color)'
+              }}>
+                <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6, marginBottom: '20px' }}>
+                  DIMENSIONAL MATERIALS
+                </div>
+                <div style={{ fontSize: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {DIMENSIONAL_MATERIALS.map(material => {
+                    const count = gameState.dimensionalInventory[material.id] || 0;
+                    if (count === 0) return null;
+                    return (
+                      <div key={material.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <div style={{
+                            width: '12px',
+                            height: '12px',
+                            backgroundColor: material.color,
+                            border: '1px solid rgba(255,255,255,0.2)',
+                            boxShadow: `0 0 4px ${material.color}`
+                          }} />
+                          <span style={{ fontSize: '11px' }}>{material.name}</span>
+                        </div>
+                        <strong>{count}</strong>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {Object.keys(gameState.dimensionalInventory || {}).some(key => gameState.dimensionalInventory[key] > 0) && (
+              <DimensionalUpgradesDisplay gameState={gameState} onPurchase={purchaseDimensionalUpgrade} />
+            )}
+
+            {availableUpgrades.length > 0 && (
+              <div style={{ marginBottom: '30px' }}>
+                <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6, marginBottom: '16px' }}>
+                  UPGRADES
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {availableUpgrades.slice(0, 5).map(upgrade => (
+                    <button
+                      key={upgrade.id}
+                      onClick={() => actions.buyUpgrade(upgrade)}
+                      disabled={gameState.pp < upgrade.cost}
+                      style={{
+                        background: 'none',
+                        border: '1px solid var(--border-color)',
+                        color: 'var(--text-color)',
+                        padding: '16px',
+                        cursor: gameState.pp >= upgrade.cost ? 'pointer' : 'not-allowed',
+                        fontSize: '12px',
+                        fontFamily: 'inherit',
+                        textAlign: 'left',
+                        transition: 'all 0.2s',
+                        opacity: gameState.pp >= upgrade.cost ? 1 : 0.4
+                      }}
+                    >
+                      <div style={{ fontWeight: '500', marginBottom: '8px', fontSize: '13px' }}>
+                        {upgrade.name}
+                      </div>
+                      <div style={{ fontSize: '11px', opacity: 0.7, marginBottom: '8px' }}>
+                        {upgrade.desc}
+                      </div>
+                      <div style={{ fontSize: '12px', color: 'var(--accent-color)' }}>
+                        {upgrade.cost} PP
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div>
+              <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6, marginBottom: '16px' }}>
+                ACHIEVEMENTS ({gameState.achievements.length}/{ACHIEVEMENTS.length})
+              </div>
+              <div style={{
+                border: '1px solid var(--border-color)',
+                padding: '16px',
+                backgroundColor: 'var(--hover-color)',
+                maxHeight: '300px',
+                overflowY: 'auto'
+              }}>
+                {ACHIEVEMENTS.map(ach => {
+                  const unlocked = gameState.achievements.includes(ach.id);
+                  return (
+                    <div
+                      key={ach.id}
+                      style={{
+                        marginBottom: '12px',
+                        paddingBottom: '12px',
+                        borderBottom: '1px solid var(--border-color)',
+                        opacity: unlocked ? 1 : 0.4,
+                        fontSize: '11px'
+                      }}
+                    >
+                      <div style={{ fontWeight: '500', marginBottom: '4px' }}>
+                        {unlocked ? '🏆' : '🔒'} {unlocked ? ach.name : '???'}
+                      </div>
+                      <div style={{ fontSize: '10px', opacity: 0.7 }}>
+                        {unlocked ? ach.desc : 'Hidden achievement'}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {gameState.phase === 3 && gameState.sanity < 20 && (
+          <div style={{
+            marginTop: '40px',
+            padding: '20px',
+            border: '1px solid var(--border-color)',
+            fontSize: '13px',
+            opacity: 0.8,
+            textAlign: 'center'
+          }}>
+            The roof. The answer is on the roof. Or is it?
+          </div>
+        )}
+
+        {/* Save Menu Modal */}
+        {showSaveMenu && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000
+          }}>
+            <div style={{
+              fontFamily: "'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace",
+              maxWidth: '500px',
+              width: '90%',
+              border: '1px solid var(--border-color)',
+              padding: '40px',
+              backgroundColor: 'var(--bg-color)'
+            }}>
+              <div style={{
+                fontSize: '11px',
+                textTransform: 'uppercase',
+                letterSpacing: '1px',
+                opacity: 0.6,
+                marginBottom: '30px',
+                textAlign: 'center'
+              }}>
+                SAVE / LOAD GAME
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <button
+                  onClick={handleSaveGame}
+                  style={{
+                    background: 'var(--accent-color)',
+                    border: '1px solid var(--border-color)',
+                    color: 'var(--bg-color)',
+                    padding: '16px',
+                    cursor: 'pointer',
+                    fontSize: '12px',
+                    fontFamily: 'inherit',
+                    letterSpacing: '0.5px',
+                    fontWeight: '500'
+                  }}
+                >
+                  💾 SAVE TO FILE
+                </button>
+
+                <button
+                  onClick={() => document.getElementById('file-input').click()}
+                  style={{
+                    background: 'none',
+                    border: '1px solid var(--border-color)',
+                    color: 'var(--text-color)',
+                    padding: '16px',
+                    cursor: 'pointer',
+                    fontSize: '12px',
+                    fontFamily: 'inherit',
+                    letterSpacing: '0.5px'
+                  }}
+                >
+                  📁 LOAD FROM FILE
+                </button>
+                <input
+                  id="file-input"
+                  type="file"
+                  accept=".json"
+                  onChange={handleLoadGame}
+                  style={{ display: 'none' }}
+                />
+
+                <button
+                  onClick={handleExportClipboard}
+                  style={{
+                    background: 'none',
+                    border: '1px solid var(--border-color)',
+                    color: 'var(--text-color)',
+                    padding: '16px',
+                    cursor: 'pointer',
+                    fontSize: '12px',
+                    fontFamily: 'inherit',
+                    letterSpacing: '0.5px'
+                  }}
+                >
+                  📋 COPY TO CLIPBOARD
+                </button>
+
+                <button
+                  onClick={handleImportClipboard}
+                  style={{
+                    background: 'none',
+                    border: '1px solid var(--border-color)',
+                    color: 'var(--text-color)',
+                    padding: '16px',
+                    cursor: 'pointer',
+                    fontSize: '12px',
+                    fontFamily: 'inherit',
+                    letterSpacing: '0.5px'
+                  }}
+                >
+                  📥 PASTE FROM CLIPBOARD
+                </button>
+
+                <button
+                  onClick={() => setShowSaveMenu(false)}
+                  style={{
+                    background: 'none',
+                    border: '1px solid var(--border-color)',
+                    color: 'var(--text-color)',
+                    padding: '12px',
+                    cursor: 'pointer',
+                    fontSize: '11px',
+                    fontFamily: 'inherit',
+                    letterSpacing: '0.5px',
+                    marginTop: '12px'
+                  }}
+                >
+                  CANCEL
                 </button>
               </div>
-              
-              <div className="terminal-hint">
-                Available: {gameState.unlockedActions.slice(0, 4).join(', ')}, help, stats
-              </div>
-            </div>
 
-            {/* Game Stats Sidebar */}
-            <div className="game-sidebar">
-              {/* Resources */}
-              <div className="stat-card">
-                <div className="stat-title">Inner Resources</div>
-                {Object.entries(gameState.resources).map(([key, value]) => (
-                  <div key={key} className="stat-row">
-                    <span className="stat-label">{key}</span>
-                    <div className="stat-bar">
-                      {Array.from({ length: 5 }, (_, i) => (
-                        <span key={i} className={`stat-dot ${i < value ? 'filled' : ''}`}>
-                          •
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Inventory */}
-              <div className="stat-card">
-                <div className="stat-title">Spiritual Inventory</div>
-                {gameState.inventory.length === 0 ? (
-                  <div className="empty-text">Empty</div>
-                ) : (
-                  gameState.inventory.map((item, index) => (
-                    <div key={index} className="inventory-item">
-                      {item}
-                    </div>
-                  ))
-                )}
-              </div>
-
-              {/* Discoveries */}
-              <div className="stat-card">
-                <div className="stat-title">Discoveries</div>
-                {gameState.discoveries.length === 0 ? (
-                  <div className="empty-text">None yet</div>
-                ) : (
-                  gameState.discoveries.map((discovery, index) => (
-                    <div key={index} className="discovery-item">
-                      ✦ {discovery}
-                    </div>
-                  ))
-                )}
+              <div style={{
+                marginTop: '30px',
+                fontSize: '10px',
+                opacity: 0.5,
+                textAlign: 'center',
+                lineHeight: '1.6'
+              }}>
+                Save files contain your complete game progress.<br/>
+                Keep backups. Reality is fragile.
               </div>
             </div>
           </div>
-        </section>
-      </main>
+        )}
+      </div>
       <Footer />
-
-      <style jsx>{`
-        .page-title {
-          font-size: 24px;
-          font-weight: 400;
-          letter-spacing: 1px;
-          margin-bottom: 16px;
-          color: var(--accent-color);
-        }
-
-        .game-container {
-          display: grid;
-          grid-template-columns: 2fr 1fr;
-          gap: 32px;
-          margin-bottom: 40px;
-        }
-
-        .game-terminal {
-          border: 1px solid var(--border-color);
-          background: var(--bg-color);
-        }
-
-        .terminal-header {
-          padding: 12px 16px;
-          border-bottom: 1px solid var(--border-color);
-          background: var(--hover-color);
-        }
-
-        .terminal-title {
-          font-size: 11px;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-          color: var(--accent-color);
-        }
-
-        .terminal-content {
-          height: 400px;
-          padding: 16px;
-          overflow-y: auto;
-          font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
-          font-size: 13px;
-          line-height: 1.5;
-        }
-
-        .message {
-          margin-bottom: 8px;
-        }
-
-        .message-system {
-          color: var(--accent-color);
-          font-style: italic;
-          opacity: 0.8;
-        }
-
-        .message-action {
-          color: var(--text-color);
-        }
-
-        .message-input {
-          color: var(--accent-color);
-          opacity: 0.7;
-        }
-
-        .message-hint {
-          color: var(--text-color);
-          opacity: 0.5;
-          font-size: 11px;
-        }
-
-        .terminal-input {
-          padding: 12px 16px;
-          border-top: 1px solid var(--border-color);
-          background: var(--hover-color);
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-
-        .prompt {
-          color: var(--accent-color);
-          font-family: inherit;
-          font-size: 13px;
-        }
-
-        .command-input {
-          flex: 1;
-          background: transparent;
-          border: none;
-          color: var(--text-color);
-          font-family: inherit;
-          font-size: 13px;
-          outline: none;
-        }
-
-        .submit-button {
-          background: var(--accent-color);
-          color: var(--bg-color);
-          border: none;
-          padding: 4px 8px;
-          font-family: inherit;
-          font-size: 10px;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-          cursor: pointer;
-          transition: var(--transition);
-        }
-
-        .submit-button:hover {
-          opacity: 0.8;
-        }
-
-        .terminal-hint {
-          padding: 8px 16px;
-          font-size: 10px;
-          opacity: 0.5;
-          color: var(--text-color);
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-        }
-
-        .game-sidebar {
-          display: flex;
-          flex-direction: column;
-          gap: 24px;
-        }
-
-        .stat-card {
-          border: 1px solid var(--border-color);
-          padding: 20px;
-        }
-
-        .stat-title {
-          font-size: 11px;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-          color: var(--accent-color);
-          margin-bottom: 16px;
-        }
-
-        .stat-row {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 8px;
-        }
-
-        .stat-label {
-          font-size: 11px;
-          text-transform: capitalize;
-          color: var(--text-color);
-          opacity: 0.7;
-        }
-
-        .stat-bar {
-          display: flex;
-          gap: 2px;
-        }
-
-        .stat-dot {
-          font-size: 12px;
-          color: var(--border-color);
-          transition: var(--transition);
-        }
-
-        .stat-dot.filled {
-          color: var(--accent-color);
-        }
-
-        .empty-text {
-          font-size: 11px;
-          color: var(--text-color);
-          opacity: 0.5;
-          font-style: italic;
-        }
-
-        .inventory-item {
-          font-size: 11px;
-          color: var(--text-color);
-          margin-bottom: 4px;
-          opacity: 0.8;
-        }
-
-        .discovery-item {
-          font-size: 11px;
-          color: var(--accent-color);
-          margin-bottom: 4px;
-        }
-
-        @media (max-width: 768px) {
-          .game-container {
-            grid-template-columns: 1fr;
-            gap: 24px;
-          }
-          
-          .terminal-content {
-            height: 300px;
-          }
-          
-          .terminal-input {
-            flex-direction: column;
-            align-items: stretch;
-            gap: 8px;
-          }
-          
-          .submit-button {
-            align-self: flex-end;
-            padding: 8px 12px;
-          }
-        }
-      `}</style>
     </>
   );
 }

@@ -16,6 +16,7 @@ export default function Header() {
   const toggleTheme = () => {
     const newTheme = theme === 'dark' ? 'light' : 'dark';
     setTheme(newTheme);
+    window.postMessage({ type: 'THEME_TOGGLE' }, '*');
     document.body.setAttribute('data-theme', newTheme);
     localStorage.setItem('theme', newTheme);
   };
