@@ -79,7 +79,7 @@ export default function ColleagueModal({ event, recentMessages, respondToColleag
             COLLEAGUE FROM FLOOR ??
           </div>
           <p style={{ fontStyle: 'italic' }}>
-            &apos;{event.dialogue}&apos;
+            &lsquo;{event.dialogue}&lsquo;
           </p>
         </div>
 
@@ -128,7 +128,7 @@ export default function ColleagueModal({ event, recentMessages, respondToColleag
           textAlign: 'center',
           color: '#ff6b6b'
         }}>
-          He won't leave until you respond correctly.
+          He won&apos;t leave until you respond correctly.
         </div>
       </div>
       <Footer />
