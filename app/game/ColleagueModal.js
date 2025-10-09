@@ -79,7 +79,7 @@ export default function ColleagueModal({ event, recentMessages, respondToColleag
             COLLEAGUE FROM FLOOR ??
           </div>
           <p style={{ fontStyle: 'italic' }}>
-            '{event.dialogue}'
+            &apos;{event.dialogue}&apos;
           </p>
         </div>
 
