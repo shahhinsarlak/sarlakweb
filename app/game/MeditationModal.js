@@ -20,6 +20,13 @@ export default function MeditationModal({ gameState, breatheAction, cancelMedita
   const currentAction = gameState.meditationPhase;
   const breathNum = currentAction === 'inhale' ? gameState.breathCount + 1 : gameState.breathCount;
   
+  const isInhaling = currentAction === 'inhale';
+  const baseSize = 80;
+  const maxSize = 160;
+  const circleSize = isInhaling 
+    ? baseSize + ((maxSize - baseSize) * (progress / 100))
+    : maxSize - ((maxSize - baseSize) * (progress / 100));
+  
   return (
     <>
       <Header />
@@ -44,18 +51,27 @@ export default function MeditationModal({ gameState, breatheAction, cancelMedita
             opacity: 0.6,
             marginBottom: '40px'
           }}>
-            MEDITATION - BREATH {breathNum}/5
+            MEDITATION - BREATH {breathNum}/3
           </div>
+          
           <div style={{
-            fontSize: '80px',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
             marginBottom: '40px',
-            opacity: isPerfect ? 1 : 0.4,
-            transition: 'opacity 0.1s',
-            transform: currentAction === 'inhale' ? 'scale(1.1)' : 'scale(0.9)',
-            transitionDuration: '0.3s'
+            minHeight: '200px'
           }}>
-            🧘
+            <div style={{
+              width: `${circleSize}px`,
+              height: `${circleSize}px`,
+              borderRadius: '50%',
+              border: `3px solid ${isPerfect ? '#00ff00' : 'var(--border-color)'}`,
+              backgroundColor: isPerfect ? 'rgba(0, 255, 0, 0.1)' : 'transparent',
+              transition: 'all 0.3s ease-out',
+              boxShadow: isPerfect ? '0 0 20px rgba(0, 255, 0, 0.5)' : 'none'
+            }} />
           </div>
+
           <div style={{
             fontSize: '32px',
             opacity: 0.9,

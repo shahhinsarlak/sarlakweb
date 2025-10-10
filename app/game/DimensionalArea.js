@@ -9,6 +9,7 @@ import {
 export default function DimensionalArea({ gameState, setGameState, onExit }) {
   const [collectedNodes, setCollectedNodes] = useState([]);
   const [currentInventory, setCurrentInventory] = useState({});
+  const [hoveredNode, setHoveredNode] = useState(null);
   
   const encryptedText = useMemo(() => generateEncryptedText(3000), []);
   const materialNodes = useMemo(() => generateMaterialNodes(encryptedText.length, gameState.dimensionalInventory || {}), [encryptedText.length, gameState.dimensionalInventory]);
@@ -28,7 +29,6 @@ export default function DimensionalArea({ gameState, setGameState, onExit }) {
   };
 
   const handleExit = () => {
-    // Transfer collected materials to main inventory
     setGameState(prev => {
       const newDimensionalInventory = { ...(prev.dimensionalInventory || {}) };
       
@@ -39,7 +39,7 @@ export default function DimensionalArea({ gameState, setGameState, onExit }) {
       return {
         ...prev,
         dimensionalInventory: newDimensionalInventory,
-        portalCooldown: 60 // 60 seconds cooldown
+        portalCooldown: 60
       };
     });
     
@@ -59,10 +59,14 @@ export default function DimensionalArea({ gameState, setGameState, onExit }) {
         </span>
       );
       
+      const material = DIMENSIONAL_MATERIALS.find(m => m.id === node.materialId);
+      
       elements.push(
         <span
           key={node.id}
           onClick={() => collectMaterial(node)}
+          onMouseEnter={() => setHoveredNode(node)}
+          onMouseLeave={() => setHoveredNode(null)}
           style={{
             display: 'inline-block',
             width: `${node.size}px`,
@@ -74,19 +78,35 @@ export default function DimensionalArea({ gameState, setGameState, onExit }) {
             verticalAlign: 'middle',
             margin: '0 2px',
             border: '1px solid rgba(255,255,255,0.1)',
-            boxShadow: `0 0 ${node.size/2}px ${node.color}`,
+            boxShadow: hoveredNode?.id === node.id && remainingCapacity > 0 
+              ? `0 0 ${node.size}px ${node.color}` 
+              : `0 0 ${node.size/2}px ${node.color}`,
+            transform: hoveredNode?.id === node.id && remainingCapacity > 0 ? 'scale(1.2)' : 'scale(1)',
+            position: 'relative'
           }}
-          onMouseEnter={(e) => {
-            if (remainingCapacity > 0) {
-              e.target.style.transform = 'scale(1.2)';
-              e.target.style.boxShadow = `0 0 ${node.size}px ${node.color}`;
-            }
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.transform = 'scale(1)';
-            e.target.style.boxShadow = `0 0 ${node.size/2}px ${node.color}`;
-          }}
-        />
+        >
+          {hoveredNode?.id === node.id && (
+            <span style={{
+              position: 'absolute',
+              bottom: '100%',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              backgroundColor: '#000000',
+              border: '1px solid #444444',
+              padding: '4px 8px',
+              fontSize: '10px',
+              fontFamily: "'SF Mono', monospace",
+              color: node.color,
+              whiteSpace: 'nowrap',
+              marginBottom: '4px',
+              pointerEvents: 'none',
+              zIndex: 1000,
+              boxShadow: `0 0 8px ${node.color}`
+            }}>
+              {material?.name}
+            </span>
+          )}
+        </span>
       );
       
       lastIndex = node.position;
@@ -127,7 +147,6 @@ export default function DimensionalArea({ gameState, setGameState, onExit }) {
         margin: 0,
         boxSizing: 'border-box'
       }}>
-      {/* Fixed header */}
       <div style={{
         position: 'fixed',
         top: 0,
@@ -168,7 +187,6 @@ export default function DimensionalArea({ gameState, setGameState, onExit }) {
         </div>
       </div>
 
-      {/* Encrypted text with embedded nodes */}
       <div style={{
         wordWrap: 'break-word',
         userSelect: 'none'
@@ -176,7 +194,6 @@ export default function DimensionalArea({ gameState, setGameState, onExit }) {
         {renderTextWithNodes()}
       </div>
 
-      {/* Material legend (fixed bottom) */}
       <div style={{
         position: 'fixed',
         bottom: 0,

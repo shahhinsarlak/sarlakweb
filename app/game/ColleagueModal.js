@@ -1,7 +1,18 @@
+import { useState } from 'react';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 
 export default function ColleagueModal({ event, recentMessages, respondToColleague }) {
+  const [clickedButton, setClickedButton] = useState(null);
+
+  const handleResponse = (response, index) => {
+    setClickedButton(index);
+    setTimeout(() => {
+      respondToColleague(response, index);
+      setClickedButton(null);
+    }, 150);
+  };
+
   return (
     <>
       <Header />
@@ -28,8 +39,7 @@ export default function ColleagueModal({ event, recentMessages, respondToColleag
         }}>
           {event.ascii}
           
-          {recentMessages.length > 1 && 
-           recentMessages[recentMessages.length - 1].startsWith('"') && (
+          {event.lastResponse && (
             <div style={{
               position: 'absolute',
               top: '-50px',
@@ -44,7 +54,8 @@ export default function ColleagueModal({ event, recentMessages, respondToColleag
               boxShadow: '0 4px 8px rgba(255, 0, 0, 0.3)',
               lineHeight: '1.5',
               wordWrap: 'break-word',
-              whiteSpace: 'normal'
+              whiteSpace: 'normal',
+              animation: 'fadeIn 0.2s ease-in'
             }}>
               <div style={{
                 position: 'absolute',
@@ -56,7 +67,7 @@ export default function ColleagueModal({ event, recentMessages, respondToColleag
                 borderRight: '6px solid transparent',
                 borderTop: '6px solid #ff6b6b'
               }}></div>
-              {recentMessages[recentMessages.length - 1].replace(/"/g, '')}
+              {event.lastResponse}
             </div>
           )}
         </div>
@@ -100,18 +111,19 @@ export default function ColleagueModal({ event, recentMessages, respondToColleag
           {event.responses.map((response, i) => (
             <button
               key={i}
-              onClick={() => respondToColleague(response, i)}
+              onClick={() => handleResponse(response, i)}
               style={{
-                background: 'none',
+                background: clickedButton === i ? 'var(--accent-color)' : 'none',
                 border: '1px solid var(--border-color)',
-                color: 'var(--text-color)',
+                color: clickedButton === i ? 'var(--bg-color)' : 'var(--text-color)',
                 padding: '12px 16px',
                 cursor: 'pointer',
                 fontSize: '12px',
                 fontFamily: 'inherit',
                 textAlign: 'left',
-                transition: 'all 0.2s cubic-bezier(0.4, 0.0, 0.2, 1)',
-                letterSpacing: '0.5px'
+                transition: 'all 0.1s cubic-bezier(0.4, 0.0, 0.2, 1)',
+                letterSpacing: '0.5px',
+                transform: clickedButton === i ? 'scale(0.98)' : 'scale(1)'
               }}
             >
               {response}
@@ -132,6 +144,19 @@ export default function ColleagueModal({ event, recentMessages, respondToColleag
         </div>
       </div>
       <Footer />
+      
+      <style jsx>{`
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
     </>
   );
 }

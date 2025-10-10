@@ -11,7 +11,7 @@ import DimensionalUpgradesDisplay from './DimensionalUpgradesDisplay';
 import { createGameActions } from './gameActions';
 import { getDistortionStyle, distortText, getClockTime } from './gameUtils';
 import { saveGame, loadGame, exportToClipboard, importFromClipboard } from './saveSystem';
-import { DIMENSIONAL_MATERIALS, DIMENSIONAL_UPGRADES } from './dimensionalConstants';
+import { DIMENSIONAL_MATERIALS } from './dimensionalConstants';
 import { 
   INITIAL_GAME_STATE, 
   LOCATIONS, 
@@ -25,7 +25,10 @@ export default function Game() {
   const [isMobile, setIsMobile] = useState(false);
   const [gameState, setGameState] = useState(INITIAL_GAME_STATE);
   const [showSaveMenu, setShowSaveMenu] = useState(false);
-  const fileInputRef = useState(null);
+  const [showDebugMenu, setShowDebugMenu] = useState(false);
+  const [debugMaterialId, setDebugMaterialId] = useState('');
+  const [debugMaterialAmount, setDebugMaterialAmount] = useState('');
+  const [debugSanityLevel, setDebugSanityLevel] = useState('');
 
   const addMessage = useCallback((msg) => {
     setGameState(prev => {
@@ -63,7 +66,6 @@ export default function Game() {
     });
   }, []);
 
-  // Track theme changes from parent window
   useEffect(() => {
     const handleThemeChange = (e) => {
       if (e.data && e.data.type === 'THEME_TOGGLE') {
@@ -71,7 +73,6 @@ export default function Game() {
           const currentCount = prev.themeToggleCount || 0;
           const newCount = currentCount + 1;
           
-          // Check if portal should unlock
           if (newCount === 20 && prev.day >= 7 && !prev.portalUnlocked) {
             const messages = [
               'Reality shivers. The lights... they respond to you now.',
@@ -89,7 +90,6 @@ export default function Game() {
             };
           }
           
-          // Progress messages
           let newMessage = null;
           if (newCount === 10) {
             newMessage = prev.day >= 7 ? 'The lights flicker in response. They\'re watching...' : 'Progress tracked. Keep going...';
@@ -148,20 +148,18 @@ export default function Game() {
       await importFromClipboard(setGameState, addMessage);
       setShowSaveMenu(false);
     } catch (error) {
-      // Error already handled in importFromClipboard
+      // Error already handled
     }
   };
 
   const purchaseDimensionalUpgrade = (upgrade) => {
     setGameState(prev => {
-      // Check if can afford
       const canAfford = Object.entries(upgrade.materials).every(([materialId, required]) => {
         return (prev.dimensionalInventory?.[materialId] || 0) >= required;
       });
 
       if (!canAfford || prev.dimensionalUpgrades?.[upgrade.id]) return prev;
 
-      // Deduct materials
       const newInventory = { ...prev.dimensionalInventory };
       Object.entries(upgrade.materials).forEach(([materialId, required]) => {
         newInventory[materialId] = (newInventory[materialId] || 0) - required;
@@ -174,11 +172,8 @@ export default function Game() {
         recentMessages: [`Crafted: ${upgrade.name}`, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
       };
 
-      // Apply effects
       if (upgrade.effect === 'ppPerSecond') {
-        newState.ppPerSecond += upgrade.value;
-      } else if (upgrade.effect === 'sanityRegen') {
-        newState.sanityRegenBonus = (prev.sanityRegenBonus || 0) + upgrade.value;
+        newState.ppPerSecond = (prev.ppPerSecond || 0) + upgrade.value;
       } else if (upgrade.effect === 'unlock') {
         if (upgrade.value === 'drawer') {
           newState.unlockedLocations = [...prev.unlockedLocations, 'drawer'];
@@ -190,7 +185,6 @@ export default function Game() {
     });
   };
 
-  // Main game loop
   useEffect(() => {
     const interval = setInterval(() => {
       setGameState(prev => {
@@ -221,6 +215,14 @@ export default function Game() {
           newState.sanity = Math.min(100, prev.sanity + 0.05);
         }
 
+        if (prev.dimensionalUpgrades?.void_shield && prev.sanity < 100) {
+          newState.sanity = Math.min(100, prev.sanity + 0.05);
+        }
+
+        if (prev.dimensionalUpgrades?.reality_anchor && newState.sanity < 20) {
+          newState.sanity = 20;
+        }
+
         if (!prev.strangeColleagueEvent && prev.day >= 3 && prev.location !== 'portal' && Math.random() < 0.005) {
           const randomDialogue = STRANGE_COLLEAGUE_DIALOGUES[Math.floor(Math.random() * STRANGE_COLLEAGUE_DIALOGUES.length)];
           newState.strangeColleagueEvent = randomDialogue;
@@ -246,7 +248,7 @@ export default function Game() {
 
         if (prev.phase === 1 && prev.pp > 500) {
           newState.phase = 2;
-          addMessage('Something has changed. Or has it always been this way?');
+          newState.recentMessages = ['Something has changed. Or has it always been this way?', ...prev.recentMessages].slice(0, prev.maxLogMessages || 15);
         }
 
         if (prev.sanity < 30 && Math.random() < 0.1) {
@@ -257,7 +259,8 @@ export default function Game() {
             'You are doing great! You are doing great! You are doing great!',
             'The exit is everywhere and nowhere.'
           ];
-          addMessage(glitchMessages[Math.floor(Math.random() * glitchMessages.length)]);
+          const selectedMessage = glitchMessages[Math.floor(Math.random() * glitchMessages.length)];
+          newState.recentMessages = [selectedMessage, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15);
         }
 
         return newState;
@@ -292,18 +295,56 @@ export default function Game() {
   };
 
   const exitDimensionalArea = () => {
-    setGameState(prev => ({
-      ...prev,
-      inDimensionalArea: false
-    }));
+    setGameState(prev => {
+      const cooldownTime = prev.dimensionalUpgrades?.dimensional_anchor ? 30 : 60;
+      
+      const newDimensionalInventory = { ...(prev.dimensionalInventory || {}) };
+      
+      Object.keys(prev.dimensionalInventory || {}).forEach(materialId => {
+        newDimensionalInventory[materialId] = (newDimensionalInventory[materialId] || 0);
+      });
+      
+      return {
+        ...prev,
+        dimensionalInventory: newDimensionalInventory,
+        portalCooldown: cooldownTime,
+        inDimensionalArea: false
+      };
+    });
   };
 
-  // Render dimensional area FIRST - completely separate screen
+  const handleAddMaterial = () => {
+    if (!debugMaterialId || !debugMaterialAmount) return;
+    
+    const amount = parseInt(debugMaterialAmount);
+    if (isNaN(amount)) return;
+    
+    setGameState(prev => ({
+      ...prev,
+      dimensionalInventory: {
+        ...(prev.dimensionalInventory || {}),
+        [debugMaterialId]: (prev.dimensionalInventory?.[debugMaterialId] || 0) + amount
+      }
+    }));
+    
+    addMessage(`Added ${amount} ${DIMENSIONAL_MATERIALS.find(m => m.id === debugMaterialId)?.name}`);
+    setDebugMaterialId('');
+    setDebugMaterialAmount('');
+  };
+
+  const handleSetSanity = () => {
+    const level = parseInt(debugSanityLevel);
+    if (!isNaN(level) && level >= 0 && level <= 100) {
+      setGameState(prev => ({ ...prev, sanity: level }));
+      addMessage(`Sanity set to ${level}%.`);
+      setDebugSanityLevel('');
+    }
+  };
+
   if (gameState.inDimensionalArea) {
     return <DimensionalArea gameState={gameState} setGameState={setGameState} onExit={exitDimensionalArea} />;
   }
 
-  // Render modals
   if (gameState.meditating) {
     return <MeditationModal gameState={gameState} breatheAction={actions.breatheAction} cancelMeditation={actions.cancelMeditation} />;
   }
@@ -320,7 +361,6 @@ export default function Game() {
     return <DebugModal gameState={gameState} submitDebug={actions.submitDebug} updateDebugCode={actions.updateDebugCode} cancelDebug={actions.cancelDebug} />;
   }
 
-  // Main game screen
   return (
     <>
       <Header />
@@ -356,6 +396,21 @@ export default function Game() {
               }}
             >
               💾 SAVE
+            </button>
+            <button
+              onClick={() => setShowDebugMenu(!showDebugMenu)}
+              style={{
+                background: 'none',
+                border: '1px solid #00ff00',
+                color: '#00ff00',
+                padding: '4px 8px',
+                cursor: 'pointer',
+                fontSize: '10px',
+                fontFamily: 'inherit',
+                opacity: 0.5
+              }}
+            >
+              🛠 DEBUG
             </button>
             <button
               onClick={() => setGameState(prev => ({ ...prev, pp: prev.pp + 100000 }))}
@@ -789,7 +844,211 @@ export default function Game() {
           </div>
         )}
 
-        {/* Save Menu Modal */}
+        {showDebugMenu && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000
+          }}>
+            <div style={{
+              fontFamily: "'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace",
+              maxWidth: '500px',
+              width: '90%',
+              border: '1px solid var(--border-color)',
+              padding: '40px',
+              backgroundColor: 'var(--bg-color)'
+            }}>
+              <div style={{
+                fontSize: '11px',
+                textTransform: 'uppercase',
+                letterSpacing: '1px',
+                opacity: 0.6,
+                marginBottom: '30px',
+                textAlign: 'center'
+              }}>
+                DEBUG MENU
+              </div>
+
+              <div style={{ marginBottom: '24px' }}>
+                <div style={{ fontSize: '11px', marginBottom: '12px', opacity: 0.7 }}>
+                  SET SANITY LEVEL
+                </div>
+                <input
+                  type="number"
+                  value={debugSanityLevel}
+                  onChange={(e) => setDebugSanityLevel(e.target.value)}
+                  placeholder="0-100"
+                  min="0"
+                  max="100"
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    marginBottom: '12px',
+                    fontSize: '12px',
+                    fontFamily: 'inherit',
+                    backgroundColor: 'var(--hover-color)',
+                    border: '1px solid var(--border-color)',
+                    color: 'var(--text-color)'
+                  }}
+                />
+                <button
+                  onClick={handleSetSanity}
+                  disabled={!debugSanityLevel}
+                  style={{
+                    width: '100%',
+                    background: 'var(--accent-color)',
+                    border: '1px solid var(--border-color)',
+                    color: 'var(--bg-color)',
+                    padding: '12px',
+                    cursor: debugSanityLevel ? 'pointer' : 'not-allowed',
+                    fontSize: '12px',
+                    fontFamily: 'inherit',
+                    letterSpacing: '0.5px',
+                    opacity: debugSanityLevel ? 1 : 0.4
+                  }}
+                >
+                  SET SANITY
+                </button>
+              </div>
+
+              <div style={{ marginBottom: '24px', paddingTop: '24px', borderTop: '1px solid var(--border-color)' }}>
+                <div style={{ fontSize: '11px', marginBottom: '12px', opacity: 0.7 }}>
+                  ADD DIMENSIONAL MATERIALS
+                </div>
+                <select
+                  value={debugMaterialId}
+                  onChange={(e) => setDebugMaterialId(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    marginBottom: '12px',
+                    fontSize: '12px',
+                    fontFamily: 'inherit',
+                    backgroundColor: 'var(--hover-color)',
+                    border: '1px solid var(--border-color)',
+                    color: 'var(--text-color)'
+                  }}
+                >
+                  <option value="">Select Material</option>
+                  {DIMENSIONAL_MATERIALS.map(mat => (
+                    <option key={mat.id} value={mat.id}>{mat.name}</option>
+                  ))}
+                </select>
+                <input
+                  type="number"
+                  value={debugMaterialAmount}
+                  onChange={(e) => setDebugMaterialAmount(e.target.value)}
+                  placeholder="Amount"
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    marginBottom: '12px',
+                    fontSize: '12px',
+                    fontFamily: 'inherit',
+                    backgroundColor: 'var(--hover-color)',
+                    border: '1px solid var(--border-color)',
+                    color: 'var(--text-color)'
+                  }}
+                />
+                <button
+                  onClick={handleAddMaterial}
+                  disabled={!debugMaterialId || !debugMaterialAmount}
+                  style={{
+                    width: '100%',
+                    background: 'var(--accent-color)',
+                    border: '1px solid var(--border-color)',
+                    color: 'var(--bg-color)',
+                    padding: '12px',
+                    cursor: debugMaterialId && debugMaterialAmount ? 'pointer' : 'not-allowed',
+                    fontSize: '12px',
+                    fontFamily: 'inherit',
+                    letterSpacing: '0.5px',
+                    opacity: debugMaterialId && debugMaterialAmount ? 1 : 0.4
+                  }}
+                >
+                  ADD MATERIAL
+                </button>
+              </div>
+
+              <div style={{ marginBottom: '24px', paddingTop: '24px', borderTop: '1px solid var(--border-color)' }}>
+                <div style={{ fontSize: '11px', marginBottom: '12px', opacity: 0.7 }}>
+                  QUICK ACTIONS
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <button
+                    onClick={() => {
+                      setGameState(prev => ({
+                        ...prev,
+                        sanity: 100,
+                        energy: 100
+                      }));
+                      addMessage('Resources restored.');
+                    }}
+                    style={{
+                      background: 'none',
+                      border: '1px solid var(--border-color)',
+                      color: 'var(--text-color)',
+                      padding: '12px',
+                      cursor: 'pointer',
+                      fontSize: '11px',
+                      fontFamily: 'inherit',
+                      letterSpacing: '0.5px'
+                    }}
+                  >
+                    RESTORE SANITY & ENERGY
+                  </button>
+                  <button
+                    onClick={() => {
+                      setGameState(prev => ({
+                        ...prev,
+                        portalCooldown: 0,
+                        restCooldown: 0
+                      }));
+                      addMessage('Cooldowns reset.');
+                    }}
+                    style={{
+                      background: 'none',
+                      border: '1px solid var(--border-color)',
+                      color: 'var(--text-color)',
+                      padding: '12px',
+                      cursor: 'pointer',
+                      fontSize: '11px',
+                      fontFamily: 'inherit',
+                      letterSpacing: '0.5px'
+                    }}
+                  >
+                    RESET COOLDOWNS
+                  </button>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setShowDebugMenu(false)}
+                style={{
+                  width: '100%',
+                  background: 'none',
+                  border: '1px solid var(--border-color)',
+                  color: 'var(--text-color)',
+                  padding: '12px',
+                  cursor: 'pointer',
+                  fontSize: '11px',
+                  fontFamily: 'inherit',
+                  letterSpacing: '0.5px'
+                }}
+              >
+                CLOSE
+              </button>
+            </div>
+          </div>
+        )}
+
         {showSaveMenu && (
           <div style={{
             position: 'fixed',
