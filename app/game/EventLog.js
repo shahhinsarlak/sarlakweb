@@ -1,12 +1,11 @@
 import { useEffect, useRef } from 'react';
 
 export default function EventLog({ messages, isVisible = true }) {
-  const messagesContainerRef = useRef(null);
+  const messagesEndRef = useRef(null);
 
   useEffect(() => {
-    // Scroll to top when messages update
-    if (messagesContainerRef.current) {
-      messagesContainerRef.current.scrollTop = 0;
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages]);
 
@@ -43,7 +42,6 @@ export default function EventLog({ messages, isVisible = true }) {
 
         {/* Messages */}
         <div 
-          ref={messagesContainerRef}
           className="event-log-messages"
           style={{
             flex: 1,
@@ -52,16 +50,17 @@ export default function EventLog({ messages, isVisible = true }) {
             fontSize: '11px',
             lineHeight: '1.6',
             display: 'flex',
-            flexDirection: 'column'
+            flexDirection: 'column-reverse'
           }}>
+          <div ref={messagesEndRef} />
           {messages.map((msg, i) => (
             <div
-              key={`${i}-${msg}-${Date.now()}`}
+              key={`${messages.length - i}-${msg}-${Date.now()}`}
               className={i === 0 ? 'fade-in-message' : ''}
               style={{
-                marginBottom: '8px',
-                paddingBottom: '8px',
-                borderBottom: i < messages.length - 1 ? '1px solid var(--border-color)' : 'none',
+                marginTop: '8px',
+                paddingTop: '8px',
+                borderTop: i < messages.length - 1 ? '1px solid var(--border-color)' : 'none',
                 opacity: 0.8
               }}
             >
@@ -75,7 +74,7 @@ export default function EventLog({ messages, isVisible = true }) {
         @keyframes fadeIn {
           from {
             opacity: 0;
-            transform: translateY(-10px);
+            transform: translateY(10px);
           }
           to {
             opacity: 0.8;

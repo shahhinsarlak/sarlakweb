@@ -1,13 +1,5 @@
-// Game action handlers with full skill integration
+// Game action handlers
 import { LOCATIONS, UPGRADES, DEBUG_CHALLENGES } from './constants';
-import { 
-  getActiveSkillEffects, 
-  applyEnergyCostReduction, 
-  applyPPMultiplier,
-  applyMeditationBonus,
-  getModifiedSanityLoss 
-} from './skillSystemHelpers';
-import { XP_REWARDS } from './skillTreeConstants';
 
 export const createGameActions = (setGameState, addMessage, checkAchievements, grantXP) => {
   
@@ -59,29 +51,19 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
   
   const sortPapers = () => {
     setGameState(prev => {
-      // Apply skill effects to energy cost
-      const baseEnergyCost = 2;
-      const energyCost = applyEnergyCostReduction(baseEnergyCost, prev);
-      
       if (prev.energy < 5) {
         return {
           ...prev,
           recentMessages: ['Too exhausted. Your hands won\'t move.', ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
         };
       }
-      
-      // Apply skill effects to PP gain
-      const basePP = prev.ppPerClick;
-      const ppGain = applyPPMultiplier(basePP, prev);
-      
       const newState = {
         ...prev,
-        pp: prev.pp + ppGain,
-        energy: Math.max(0, prev.energy - energyCost),
+        pp: prev.pp + prev.ppPerClick,
+        energy: Math.max(0, prev.energy - 2),
         sortCount: (prev.sortCount || 0) + 1
       };
-      
-      grantXP(XP_REWARDS.sortPapers);
+      grantXP(1); // XP_REWARDS.sortPapers
       setTimeout(() => checkAchievements(), 50);
       return newState;
     });
@@ -89,59 +71,36 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
 
   const rest = () => {
     setGameState(prev => {
-      const effects = getActiveSkillEffects(prev);
-      const baseCooldown = 30;
-      const cooldownReduction = effects.restCooldownReduction || 0;
-      const actualCooldown = Math.max(10, baseCooldown - cooldownReduction);
-      
       if (prev.restCooldown > 0) {
         return {
           ...prev,
           recentMessages: ['Still recovering. Your body refuses to relax yet.', ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
         };
       }
-      
-      const baseMaxEnergy = 100 + (prev.upgrades.energydrink ? 20 : 0);
-      const maxEnergy = baseMaxEnergy + (effects.maxEnergy || 0);
-      
-      grantXP(XP_REWARDS.rest || 1);
+      const maxEnergy = 100 + (prev.upgrades.energydrink ? 20 : 0);
       setTimeout(() => checkAchievements(), 50);
       return {
         ...prev,
         energy: maxEnergy,
-        restCooldown: actualCooldown,
+        restCooldown: 30,
         recentMessages: ['You close your eyes. The fluorescent lights burn through your eyelids.', ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
       };
     });
   };
 
   const startMeditation = () => {
-    setGameState(prev => {
-      const effects = getActiveSkillEffects(prev);
-      const baseEnergyCost = 10;
-      const energyCost = applyEnergyCostReduction(baseEnergyCost, prev);
-      
-      if (prev.energy < energyCost) {
-        return {
-          ...prev,
-          recentMessages: ['Not enough energy to meditate.', ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
-        };
-      }
-      
-      const targetTime = 3000 + Math.random() * 2000;
-      return {
-        ...prev,
-        meditating: true,
-        breathCount: 0,
-        meditationPhase: 'inhale',
-        meditationStartTime: Date.now(),
-        meditationTargetTime: targetTime,
-        meditationScore: 0,
-        meditationPerfectWindow: 300,
-        energy: Math.max(0, prev.energy - energyCost),
-        recentMessages: ['Close your eyes. Focus on your breathing.', ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
-      };
-    });
+    const targetTime = 3000 + Math.random() * 2000;
+    setGameState(prev => ({
+      ...prev,
+      meditating: true,
+      breathCount: 0,
+      meditationPhase: 'inhale',
+      meditationStartTime: Date.now(),
+      meditationTargetTime: targetTime,
+      meditationScore: 0,
+      meditationPerfectWindow: 300,
+      recentMessages: ['Close your eyes. Focus on your breathing.', ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
+    }));
   };
 
   const breatheAction = (action) => {
@@ -182,49 +141,57 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       
       if (newBreathCount >= 3) {
         const avgScore = newScore / 6;
-        let baseSanityGain = 0;
+        let sanityGain = 0;
         let message = '';
         
         if (avgScore >= 85) {
-          baseSanityGain = 40;
+          sanityGain = 40;
           message = 'Perfect rhythm achieved. Your mind is completely clear.';
         } else if (avgScore >= 70) {
-          baseSanityGain = 30;
+          sanityGain = 30;
           message = 'Excellent control. Reality feels more stable.';
         } else if (avgScore >= 50) {
-          baseSanityGain = 20;
+          sanityGain = 20;
           message = 'Good effort. Some peace returns.';
         } else if (avgScore >= 30) {
-          baseSanityGain = 12;
+          sanityGain = 12;
           message = 'Struggling to focus. The lights still intrude.';
         } else {
-          baseSanityGain = 5;
+          sanityGain = 5;
           message = 'Your rhythm is chaotic. The fluorescent hum grows louder.';
         }
-        
-        // Apply meditation skill bonus
-        const sanityGain = applyMeditationBonus(baseSanityGain, prev);
-        
-        grantXP(XP_REWARDS.completeMeditation || 15);
-        setTimeout(() => checkAchievements(), 50);
         
         return {
           ...prev,
           meditating: false,
+          breathCount: 0,
           sanity: Math.min(100, prev.sanity + sanityGain),
+          energy: Math.max(0, prev.energy - 10),
+          meditationPhase: null,
+          meditationStartTime: null,
+          meditationTargetTime: null,
+          meditationScore: 0,
           recentMessages: [message, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
         };
       }
       
-      const nextPhase = action === 'inhale' ? 'exhale' : 'inhale';
-      const newTargetTime = 3000 + Math.random() * 2000;
+      let nextPhase;
+      let nextTargetTime;
+      
+      if (action === 'inhale') {
+        nextPhase = 'exhale';
+        nextTargetTime = 2500 + Math.random() * 1500;
+      } else {
+        nextPhase = 'inhale';
+        nextTargetTime = 3000 + Math.random() * 2000;
+      }
       
       return {
         ...prev,
         breathCount: newBreathCount,
         meditationPhase: nextPhase,
-        meditationStartTime: currentTime,
-        meditationTargetTime: newTargetTime,
+        meditationStartTime: Date.now(),
+        meditationTargetTime: nextTargetTime,
         meditationScore: newScore
       };
     });
@@ -234,31 +201,24 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
     setGameState(prev => ({
       ...prev,
       meditating: false,
-      recentMessages: ['You lose focus. The office returns.', ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
+      breathCount: 0,
+      meditationPhase: null,
+      meditationStartTime: null,
+      meditationTargetTime: null,
+      meditationScore: 0,
+      recentMessages: ['You open your eyes. The fluorescent lights are still humming.', ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
     }));
   };
 
   const startDebugSession = () => {
-    setGameState(prev => {
-      const baseEnergyCost = 10;
-      const energyCost = applyEnergyCostReduction(baseEnergyCost, prev);
-      
-      if (prev.energy < energyCost) {
-        return {
-          ...prev,
-          recentMessages: ['Not enough energy to debug.', ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
-        };
-      }
-      
-      const randomBug = DEBUG_CHALLENGES[Math.floor(Math.random() * DEBUG_CHALLENGES.length)];
-      return {
-        ...prev,
-        debugMode: true,
-        currentBug: { ...randomBug, userCode: randomBug.code },
-        energy: Math.max(0, prev.energy - energyCost),
-        recentMessages: ['Debug console initialized. Fix the errors.', ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
-      };
-    });
+    const randomBug = DEBUG_CHALLENGES[Math.floor(Math.random() * DEBUG_CHALLENGES.length)];
+    setGameState(prev => ({
+      ...prev,
+      debugMode: true,
+      currentBug: { ...randomBug, userCode: randomBug.code },
+      energy: Math.max(0, prev.energy - 10),
+      recentMessages: ['Debug console initialized. Fix the errors.', ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
+    }));
   };
 
   const submitDebug = () => {
@@ -268,12 +228,8 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       const isCorrect = prev.currentBug.userCode.trim() === prev.currentBug.correct.trim();
       
       if (isCorrect) {
-        const baseReward = Math.floor(200 + Math.random() * 300);
-        const reward = applyPPMultiplier(baseReward, prev);
-        
-        grantXP(XP_REWARDS.completeDebug);
-        setTimeout(() => checkAchievements(), 50);
-        
+        const reward = Math.floor(200 + Math.random() * 300);
+        grantXP(15); // XP_REWARDS.completeDebug
         return {
           ...prev,
           pp: prev.pp + reward,
@@ -324,17 +280,13 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
   const changeLocation = (loc) => {
     setGameState(prev => {
       if (!prev.unlockedLocations.includes(loc)) return prev;
-      
-      const baseEnergyCost = 5;
-      const energyCost = applyEnergyCostReduction(baseEnergyCost, prev);
-      
       const locationData = LOCATIONS[loc];
       if (!locationData || !locationData.atmosphere) return prev;
       const randomAtmo = locationData.atmosphere[Math.floor(Math.random() * locationData.atmosphere.length)];
       return { 
         ...prev, 
         location: loc, 
-        energy: Math.max(0, prev.energy - energyCost),
+        energy: Math.max(0, prev.energy - 5),
         recentMessages: [randomAtmo, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
       };
     });
@@ -343,7 +295,6 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
   const examineItem = (item) => {
     setGameState(prev => {
       const newExaminedItems = (prev.examinedItems || 0) + 1;
-      grantXP(XP_REWARDS.examineItem || 10);
       setTimeout(() => checkAchievements(), 50);
       return {
         ...prev,
@@ -365,36 +316,48 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       if (!prev.strangeColleagueEvent) return prev;
       
       if (response === "Agree with him") {
-        const baseReward = Math.floor(300 + Math.random() * 500);
-        const reward = applyPPMultiplier(baseReward, prev);
+        const reward = Math.floor(300 + Math.random() * 500);
+        grantXP(25); // XP_REWARDS.defeatColleague
         
-        grantXP(XP_REWARDS.defeatColleague);
         setTimeout(() => checkAchievements(), 50);
-        
-        // Apply skill effects to sanity loss
-        const baseSanityLoss = 15;
-        const sanityLoss = getModifiedSanityLoss(baseSanityLoss, prev);
         
         return {
           ...prev,
           pp: prev.pp + reward,
           strangeColleagueEvent: null,
-          sanity: Math.max(0, prev.sanity - sanityLoss),
+          sanity: Math.max(0, prev.sanity - 15),
           recentMessages: [`He smiles. It doesn't reach his eyes. You receive: Existential Token (+${reward} PP)`, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
         };
       } else {
-        const wrongResponseIndex = responseIndex;
-        const horribleReply = prev.strangeColleagueEvent.wrongResponses[wrongResponseIndex];
+        const horribleReply = prev.strangeColleagueEvent.wrongResponses[responseIndex];
         
-        // Apply skill effects to sanity loss
-        const baseSanityLoss = 5;
-        const sanityLoss = getModifiedSanityLoss(baseSanityLoss, prev);
-        
-        return {
+        const newDisagreements = prev.disagreementCount + 1;
+        const newState = {
           ...prev,
-          sanity: Math.max(0, prev.sanity - sanityLoss),
-          recentMessages: [`"${horribleReply}"`, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
+          sanity: Math.max(0, prev.sanity - 5),
+          disagreementCount: newDisagreements,
+          strangeColleagueEvent: {
+            ...prev.strangeColleagueEvent,
+            lastResponse: horribleReply
+          }
         };
+
+        if (newDisagreements === 20 && !prev.unlockedLocations.includes('archive')) {
+          newState.unlockedLocations = [...prev.unlockedLocations, 'archive'];
+          newState.strangeColleagueEvent = null;
+          
+          triggerScreenEffect('shake');
+          
+          setTimeout(() => {
+            setGameState(prevState => ({
+              ...prevState,
+              recentMessages: ['Reality fractures. A door appears that was always there. THE ARCHIVE calls to you.', '🔓 NEW LOCATION: The Archive', ...prevState.recentMessages].slice(0, prevState.maxLogMessages || 15)
+            }));
+          }, 600);
+        }
+
+        setTimeout(() => checkAchievements(), 50);
+        return newState;
       }
     });
   };
@@ -420,9 +383,11 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
         } else if (upgrade.value === 'exploration') {
           newState.unlockedLocations = [...prev.unlockedLocations, 'breakroom'];
           messages.push('You can explore now. Why would you want to?');
+          grantXP(30); // XP_REWARDS.unlockLocation
         } else if (upgrade.value === 'serverroom') {
           newState.unlockedLocations = [...prev.unlockedLocations, 'serverroom'];
           messages.push('Access granted to: S̷E̷R̷V̷E̷R̷ ̷R̷O̷O̷M̷');
+          grantXP(30);
         } else if (upgrade.value === 'managers') {
           newState.unlockedLocations = [...prev.unlockedLocations, 'managers'];
           messages.push('The manager will see you now. The manager has always been seeing you.');
@@ -442,7 +407,7 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       messages.push(`Acquired: ${upgrade.name}`);
       newState.recentMessages = [...messages.reverse(), ...prev.recentMessages].slice(0, prev.maxLogMessages || 15);
       
-      grantXP(XP_REWARDS.purchaseUpgrade);
+      grantXP(10); // XP_REWARDS.purchaseUpgrade
       setTimeout(() => checkAchievements(), 50);
       return newState;
     });

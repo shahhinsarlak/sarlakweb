@@ -1,437 +1,294 @@
-// Revamped Skill Tree System
+// Skill Tree System Constants
 
 export const SKILL_TREES = {
-  REALITY: 'reality',
-  VOID: 'void',
-  TIME: 'time',
-  MIND: 'mind'
-};
-
-export const TREE_INFO = {
-  reality: {
-    name: 'Reality Manipulation',
-    color: '#4a90e2',
-    description: 'Bend the fabric of existence to your will'
-  },
-  void: {
-    name: 'Void Mastery',
-    color: '#9b59b6',
-    description: 'Harness the power of the endless abyss'
-  },
-  time: {
-    name: 'Temporal Control',
-    color: '#e74c3c',
-    description: 'Command the flow of time itself'
-  },
-  mind: {
-    name: 'Psychic Dominance',
-    color: '#2ecc71',
-    description: 'Master your consciousness and sanity'
-  }
-};
-
-export const SKILLS = {
-  // ===== REALITY TREE =====
-  reality_sense: {
-    id: 'reality_sense',
-    name: 'Reality Sense',
-    tree: 'reality',
-    description: 'Perceive glitches in reality. Increase dimensional material spawn rate.',
-    tier: 1,
-    maxLevel: 5,
-    minPlayerLevel: 1,
-    requires: [],
-    cost: (level) => level * 2,
-    effect: (level) => ({
-      materialSpawnRate: 0.15 * level,
-      rarityBonus: 0.05 * level
-    })
-  },
+    SPEED: 'speed',
+    LUCK: 'luck',
+    COMBAT: 'combat',
+    EFFICIENCY: 'efficiency'
+  };
   
-  dimensional_anchor: {
-    id: 'dimensional_anchor',
-    name: 'Dimensional Anchor',
-    tree: 'reality',
-    description: 'Stabilize portals. Increase portal duration and capacity.',
-    tier: 2,
-    maxLevel: 5,
-    minPlayerLevel: 5,
-    requires: ['reality_sense'],
-    cost: (level) => 2 + (level * 3),
-    effect: (level) => ({
-      portalDuration: 10 * level,
-      capacityBonus: 15 * level
-    })
-  },
+  export const SKILLS = {
+    // SPEED TREE
+    quick_hands: {
+      id: 'quick_hands',
+      name: 'Quick Hands',
+      tree: 'speed',
+      description: 'Reduce portal cooldown by 10 seconds',
+      maxLevel: 5,
+      baseCost: 1,
+      costMultiplier: 1.5,
+      requirements: {},
+      effect: (level) => ({ portalCooldownReduction: 10 * level })
+    },
+    hover_collector: {
+      id: 'hover_collector',
+      name: 'Hover Collector',
+      tree: 'speed',
+      description: 'Automatically collect materials within cursor radius',
+      maxLevel: 3,
+      baseCost: 3,
+      costMultiplier: 2,
+      requirements: { quick_hands: 2 },
+      effect: (level) => ({ 
+        hoverRadius: 50 + (level * 30),
+        autoCollect: true 
+      })
+    },
+    rapid_mining: {
+      id: 'rapid_mining',
+      name: 'Rapid Mining',
+      tree: 'speed',
+      description: 'Increase dimensional capacity by 10',
+      maxLevel: 5,
+      baseCost: 2,
+      costMultiplier: 1.8,
+      requirements: { quick_hands: 1 },
+      effect: (level) => ({ capacityBonus: 10 * level })
+    },
+    time_dilation: {
+      id: 'time_dilation',
+      name: 'Time Dilation',
+      tree: 'speed',
+      description: 'Portal stays open 15 seconds longer',
+      maxLevel: 3,
+      baseCost: 4,
+      costMultiplier: 2,
+      requirements: { hover_collector: 1, rapid_mining: 3 },
+      effect: (level) => ({ portalDuration: 15 * level })
+    },
   
-  matter_transmutation: {
-    id: 'matter_transmutation',
-    name: 'Matter Transmutation',
-    tree: 'reality',
-    description: 'Convert lower materials into higher ones. Unlock material conversion.',
-    tier: 2,
-    maxLevel: 3,
-    minPlayerLevel: 8,
-    requires: ['reality_sense'],
-    cost: (level) => 3 + (level * 4),
-    effect: (level) => ({
-      conversionEnabled: true,
-      conversionRate: 0.2 + (0.1 * level)
-    })
-  },
+    // LUCK TREE
+    fortune_seeker: {
+      id: 'fortune_seeker',
+      name: 'Fortune Seeker',
+      tree: 'luck',
+      description: 'Increase rare material spawn rate by 15%',
+      maxLevel: 5,
+      baseCost: 1,
+      costMultiplier: 1.5,
+      requirements: {},
+      effect: (level) => ({ rarityBonus: 0.15 * level })
+    },
+    treasure_sense: {
+      id: 'treasure_sense',
+      name: 'Treasure Sense',
+      tree: 'luck',
+      description: 'Rare materials glow brighter and are easier to spot',
+      maxLevel: 3,
+      baseCost: 2,
+      costMultiplier: 1.8,
+      requirements: { fortune_seeker: 2 },
+      effect: (level) => ({ 
+        glowIntensity: 1 + (level * 0.5),
+        highlightRares: true 
+      })
+    },
+    double_yield: {
+      id: 'double_yield',
+      name: 'Double Yield',
+      tree: 'luck',
+      description: '10% chance per level to get double materials',
+      maxLevel: 5,
+      baseCost: 3,
+      costMultiplier: 2,
+      requirements: { fortune_seeker: 1 },
+      effect: (level) => ({ doubleChance: 0.10 * level })
+    },
+    jackpot: {
+      id: 'jackpot',
+      name: 'Jackpot',
+      tree: 'luck',
+      description: 'Very rare chance to get 5x materials from a single node',
+      maxLevel: 3,
+      baseCost: 5,
+      costMultiplier: 2.5,
+      requirements: { treasure_sense: 2, double_yield: 3 },
+      effect: (level) => ({ jackpotChance: 0.02 * level })
+    },
   
-  reality_fracture: {
-    id: 'reality_fracture',
-    name: 'Reality Fracture',
-    tree: 'reality',
-    description: 'Chance to spawn multiple materials from a single node.',
-    tier: 3,
-    maxLevel: 5,
-    minPlayerLevel: 12,
-    requires: ['dimensional_anchor', 'matter_transmutation'],
-    cost: (level) => 4 + (level * 5),
-    effect: (level) => ({
-      multiSpawnChance: 0.10 * level,
-      multiSpawnAmount: 1 + Math.floor(level / 2)
-    })
-  },
+    // COMBAT TREE
+    void_strike: {
+      id: 'void_strike',
+      name: 'Void Strike',
+      tree: 'combat',
+      description: 'Basic attack damage increased by 5',
+      maxLevel: 10,
+      baseCost: 1,
+      costMultiplier: 1.3,
+      requirements: {},
+      effect: (level) => ({ attackDamage: 5 * level })
+    },
+    mental_fortitude: {
+      id: 'mental_fortitude',
+      name: 'Mental Fortitude',
+      tree: 'combat',
+      description: 'Reduce sanity loss from colleagues by 20%',
+      maxLevel: 5,
+      baseCost: 2,
+      costMultiplier: 1.6,
+      requirements: { void_strike: 2 },
+      effect: (level) => ({ sanityResistance: 0.20 * level })
+    },
+    reality_shield: {
+      id: 'reality_shield',
+      name: 'Reality Shield',
+      tree: 'combat',
+      description: 'Block incoming attacks, max health +10',
+      maxLevel: 5,
+      baseCost: 2,
+      costMultiplier: 1.7,
+      requirements: { void_strike: 1 },
+      effect: (level) => ({ 
+        blockChance: 0.05 * level,
+        maxHealth: 10 * level 
+      })
+    },
+    critical_insight: {
+      id: 'critical_insight',
+      name: 'Critical Insight',
+      tree: 'combat',
+      description: '5% chance per level for critical hits (2x damage)',
+      maxLevel: 5,
+      baseCost: 3,
+      costMultiplier: 2,
+      requirements: { mental_fortitude: 1, reality_shield: 2 },
+      effect: (level) => ({ critChance: 0.05 * level })
+    },
+    existential_dread: {
+      id: 'existential_dread',
+      name: 'Existential Dread',
+      tree: 'combat',
+      description: 'Ultimate ability: Stun all colleagues for 3 seconds',
+      maxLevel: 1,
+      baseCost: 10,
+      costMultiplier: 1,
+      requirements: { critical_insight: 3, mental_fortitude: 3 },
+      effect: (level) => ({ 
+        hasUltimate: true,
+        ultCooldown: 60,
+        ultDuration: 3 
+      })
+    },
   
-  existential_mastery: {
-    id: 'existential_mastery',
-    name: 'Existential Mastery',
-    tree: 'reality',
-    description: 'Ultimate power over reality. Massively boost all dimensional activities.',
-    tier: 4,
-    maxLevel: 1,
-    minPlayerLevel: 20,
-    requires: ['reality_fracture'],
-    cost: () => 20,
-    effect: () => ({
-      allMaterialsBonus: 0.50,
-      portalCooldownReduction: 30,
-      autoCollectRadius: 100
-    })
-  },
-
-  // ===== VOID TREE =====
-  void_touched: {
-    id: 'void_touched',
-    name: 'Void Touched',
-    tree: 'void',
-    description: 'Embrace the void. Reduce portal cooldown.',
-    tier: 1,
-    maxLevel: 5,
-    minPlayerLevel: 1,
-    requires: [],
-    cost: (level) => level * 2,
-    effect: (level) => ({
-      portalCooldownReduction: 8 * level
-    })
-  },
-  
-  shadow_step: {
-    id: 'shadow_step',
-    name: 'Shadow Step',
-    tree: 'void',
-    description: 'Move through shadows. Reduce energy cost of all actions.',
-    tier: 2,
-    maxLevel: 5,
-    minPlayerLevel: 5,
-    requires: ['void_touched'],
-    cost: (level) => 2 + (level * 3),
-    effect: (level) => ({
-      energyEfficiency: 0.12 * level
-    })
-  },
-  
-  void_contract: {
-    id: 'void_contract',
-    name: 'Void Contract',
-    tree: 'void',
-    description: 'Trade sanity for power. Lose sanity slower, gain PP faster.',
-    tier: 2,
-    maxLevel: 5,
-    minPlayerLevel: 8,
-    requires: ['void_touched'],
-    cost: (level) => 3 + (level * 4),
-    effect: (level) => ({
-      sanityResistance: 0.15 * level,
-      ppMultiplier: 0.20 * level
-    })
-  },
-  
-  abyssal_grasp: {
-    id: 'abyssal_grasp',
-    name: 'Abyssal Grasp',
-    tree: 'void',
-    description: 'Pull materials to you. Enable auto-collection with extended range.',
-    tier: 3,
-    maxLevel: 5,
-    minPlayerLevel: 12,
-    requires: ['shadow_step', 'void_contract'],
-    cost: (level) => 4 + (level * 5),
-    effect: (level) => ({
-      autoCollect: true,
-      hoverRadius: 40 + (level * 25)
-    })
-  },
-  
-  null_singularity: {
-    id: 'null_singularity',
-    name: 'Null Singularity',
-    tree: 'void',
-    description: 'Become one with the void. Transcendent void powers.',
-    tier: 4,
-    maxLevel: 1,
-    minPlayerLevel: 20,
-    requires: ['abyssal_grasp'],
-    cost: () => 20,
-    effect: () => ({
-      voidMastery: true,
-      ppPerSecond: 10,
-      permanentPhase3: true
-    })
-  },
-
-  // ===== TIME TREE =====
-  chrono_awareness: {
-    id: 'chrono_awareness',
-    name: 'Chrono Awareness',
-    tree: 'time',
-    description: 'Perceive time differently. Increase action speed.',
-    tier: 1,
-    maxLevel: 5,
-    minPlayerLevel: 1,
-    requires: [],
-    cost: (level) => level * 2,
-    effect: (level) => ({
-      actionSpeedBonus: 0.10 * level,
-      restCooldownReduction: 5 * level
-    })
-  },
-  
-  temporal_echo: {
-    id: 'temporal_echo',
-    name: 'Temporal Echo',
-    tree: 'time',
-    description: 'Actions have a chance to repeat automatically.',
-    tier: 2,
-    maxLevel: 5,
-    minPlayerLevel: 5,
-    requires: ['chrono_awareness'],
-    cost: (level) => 2 + (level * 3),
-    effect: (level) => ({
-      echoChance: 0.08 * level
-    })
-  },
-  
-  time_bank: {
-    id: 'time_bank',
-    name: 'Time Bank',
-    tree: 'time',
-    description: 'Store excess resources over cap. Increase all storage capacity.',
-    tier: 2,
-    maxLevel: 5,
-    minPlayerLevel: 8,
-    requires: ['chrono_awareness'],
-    cost: (level) => 3 + (level * 4),
-    effect: (level) => ({
-      storageMultiplier: 0.25 * level,
-      overCapEnabled: level >= 3
-    })
-  },
-  
-  accelerated_existence: {
-    id: 'accelerated_existence',
-    name: 'Accelerated Existence',
-    tree: 'time',
-    description: 'Live faster. Gain passive PP and XP over time.',
-    tier: 3,
-    maxLevel: 5,
-    minPlayerLevel: 12,
-    requires: ['temporal_echo', 'time_bank'],
-    cost: (level) => 4 + (level * 5),
-    effect: (level) => ({
-      ppPerSecond: 2 * level,
-      xpPerMinute: 5 * level
-    })
-  },
-  
-  temporal_sovereign: {
-    id: 'temporal_sovereign',
-    name: 'Temporal Sovereign',
-    tree: 'time',
-    description: 'Master of time. Ultimate temporal manipulation powers.',
-    tier: 4,
-    maxLevel: 1,
-    minPlayerLevel: 20,
-    requires: ['accelerated_existence'],
-    cost: () => 20,
-    effect: () => ({
-      timeMastery: true,
-      instantActions: true,
-      doubleDay: true
-    })
-  },
-
-  // ===== MIND TREE =====
-  mental_clarity: {
-    id: 'mental_clarity',
-    name: 'Mental Clarity',
-    tree: 'mind',
-    description: 'Clear your thoughts. Improve meditation effectiveness.',
-    tier: 1,
-    maxLevel: 5,
-    minPlayerLevel: 1,
-    requires: [],
-    cost: (level) => level * 2,
-    effect: (level) => ({
-      meditationBonus: 0.25 * level,
-      sanityRegeneration: 0.05 * level
-    })
-  },
-  
-  psychic_shield: {
-    id: 'psychic_shield',
-    name: 'Psychic Shield',
-    tree: 'mind',
-    description: 'Protect your mind. Reduce sanity loss from all sources.',
-    tier: 2,
-    maxLevel: 5,
-    minPlayerLevel: 5,
-    requires: ['mental_clarity'],
-    cost: (level) => 2 + (level * 3),
-    effect: (level) => ({
-      sanityResistance: 0.20 * level,
-      minSanity: 5 * level
-    })
-  },
-  
-  thought_acceleration: {
-    id: 'thought_acceleration',
-    name: 'Thought Acceleration',
-    tree: 'mind',
-    description: 'Think faster. Gain bonus XP from all sources.',
-    tier: 2,
-    maxLevel: 5,
-    minPlayerLevel: 8,
-    requires: ['mental_clarity'],
-    cost: (level) => 3 + (level * 4),
-    effect: (level) => ({
-      xpMultiplier: 0.15 * level
-    })
-  },
-  
-  mind_over_matter: {
-    id: 'mind_over_matter',
-    name: 'Mind Over Matter',
-    tree: 'mind',
-    description: 'Mental strength manifests physically. Boost all upgrades.',
-    tier: 3,
-    maxLevel: 5,
-    minPlayerLevel: 12,
-    requires: ['psychic_shield', 'thought_acceleration'],
-    cost: (level) => 4 + (level * 5),
-    effect: (level) => ({
-      upgradeEfficiency: 0.15 * level,
-      maxEnergy: 20 * level
-    })
-  },
-  
-  transcendent_consciousness: {
-    id: 'transcendent_consciousness',
-    name: 'Transcendent Consciousness',
-    tree: 'mind',
-    description: 'Achieve enlightenment. Supreme mental powers.',
-    tier: 4,
-    maxLevel: 1,
-    minPlayerLevel: 20,
-    requires: ['mind_over_matter'],
-    cost: () => 20,
-    effect: () => ({
-      enlightened: true,
-      immuneToSanityLoss: true,
-      mentalDominance: true
-    })
-  }
-};
-
-// Experience and leveling system
-export const LEVEL_SYSTEM = {
-  baseXP: 100,
-  xpMultiplier: 1.4,
-  maxLevel: 50,
-  
-  getXPForLevel: (level) => {
-    return Math.floor(LEVEL_SYSTEM.baseXP * Math.pow(LEVEL_SYSTEM.xpMultiplier, level - 1));
-  },
-  
-  getTotalXPForLevel: (level) => {
-    let total = 0;
-    for (let i = 1; i < level; i++) {
-      total += LEVEL_SYSTEM.getXPForLevel(i);
+    // EFFICIENCY TREE
+    resource_master: {
+      id: 'resource_master',
+      name: 'Resource Master',
+      tree: 'efficiency',
+      description: 'PP generation increased by 10%',
+      maxLevel: 5,
+      baseCost: 1,
+      costMultiplier: 1.5,
+      requirements: {},
+      effect: (level) => ({ ppMultiplier: 0.10 * level })
+    },
+    energy_conservation: {
+      id: 'energy_conservation',
+      name: 'Energy Conservation',
+      tree: 'efficiency',
+      description: 'Actions cost 10% less energy',
+      maxLevel: 5,
+      baseCost: 2,
+      costMultiplier: 1.6,
+      requirements: { resource_master: 2 },
+      effect: (level) => ({ energyEfficiency: 0.10 * level })
+    },
+    meditation_expert: {
+      id: 'meditation_expert',
+      name: 'Meditation Expert',
+      tree: 'efficiency',
+      description: 'Meditation restores 20% more sanity',
+      maxLevel: 3,
+      baseCost: 2,
+      costMultiplier: 1.8,
+      requirements: { resource_master: 1 },
+      effect: (level) => ({ meditationBonus: 0.20 * level })
+    },
+    synergy: {
+      id: 'synergy',
+      name: 'Synergy',
+      tree: 'efficiency',
+      description: 'All dimensional upgrades 10% more effective',
+      maxLevel: 5,
+      baseCost: 4,
+      costMultiplier: 2,
+      requirements: { energy_conservation: 2, meditation_expert: 2 },
+      effect: (level) => ({ upgradeEfficiency: 0.10 * level })
     }
-    return total;
-  },
+  };
   
-  getSkillPointsForLevel: (level) => {
-    if (level % 10 === 0) return 5; // Bonus every 10 levels
-    if (level % 5 === 0) return 3;  // Bonus every 5 levels
-    return 2; // Base per level
-  }
-};
-
-// XP rewards
-export const XP_REWARDS = {
-  sortPapers: 2,
-  rest: 1,
-  completeDebug: 25,
-  completeMeditation: 15,
-  collectMaterial: {
-    void_fragment: 2,
-    static_crystal: 4,
-    glitch_shard: 6,
-    reality_dust: 10,
-    temporal_core: 20,
-    dimensional_essence: 40,
-    singularity_node: 100
-  },
-  defeatColleague: 50,
-  purchaseUpgrade: 15,
-  purchaseDimensionalUpgrade: 25,
-  unlockLocation: 50,
-  completeAchievement: 100,
-  examineItem: 10
-};
-
-// Visual layout for skill tree (grid positions)
-export const SKILL_TREE_LAYOUT = {
-  reality: {
-    reality_sense: { x: 2, y: 0 },
-    dimensional_anchor: { x: 1, y: 1 },
-    matter_transmutation: { x: 3, y: 1 },
-    reality_fracture: { x: 2, y: 2 },
-    existential_mastery: { x: 2, y: 3 }
-  },
-  void: {
-    void_touched: { x: 2, y: 0 },
-    shadow_step: { x: 1, y: 1 },
-    void_contract: { x: 3, y: 1 },
-    abyssal_grasp: { x: 2, y: 2 },
-    null_singularity: { x: 2, y: 3 }
-  },
-  time: {
-    chrono_awareness: { x: 2, y: 0 },
-    temporal_echo: { x: 1, y: 1 },
-    time_bank: { x: 3, y: 1 },
-    accelerated_existence: { x: 2, y: 2 },
-    temporal_sovereign: { x: 2, y: 3 }
-  },
-  mind: {
-    mental_clarity: { x: 2, y: 0 },
-    psychic_shield: { x: 1, y: 1 },
-    thought_acceleration: { x: 3, y: 1 },
-    mind_over_matter: { x: 2, y: 2 },
-    transcendent_consciousness: { x: 2, y: 3 }
-  }
-};
+  // Experience system
+  export const LEVEL_SYSTEM = {
+    baseXP: 100,
+    xpMultiplier: 1.5,
+    maxLevel: 50,
+    
+    // Calculate XP needed for next level
+    getXPForLevel: (level) => {
+      return Math.floor(LEVEL_SYSTEM.baseXP * Math.pow(LEVEL_SYSTEM.xpMultiplier, level - 1));
+    },
+    
+    // Calculate total XP needed to reach a level
+    getTotalXPForLevel: (level) => {
+      let total = 0;
+      for (let i = 1; i < level; i++) {
+        total += LEVEL_SYSTEM.getXPForLevel(i);
+      }
+      return total;
+    },
+    
+    // Get skill points awarded per level
+    getSkillPointsPerLevel: (level) => {
+      if (level % 10 === 0) return 3; // Bonus points every 10 levels
+      return 1;
+    }
+  };
+  
+  // XP rewards for different actions
+  export const XP_REWARDS = {
+    sortPapers: 1,
+    completeDebug: 15,
+    collectMaterial: {
+      void_fragment: 1,
+      static_crystal: 2,
+      glitch_shard: 3,
+      reality_dust: 5,
+      temporal_core: 10,
+      dimensional_essence: 20,
+      singularity_node: 50
+    },
+    defeatColleague: 25,
+    purchaseUpgrade: 10,
+    purchaseDimensionalUpgrade: 15,
+    unlockLocation: 30,
+    completeAchievement: 50
+  };
+  
+  // Skill tree visual layout (positions for UI)
+  export const SKILL_TREE_LAYOUT = {
+    speed: {
+      quick_hands: { x: 2, y: 0 },
+      hover_collector: { x: 1, y: 1 },
+      rapid_mining: { x: 3, y: 1 },
+      time_dilation: { x: 2, y: 2 }
+    },
+    luck: {
+      fortune_seeker: { x: 2, y: 0 },
+      treasure_sense: { x: 1, y: 1 },
+      double_yield: { x: 3, y: 1 },
+      jackpot: { x: 2, y: 2 }
+    },
+    combat: {
+      void_strike: { x: 2, y: 0 },
+      mental_fortitude: { x: 1, y: 1 },
+      reality_shield: { x: 3, y: 1 },
+      critical_insight: { x: 2, y: 2 },
+      existential_dread: { x: 2, y: 3 }
+    },
+    efficiency: {
+      resource_master: { x: 2, y: 0 },
+      energy_conservation: { x: 1, y: 1 },
+      meditation_expert: { x: 3, y: 1 },
+      synergy: { x: 2, y: 2 }
+    }
+  };

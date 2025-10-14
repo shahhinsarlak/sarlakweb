@@ -16,7 +16,7 @@ export default function ColleagueModal({ event, recentMessages, respondToColleag
 
   return (
     <>
-      <EventLog messages={recentMessages} />
+      <EventLog messages={gameState.recentMessages} />
       <Header />
       <div style={{
         fontFamily: "'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace",
@@ -92,7 +92,7 @@ export default function ColleagueModal({ event, recentMessages, respondToColleag
             COLLEAGUE FROM FLOOR ??
           </div>
           <p style={{ fontStyle: 'italic' }}>
-            "{event.dialogue}"
+            &lsquo;{event.dialogue}&lsquo;
           </p>
         </div>
 
@@ -123,7 +123,7 @@ export default function ColleagueModal({ event, recentMessages, respondToColleag
                 fontSize: '12px',
                 fontFamily: 'inherit',
                 textAlign: 'left',
-                transition: 'all 0.2s cubic-bezier(0.4, 0.0, 0.2, 1)',
+                transition: 'all 0.1s cubic-bezier(0.4, 0.0, 0.2, 1)',
                 letterSpacing: '0.5px',
                 transform: clickedButton === i ? 'scale(0.98)' : 'scale(1)'
               }}
@@ -142,10 +142,23 @@ export default function ColleagueModal({ event, recentMessages, respondToColleag
           textAlign: 'center',
           color: '#ff6b6b'
         }}>
-          He won't leave until you respond correctly.
+          He won&apos;t leave until you respond correctly.
         </div>
       </div>
       <Footer />
+      
+      <style jsx>{`
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
     </>
   );
 }

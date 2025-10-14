@@ -12,7 +12,7 @@ import SkillTreeModal from './SkillTreeModal';
 import { createGameActions } from './gameActions';
 import { getDistortionStyle, distortText, getClockTime } from './gameUtils';
 import { saveGame, loadGame, exportToClipboard, importFromClipboard } from './saveSystem';
-import { addExperience, getActiveSkillEffects, getModifiedPortalCooldown, getModifiedCapacity } from './skillSystemHelpers';
+import { addExperience, purchaseSkill, getActiveSkillEffects, getModifiedPortalCooldown, getModifiedCapacity } from './skillSystemHelpers';
 import { XP_REWARDS, LEVEL_SYSTEM, SKILLS } from './skillTreeConstants';
 import { DIMENSIONAL_MATERIALS } from './dimensionalConstants';
 import { 
@@ -47,32 +47,13 @@ export default function Game() {
 
   const grantXP = useCallback((amount) => {
     setGameState(prev => {
-      const xpResult = addExperience(prev, amount, () => {}); // Don't let helper add messages
-      
-      // Only add message if level up occurred
-      const messages = [];
-      if (xpResult.leveledUp) {
-        if (xpResult.levelDiff === 1) {
-          messages.push(`🎉 LEVEL UP! Level ${xpResult.playerLevel} reached. +${xpResult.skillPointsGained} Skill Points!`);
-        } else {
-          messages.push(`🎉 LEVEL UP x${xpResult.levelDiff}! Level ${xpResult.playerLevel} reached. +${xpResult.skillPointsGained} Skill Points!`);
-        }
-        
-        // Special messages for milestone levels
-        if (xpResult.playerLevel % 10 === 0) {
-          messages.push(`⭐ MILESTONE! You've reached level ${xpResult.playerLevel}!`);
-        }
-      }
-      
+      const xpResult = addExperience(prev, amount, addMessage);
       return {
         ...prev,
-        ...xpResult,
-        recentMessages: messages.length > 0 
-          ? [...messages, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
-          : prev.recentMessages
+        ...xpResult
       };
     });
-  }, []);
+  }, [addMessage]);
 
   const checkAchievements = useCallback(() => {
     setGameState(prev => {
@@ -159,28 +140,21 @@ export default function Game() {
 
   const handlePurchaseSkill = (skillId) => {
     setGameState(prev => {
-      // Collect messages
-      const messages = [];
-      const messageCallback = (msg) => messages.push(msg);
+      // Don't call addMessage here - let purchaseSkill handle it
+      const result = purchaseSkill(prev, skillId, () => {}); // Empty callback to prevent double messages
       
-      // Call purchaseSkill (it's already imported at the top)
-      const result = purchaseSkill(prev, skillId, messageCallback);
-      
-      // If nothing changed, return original state with any error messages
-      if (result === prev) {
+      // If the purchase was successful, add the message here
+      if (result !== prev) {
+        const skill = SKILLS[skillId];
+        const currentLevel = (prev.purchasedSkills?.[skillId] || prev.skills?.[skillId] || 0) + 1;
+        
         return {
-          ...prev,
-          recentMessages: messages.length > 0 
-            ? [...messages, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
-            : prev.recentMessages
+          ...result,
+          recentMessages: [`✨ Learned ${skill.name} (Level ${currentLevel})!`, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
         };
       }
       
-      // Purchase succeeded, add messages
-      return {
-        ...result,
-        recentMessages: [...messages, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
-      };
+      return result;
     });
   };
 
