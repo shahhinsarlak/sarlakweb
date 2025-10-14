@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { 
   DIMENSIONAL_MATERIALS, 
   DIMENSIONAL_CAPACITY,
@@ -14,11 +14,16 @@ export default function DimensionalArea({ gameState, setGameState, onExit, grant
   const [currentInventory, setCurrentInventory] = useState({});
   const [hoveredNode, setHoveredNode] = useState(null);
   
-  const effects = getActiveSkillEffects(gameState);
   const modifiedCapacity = getModifiedCapacity(DIMENSIONAL_CAPACITY, gameState);
   
+  // Generate text and nodes ONCE when component mounts
   const encryptedText = useMemo(() => generateEncryptedText(3000), []);
-  const materialNodes = useMemo(() => generateMaterialNodes(encryptedText.length, gameState.dimensionalInventory || {}, effects), [encryptedText.length, gameState.dimensionalInventory, effects]);
+  
+  // Only regenerate if inventory changes (not effects)
+  const materialNodes = useMemo(() => {
+    const effects = getActiveSkillEffects(gameState);
+    return generateMaterialNodes(encryptedText.length, gameState.dimensionalInventory || {}, effects);
+  }, [encryptedText.length]); // Remove effects and dimensionalInventory from deps
   
   const currentCapacity = Object.values(currentInventory).reduce((sum, count) => sum + count, 0);
   const remainingCapacity = modifiedCapacity - currentCapacity;
@@ -26,15 +31,32 @@ export default function DimensionalArea({ gameState, setGameState, onExit, grant
   const collectMaterial = (node) => {
     if (remainingCapacity <= 0) return;
     
-    const material = DIMENSIONAL_MATERIALS.find(m => m.id === node.materialId);
-    const amount = applySkillsToMaterialCollection(node.materialId, 1, gameState);
+    // Base amount is always 1
+    let amount = 1;
+    
+    // Apply skill effects only if there are active skills
+    const effects = getActiveSkillEffects(gameState);
+    
+    // Check for double yield (only if skill is active)
+    if (effects.doubleChance && effects.doubleChance > 0 && Math.random() < effects.doubleChance) {
+      amount *= 2;
+    }
+    
+    // Check for multi-spawn (from new skill system)
+    if (effects.multiSpawnChance && effects.multiSpawnChance > 0 && Math.random() < effects.multiSpawnChance) {
+      amount += (effects.multiSpawnAmount || 1);
+    }
+    
+    // Ensure amount is always a valid integer
+    amount = Math.floor(amount);
+    if (amount < 1) amount = 1;
     
     setCurrentInventory(prev => ({
       ...prev,
       [node.materialId]: (prev[node.materialId] || 0) + amount
     }));
     
-    setCollectedNodes([...collectedNodes, node.id]);
+    setCollectedNodes(prev => [...prev, node.id]);
     
     // Grant XP based on material rarity
     if (grantXP && XP_REWARDS.collectMaterial[node.materialId]) {
@@ -43,21 +65,23 @@ export default function DimensionalArea({ gameState, setGameState, onExit, grant
   };
 
   const handleExit = () => {
+    onExit();
+    
+    // Transfer collected items to main inventory
     setGameState(prev => {
       const newDimensionalInventory = { ...(prev.dimensionalInventory || {}) };
       
-      Object.keys(currentInventory).forEach(materialId => {
-        newDimensionalInventory[materialId] = (newDimensionalInventory[materialId] || 0) + currentInventory[materialId];
+      Object.entries(currentInventory).forEach(([materialId, count]) => {
+        newDimensionalInventory[materialId] = (newDimensionalInventory[materialId] || 0) + count;
       });
       
       return {
         ...prev,
         dimensionalInventory: newDimensionalInventory,
-        portalCooldown: 60
+        portalCooldown: 60,
+        inDimensionalArea: false
       };
     });
-    
-    onExit();
   };
 
   const renderTextWithNodes = () => {
