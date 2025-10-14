@@ -1,7 +1,7 @@
 // Game action handlers
 import { LOCATIONS, UPGRADES, DEBUG_CHALLENGES } from './constants';
 
-export const createGameActions = (setGameState, addMessage, checkAchievements) => {
+export const createGameActions = (setGameState, addMessage, checkAchievements, grantXP) => {
   
   const triggerScreenEffect = (effectType) => {
     const overlay = document.createElement('div');
@@ -63,6 +63,7 @@ export const createGameActions = (setGameState, addMessage, checkAchievements) =
         energy: Math.max(0, prev.energy - 2),
         sortCount: (prev.sortCount || 0) + 1
       };
+      grantXP(1); // XP_REWARDS.sortPapers
       setTimeout(() => checkAchievements(), 50);
       return newState;
     });
@@ -228,6 +229,7 @@ export const createGameActions = (setGameState, addMessage, checkAchievements) =
       
       if (isCorrect) {
         const reward = Math.floor(200 + Math.random() * 300);
+        grantXP(15); // XP_REWARDS.completeDebug
         return {
           ...prev,
           pp: prev.pp + reward,
@@ -315,6 +317,7 @@ export const createGameActions = (setGameState, addMessage, checkAchievements) =
       
       if (response === "Agree with him") {
         const reward = Math.floor(300 + Math.random() * 500);
+        grantXP(25); // XP_REWARDS.defeatColleague
         
         setTimeout(() => checkAchievements(), 50);
         
@@ -380,25 +383,31 @@ export const createGameActions = (setGameState, addMessage, checkAchievements) =
         } else if (upgrade.value === 'exploration') {
           newState.unlockedLocations = [...prev.unlockedLocations, 'breakroom'];
           messages.push('You can explore now. Why would you want to?');
+          grantXP(30); // XP_REWARDS.unlockLocation
         } else if (upgrade.value === 'serverroom') {
           newState.unlockedLocations = [...prev.unlockedLocations, 'serverroom'];
           messages.push('Access granted to: S̷E̷R̷V̷E̷R̷ ̷R̷O̷O̷M̷');
+          grantXP(30);
         } else if (upgrade.value === 'managers') {
           newState.unlockedLocations = [...prev.unlockedLocations, 'managers'];
           messages.push('The manager will see you now. The manager has always been seeing you.');
+          grantXP(30);
         } else if (upgrade.value === 'basement') {
           newState.unlockedLocations = [...prev.unlockedLocations, 'basement'];
           messages.push('B7. You try to forget the number. The number remembers you.');
           newState.phase = 3;
+          grantXP(30);
         } else if (upgrade.value === 'roof') {
           newState.unlockedLocations = [...prev.unlockedLocations, 'roof'];
           messages.push('Up. Finally, up.');
+          grantXP(30);
         }
       }
 
       messages.push(`Acquired: ${upgrade.name}`);
       newState.recentMessages = [...messages.reverse(), ...prev.recentMessages].slice(0, prev.maxLogMessages || 15);
       
+      grantXP(10); // XP_REWARDS.purchaseUpgrade
       setTimeout(() => checkAchievements(), 50);
       return newState;
     });

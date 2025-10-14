@@ -8,9 +8,12 @@ import ColleagueModal from './ColleagueModal';
 import ExamineModal from './ExamineModal';
 import DimensionalArea from './DimensionalArea';
 import DimensionalUpgradesDisplay from './DimensionalUpgradesDisplay';
+import SkillTreeModal from './SkillTreeModal';
 import { createGameActions } from './gameActions';
 import { getDistortionStyle, distortText, getClockTime } from './gameUtils';
 import { saveGame, loadGame, exportToClipboard, importFromClipboard } from './saveSystem';
+import { addExperience, purchaseSkill, getActiveSkillEffects, getModifiedPortalCooldown, getModifiedCapacity } from './skillSystemHelpers';
+import { XP_REWARDS, LEVEL_SYSTEM, SKILLS } from './skillTreeConstants';
 import { DIMENSIONAL_MATERIALS } from './dimensionalConstants';
 import { 
   INITIAL_GAME_STATE, 
@@ -29,6 +32,7 @@ export default function Game() {
   const [debugMaterialId, setDebugMaterialId] = useState('');
   const [debugMaterialAmount, setDebugMaterialAmount] = useState('');
   const [debugSanityLevel, setDebugSanityLevel] = useState('');
+  const [hoveredUpgrade, setHoveredUpgrade] = useState(null);
 
   const addMessage = useCallback((msg) => {
     setGameState(prev => {
@@ -41,23 +45,38 @@ export default function Game() {
     });
   }, []);
 
+  const grantXP = useCallback((amount) => {
+    setGameState(prev => {
+      const xpResult = addExperience(prev, amount, addMessage);
+      return {
+        ...prev,
+        ...xpResult
+      };
+    });
+  }, [addMessage]);
+
   const checkAchievements = useCallback(() => {
     setGameState(prev => {
       const newAchievements = [...prev.achievements];
       const achievementMessages = [];
       let hasNew = false;
+      let totalXP = 0;
 
       ACHIEVEMENTS.forEach(achievement => {
         if (!newAchievements.includes(achievement.id) && achievement.check(prev)) {
           newAchievements.push(achievement.id);
           hasNew = true;
           achievementMessages.push(`🏆 ACHIEVEMENT: ${achievement.name}`);
+          totalXP += XP_REWARDS.completeAchievement;
         }
       });
 
       if (hasNew) {
+        // Add XP directly without calling grantXP to avoid double messages
+        const xpResult = addExperience(prev, totalXP, () => {}); // Empty function to prevent messages
         return { 
           ...prev, 
+          ...xpResult,
           achievements: newAchievements,
           recentMessages: [...achievementMessages.reverse(), ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
         };
@@ -117,7 +136,27 @@ export default function Game() {
     return () => window.removeEventListener('message', handleThemeChange);
   }, [addMessage]);
 
-  const actions = createGameActions(setGameState, addMessage, checkAchievements);
+  const actions = createGameActions(setGameState, addMessage, checkAchievements, grantXP);
+
+  const handlePurchaseSkill = (skillId) => {
+    setGameState(prev => {
+      // Don't call addMessage here - let purchaseSkill handle it
+      const result = purchaseSkill(prev, skillId, () => {}); // Empty callback to prevent double messages
+      
+      // If the purchase was successful, add the message here
+      if (result !== prev) {
+        const skill = SKILLS[skillId];
+        const currentLevel = (prev.purchasedSkills?.[skillId] || prev.skills?.[skillId] || 0) + 1;
+        
+        return {
+          ...result,
+          recentMessages: [`✨ Learned ${skill.name} (Level ${currentLevel})!`, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
+        };
+      }
+      
+      return result;
+    });
+  };
 
   const handleSaveGame = () => {
     saveGame(gameState);
@@ -152,6 +191,15 @@ export default function Game() {
     }
   };
 
+  const handleSetSanity = () => {
+    const level = parseInt(debugSanityLevel);
+    if (!isNaN(level) && level >= 0 && level <= 100) {
+      setGameState(prev => ({ ...prev, sanity: level }));
+      addMessage(`Sanity set to ${level}%.`);
+      setDebugSanityLevel('');
+    }
+  };
+
   const purchaseDimensionalUpgrade = (upgrade) => {
     setGameState(prev => {
       const canAfford = Object.entries(upgrade.materials).every(([materialId, required]) => {
@@ -180,9 +228,30 @@ export default function Game() {
         }
       }
 
+      grantXP(XP_REWARDS.purchaseDimensionalUpgrade);
       setTimeout(() => checkAchievements(), 50);
       return newState;
     });
+  };
+
+  const getUpgradeTooltip = (upgrade) => {
+    const effects = [];
+    
+    if (upgrade.effect === 'ppPerClick') {
+      effects.push(`+${upgrade.value} PP per click`);
+    } else if (upgrade.effect === 'ppPerSecond') {
+      effects.push(`+${upgrade.value} PP per second (passive income)`);
+    } else if (upgrade.effect === 'unlock') {
+      if (upgrade.value === 'archive') {
+        effects.push('Unlocks Archive location');
+      } else if (upgrade.value === 'drawer') {
+        effects.push('Unlocks Drawer location');
+      }
+    } else if (upgrade.effect === 'maxLogMessages') {
+      effects.push(`Increases event log to ${upgrade.value} messages`);
+    }
+    
+    return effects.join(' • ');
   };
 
   useEffect(() => {
@@ -296,7 +365,8 @@ export default function Game() {
 
   const exitDimensionalArea = () => {
     setGameState(prev => {
-      const cooldownTime = prev.dimensionalUpgrades?.dimensional_anchor ? 30 : 60;
+      const effects = getActiveSkillEffects(prev);
+      const cooldownTime = getModifiedPortalCooldown(60, prev);
       
       const newDimensionalInventory = { ...(prev.dimensionalInventory || {}) };
       
@@ -332,17 +402,12 @@ export default function Game() {
     setDebugMaterialAmount('');
   };
 
-  const handleSetSanity = () => {
-    const level = parseInt(debugSanityLevel);
-    if (!isNaN(level) && level >= 0 && level <= 100) {
-      setGameState(prev => ({ ...prev, sanity: level }));
-      addMessage(`Sanity set to ${level}%.`);
-      setDebugSanityLevel('');
-    }
-  };
+  if (gameState.showSkillTree) {
+    return <SkillTreeModal gameState={gameState} onClose={() => setGameState(prev => ({ ...prev, showSkillTree: false }))} onPurchaseSkill={handlePurchaseSkill} />;
+  }
 
   if (gameState.inDimensionalArea) {
-    return <DimensionalArea gameState={gameState} setGameState={setGameState} onExit={exitDimensionalArea} />;
+    return <DimensionalArea gameState={gameState} setGameState={setGameState} onExit={exitDimensionalArea} grantXP={grantXP} />;
   }
 
   if (gameState.meditating) {
@@ -382,6 +447,21 @@ export default function Game() {
             {currentLocation.name}
           </div>
           <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+            <button
+              onClick={() => setGameState(prev => ({ ...prev, showSkillTree: true }))}
+              style={{
+                background: 'none',
+                border: '1px solid #4a90e2',
+                color: '#4a90e2',
+                padding: '4px 8px',
+                cursor: 'pointer',
+                fontSize: '10px',
+                fontFamily: 'inherit',
+                opacity: 0.8
+              }}
+            >
+              ⚡ SKILLS
+            </button>
             <button
               onClick={() => setShowSaveMenu(!showSaveMenu)}
               style={{
@@ -682,6 +762,45 @@ export default function Game() {
               backgroundColor: 'var(--hover-color)'
             }}>
               <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6, marginBottom: '20px' }}>
+                PLAYER
+              </div>
+              <div style={{ fontSize: '14px', marginBottom: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <span>LEVEL</span>
+                  <strong style={{ fontSize: '18px', color: '#4a90e2' }}>{gameState.playerLevel || 1}</strong>
+                </div>
+                <div style={{ fontSize: '10px', color: '#888', marginBottom: '4px' }}>
+                  {gameState.playerXP || 0} / {LEVEL_SYSTEM.getXPForLevel((gameState.playerLevel || 1) + 1)} XP
+                </div>
+                <div style={{
+                  width: '100%',
+                  height: '6px',
+                  backgroundColor: 'var(--bg-color)',
+                  border: '1px solid var(--border-color)',
+                  overflow: 'hidden',
+                  marginBottom: '12px'
+                }}>
+                  <div style={{
+                    width: `${((gameState.playerXP || 0) / LEVEL_SYSTEM.getXPForLevel((gameState.playerLevel || 1) + 1)) * 100}%`,
+                    height: '100%',
+                    backgroundColor: '#4a90e2',
+                    transition: 'width 0.3s'
+                  }} />
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '8px', borderTop: '1px solid var(--border-color)' }}>
+                  <span>SKILL POINTS</span>
+                  <strong style={{ fontSize: '18px', color: '#ffaa00' }}>{gameState.skillPoints || 0}</strong>
+                </div>
+              </div>
+            </div>
+
+            <div style={{
+              border: '1px solid var(--border-color)',
+              padding: '24px',
+              marginBottom: '30px',
+              backgroundColor: 'var(--hover-color)'
+            }}>
+              <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6, marginBottom: '20px' }}>
                 RESOURCES
               </div>
               <div style={{ fontSize: '14px' }}>
@@ -761,33 +880,70 @@ export default function Game() {
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   {availableUpgrades.slice(0, 5).map(upgrade => (
-                    <button
+                    <div
                       key={upgrade.id}
-                      onClick={() => actions.buyUpgrade(upgrade)}
-                      disabled={gameState.pp < upgrade.cost}
-                      style={{
-                        background: 'none',
-                        border: '1px solid var(--border-color)',
-                        color: 'var(--text-color)',
-                        padding: '16px',
-                        cursor: gameState.pp >= upgrade.cost ? 'pointer' : 'not-allowed',
-                        fontSize: '12px',
-                        fontFamily: 'inherit',
-                        textAlign: 'left',
-                        transition: 'all 0.2s',
-                        opacity: gameState.pp >= upgrade.cost ? 1 : 0.4
-                      }}
+                      style={{ position: 'relative' }}
+                      onMouseEnter={() => setHoveredUpgrade(upgrade.id)}
+                      onMouseLeave={() => setHoveredUpgrade(null)}
                     >
-                      <div style={{ fontWeight: '500', marginBottom: '8px', fontSize: '13px' }}>
-                        {upgrade.name}
-                      </div>
-                      <div style={{ fontSize: '11px', opacity: 0.7, marginBottom: '8px' }}>
-                        {upgrade.desc}
-                      </div>
-                      <div style={{ fontSize: '12px', color: 'var(--accent-color)' }}>
-                        {upgrade.cost} PP
-                      </div>
-                    </button>
+                      <button
+                        onClick={() => actions.buyUpgrade(upgrade)}
+                        disabled={gameState.pp < upgrade.cost}
+                        style={{
+                          width: '100%',
+                          background: 'none',
+                          border: '1px solid var(--border-color)',
+                          color: 'var(--text-color)',
+                          padding: '16px',
+                          cursor: gameState.pp >= upgrade.cost ? 'pointer' : 'not-allowed',
+                          fontSize: '12px',
+                          fontFamily: 'inherit',
+                          textAlign: 'left',
+                          transition: 'all 0.2s',
+                          opacity: gameState.pp >= upgrade.cost ? 1 : 0.4
+                        }}
+                      >
+                        <div style={{ fontWeight: '500', marginBottom: '8px', fontSize: '13px' }}>
+                          {upgrade.name}
+                        </div>
+                        <div style={{ fontSize: '11px', opacity: 0.7, marginBottom: '8px' }}>
+                          {upgrade.desc}
+                        </div>
+                        <div style={{ fontSize: '12px', color: 'var(--accent-color)' }}>
+                          {upgrade.cost} PP
+                        </div>
+                      </button>
+                      
+                      {hoveredUpgrade === upgrade.id && (
+                        <div style={{
+                          position: 'absolute',
+                          left: '110%',
+                          top: '0',
+                          backgroundColor: 'var(--bg-color)',
+                          border: '1px solid var(--accent-color)',
+                          padding: '12px 16px',
+                          borderRadius: '4px',
+                          fontSize: '11px',
+                          whiteSpace: 'nowrap',
+                          zIndex: 1000,
+                          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+                          pointerEvents: 'none'
+                        }}>
+                          <div style={{ 
+                            color: 'var(--accent-color)', 
+                            fontWeight: '500', 
+                            marginBottom: '4px',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.5px'
+                          }}>
+                            Effect:
+                          </div>
+                          <div style={{ color: 'var(--text-color)' }}>
+                            {getUpgradeTooltip(upgrade)}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   ))}
                 </div>
               </div>

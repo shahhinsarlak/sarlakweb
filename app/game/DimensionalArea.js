@@ -5,27 +5,41 @@ import {
   generateEncryptedText,
   generateMaterialNodes 
 } from './dimensionalConstants';
+import { getModifiedCapacity, getActiveSkillEffects, applySkillsToMaterialCollection } from './skillSystemHelpers';
+import { XP_REWARDS } from './skillTreeConstants';
 
-export default function DimensionalArea({ gameState, setGameState, onExit }) {
+
+export default function DimensionalArea({ gameState, setGameState, onExit, grantXP }) {
   const [collectedNodes, setCollectedNodes] = useState([]);
   const [currentInventory, setCurrentInventory] = useState({});
   const [hoveredNode, setHoveredNode] = useState(null);
   
+  const effects = getActiveSkillEffects(gameState);
+  const modifiedCapacity = getModifiedCapacity(DIMENSIONAL_CAPACITY, gameState);
+  
   const encryptedText = useMemo(() => generateEncryptedText(3000), []);
-  const materialNodes = useMemo(() => generateMaterialNodes(encryptedText.length, gameState.dimensionalInventory || {}), [encryptedText.length, gameState.dimensionalInventory]);
+  const materialNodes = useMemo(() => generateMaterialNodes(encryptedText.length, gameState.dimensionalInventory || {}, effects), [encryptedText.length, gameState.dimensionalInventory, effects]);
   
   const currentCapacity = Object.values(currentInventory).reduce((sum, count) => sum + count, 0);
-  const remainingCapacity = DIMENSIONAL_CAPACITY - currentCapacity;
+  const remainingCapacity = modifiedCapacity - currentCapacity;
 
   const collectMaterial = (node) => {
     if (remainingCapacity <= 0) return;
     
+    const material = DIMENSIONAL_MATERIALS.find(m => m.id === node.materialId);
+    const amount = applySkillsToMaterialCollection(node.materialId, 1, gameState);
+    
     setCurrentInventory(prev => ({
       ...prev,
-      [node.materialId]: (prev[node.materialId] || 0) + 1
+      [node.materialId]: (prev[node.materialId] || 0) + amount
     }));
     
     setCollectedNodes([...collectedNodes, node.id]);
+    
+    // Grant XP based on material rarity
+    if (grantXP && XP_REWARDS.collectMaterial[node.materialId]) {
+      grantXP(XP_REWARDS.collectMaterial[node.materialId] * amount);
+    }
   };
 
   const handleExit = () => {
@@ -79,8 +93,8 @@ export default function DimensionalArea({ gameState, setGameState, onExit }) {
             margin: '0 2px',
             border: '1px solid rgba(255,255,255,0.1)',
             boxShadow: hoveredNode?.id === node.id && remainingCapacity > 0 
-              ? `0 0 ${node.size}px ${node.color}` 
-              : `0 0 ${node.size/2}px ${node.color}`,
+              ? `0 0 ${node.size * (node.glowIntensity || 1)}px ${node.color}` 
+              : `0 0 ${(node.size/2) * (node.glowIntensity || 1)}px ${node.color}`,
             transform: hoveredNode?.id === node.id && remainingCapacity > 0 ? 'scale(1.2)' : 'scale(1)',
             position: 'relative'
           }}
@@ -182,7 +196,7 @@ export default function DimensionalArea({ gameState, setGameState, onExit }) {
           color: '#666666',
           letterSpacing: '1px'
         }}>
-          CAPACITY: {currentCapacity}/{DIMENSIONAL_CAPACITY}
+          CAPACITY: {currentCapacity}/{modifiedCapacity}
           {remainingCapacity === 0 && <span style={{ color: '#ff0000', marginLeft: '16px' }}>FULL</span>}
         </div>
       </div>

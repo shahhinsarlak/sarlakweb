@@ -33,17 +33,22 @@ export const INITIAL_GAME_STATE = {
   dimensionalInventory: {},
   portalCooldown: 0,
   dimensionalUpgrades: {},
-  timeRewindUsed: false
+  timeRewindUsed: false,
+  playerLevel: 1,
+  playerXP: 0,
+  skillPoints: 3,
+  skills: {},
+  showSkillTree: false
 };
 
 export const STRANGE_COLLEAGUE_DIALOGUES = [
   {
     ascii: `∩＿＿∩
-／ ＼  ／＼
+（ ＼  ／＼
 ｜  ●  ● ｜
 ｜   ▼   ｜
 ＼  ∧  ／
-￣‾‾‾￣`,
+￣～～～￣`,
     dialogue: "Time is a flat circle, but circles are lies. We spiral. Always spiraling. Do you feel it? The spiral? It's in the coffee. It's in the reports. We're all just... rotating.",
     responses: ["That makes no sense", "Are you okay?", "I need to get back to work", "Agree with him"],
     wrongResponses: [
@@ -53,11 +58,11 @@ export const STRANGE_COLLEAGUE_DIALOGUES = [
     ]
   },
   {
-    ascii: `╭━━━━╮
+    ascii: `╭───╮
 ┃◉  ◉┃
 ┃  ▽ ┃
 ┃ ─── ┃
-╰━━━━╯`,
+╰───╯`,
     dialogue: "Productivity is the measure of a soul's weight. When you sort those papers, you're sorting... yourself. Each click is a piece of you, filed away. Archived. Forever. Don't you see? You ARE the productivity.",
     responses: ["That's disturbing", "Please leave me alone", "I don't understand", "Agree with him"],
     wrongResponses: [
@@ -222,7 +227,7 @@ export const LOCATIONS = {
       { 
         id: 'glitched', 
         name: '█████ WARNING ████', 
-        story: 'The document flickers. Text phases in and out. "DON\'T SWITCH THE L̵I̴G̷H̸T̶S̷ — tried twenty times — the walls started bre█████ — something came through — it SAW me — if you\'re reading this STOP at 19 — the dimensional t█████ — they call it progress but it\'s a DOOR — Day 7 minimum or it won\'t —" The rest dissolves into static.' 
+        story: 'The document flickers. Text phases in and out. "DON\'T SWITCH THE L̵I̴G̷H̸T̶S̷ – tried twenty times – the walls started bre█████ – something came through – it SAW me – if you\'re reading this STOP at 19 – the dimensional t█████ – they call it progress but it\'s a DOOR – Day 7 minimum or it won\'t –" The rest dissolves into static.' 
       }
     ]
   },

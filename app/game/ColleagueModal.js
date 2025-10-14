@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
+import EventLog from './EventLog';
 
 export default function ColleagueModal({ event, recentMessages, respondToColleague }) {
   const [clickedButton, setClickedButton] = useState(null);
@@ -15,6 +16,7 @@ export default function ColleagueModal({ event, recentMessages, respondToColleag
 
   return (
     <>
+      <EventLog messages={gameState.recentMessages} />
       <Header />
       <div style={{
         fontFamily: "'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace",

@@ -1,5 +1,6 @@
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
+import EventLog from './EventLog';
 
 export default function MeditationModal({ gameState, breatheAction, cancelMeditation }) {
   const elapsed = gameState.meditationStartTime ? Date.now() - gameState.meditationStartTime : 0;
@@ -29,6 +30,7 @@ export default function MeditationModal({ gameState, breatheAction, cancelMedita
   
   return (
     <>
+      <EventLog messages={gameState.recentMessages} />
       <Header />
       <div style={{
         fontFamily: "'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace",

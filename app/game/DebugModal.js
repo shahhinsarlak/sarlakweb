@@ -1,11 +1,13 @@
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
+import EventLog from './EventLog';
 
 export default function DebugModal({ gameState, submitDebug, updateDebugCode, cancelDebug }) {
   if (!gameState.currentBug) return null;
 
   return (
     <>
+      <EventLog messages={gameState.recentMessages} />
       <Header />
       <div style={{
         fontFamily: "'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace",
