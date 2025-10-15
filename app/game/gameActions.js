@@ -1,5 +1,14 @@
 // Game action handlers
 import { LOCATIONS, UPGRADES, DEBUG_CHALLENGES } from './constants';
+import { 
+  getActiveSkillEffects, 
+  applyEnergyCostReduction,  // <- Add this
+  applyPPMultiplier,
+  applyMeditationBonus,
+  getModifiedSanityLoss 
+} from './skillSystemHelpers';
+import { XP_REWARDS } from './skillTreeConstants';
+
 
 export const createGameActions = (setGameState, addMessage, checkAchievements, grantXP) => {
   
@@ -51,19 +60,29 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
   
   const sortPapers = () => {
     setGameState(prev => {
-      if (prev.energy < 5) {
+      // Apply skill effects to energy cost
+      const baseEnergyCost = 2;
+      const energyCost = applyEnergyCostReduction(baseEnergyCost, prev);
+      
+      if (prev.energy < energyCost) {  // Changed from < 5
         return {
           ...prev,
           recentMessages: ['Too exhausted. Your hands won\'t move.', ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
         };
       }
+      
+      // Apply skill effects to PP gain
+      const basePP = prev.ppPerClick;
+      const ppGain = applyPPMultiplier(basePP, prev);
+      
       const newState = {
         ...prev,
-        pp: prev.pp + prev.ppPerClick,
-        energy: Math.max(0, prev.energy - 2),
+        pp: prev.pp + ppGain,
+        energy: Math.max(0, prev.energy - energyCost),
         sortCount: (prev.sortCount || 0) + 1
       };
-      grantXP(1); // XP_REWARDS.sortPapers
+      
+      grantXP(XP_REWARDS.sortPapers);
       setTimeout(() => checkAchievements(), 50);
       return newState;
     });

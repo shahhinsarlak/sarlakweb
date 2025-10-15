@@ -575,19 +575,18 @@ export default function Game() {
               }}>
                 <button
                   onClick={actions.sortPapers}
-                  disabled={gameState.energy < 5}
                   style={{
                     ...getDistortionStyle(gameState.sanity),
                     background: 'none',
                     border: '1px solid var(--border-color)',
                     color: 'var(--text-color)',
                     padding: '20px',
-                    cursor: gameState.energy >= 5 ? 'pointer' : 'not-allowed',
+                    cursor: 'pointer',
                     fontSize: '12px',
                     fontFamily: 'inherit',
                     letterSpacing: '0.5px',
                     transition: 'all 0.2s',
-                    opacity: gameState.energy >= 5 ? 1 : 0.4,
+                    opacity: 1,
                     textAlign: 'center'
                   }}
                 >
@@ -596,19 +595,18 @@ export default function Game() {
                 </button>
                 <button
                   onClick={actions.rest}
-                  disabled={gameState.restCooldown > 0}
                   style={{
                     ...getDistortionStyle(gameState.sanity),
                     background: 'none',
                     border: '1px solid var(--border-color)',
                     color: 'var(--text-color)',
                     padding: '20px',
-                    cursor: gameState.restCooldown > 0 ? 'not-allowed' : 'pointer',
+                    cursor: 'pointer',
                     fontSize: '12px',
                     fontFamily: 'inherit',
                     letterSpacing: '0.5px',
                     transition: 'all 0.2s',
-                    opacity: gameState.restCooldown > 0 ? 0.4 : 1,
+                    opacity: 1,
                     textAlign: 'center'
                   }}
                 >
