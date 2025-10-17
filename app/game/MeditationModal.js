@@ -19,7 +19,7 @@ export default function MeditationModal({ gameState, breatheAction, cancelMedita
   else if (isOkay) barColor = '#ff6600';
   
   const currentAction = gameState.meditationPhase;
-  const breathNum = currentAction === 'inhale' ? gameState.breathCount + 1 : gameState.breathCount;
+  const breathNum = gameState.breathCount + 1;
   
   const isInhaling = currentAction === 'inhale';
   const baseSize = 80;

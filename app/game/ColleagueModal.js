@@ -16,7 +16,7 @@ export default function ColleagueModal({ event, recentMessages, respondToColleag
 
   return (
     <>
-      <EventLog messages={gameState.recentMessages} />
+      <EventLog messages={recentMessages} />
       <Header />
       <div style={{
         fontFamily: "'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace",

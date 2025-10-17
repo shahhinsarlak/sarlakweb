@@ -1,14 +1,4 @@
-import { useEffect, useRef } from 'react';
-
 export default function EventLog({ messages, isVisible = true }) {
-  const messagesEndRef = useRef(null);
-
-  useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [messages]);
-
   if (!isVisible) return null;
 
   return (
@@ -50,13 +40,11 @@ export default function EventLog({ messages, isVisible = true }) {
             fontSize: '11px',
             lineHeight: '1.6',
             display: 'flex',
-            flexDirection: 'column-reverse'
+            flexDirection: 'column'
           }}>
-          <div ref={messagesEndRef} />
-          {messages.map((msg, i) => (
+          {[...messages].reverse().map((msg, i) => (
             <div
-              key={`${messages.length - i}-${msg}-${Date.now()}`}
-              className={i === 0 ? 'fade-in-message' : ''}
+              key={`${i}-${msg}`}
               style={{
                 marginTop: '8px',
                 paddingTop: '8px',
@@ -71,21 +59,6 @@ export default function EventLog({ messages, isVisible = true }) {
       </div>
 
       <style jsx global>{`
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-            transform: translateY(10px);
-          }
-          to {
-            opacity: 0.8;
-            transform: translateY(0);
-          }
-        }
-
-        .fade-in-message {
-          animation: fadeIn 0.4s ease-in;
-        }
-
         .event-log-messages::-webkit-scrollbar {
           width: 6px;
         }

@@ -108,7 +108,7 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
   };
 
   const startMeditation = () => {
-    const targetTime = 3000 + Math.random() * 2000;
+    const targetTime = 1500 + Math.random() * 1000; // Reduced from 3000-5000
     setGameState(prev => ({
       ...prev,
       meditating: true,
@@ -117,7 +117,7 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       meditationStartTime: Date.now(),
       meditationTargetTime: targetTime,
       meditationScore: 0,
-      meditationPerfectWindow: 300,
+      meditationPerfectWindow: 200, // Reduced from 300
       recentMessages: ['Close your eyes. Focus on your breathing.', ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
     }));
   };
@@ -155,9 +155,15 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
         points = 10;
       }
       
-      const newBreathCount = prev.breathCount + (action === 'exhale' ? 1 : 0);
       const newScore = prev.meditationScore + points;
       
+      // Increment breath count only when completing a full cycle (after exhale -> moving to next inhale)
+      let newBreathCount = prev.breathCount;
+      if (action === 'exhale') {
+        newBreathCount = prev.breathCount + 1;
+      }
+      
+      // Complete after 3 full breaths (after 3 exhales)
       if (newBreathCount >= 3) {
         const avgScore = newScore / 6;
         let sanityGain = 0;
@@ -199,15 +205,15 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       
       if (action === 'inhale') {
         nextPhase = 'exhale';
-        nextTargetTime = 2500 + Math.random() * 1500;
+        nextTargetTime = 1000 + Math.random() * 800; // Reduced from 2500-4000
       } else {
         nextPhase = 'inhale';
-        nextTargetTime = 3000 + Math.random() * 2000;
+        nextTargetTime = 1500 + Math.random() * 1000; // Reduced from 3000-5000
       }
       
       return {
         ...prev,
-        breathCount: newBreathCount,
+        breathCount: action === 'exhale' ? prev.breathCount + 1 : prev.breathCount,
         meditationPhase: nextPhase,
         meditationStartTime: Date.now(),
         meditationTargetTime: nextTargetTime,

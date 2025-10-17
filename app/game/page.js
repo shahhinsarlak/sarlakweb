@@ -241,17 +241,52 @@ export default function Game() {
       effects.push(`+${upgrade.value} PP per click`);
     } else if (upgrade.effect === 'ppPerSecond') {
       effects.push(`+${upgrade.value} PP per second (passive income)`);
+    } else if (upgrade.effect === 'maxEnergy') {
+      effects.push(`Max energy +${upgrade.value}`);
+    } else if (upgrade.effect === 'sanityRegen') {
+      effects.push(`+${upgrade.value} sanity regeneration per second`);
     } else if (upgrade.effect === 'unlock') {
-      if (upgrade.value === 'archive') {
-        effects.push('Unlocks Archive location');
-      } else if (upgrade.value === 'drawer') {
-        effects.push('Unlocks Drawer location');
-      }
+      const unlockMap = {
+        'debug': 'Unlocks Debug challenges',
+        'exploration': 'Unlocks Breakroom',
+        'serverroom': 'Unlocks Server Room',
+        'managers': 'Unlocks Manager\'s Office',
+        'basement': 'Unlocks B7 - Basement (Phase 3)',
+        'roof': 'Unlocks Roof Access',
+        'archive': 'Unlocks The Archive',
+        'drawer': 'Unlocks Bottom Drawer',
+        'converter': 'Unlocks Material Converter',
+        'imbuing': 'Unlocks Weapon Imbuing',
+        'lore': 'Unlocks Dimensional Codex',
+        'ending': 'Unlocks Final Ending',
+        'void': 'Unlocks The Void'
+      };
+      effects.push(unlockMap[upgrade.value] || `Unlocks: ${upgrade.value}`);
     } else if (upgrade.effect === 'maxLogMessages') {
       effects.push(`Increases event log to ${upgrade.value} messages`);
+    } else if (upgrade.effect === 'debugBonus') {
+      effects.push(`Debug rewards ×${upgrade.value}. First attempt always succeeds`);
+    } else if (upgrade.effect === 'portalCooldown') {
+      effects.push(`Portal cooldown reduced to ${upgrade.value}s`);
+    } else if (upgrade.effect === 'capacity') {
+      effects.push(`Dimensional capacity +${upgrade.value} items`);
+    } else if (upgrade.effect === 'portalRespawn') {
+      effects.push(`Materials regenerate faster in dimensional space`);
+    } else if (upgrade.effect === 'meditationBonus') {
+      effects.push(`Meditation grants ×${upgrade.value} sanity`);
+    } else if (upgrade.effect === 'minSanity') {
+      effects.push(`Sanity cannot drop below ${upgrade.value}%`);
+    } else if (upgrade.effect === 'combat') {
+      effects.push(`Combat enhancement: ${upgrade.value}`);
+    } else if (upgrade.effect === 'timeTravel') {
+      effects.push(`Undo the last 5 minutes (once per day)`);
+    } else if (upgrade.effect === 'portalScan') {
+      effects.push(`Materials glow brighter in dimensional space`);
+    } else if (upgrade.effect === 'hiddenText') {
+      effects.push(`See hidden messages between the lines`);
     }
     
-    return effects.join(' • ');
+    return effects.length > 0 ? effects.join(' • ') : 'Unknown effect';
   };
 
   useEffect(() => {
