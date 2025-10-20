@@ -149,7 +149,7 @@ export const getModifiedCapacity = (baseCapacity, gameState) => {
 // Apply skill effects to PP generation
 export const applyPPMultiplier = (basePP, gameState) => {
   const effects = getActiveSkillEffects(gameState);
-  return Math.floor(basePP * (1 + effects.ppMultiplier));
+  return basePP * (1 + effects.ppMultiplier);  // Return decimal value
 };
 
 // Apply skill effects to energy costs
@@ -161,7 +161,7 @@ export const applyEnergyCostReduction = (baseCost, gameState) => {
 // Apply skill effects to meditation
 export const applyMeditationBonus = (baseSanity, gameState) => {
   const effects = getActiveSkillEffects(gameState);
-  return Math.floor(baseSanity * (1 + effects.meditationBonus));
+  return baseSanity * (1 + effects.meditationBonus);  // Return decimal value
 };
 
 // Modify material spawn rates based on luck skills

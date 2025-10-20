@@ -1,11 +1,8 @@
 // Game action handlers
 import { LOCATIONS, UPGRADES, DEBUG_CHALLENGES } from './constants';
 import { 
-  getActiveSkillEffects, 
   applyEnergyCostReduction,  // <- Add this
-  applyPPMultiplier,
-  applyMeditationBonus,
-  getModifiedSanityLoss 
+  applyPPMultiplier
 } from './skillSystemHelpers';
 import { XP_REWARDS } from './skillTreeConstants';
 

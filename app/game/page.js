@@ -872,11 +872,11 @@ export default function Game() {
               <div style={{ fontSize: '14px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
                   <span>PP</span>
-                  <strong style={{ fontSize: '18px' }}>{Math.floor(gameState.pp)}</strong>
+                  <strong style={{ fontSize: '18px' }}>{gameState.pp.toFixed(1)}</strong>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
                   <span>ENERGY</span>
-                  <strong style={{ fontSize: '18px' }}>{Math.floor(gameState.energy)}%</strong>
+                  <strong style={{ fontSize: '18px' }}>{gameState.energy.toFixed(1)}%</strong>
                 </div>
                 <div style={{
                   display: 'flex',
@@ -885,7 +885,7 @@ export default function Game() {
                   color: gameState.sanity < 30 ? '#ff0000' : 'inherit'
                 }}>
                   <span>SANITY</span>
-                  <strong style={{ fontSize: '18px' }}>{Math.floor(gameState.sanity)}%</strong>
+                  <strong style={{ fontSize: '18px' }}>{gameState.sanity.toFixed(1)}%</strong>
                 </div>
                 {gameState.ppPerSecond > 0 && (
                   <div style={{
