@@ -405,27 +405,6 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       } else if (upgrade.effect === 'unlock') {
         if (upgrade.value === 'debug') {
           messages.push('Debug access granted. Fix the system. Or break it further.');
-        } else if (upgrade.value === 'exploration') {
-          newState.unlockedLocations = [...prev.unlockedLocations, 'breakroom'];
-          messages.push('You can explore now. Why would you want to?');
-          grantXP(30); // XP_REWARDS.unlockLocation
-        } else if (upgrade.value === 'serverroom') {
-          newState.unlockedLocations = [...prev.unlockedLocations, 'serverroom'];
-          messages.push('Access granted to: S̷E̷R̷V̷E̷R̷ ̷R̷O̷O̷M̷');
-          grantXP(30);
-        } else if (upgrade.value === 'managers') {
-          newState.unlockedLocations = [...prev.unlockedLocations, 'managers'];
-          messages.push('The manager will see you now. The manager has always been seeing you.');
-          grantXP(30);
-        } else if (upgrade.value === 'basement') {
-          newState.unlockedLocations = [...prev.unlockedLocations, 'basement'];
-          messages.push('B7. You try to forget the number. The number remembers you.');
-          newState.phase = 3;
-          grantXP(30);
-        } else if (upgrade.value === 'roof') {
-          newState.unlockedLocations = [...prev.unlockedLocations, 'roof'];
-          messages.push('Up. Finally, up.');
-          grantXP(30);
         }
       }
 

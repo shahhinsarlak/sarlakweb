@@ -164,31 +164,6 @@ export const LOCATIONS = {
     description: 'Your desk. Four gray walls. The computer screen flickers.',
     atmosphere: ['The air tastes stale.', 'You hear typing from the next cubicle. There is no next cubicle.', 'Your coffee is cold. It was always cold.']
   },
-  breakroom: {
-    name: 'BREAK ROOM',
-    description: 'The microwave beeps. No one is using it.',
-    atmosphere: ['The vending machine hums louder than it should.', 'Someone left half a sandwich. Yesterday? Last week?', 'The water cooler is empty. It keeps bubbling.']
-  },
-  serverroom: {
-    name: 'SERVER ROOM',
-    description: 'Rows of blinking lights. The fans scream.',
-    atmosphere: ['The temperature drops. Then rises. Then drops again.', 'Error messages scroll past. None of them are in English.', 'You hear your own voice in the white noise.']
-  },
-  managers: {
-    name: "MANAGER'S OFFICE",
-    description: 'The door is always open. You never see anyone inside.',
-    atmosphere: ['The nameplate reads: ████████████', 'There are 47 coffee cups on the desk. All full.', 'The clock runs backwards.']
-  },
-  basement: {
-    name: 'BASEMENT LEVEL B7',
-    description: 'You should not be here.',
-    atmosphere: ['The walls pulse.', 'Something drips. Not water.', 'You see yourself standing in the corner. You wave. You wave back.']
-  },
-  roof: {
-    name: 'ROOF ACCESS',
-    description: 'The sky is the wrong color.',
-    atmosphere: ['The wind whispers performance metrics.', 'You can see the office from up here. All 847 floors of it.', 'The edge calls to you. Not today.']
-  },
   archive: {
     name: 'THE ARCHIVE',
     description: 'A place that shouldn\'t exist. Files from employees who never were.',
@@ -258,15 +233,10 @@ export const UPGRADES = [
   { id: 'coffee', name: 'Coffee Machine', cost: 150, effect: 'ppPerSecond', value: 1, desc: 'Automatic productivity. Tastes like copper.' },
   { id: 'keyboard', name: 'Mechanical Keyboard', cost: 300, effect: 'ppPerClick', value: 5, desc: 'The clicking soothes you. Click. Click. Click.' },
   { id: 'debugger', name: 'Debug Access', cost: 500, effect: 'unlock', value: 'debug', desc: 'Fix the code. Fix reality. Same thing.' },
-  { id: 'chair', name: 'Ergonomic Chair', cost: 600, effect: 'unlock', value: 'exploration', desc: 'You can finally stand up.' },
   { id: 'energydrink', name: 'Energy Drink Pack', cost: 800, effect: 'maxEnergy', value: 20, desc: '5000% daily value of everything.' },
   { id: 'monitor', name: 'Second Monitor', cost: 1200, effect: 'ppPerSecond', value: 3, desc: 'Twice the work. Twice the witnessing.' },
-  { id: 'vpn', name: 'VPN Access', cost: 2000, effect: 'unlock', value: 'serverroom', desc: 'They said this network doesn\'t exist.' },
   { id: 'pills', name: 'Prescription Pills', cost: 2500, effect: 'sanityRegen', value: 0.5, desc: 'For anxiety. Or is it for seeing?' },
-  { id: 'keycard', name: 'Manager\'s Keycard', cost: 4000, effect: 'unlock', value: 'managers', desc: 'You found it in your desk. It has your name on it.' },
-  { id: 'redkey', name: 'Red Keycard', cost: 8000, effect: 'unlock', value: 'basement', desc: 'IT BURNS TO HOLD' },
   { id: 'promotion', name: 'SENIOR ANALYST', cost: 12000, effect: 'ppPerSecond', value: 10, desc: 'Congratulations on your mandatory advancement.' },
-  { id: 'roofaccess', name: 'Roof Access', cost: 18000, effect: 'unlock', value: 'roof', desc: 'Emergency exit only. This is an emergency.' }
 ];
 
 export const DIMENSIONAL_UPGRADES = [
@@ -442,7 +412,7 @@ export const ACHIEVEMENTS = [
   { id: 'week_one', name: 'Week One Complete', desc: 'Survive 7 days', check: (state) => state.day >= 8 },
   { id: 'productivity', name: 'Productivity Champion', desc: 'Earn 10,000 PP', check: (state) => state.pp >= 10000 },
   { id: 'sorting', name: 'Paper Pusher', desc: 'Sort papers 100 times', check: (state) => state.sortCount >= 100 },
-  { id: 'explorer', name: 'Explorer', desc: 'Unlock all locations', check: (state) => state.unlockedLocations.length >= 7 },
+  { id: 'explorer', name: 'Explorer', desc: 'Unlock all locations', check: (state) => state.unlockedLocations.length >= 4 },
   { id: 'consumer', name: 'Consumer', desc: 'Buy 5 upgrades', check: (state) => Object.keys(state.upgrades).length >= 5 },
   { id: 'skeptic', name: 'The Skeptic', desc: 'Disagree with colleagues 20 times', check: (state) => state.disagreementCount >= 20 },
   { id: 'archivist', name: 'Archivist', desc: 'Discover The Archive', check: (state) => state.unlockedLocations.includes('archive') },

@@ -286,11 +286,6 @@ export default function Game() {
     } else if (upgrade.effect === 'unlock') {
       const unlockMap = {
         'debug': 'Unlocks Debug challenges',
-        'exploration': 'Unlocks Breakroom',
-        'serverroom': 'Unlocks Server Room',
-        'managers': 'Unlocks Manager\'s Office',
-        'basement': 'Unlocks B7 - Basement (Phase 3)',
-        'roof': 'Unlocks Roof Access',
         'archive': 'Unlocks The Archive',
         'drawer': 'Unlocks Bottom Drawer',
         'converter': 'Unlocks Material Converter',
@@ -1057,19 +1052,6 @@ export default function Game() {
             </div>
           </div>
         </div>
-
-        {gameState.phase === 3 && gameState.sanity < 20 && (
-          <div style={{
-            marginTop: '40px',
-            padding: '20px',
-            border: '1px solid var(--border-color)',
-            fontSize: '13px',
-            opacity: 0.8,
-            textAlign: 'center'
-          }}>
-            The roof. The answer is on the roof. Or is it?
-          </div>
-        )}
 
         {showDebugMenu && (
           <div style={{
