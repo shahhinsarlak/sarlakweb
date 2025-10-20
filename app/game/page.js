@@ -68,29 +68,30 @@ export default function Game() {
       const newAchievements = [...prev.achievements];
       const achievementMessages = [];
       let hasNew = false;
+      let totalXP = 0;
   
       ACHIEVEMENTS.forEach(achievement => {
         if (!newAchievements.includes(achievement.id) && achievement.check(prev)) {
           newAchievements.push(achievement.id);
           hasNew = true;
-          achievementMessages.push(`🏆 ACHIEVEMENT: ${achievement.name}`);
+          achievementMessages.push(`🏆 ACHIEVEMENT: ${achievement.name} (+${XP_REWARDS.completeAchievement} XP)`);
+          totalXP += XP_REWARDS.completeAchievement;
         }
       });
   
       if (hasNew) {
-        // Grant XP directly in the same state update
-        const xpResult = addExperience(prev, XP_REWARDS.completeAchievement * achievementMessages.length, () => {});
+        const xpResult = addExperience(prev, totalXP);
         
-        // Trigger particle effect if leveled up
+        // Add level-up message if leveled up from achievements
         if (xpResult.leveledUp) {
+          achievementMessages.push(`🎉 LEVEL UP! You are now level ${xpResult.playerLevel}. +${xpResult.skillPointsGained} Skill Points!`);
           setTimeout(() => {
             createLevelUpParticles();
-            addMessage(`🎉 LEVEL UP! You are now level ${xpResult.playerLevel}.`);
-          }, 100);
+          }, 0);
         }
         
         return { 
-          ...prev,
+          ...prev, 
           ...xpResult,
           achievements: newAchievements,
           recentMessages: [...achievementMessages.reverse(), ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
@@ -98,7 +99,7 @@ export default function Game() {
       }
       return prev;
     });
-  }, [addMessage]);
+  }, []);
 
   useEffect(() => {
     const handleThemeChange = (e) => {
