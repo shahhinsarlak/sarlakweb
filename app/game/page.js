@@ -365,7 +365,7 @@ export default function Game() {
           newState.sanity = 20;
         }
 
-        if (!prev.strangeColleagueEvent && prev.day >= 3 && prev.location !== 'portal' && Math.random() < 0.005) {
+        if (!prev.strangeColleagueEvent && !prev.debugMode && !prev.meditating && prev.day >= 3 && prev.location === 'cubicle' && Math.random() < 0.005) {
           const randomDialogue = STRANGE_COLLEAGUE_DIALOGUES[Math.floor(Math.random() * STRANGE_COLLEAGUE_DIALOGUES.length)];
           newState.strangeColleagueEvent = randomDialogue;
           addMessage('Someone approaches your desk. You don\'t recognize them.');
