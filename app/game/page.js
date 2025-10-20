@@ -10,7 +10,7 @@ import DimensionalArea from './DimensionalArea';
 import DimensionalUpgradesDisplay from './DimensionalUpgradesDisplay';
 import SkillTreeModal from './SkillTreeModal';
 import { createGameActions } from './gameActions';
-import { getDistortionStyle, distortText, getClockTime } from './gameUtils';
+import { getDistortionStyle, distortText, getClockTime, createLevelUpParticles } from './gameUtils';
 import { saveGame, loadGame, exportToClipboard, importFromClipboard } from './saveSystem';
 import { addExperience, purchaseSkill, getActiveSkillEffects, getModifiedPortalCooldown, getModifiedCapacity } from './skillSystemHelpers';
 import { XP_REWARDS, LEVEL_SYSTEM, SKILLS } from './skillTreeConstants';
@@ -48,6 +48,14 @@ export default function Game() {
   const grantXP = useCallback((amount) => {
     setGameState(prev => {
       const xpResult = addExperience(prev, amount, addMessage);
+      
+      // Trigger particle effect on level up
+      if (xpResult.leveledUp) {
+        setTimeout(() => {
+          createLevelUpParticles();
+        }, 100);
+      }
+      
       return {
         ...prev,
         ...xpResult
