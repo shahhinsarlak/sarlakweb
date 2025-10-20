@@ -38,7 +38,15 @@ export const INITIAL_GAME_STATE = {
   playerXP: 0,
   skillPoints: 0,
   skills: {},
-  showSkillTree: false
+  showSkillTree: false,
+  // Printer Room System
+  paper: 0,
+  paperPerPrint: 1,
+  paperPerSecond: 0,
+  printerQuality: 0,
+  printerUnlocked: false,
+  printCount: 0,
+  printerUpgrades: {}
 };
 
 export const STRANGE_COLLEAGUE_DIALOGUES = [
@@ -231,6 +239,7 @@ export const LOCATIONS = {
 export const UPGRADES = [
   { id: 'stapler', name: 'Premium Stapler', cost: 50, effect: 'ppPerClick', value: 2, desc: 'It never jams. Never.' },
   { id: 'coffee', name: 'Coffee Machine', cost: 150, effect: 'ppPerSecond', value: 1, desc: 'Automatic productivity. Tastes like copper.' },
+  { id: 'printerroom', name: 'Printer Room Access', cost: 200, effect: 'unlock', value: 'printer', desc: 'The printer hums. Something is wrong with its output.' },
   { id: 'keyboard', name: 'Mechanical Keyboard', cost: 300, effect: 'ppPerClick', value: 5, desc: 'The clicking soothes you. Click. Click. Click.' },
   { id: 'debugger', name: 'Debug Access', cost: 500, effect: 'unlock', value: 'debug', desc: 'Fix the code. Fix reality. Same thing.' },
   { id: 'energydrink', name: 'Energy Drink Pack', cost: 800, effect: 'maxEnergy', value: 20, desc: '5000% daily value of everything.' },
@@ -379,13 +388,119 @@ export const DIMENSIONAL_UPGRADES = [
   },
   
   // Endgame
-  { 
-    id: 'singularity_collapse', 
-    name: 'Singularity Collapse', 
-    materials: { singularity_node: 3 }, 
-    effect: 'unlock', 
-    value: 'ending', 
-    desc: 'ESCAPE. TRANSCEND. ASCEND. LEAVE.' 
+  {
+    id: 'singularity_collapse',
+    name: 'Singularity Collapse',
+    materials: { singularity_node: 3 },
+    effect: 'unlock',
+    value: 'ending',
+    desc: 'ESCAPE. TRANSCEND. ASCEND. LEAVE.'
+  }
+];
+
+export const PRINTER_UPGRADES = [
+  // Quality Improvements
+  {
+    id: 'toner_cartridge',
+    name: 'New Toner Cartridge',
+    costs: { pp: 100, paper: 10 },
+    effect: 'printerQuality',
+    value: 15,
+    desc: 'Less distortion. The text becomes... readable.'
+  },
+  {
+    id: 'print_head_cleaning',
+    name: 'Print Head Cleaning',
+    costs: { pp: 250, paper: 25 },
+    effect: 'printerQuality',
+    value: 20,
+    desc: 'The printer whirs. Lines straighten themselves.'
+  },
+  {
+    id: 'calibration',
+    name: 'Printer Calibration',
+    costs: { pp: 500, paper: 50 },
+    effect: 'printerQuality',
+    value: 25,
+    desc: 'Perfect alignment. Almost too perfect.'
+  },
+  {
+    id: 'premium_paper_stock',
+    name: 'Premium Paper Stock',
+    costs: { pp: 800, paper: 75 },
+    effect: 'printerQuality',
+    value: 20,
+    desc: 'Heavier paper. The weight of words made manifest.'
+  },
+  {
+    id: 'laser_upgrade',
+    name: 'Laser Printer Upgrade',
+    costs: { pp: 1500, paper: 150 },
+    effect: 'printerQuality',
+    value: 20,
+    desc: 'Industrial quality. Reality solidifies on each page.'
+  },
+
+  // Production Upgrades
+  {
+    id: 'faster_printer',
+    name: 'High-Speed Printer',
+    costs: { pp: 300, paper: 30 },
+    effect: 'paperPerPrint',
+    value: 1,
+    desc: 'Prints faster. Two pages at once. Or is it one?'
+  },
+  {
+    id: 'duplex_printing',
+    name: 'Duplex Printing',
+    costs: { pp: 600, paper: 60 },
+    effect: 'paperPerPrint',
+    value: 2,
+    desc: 'Both sides. Front and back. Inside and out.'
+  },
+  {
+    id: 'bulk_tray',
+    name: 'Bulk Paper Tray',
+    costs: { pp: 1000, paper: 100 },
+    effect: 'paperPerPrint',
+    value: 3,
+    desc: '500 sheet capacity. The pages multiply.'
+  },
+
+  // Automation
+  {
+    id: 'auto_print',
+    name: 'Auto-Print System',
+    costs: { pp: 2000, paper: 200 },
+    effect: 'paperPerSecond',
+    value: 0.5,
+    desc: 'It prints without you. Does it need you anymore?'
+  },
+  {
+    id: 'print_server',
+    name: 'Network Print Server',
+    costs: { pp: 3500, paper: 350 },
+    effect: 'paperPerSecond',
+    value: 1,
+    desc: 'Connected to everything. Everything prints.'
+  },
+  {
+    id: 'industrial_printer',
+    name: 'Industrial Print Farm',
+    costs: { pp: 6000, paper: 500 },
+    effect: 'paperPerSecond',
+    value: 2,
+    desc: 'A room full of printers. They hum in unison.'
+  },
+
+  // Special Upgrades
+  {
+    id: 'reality_printer',
+    name: 'Reality Printer',
+    costs: { pp: 10000, paper: 1000 },
+    effect: 'ppPerPrint',
+    value: 5,
+    desc: 'What you print becomes real. +5 PP per print.'
   }
 ];
 
@@ -433,5 +548,13 @@ export const ACHIEVEMENTS = [
   { id: 'reality_hacker', name: 'Reality Hacker', desc: 'Unlock all portal upgrades', check: (state) => state.dimensionalUpgrades?.dimensional_anchor && state.dimensionalUpgrades?.reality_stabilizer && state.dimensionalUpgrades?.temporal_accelerator },
   { id: 'enlightened', name: 'Enlightened', desc: 'Unlock Void Sight', check: (state) => state.dimensionalUpgrades?.void_sight },
   { id: 'time_lord', name: 'Time Lord', desc: 'Use Temporal Rewind', check: (state) => state.timeRewindUsed },
-  { id: 'transcendent', name: 'Transcendent', desc: 'Craft Singularity Collapse', check: (state) => state.dimensionalUpgrades?.singularity_collapse }
+  { id: 'transcendent', name: 'Transcendent', desc: 'Craft Singularity Collapse', check: (state) => state.dimensionalUpgrades?.singularity_collapse },
+  // Printer Achievements
+  { id: 'printer_access', name: 'Print Run', desc: 'Unlock the Printer Room', check: (state) => state.printerUnlocked },
+  { id: 'first_print', name: 'First Print', desc: 'Print your first distorted page', check: (state) => state.printCount >= 1 },
+  { id: 'paper_hoarder', name: 'Paper Hoarder', desc: 'Accumulate 100 Paper', check: (state) => state.paper >= 100 },
+  { id: 'paper_mogul', name: 'Paper Mogul', desc: 'Accumulate 1000 Paper', check: (state) => state.paper >= 1000 },
+  { id: 'quality_control', name: 'Quality Control', desc: 'Reach 100% printer quality', check: (state) => state.printerQuality >= 100 },
+  { id: 'print_master', name: 'Print Master', desc: 'Buy all printer upgrades', check: (state) => Object.keys(state.printerUpgrades || {}).length >= 13 },
+  { id: 'reality_manifest', name: 'Reality Manifest', desc: 'Unlock the Reality Printer', check: (state) => state.printerUpgrades?.reality_printer }
 ];

@@ -15,13 +15,14 @@ import { saveGame, loadGame, exportToClipboard, importFromClipboard } from './sa
 import { addExperience, purchaseSkill, getActiveSkillEffects, getModifiedPortalCooldown, getModifiedCapacity } from './skillSystemHelpers';
 import { SKILLS, LEVEL_SYSTEM, XP_REWARDS } from './skillTreeConstants';
 import { DIMENSIONAL_MATERIALS } from './dimensionalConstants';
-import { 
-  INITIAL_GAME_STATE, 
-  LOCATIONS, 
-  UPGRADES, 
-  ACHIEVEMENTS, 
+import {
+  INITIAL_GAME_STATE,
+  LOCATIONS,
+  UPGRADES,
+  ACHIEVEMENTS,
   EVENTS,
-  STRANGE_COLLEAGUE_DIALOGUES 
+  STRANGE_COLLEAGUE_DIALOGUES,
+  PRINTER_UPGRADES
 } from './constants';
 
 export default function Game() {
@@ -272,9 +273,25 @@ export default function Game() {
     });
   };
 
+  const getPrinterUpgradeTooltip = (upgrade) => {
+    const effects = [];
+
+    if (upgrade.effect === 'printerQuality') {
+      effects.push(`+${upgrade.value}% printer quality`);
+    } else if (upgrade.effect === 'paperPerPrint') {
+      effects.push(`+${upgrade.value} Paper per print`);
+    } else if (upgrade.effect === 'paperPerSecond') {
+      effects.push(`+${upgrade.value} Paper per second (passive)`);
+    } else if (upgrade.effect === 'ppPerPrint') {
+      effects.push(`+${upgrade.value} PP per print`);
+    }
+
+    return effects.length > 0 ? effects.join(' • ') : 'Unknown effect';
+  };
+
   const getUpgradeTooltip = (upgrade) => {
     const effects = [];
-    
+
     if (upgrade.effect === 'ppPerClick') {
       effects.push(`+${upgrade.value} PP per click`);
     } else if (upgrade.effect === 'ppPerSecond') {
@@ -292,7 +309,8 @@ export default function Game() {
         'imbuing': 'Unlocks Weapon Imbuing',
         'lore': 'Unlocks Dimensional Codex',
         'ending': 'Unlocks Final Ending',
-        'void': 'Unlocks The Void'
+        'void': 'Unlocks The Void',
+        'printer': 'Unlocks Printer Room'
       };
       effects.push(unlockMap[upgrade.value] || `Unlocks: ${upgrade.value}`);
     } else if (upgrade.effect === 'maxLogMessages') {
@@ -337,6 +355,10 @@ export default function Game() {
         
         if (prev.ppPerSecond > 0) {
           newState.pp = prev.pp + (prev.ppPerSecond / 10);
+        }
+
+        if (prev.paperPerSecond > 0) {
+          newState.paper = prev.paper + (prev.paperPerSecond / 10);
         }
 
         newState.timeInOffice = prev.timeInOffice + 0.1;
@@ -726,6 +748,32 @@ export default function Game() {
                     <div style={{ fontSize: '10px', opacity: 0.6, marginTop: '6px' }}>[-10 ENERGY]</div>
                   </button>
                 )}
+                {gameState.printerUnlocked && (
+                  <button
+                    onClick={actions.printPaper}
+                    disabled={gameState.energy < 3}
+                    style={{
+                      background: 'none',
+                      border: '1px solid #00ff88',
+                      color: '#00ff88',
+                      padding: '20px',
+                      cursor: gameState.energy >= 3 ? 'pointer' : 'not-allowed',
+                      fontSize: '12px',
+                      fontFamily: 'inherit',
+                      letterSpacing: '0.5px',
+                      transition: 'all 0.2s',
+                      opacity: gameState.energy >= 3 ? 1 : 0.4,
+                      textAlign: 'center',
+                      transform: gameState.printerQuality < 20 ? 'skew(-1deg)' : 'none',
+                      filter: gameState.printerQuality < 20 ? 'blur(0.5px)' : 'none'
+                    }}
+                  >
+                    <div>PRINT PAPERS</div>
+                    <div style={{ fontSize: '10px', opacity: 0.6, marginTop: '6px' }}>
+                      [+{gameState.paperPerPrint || 1} PAPER, -3 ENERGY]
+                    </div>
+                  </button>
+                )}
                 {gameState.location === 'portal' && (
                   <button
                     onClick={enterDimensionalArea}
@@ -874,6 +922,12 @@ export default function Game() {
                   <span>PP</span>
                   <strong style={{ fontSize: '18px' }}>{gameState.pp.toFixed(1)}</strong>
                 </div>
+                {gameState.printerUnlocked && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
+                    <span>PAPER</span>
+                    <strong style={{ fontSize: '18px', color: '#00ff88' }}>{gameState.paper.toFixed(1)}</strong>
+                  </div>
+                )}
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
                   <span>ENERGY</span>
                   <strong style={{ fontSize: '18px' }}>{gameState.energy.toFixed(1)}%</strong>
@@ -896,6 +950,18 @@ export default function Game() {
                     fontSize: '12px'
                   }}>
                     +{gameState.ppPerSecond.toFixed(1)} PP/sec
+                  </div>
+                )}
+                {gameState.paperPerSecond > 0 && (
+                  <div style={{
+                    paddingTop: gameState.ppPerSecond > 0 ? '8px' : '16px',
+                    borderTop: gameState.ppPerSecond > 0 ? 'none' : '1px solid var(--border-color)',
+                    textAlign: 'center',
+                    opacity: 0.7,
+                    fontSize: '12px',
+                    color: '#00ff88'
+                  }}>
+                    +{gameState.paperPerSecond.toFixed(1)} Paper/sec
                   </div>
                 )}
               </div>
@@ -979,7 +1045,7 @@ export default function Game() {
                           {upgrade.cost} PP
                         </div>
                       </button>
-                      
+
                       {hoveredUpgrade === upgrade.id && (
                         <div style={{
                           position: 'absolute',
@@ -995,9 +1061,9 @@ export default function Game() {
                           boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
                           pointerEvents: 'none'
                         }}>
-                          <div style={{ 
-                            color: 'var(--accent-color)', 
-                            fontWeight: '500', 
+                          <div style={{
+                            color: 'var(--accent-color)',
+                            fontWeight: '500',
                             marginBottom: '4px',
                             textTransform: 'uppercase',
                             letterSpacing: '0.5px'
@@ -1011,6 +1077,105 @@ export default function Game() {
                       )}
                     </div>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {gameState.printerUnlocked && PRINTER_UPGRADES.filter(u => !gameState.printerUpgrades?.[u.id]).length > 0 && (
+              <div style={{ marginBottom: '30px' }}>
+                <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6, marginBottom: '16px' }}>
+                  PRINTER UPGRADES
+                </div>
+                {gameState.printerQuality !== undefined && (
+                  <div style={{
+                    fontSize: '11px',
+                    marginBottom: '12px',
+                    padding: '8px',
+                    backgroundColor: 'var(--hover-color)',
+                    border: '1px solid var(--border-color)',
+                    textAlign: 'center'
+                  }}>
+                    Printer Quality: {gameState.printerQuality}%
+                  </div>
+                )}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {PRINTER_UPGRADES.filter(u => !gameState.printerUpgrades?.[u.id]).slice(0, 5).map(upgrade => {
+                    const canAffordPP = gameState.pp >= upgrade.costs.pp;
+                    const canAffordPaper = gameState.paper >= upgrade.costs.paper;
+                    const canAfford = canAffordPP && canAffordPaper;
+
+                    return (
+                      <div
+                        key={upgrade.id}
+                        style={{ position: 'relative' }}
+                        onMouseEnter={() => setHoveredUpgrade(`printer_${upgrade.id}`)}
+                        onMouseLeave={() => setHoveredUpgrade(null)}
+                      >
+                        <button
+                          onClick={() => actions.buyPrinterUpgrade(upgrade)}
+                          disabled={!canAfford}
+                          style={{
+                            width: '100%',
+                            background: 'none',
+                            border: '1px solid #00ff88',
+                            color: 'var(--text-color)',
+                            padding: '16px',
+                            cursor: canAfford ? 'pointer' : 'not-allowed',
+                            fontSize: '12px',
+                            fontFamily: 'inherit',
+                            textAlign: 'left',
+                            transition: 'all 0.2s',
+                            opacity: canAfford ? 1 : 0.4
+                          }}
+                        >
+                          <div style={{ fontWeight: '500', marginBottom: '8px', fontSize: '13px' }}>
+                            {upgrade.name}
+                          </div>
+                          <div style={{ fontSize: '11px', opacity: 0.7, marginBottom: '8px' }}>
+                            {upgrade.desc}
+                          </div>
+                          <div style={{ fontSize: '12px', display: 'flex', gap: '12px' }}>
+                            <span style={{ color: canAffordPP ? 'var(--accent-color)' : '#ff6666' }}>
+                              {upgrade.costs.pp} PP
+                            </span>
+                            <span style={{ color: canAffordPaper ? '#00ff88' : '#ff6666' }}>
+                              {upgrade.costs.paper} Paper
+                            </span>
+                          </div>
+                        </button>
+
+                        {hoveredUpgrade === `printer_${upgrade.id}` && (
+                          <div style={{
+                            position: 'absolute',
+                            left: '110%',
+                            top: '0',
+                            backgroundColor: 'var(--bg-color)',
+                            border: '1px solid #00ff88',
+                            padding: '12px 16px',
+                            borderRadius: '4px',
+                            fontSize: '11px',
+                            whiteSpace: 'nowrap',
+                            zIndex: 1000,
+                            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+                            pointerEvents: 'none'
+                          }}>
+                            <div style={{
+                              color: '#00ff88',
+                              fontWeight: '500',
+                              marginBottom: '4px',
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.5px'
+                            }}>
+                              Effect:
+                            </div>
+                            <div style={{ color: 'var(--text-color)' }}>
+                              {getPrinterUpgradeTooltip(upgrade)}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
