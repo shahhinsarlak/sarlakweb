@@ -202,3 +202,90 @@ export const getDistortionStyle = (sanity) => {
       });
     }, 3500);
   };
+
+  export const createSkillPurchaseParticles = () => {
+    const container = document.createElement('div');
+    container.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 5000;
+    `;
+    document.body.appendChild(container);
+  
+    const colors = ['#4a90e2', '#00bfff', '#1e90ff', '#87ceeb'];
+  
+    for (let i = 0; i < 40; i++) {
+      const particle = document.createElement('div');
+      const size = Math.random() * 10 + 5;
+      const duration = Math.random() * 1.5 + 1;
+      const delay = Math.random() * 0.3;
+      
+      const startX = window.innerWidth / 2;
+      const startY = window.innerHeight / 2;
+      const angle = (Math.PI * 2 * i) / 40;
+      const distance = 150 + Math.random() * 150;
+      const endX = Math.cos(angle) * distance;
+      const endY = Math.sin(angle) * distance;
+      
+      const color = colors[Math.floor(Math.random() * colors.length)];
+      
+      particle.style.cssText = `
+        position: absolute;
+        left: ${startX}px;
+        top: ${startY}px;
+        width: ${size}px;
+        height: ${size}px;
+        background: ${color};
+        borderRadius: 50%;
+        opacity: 1;
+        boxShadow: 0 0 ${size * 2}px ${color};
+        animation: skillParticle${i} ${duration}s ease-out ${delay}s forwards;
+        zIndex: 5001;
+      `;
+  
+      const style = document.createElement('style');
+      style.textContent = `
+        @keyframes skillParticle${i} {
+          0% {
+            opacity: 1;
+            transform: translate(0, 0) scale(1);
+          }
+          100% {
+            opacity: 0;
+            transform: translate(${endX}px, ${endY}px) scale(0);
+          }
+        }
+      `;
+      document.head.appendChild(style);
+      container.appendChild(particle);
+    }
+  
+    setTimeout(() => {
+      container.remove();
+      document.querySelectorAll('style').forEach(style => {
+        if (style.textContent.includes('skillParticle')) {
+          style.remove();
+        }
+      });
+    }, 2500);
+  };
+
+  export const createScreenShake = () => {
+    document.body.style.animation = 'screenShake 0.4s ease-in-out';
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes screenShake {
+        0%, 100% { transform: translate(0, 0); }
+        10%, 30%, 50%, 70%, 90% { transform: translate(-3px, -3px); }
+        20%, 40%, 60%, 80% { transform: translate(3px, 3px); }
+      }
+    `;
+    document.head.appendChild(style);
+    setTimeout(() => {
+      document.body.style.animation = '';
+    }, 400);
+  };

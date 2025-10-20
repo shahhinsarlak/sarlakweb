@@ -262,6 +262,35 @@ setGameState(prev => ({
   property: newValue,
   recentMessages: [newMessage, ...prev.recentMessages].slice(0, 15)
 }));
+
+## Skill System (Simplified)
+
+The skill tree has **3 branches** with **4 tiers** each:
+
+### Branches
+1. **Efficiency** (📊) - PP generation, energy, meditation, upgrades
+2. **Portal** (🌀) - Portal cooldown, capacity, rarity, double yield
+3. **Survival** (🛡️) - Sanity resistance, health, attack, critical hits
+
+### Progression
+- Each tier requires the previous tier to be learned
+- Skills can be leveled up multiple times (maxLevel varies)
+- Cost: Always 1 Skill Point per level
+- Skill Points earned: 1 per level, 3 every 10 levels
+
+### Skill IDs
+Format: `{branch}_{tier}` (e.g., `efficiency_1`, `portal_3`, `survival_4`)
+
+### Using Skills
+```javascript
+import { SKILLS } from './skillTreeConstants';
+
+// Get skill level
+const level = gameState.skills?.efficiency_1 || 0;
+
+// Get all active effects
+const effects = getActiveSkillEffects(gameState);
+// Returns: { ppMultiplier: 0.25, energyEfficiency: 0.10, ... }
 ```
 
 ### Message Adding

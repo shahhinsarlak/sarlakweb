@@ -42,13 +42,13 @@ export default function EventLog({ messages, isVisible = true }) {
             display: 'flex',
             flexDirection: 'column'
           }}>
-          {[...messages].reverse().map((msg, i) => (
+          {...messages.map((msg, i) => (
             <div
               key={`${i}-${msg}`}
               style={{
-                marginTop: '8px',
-                paddingTop: '8px',
-                borderTop: i < messages.length - 1 ? '1px solid var(--border-color)' : 'none',
+                marginBottom: '8px',
+                paddingBottom: '8px',
+                borderBottom: i < messages.length - 1 ? '1px solid var(--border-color)' : 'none',
                 opacity: 0.8
               }}
             >

@@ -13,7 +13,6 @@ export const addExperience = (gameState, xpAmount, addMessage) => {
   let skillPointsGained = 0;
   let levelsGained = 0;
   
-  // Check for level ups - keep leveling up while we have enough XP
   while (newLevel < LEVEL_SYSTEM.maxLevel) {
     const xpNeededForNextLevel = LEVEL_SYSTEM.getXPForLevel(newLevel + 1);
     
@@ -51,33 +50,33 @@ export const purchaseSkill = (gameState, skillId, addMessage) => {
   if (!skill) return gameState;
   
   const currentLevel = (gameState.skills || {})[skillId] || 0;
-  const cost = Math.floor(skill.baseCost * Math.pow(skill.costMultiplier, currentLevel));
+  const cost = 1;
   
   // Check if can afford
   if ((gameState.skillPoints || 0) < cost) {
-    addMessage('Not enough skill points!');
+    addMessage('❌ Not enough skill points!');
     return gameState;
   }
   
   // Check if already maxed
   if (currentLevel >= skill.maxLevel) {
-    addMessage('Skill already at max level!');
+    addMessage('❌ Skill already at max level!');
     return gameState;
   }
   
   // Check requirements
-  for (const [reqSkillId, reqLevel] of Object.entries(skill.requirements)) {
-    if (((gameState.skills || {})[reqSkillId] || 0) < reqLevel) {
-      const reqSkill = SKILLS[reqSkillId];
-      addMessage(`Requires ${reqSkill.name} level ${reqLevel}!`);
-      return gameState;
+  if (skill.requires && skill.requires.length > 0) {
+    for (const reqSkillId of skill.requires) {
+      if (((gameState.skills || {})[reqSkillId] || 0) < 1) {
+        const reqSkill = SKILLS[reqSkillId];
+        addMessage(`❌ Requires ${reqSkill.name}!`);
+        return gameState;
+      }
     }
   }
   
   // Purchase skill
   const newSkills = { ...(gameState.skills || {}), [skillId]: currentLevel + 1 };
-  
-  addMessage(`✨ Learned ${skill.name} (Level ${currentLevel + 1})!`);
   
   return {
     ...gameState,
@@ -91,23 +90,13 @@ export const getActiveSkillEffects = (gameState) => {
   const skills = gameState.skills || {};
   const effects = {
     portalCooldownReduction: 0,
-    hoverRadius: 0,
-    autoCollect: false,
     capacityBonus: 0,
-    portalDuration: 0,
     rarityBonus: 0,
-    glowIntensity: 1,
-    highlightRares: false,
     doubleChance: 0,
-    jackpotChance: 0,
     attackDamage: 0,
     sanityResistance: 0,
-    blockChance: 0,
     maxHealth: 0,
     critChance: 0,
-    hasUltimate: false,
-    ultCooldown: 60,
-    ultDuration: 3,
     ppMultiplier: 0,
     energyEfficiency: 0,
     meditationBonus: 0,
@@ -140,11 +129,6 @@ export const applySkillsToMaterialCollection = (materialId, baseAmount, gameStat
   // Check for double yield
   if (Math.random() < effects.doubleChance) {
     amount *= 2;
-  }
-  
-  // Check for jackpot
-  if (Math.random() < effects.jackpotChance) {
-    amount *= 5;
   }
   
   return amount;
@@ -190,11 +174,8 @@ export const getModifiedMaterialRarity = (baseMaterial, gameState) => {
   };
 };
 
-// Check if hover collection is active and get radius
-export const getHoverCollectionInfo = (gameState) => {
+// Get sanity loss modifier
+export const getModifiedSanityLoss = (baseLoss, gameState) => {
   const effects = getActiveSkillEffects(gameState);
-  return {
-    active: effects.autoCollect,
-    radius: effects.hoverRadius
-  };
+  return Math.ceil(baseLoss * (1 - effects.sanityResistance));
 };

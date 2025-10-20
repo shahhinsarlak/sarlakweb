@@ -10,7 +10,7 @@ import DimensionalArea from './DimensionalArea';
 import DimensionalUpgradesDisplay from './DimensionalUpgradesDisplay';
 import SkillTreeModal from './SkillTreeModal';
 import { createGameActions } from './gameActions';
-import { getDistortionStyle, distortText, getClockTime, createLevelUpParticles } from './gameUtils';
+import { getDistortionStyle, distortText, getClockTime, createLevelUpParticles, createSkillPurchaseParticles, createScreenShake } from './gameUtils';
 import { saveGame, loadGame, exportToClipboard, importFromClipboard } from './saveSystem';
 import { addExperience, purchaseSkill, getActiveSkillEffects, getModifiedPortalCooldown, getModifiedCapacity } from './skillSystemHelpers';
 import { SKILLS, LEVEL_SYSTEM, XP_REWARDS } from './skillTreeConstants';
@@ -47,10 +47,21 @@ export default function Game() {
 
   const grantXP = useCallback((amount) => {
     setGameState(prev => {
-      const xpResult = addExperience(prev, amount, addMessage);
+      // Pass empty function to prevent addExperience from adding messages
+      const xpResult = addExperience(prev, amount, () => {});
       
-      // Trigger particle effect on level up
+      // Manually add level-up message here to avoid duplicates
+      const messages = [];
       if (xpResult.leveledUp) {
+        const levelsGained = xpResult.playerLevel - prev.playerLevel;
+        const skillPointsGained = xpResult.skillPoints - (prev.skillPoints || 0);
+        
+        if (levelsGained === 1) {
+          messages.push(`🎉 LEVEL UP! You are now level ${xpResult.playerLevel}. +${skillPointsGained} Skill Point${skillPointsGained > 1 ? 's' : ''}!`);
+        } else {
+          messages.push(`🎉 LEVEL UP! You gained ${levelsGained} levels and are now level ${xpResult.playerLevel}. +${skillPointsGained} Skill Points!`);
+        }
+        
         setTimeout(() => {
           createLevelUpParticles();
         }, 100);
@@ -58,10 +69,13 @@ export default function Game() {
       
       return {
         ...prev,
-        ...xpResult
+        ...xpResult,
+        recentMessages: messages.length > 0 
+          ? [...messages, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
+          : prev.recentMessages
       };
     });
-  }, [addMessage]);
+  }, []);
 
   const checkAchievements = useCallback(() => {
     setGameState(prev => {
@@ -80,11 +94,12 @@ export default function Game() {
       });
   
       if (hasNew) {
-        const xpResult = addExperience(prev, totalXP);
+        // Pass a callback that adds to achievementMessages instead of directly calling addMessage
+        const xpResult = addExperience(prev, totalXP, (msg) => {
+          achievementMessages.push(msg);
+        });
         
-        // Add level-up message if leveled up from achievements
         if (xpResult.leveledUp) {
-          achievementMessages.push(`🎉 LEVEL UP! You are now level ${xpResult.playerLevel}. +${xpResult.skillPointsGained} Skill Points!`);
           setTimeout(() => {
             createLevelUpParticles();
           }, 0);
@@ -156,17 +171,24 @@ export default function Game() {
 
   const handlePurchaseSkill = (skillId) => {
     setGameState(prev => {
-      // Don't call addMessage here - let purchaseSkill handle it
-      const result = purchaseSkill(prev, skillId, () => {}); // Empty callback to prevent double messages
+      const result = purchaseSkill(prev, skillId, addMessage);
       
-      // If the purchase was successful, add the message here
+      // If purchase failed (not enough points)
+      if (result === prev && (prev.skillPoints || 0) < 1) {
+        createScreenShake();
+        return prev;
+      }
+      
+      // If purchase was successful
       if (result !== prev) {
         const skill = SKILLS[skillId];
-        const currentLevel = (prev.purchasedSkills?.[skillId] || prev.skills?.[skillId] || 0) + 1;
+        const newLevel = result.skills?.[skillId] || 0;
+        
+        setTimeout(() => createSkillPurchaseParticles(), 0);
         
         return {
           ...result,
-          recentMessages: [`✨ Learned ${skill.name} (Level ${currentLevel})!`, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
+          recentMessages: [`✨ Learned ${skill.name} (Level ${newLevel})!`, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
         };
       }
       
