@@ -83,7 +83,7 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       };
       
       grantXP(XP_REWARDS.sortPapers);
-      setTimeout(() => checkAchievements(), 50);
+      checkAchievements();
       return newState;
     });
   };
@@ -97,7 +97,7 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
         };
       }
       const maxEnergy = 100 + (prev.upgrades.energydrink ? 20 : 0);
-      setTimeout(() => checkAchievements(), 50);
+      checkAchievements();
       return {
         ...prev,
         energy: maxEnergy,
@@ -320,7 +320,7 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
   const examineItem = (item) => {
     setGameState(prev => {
       const newExaminedItems = (prev.examinedItems || 0) + 1;
-      setTimeout(() => checkAchievements(), 50);
+      checkAchievements();
       return {
         ...prev,
         examiningItem: item,
@@ -344,7 +344,7 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
         const reward = Math.floor(300 + Math.random() * 500);
         grantXP(25); // XP_REWARDS.defeatColleague
         
-        setTimeout(() => checkAchievements(), 50);
+        checkAchievements();
         
         return {
           ...prev,
@@ -381,7 +381,7 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
           }, 600);
         }
 
-        setTimeout(() => checkAchievements(), 50);
+        checkAchievements();
         return newState;
       }
     });
@@ -433,7 +433,7 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       newState.recentMessages = [...messages.reverse(), ...prev.recentMessages].slice(0, prev.maxLogMessages || 15);
       
       grantXP(10); // XP_REWARDS.purchaseUpgrade
-      setTimeout(() => checkAchievements(), 50);
+      checkAchievements();
       return newState;
     });
   };

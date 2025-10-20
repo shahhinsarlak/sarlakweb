@@ -11,18 +11,30 @@ export const addExperience = (gameState, xpAmount, addMessage) => {
   let newLevel = currentLevel;
   let remainingXP = newXP;
   let skillPointsGained = 0;
+  let levelsGained = 0;
   
-  // Check for level ups
-  while (remainingXP >= LEVEL_SYSTEM.getXPForLevel(newLevel + 1) && newLevel < LEVEL_SYSTEM.maxLevel) {
-    remainingXP -= LEVEL_SYSTEM.getXPForLevel(newLevel + 1);
-    newLevel++;
-    skillPointsGained += LEVEL_SYSTEM.getSkillPointsPerLevel(newLevel);
+  // Check for level ups - keep leveling up while we have enough XP
+  while (newLevel < LEVEL_SYSTEM.maxLevel) {
+    const xpNeededForNextLevel = LEVEL_SYSTEM.getXPForLevel(newLevel + 1);
+    
+    if (remainingXP >= xpNeededForNextLevel) {
+      remainingXP -= xpNeededForNextLevel;
+      newLevel++;
+      levelsGained++;
+      skillPointsGained += LEVEL_SYSTEM.getSkillPointsPerLevel(newLevel);
+    } else {
+      break;
+    }
   }
   
-  const leveledUp = newLevel > currentLevel;
+  const leveledUp = levelsGained > 0;
   
   if (leveledUp) {
-    addMessage(`🎉 LEVEL UP! You are now level ${newLevel}. +${skillPointsGained} Skill Points!`);
+    if (levelsGained === 1) {
+      addMessage(`🎉 LEVEL UP! You are now level ${newLevel}. +${skillPointsGained} Skill Point${skillPointsGained > 1 ? 's' : ''}!`);
+    } else {
+      addMessage(`🎉 LEVEL UP! You gained ${levelsGained} levels and are now level ${newLevel}. +${skillPointsGained} Skill Points!`);
+    }
   }
   
   return {

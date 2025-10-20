@@ -13,7 +13,7 @@ import { createGameActions } from './gameActions';
 import { getDistortionStyle, distortText, getClockTime, createLevelUpParticles } from './gameUtils';
 import { saveGame, loadGame, exportToClipboard, importFromClipboard } from './saveSystem';
 import { addExperience, purchaseSkill, getActiveSkillEffects, getModifiedPortalCooldown, getModifiedCapacity } from './skillSystemHelpers';
-import { XP_REWARDS, LEVEL_SYSTEM, SKILLS } from './skillTreeConstants';
+import { SKILLS, LEVEL_SYSTEM, XP_REWARDS } from './skillTreeConstants';
 import { DIMENSIONAL_MATERIALS } from './dimensionalConstants';
 import { 
   INITIAL_GAME_STATE, 
@@ -68,22 +68,29 @@ export default function Game() {
       const newAchievements = [...prev.achievements];
       const achievementMessages = [];
       let hasNew = false;
-      let totalXP = 0;
-
+  
       ACHIEVEMENTS.forEach(achievement => {
         if (!newAchievements.includes(achievement.id) && achievement.check(prev)) {
           newAchievements.push(achievement.id);
           hasNew = true;
           achievementMessages.push(`🏆 ACHIEVEMENT: ${achievement.name}`);
-          totalXP += XP_REWARDS.completeAchievement;
         }
       });
-
+  
       if (hasNew) {
-        // Add XP directly without calling grantXP to avoid double messages
-        const xpResult = addExperience(prev, totalXP, () => {}); // Empty function to prevent messages
+        // Grant XP directly in the same state update
+        const xpResult = addExperience(prev, XP_REWARDS.completeAchievement * achievementMessages.length, () => {});
+        
+        // Trigger particle effect if leveled up
+        if (xpResult.leveledUp) {
+          setTimeout(() => {
+            createLevelUpParticles();
+            addMessage(`🎉 LEVEL UP! You are now level ${xpResult.playerLevel}.`);
+          }, 100);
+        }
+        
         return { 
-          ...prev, 
+          ...prev,
           ...xpResult,
           achievements: newAchievements,
           recentMessages: [...achievementMessages.reverse(), ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
@@ -91,7 +98,7 @@ export default function Game() {
       }
       return prev;
     });
-  }, []);
+  }, [addMessage]);
 
   useEffect(() => {
     const handleThemeChange = (e) => {

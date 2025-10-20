@@ -46,57 +46,159 @@ export const getDistortionStyle = (sanity) => {
       position: fixed;
       top: 0;
       left: 0;
-      width: 100%;
-      height: 100%;
+      width: 100vw;
+      height: 100vh;
       pointerEvents: none;
       zIndex: 5000;
+      overflow: hidden;
     `;
     document.body.appendChild(container);
   
-    // Create particles
-    for (let i = 0; i < 30; i++) {
-      const particle = document.createElement('div');
-      const size = Math.random() * 8 + 4;
-      const duration = Math.random() * 1.5 + 1;
-      const delay = Math.random() * 0.3;
-      const startX = Math.random() * window.innerWidth;
-      const startY = window.innerHeight / 2;
+    // Dimensional resource colors only
+    const dimensionalColors = [
+      '#1a1a2e', // Void Fragment
+      '#4a4a6a', // Static Crystal
+      '#7f00ff', // Glitch Shard
+      '#ff6b9d', // Reality Dust
+      '#00ffff', // Temporal Core
+      '#ffd700', // Dimensional Essence
+      '#ff0000'  // Singularity Node
+    ];
   
+    // Create particles from all edges of the screen
+    for (let i = 0; i < 50; i++) {
+      const particle = document.createElement('div');
+      const size = Math.random() * 12 + 6;
+      const duration = Math.random() * 2 + 1.5;
+      const delay = Math.random() * 0.5;
+      
+      // Randomly start from different edges
+      const edge = Math.floor(Math.random() * 4); // 0: top, 1: right, 2: bottom, 3: left
+      let startX, startY, endX, endY;
+      
+      switch(edge) {
+        case 0: // Top edge
+          startX = Math.random() * window.innerWidth;
+          startY = -20;
+          endX = Math.random() * window.innerWidth;
+          endY = window.innerHeight / 2 + (Math.random() * 300 - 150);
+          break;
+        case 1: // Right edge
+          startX = window.innerWidth + 20;
+          startY = Math.random() * window.innerHeight;
+          endX = window.innerWidth / 2 + (Math.random() * 300 - 150);
+          endY = Math.random() * window.innerHeight;
+          break;
+        case 2: // Bottom edge
+          startX = Math.random() * window.innerWidth;
+          startY = window.innerHeight + 20;
+          endX = Math.random() * window.innerWidth;
+          endY = window.innerHeight / 2 + (Math.random() * 300 - 150);
+          break;
+        case 3: // Left edge
+          startX = -20;
+          startY = Math.random() * window.innerHeight;
+          endX = window.innerWidth / 2 + (Math.random() * 300 - 150);
+          endY = Math.random() * window.innerHeight;
+          break;
+      }
+      
+      const color = dimensionalColors[Math.floor(Math.random() * dimensionalColors.length)];
+      
       particle.style.cssText = `
         position: absolute;
         left: ${startX}px;
         top: ${startY}px;
         width: ${size}px;
         height: ${size}px;
-        background: ${['#4a90e2', '#00ff00', '#ffaa00'][Math.floor(Math.random() * 3)]};
+        background: ${color};
         borderRadius: 50%;
         opacity: 1;
-        boxShadow: 0 0 ${size * 2}px currentColor;
-        animation: levelUpParticle ${duration}s ease-out ${delay}s forwards;
+        boxShadow: 0 0 ${size * 3}px ${color}, 0 0 ${size * 6}px ${color};
+        animation: levelUpParticle${i} ${duration}s ease-out ${delay}s forwards;
+        zIndex: 5001;
       `;
   
+      // Create unique animation for each particle
+      const style = document.createElement('style');
+      style.textContent = `
+        @keyframes levelUpParticle${i} {
+          0% {
+            opacity: 1;
+            transform: translate(0, 0) scale(1);
+          }
+          50% {
+            opacity: 1;
+            transform: translate(${(endX - startX) * 0.5}px, ${(endY - startY) * 0.5}px) scale(1.2);
+          }
+          100% {
+            opacity: 0;
+            transform: translate(${endX - startX}px, ${endY - startY}px) scale(0.3);
+          }
+        }
+      `;
+      document.head.appendChild(style);
       container.appendChild(particle);
     }
   
-    // Add animation keyframes
-    const style = document.createElement('style');
-    style.textContent = `
-      @keyframes levelUpParticle {
-        0% {
-          opacity: 1;
-          transform: translate(0, 0) scale(1);
+    // Add center burst effect
+    for (let i = 0; i < 30; i++) {
+      const particle = document.createElement('div');
+      const size = Math.random() * 8 + 4;
+      const duration = Math.random() * 1.5 + 1;
+      const delay = Math.random() * 0.3;
+      const angle = (Math.PI * 2 * i) / 30;
+      const distance = 300 + Math.random() * 200;
+      
+      const startX = window.innerWidth / 2;
+      const startY = window.innerHeight / 2;
+      const endX = Math.cos(angle) * distance;
+      const endY = Math.sin(angle) * distance;
+      
+      const color = dimensionalColors[Math.floor(Math.random() * dimensionalColors.length)];
+      
+      particle.style.cssText = `
+        position: absolute;
+        left: ${startX}px;
+        top: ${startY}px;
+        width: ${size}px;
+        height: ${size}px;
+        background: ${color};
+        borderRadius: 50%;
+        opacity: 1;
+        boxShadow: 0 0 ${size * 3}px ${color}, 0 0 ${size * 6}px ${color};
+        animation: levelUpBurst${i} ${duration}s ease-out ${delay}s forwards;
+        zIndex: 5001;
+      `;
+  
+      const style = document.createElement('style');
+      style.textContent = `
+        @keyframes levelUpBurst${i} {
+          0% {
+            opacity: 1;
+            transform: translate(0, 0) scale(0.5);
+          }
+          50% {
+            opacity: 1;
+          }
+          100% {
+            opacity: 0;
+            transform: translate(${endX}px, ${endY}px) scale(0);
+          }
         }
-        100% {
-          opacity: 0;
-          transform: translate(${Math.random() * 200 - 100}px, -300px) scale(0);
-        }
-      }
-    `;
-    document.head.appendChild(style);
+      `;
+      document.head.appendChild(style);
+      container.appendChild(particle);
+    }
   
     // Clean up after animation completes
     setTimeout(() => {
       container.remove();
-      style.remove();
-    }, 2500);
+      // Clean up all the dynamic styles
+      document.querySelectorAll('style').forEach(style => {
+        if (style.textContent.includes('levelUpParticle') || style.textContent.includes('levelUpBurst')) {
+          style.remove();
+        }
+      });
+    }, 3500);
   };

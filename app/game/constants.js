@@ -36,7 +36,7 @@ export const INITIAL_GAME_STATE = {
   timeRewindUsed: false,
   playerLevel: 1,
   playerXP: 0,
-  skillPoints: 3,
+  skillPoints: 0,
   skills: {},
   showSkillTree: false
 };
