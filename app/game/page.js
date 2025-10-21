@@ -11,12 +11,14 @@ import DimensionalArea from './DimensionalArea';
 import DimensionalUpgradesDisplay from './DimensionalUpgradesDisplay';
 import SkillTreeModal from './SkillTreeModal';
 import PrinterRoom from './PrinterRoom';
+import CombatModal from './CombatModal';
 import { createGameActions } from './gameActions';
 import { getDistortionStyle, distortText, getClockTime, createLevelUpParticles, createSkillPurchaseParticles, createScreenShake } from './gameUtils';
 import { saveGame, loadGame, exportToClipboard, importFromClipboard } from './saveSystem';
 import { addExperience, purchaseSkill, getActiveSkillEffects, getModifiedPortalCooldown, getModifiedCapacity } from './skillSystemHelpers';
 import { SKILLS, LEVEL_SYSTEM, XP_REWARDS } from './skillTreeConstants';
 import { DIMENSIONAL_MATERIALS } from './dimensionalConstants';
+import { getPlayerCombatStats } from './combatConstants';
 import {
   INITIAL_GAME_STATE,
   LOCATIONS,
@@ -292,8 +294,8 @@ export default function Game() {
       effects.push(`+${upgrade.value} PP per second (passive income)`);
     } else if (upgrade.effect === 'maxEnergy') {
       effects.push(`Max energy +${upgrade.value}`);
-    } else if (upgrade.effect === 'sanityRegen') {
-      effects.push(`+${upgrade.value} sanity regeneration per second`);
+    } else if (upgrade.effect === 'sanityDrain') {
+      effects.push(`Sanity drains ${upgrade.value * 100}% slower`);
     } else if (upgrade.effect === 'unlock') {
       const unlockMap = {
         'debug': 'Unlocks Debug challenges',
@@ -360,18 +362,25 @@ export default function Game() {
           newState.day = prev.day + 1;
         }
 
+        // Sanity drain system - base drain reduced by upgrades
         if (prev.phase >= 2) {
-          newState.sanity = Math.max(0, prev.sanity - 0.05);
+          let sanityDrainRate = 0.05; // Base drain rate
+
+          // Pills reduce drain by 50%
+          if (prev.upgrades.pills) {
+            sanityDrainRate *= 0.5;
+          }
+
+          // Void Shield reduces drain by additional 50%
+          if (prev.dimensionalUpgrades?.void_shield) {
+            sanityDrainRate *= 0.5;
+          }
+
+          // Apply sanity drain
+          newState.sanity = Math.max(0, prev.sanity - sanityDrainRate);
         }
 
-        if (prev.upgrades.pills && prev.sanity < 100) {
-          newState.sanity = Math.min(100, prev.sanity + 0.05);
-        }
-
-        if (prev.dimensionalUpgrades?.void_shield && prev.sanity < 100) {
-          newState.sanity = Math.min(100, prev.sanity + 0.05);
-        }
-
+        // Reality Anchor sets minimum sanity threshold
         if (prev.dimensionalUpgrades?.reality_anchor && newState.sanity < 20) {
           newState.sanity = 20;
         }
@@ -488,8 +497,33 @@ export default function Game() {
     return <ExamineModal item={gameState.examiningItem} closeExamine={actions.closeExamine} />;
   }
 
+  if (gameState.inCombat) {
+    const playerStats = getPlayerCombatStats(gameState);
+    return (
+      <CombatModal
+        enemy={gameState.currentEnemy}
+        playerStats={playerStats}
+        onAttack={actions.playerAttack}
+        onEscape={actions.escapeCombat}
+        onEndCombat={actions.endCombat}
+        combatLog={gameState.combatLog}
+        isPlayerTurn={gameState.isPlayerTurn}
+        combatEnded={gameState.combatEnded}
+      />
+    );
+  }
+
   if (gameState.strangeColleagueEvent) {
-    return <ColleagueModal event={gameState.strangeColleagueEvent} recentMessages={gameState.recentMessages} respondToColleague={actions.respondToColleague} />;
+    const hasWeapon = gameState.dimensionalUpgrades?.shard_weapon || false;
+    return (
+      <ColleagueModal
+        event={gameState.strangeColleagueEvent}
+        recentMessages={gameState.recentMessages}
+        respondToColleague={actions.respondToColleague}
+        hasWeapon={hasWeapon}
+        onStartCombat={actions.startCombat}
+      />
+    );
   }
 
   if (gameState.debugMode && gameState.currentBug) {
@@ -756,9 +790,10 @@ export default function Game() {
                     onClick={enterDimensionalArea}
                     disabled={gameState.portalCooldown > 0}
                     style={{
+                      ...getDistortionStyle(gameState.sanity),
                       background: 'none',
-                      border: '1px solid #00ffff',
-                      color: '#00ffff',
+                      border: '1px solid var(--border-color)',
+                      color: 'var(--text-color)',
                       padding: '20px',
                       cursor: gameState.portalCooldown > 0 ? 'not-allowed' : 'pointer',
                       fontSize: '12px',
@@ -766,11 +801,10 @@ export default function Game() {
                       letterSpacing: '0.5px',
                       transition: 'all 0.2s',
                       textAlign: 'center',
-                      boxShadow: gameState.portalCooldown > 0 ? 'none' : '0 0 10px rgba(0, 255, 255, 0.3)',
                       opacity: gameState.portalCooldown > 0 ? 0.4 : 1
                     }}
                   >
-                    <div>ENTER PORTAL</div>
+                    <div>{distortText('ENTER PORTAL', gameState.sanity)}</div>
                     <div style={{ fontSize: '10px', opacity: 0.6, marginTop: '6px' }}>
                       {gameState.portalCooldown > 0 ? `[${Math.ceil(gameState.portalCooldown)}s]` : '[DIMENSIONAL MINING]'}
                     </div>

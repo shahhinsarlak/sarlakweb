@@ -19,6 +19,7 @@ import {
   applyPPMultiplier
 } from './skillSystemHelpers';
 import { XP_REWARDS } from './skillTreeConstants';
+import { generateEnemy, getPlayerCombatStats, COMBAT_MECHANICS } from './combatConstants';
 
 
 export const createGameActions = (setGameState, addMessage, checkAchievements, grantXP) => {
@@ -529,6 +530,211 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
     }));
   };
 
+  // Combat Actions
+  const startCombat = () => {
+    setGameState(prev => {
+      const enemy = generateEnemy(prev.playerLevel || 1);
+      const playerStats = getPlayerCombatStats(prev);
+
+      return {
+        ...prev,
+        inCombat: true,
+        currentEnemy: enemy,
+        playerCombatHP: playerStats.maxHP,
+        combatLog: [],
+        isPlayerTurn: true,
+        combatEnded: false,
+        strangeColleagueEvent: null // Clear colleague event
+      };
+    });
+  };
+
+  const playerAttack = () => {
+    setGameState(prev => {
+      if (!prev.isPlayerTurn || prev.combatEnded || !prev.currentEnemy) return prev;
+
+      const playerStats = getPlayerCombatStats(prev);
+      const enemy = { ...prev.currentEnemy };
+      const log = [...prev.combatLog];
+
+      // Calculate damage
+      const isCrit = Math.random() < playerStats.critChance;
+      let damage = playerStats.damage;
+
+      if (isCrit) {
+        damage = Math.floor(damage * playerStats.critMultiplier);
+        log.push({
+          type: 'critical',
+          message: `💥 CRITICAL HIT! You strike for ${damage} damage!`
+        });
+      } else {
+        log.push({
+          type: 'damage_enemy',
+          message: `⚔️ You attack for ${damage} damage.`
+        });
+      }
+
+      enemy.currentHP = Math.max(0, enemy.currentHP - damage);
+
+      // Check if enemy defeated
+      if (enemy.currentHP <= 0) {
+        log.push({
+          type: 'victory',
+          message: `🏆 Victory! ${enemy.displayName} has been defeated!`
+        });
+        log.push({
+          type: 'reward',
+          message: `Gained ${enemy.ppReward} PP and ${enemy.xpReward} XP!`
+        });
+
+        // Grant rewards
+        grantXP(enemy.xpReward);
+
+        setTimeout(() => checkAchievements(), 50);
+
+        return {
+          ...prev,
+          pp: prev.pp + enemy.ppReward,
+          currentEnemy: enemy,
+          combatLog: log,
+          combatEnded: true,
+          isPlayerTurn: false,
+          combatVictories: (prev.combatVictories || 0) + 1
+        };
+      }
+
+      // Enemy turn
+      const newState = {
+        ...prev,
+        currentEnemy: enemy,
+        combatLog: log,
+        isPlayerTurn: false
+      };
+
+      // Delay enemy attack
+      setTimeout(() => {
+        enemyAttack();
+      }, 1000);
+
+      return newState;
+    });
+  };
+
+  const enemyAttack = () => {
+    setGameState(prev => {
+      if (prev.isPlayerTurn || prev.combatEnded || !prev.currentEnemy) return prev;
+
+      const enemy = prev.currentEnemy;
+      const log = [...prev.combatLog];
+
+      const damage = enemy.damage;
+      const newPlayerHP = Math.max(0, prev.playerCombatHP - damage);
+
+      log.push({
+        type: 'damage_player',
+        message: `💢 ${enemy.displayName} attacks for ${damage} damage!`
+      });
+
+      // Check if player defeated
+      if (newPlayerHP <= 0) {
+        log.push({
+          type: 'defeat',
+          message: '☠️ You have been defeated. Your sanity shatters...'
+        });
+
+        return {
+          ...prev,
+          playerCombatHP: newPlayerHP,
+          combatLog: log,
+          combatEnded: true,
+          isPlayerTurn: false,
+          sanity: Math.max(0, prev.sanity - 20) // Lose sanity on defeat
+        };
+      }
+
+      return {
+        ...prev,
+        playerCombatHP: newPlayerHP,
+        combatLog: log,
+        isPlayerTurn: true
+      };
+    });
+  };
+
+  const escapeCombat = () => {
+    setGameState(prev => {
+      if (!prev.isPlayerTurn || prev.combatEnded) return prev;
+
+      const escapeRoll = Math.random();
+      const log = [...prev.combatLog];
+
+      if (escapeRoll < COMBAT_MECHANICS.escapeChance) {
+        log.push({
+          type: 'escape_success',
+          message: '🏃 You successfully escaped the battle!'
+        });
+
+        return {
+          ...prev,
+          inCombat: false,
+          currentEnemy: null,
+          combatLog: [],
+          combatEnded: false
+        };
+      } else {
+        const damage = Math.floor(prev.playerCombatHP * COMBAT_MECHANICS.escapeFailureDamage);
+        const newPlayerHP = Math.max(0, prev.playerCombatHP - damage);
+
+        log.push({
+          type: 'escape_fail',
+          message: `❌ Escape failed! You take ${damage} damage in the panic!`
+        });
+
+        // Check if player died from escape damage
+        if (newPlayerHP <= 0) {
+          log.push({
+            type: 'defeat',
+            message: '☠️ You collapse while trying to flee...'
+          });
+
+          return {
+            ...prev,
+            playerCombatHP: newPlayerHP,
+            combatLog: log,
+            combatEnded: true,
+            isPlayerTurn: false,
+            sanity: Math.max(0, prev.sanity - 20)
+          };
+        }
+
+        // Enemy gets a turn after failed escape
+        const newState = {
+          ...prev,
+          playerCombatHP: newPlayerHP,
+          combatLog: log,
+          isPlayerTurn: false
+        };
+
+        setTimeout(() => {
+          enemyAttack();
+        }, 1000);
+
+        return newState;
+      }
+    });
+  };
+
+  const endCombat = () => {
+    setGameState(prev => ({
+      ...prev,
+      inCombat: false,
+      currentEnemy: null,
+      combatLog: [],
+      combatEnded: false,
+      isPlayerTurn: true
+    }));
+  };
+
   return {
     sortPapers,
     rest,
@@ -547,6 +753,10 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
     printPaper,
     buyPrinterUpgrade,
     enterPrinterRoom,
-    triggerScreenEffect
+    triggerScreenEffect,
+    startCombat,
+    playerAttack,
+    escapeCombat,
+    endCombat
   };
 };
