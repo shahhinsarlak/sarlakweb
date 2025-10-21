@@ -59,7 +59,15 @@ export const INITIAL_GAME_STATE = {
   printerUnlocked: false,
   printCount: 0,
   printerUpgrades: {},
-  inPrinterRoom: false
+  inPrinterRoom: false,
+  // Combat System
+  inCombat: false,
+  currentEnemy: null,
+  playerCombatHP: 100,
+  combatLog: [],
+  isPlayerTurn: true,
+  combatEnded: false,
+  combatVictories: 0
 };
 
 export const STRANGE_COLLEAGUE_DIALOGUES = [
@@ -257,7 +265,7 @@ export const UPGRADES = [
   { id: 'debugger', name: 'Debug Access', cost: 500, effect: 'unlock', value: 'debug', desc: 'Fix the code. Fix reality. Same thing.' },
   { id: 'energydrink', name: 'Energy Drink Pack', cost: 800, effect: 'maxEnergy', value: 20, desc: '5000% daily value of everything.' },
   { id: 'monitor', name: 'Second Monitor', cost: 1200, effect: 'ppPerSecond', value: 3, desc: 'Twice the work. Twice the witnessing.' },
-  { id: 'pills', name: 'Prescription Pills', cost: 2500, effect: 'sanityRegen', value: 0.5, desc: 'For anxiety. Or is it for seeing?' },
+  { id: 'pills', name: 'Prescription Pills', cost: 2500, effect: 'sanityDrain', value: 0.5, desc: 'Sanity drains 50% slower. The pills help you cope.' },
   { id: 'promotion', name: 'SENIOR ANALYST', cost: 12000, effect: 'ppPerSecond', value: 10, desc: 'Congratulations on your mandatory advancement.' },
 ];
 
@@ -289,13 +297,13 @@ export const DIMENSIONAL_UPGRADES = [
   },
   
   // Sanity Management
-  { 
-    id: 'void_shield', 
-    name: 'Void Shield', 
-    materials: { void_fragment: 20 }, 
-    effect: 'sanityRegen', 
-    value: 0.5, 
-    desc: 'Passive +0.5 sanity/sec. Colleagues fear you.' 
+  {
+    id: 'void_shield',
+    name: 'Void Shield',
+    materials: { void_fragment: 20 },
+    effect: 'sanityDrain',
+    value: 0.5,
+    desc: 'Sanity drains 50% slower. The void protects you.'
   },
   { 
     id: 'crystal_meditation', 
@@ -569,5 +577,10 @@ export const ACHIEVEMENTS = [
   { id: 'paper_mogul', name: 'Paper Mogul', desc: 'Accumulate 1000 Paper', check: (state) => state.paper >= 1000 },
   { id: 'quality_control', name: 'Quality Control', desc: 'Reach 100% printer quality', check: (state) => state.printerQuality >= 100 },
   { id: 'print_master', name: 'Print Master', desc: 'Buy all printer upgrades', check: (state) => Object.keys(state.printerUpgrades || {}).length >= 13 },
-  { id: 'reality_manifest', name: 'Reality Manifest', desc: 'Unlock the Reality Printer', check: (state) => state.printerUpgrades?.reality_printer }
+  { id: 'reality_manifest', name: 'Reality Manifest', desc: 'Unlock the Reality Printer', check: (state) => state.printerUpgrades?.reality_printer },
+  // Combat Achievements
+  { id: 'first_blood', name: 'First Blood', desc: 'Win your first combat encounter', check: (state) => (state.combatVictories || 0) >= 1 },
+  { id: 'combatant', name: 'Combatant', desc: 'Win 10 combat encounters', check: (state) => (state.combatVictories || 0) >= 10 },
+  { id: 'warrior', name: 'Office Warrior', desc: 'Win 50 combat encounters', check: (state) => (state.combatVictories || 0) >= 50 },
+  { id: 'slayer', name: 'Colleague Slayer', desc: 'Win 100 combat encounters', check: (state) => (state.combatVictories || 0) >= 100 }
 ];

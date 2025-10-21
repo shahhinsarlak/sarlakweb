@@ -8,7 +8,23 @@ export default function DimensionalUpgradesDisplay({ gameState, onPurchase }) {
     });
   };
 
-  const availableUpgrades = DIMENSIONAL_UPGRADES.filter(u => !gameState.dimensionalUpgrades?.[u.id]);
+  // Portal-specific upgrades that should be hidden until portal is unlocked
+  const portalUpgradeIds = [
+    'dimensional_anchor',
+    'reality_stabilizer',
+    'temporal_accelerator',
+    'material_scanner'
+  ];
+
+  const availableUpgrades = DIMENSIONAL_UPGRADES.filter(u => {
+    // Filter out already purchased upgrades
+    if (gameState.dimensionalUpgrades?.[u.id]) return false;
+
+    // Hide portal upgrades until portal is unlocked
+    if (portalUpgradeIds.includes(u.id) && !gameState.portalUnlocked) return false;
+
+    return true;
+  });
 
   if (availableUpgrades.length === 0) {
     return null;
