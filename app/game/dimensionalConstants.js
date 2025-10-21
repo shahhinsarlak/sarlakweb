@@ -1,4 +1,8 @@
-// Dimensional mining constants
+/**
+ * Dimensional Mining Constants
+ *
+ * Defines materials, generation algorithms, and capacity for dimensional area
+ */
 
 export const DIMENSIONAL_MATERIALS = [
   { id: 'void_fragment', name: 'Void Fragment', color: '#1a1a2e', rarity: 0.40, size: 'small' },

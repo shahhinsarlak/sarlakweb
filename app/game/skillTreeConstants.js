@@ -1,4 +1,12 @@
-// Single test skill for now
+/**
+ * Skill Tree Constants
+ *
+ * Defines the skill tree system:
+ * - SKILLS: Skill definitions with effects
+ * - LEVEL_SYSTEM: XP and leveling calculations
+ * - XP_REWARDS: XP granted for various actions
+ */
+
 export const SKILLS = {
   test_skill_1: {
     id: 'test_skill_1',
