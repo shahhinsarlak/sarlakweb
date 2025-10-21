@@ -4,6 +4,7 @@ import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import MeditationModal from './MeditationModal';
 import DebugModal from './DebugModal';
+import DebugPanel from './DebugPanel';
 import ColleagueModal from './ColleagueModal';
 import ExamineModal from './ExamineModal';
 import DimensionalArea from './DimensionalArea';
@@ -30,10 +31,7 @@ export default function Game() {
   const [isMobile, setIsMobile] = useState(false);
   const [gameState, setGameState] = useState(INITIAL_GAME_STATE);
   const [showSaveMenu, setShowSaveMenu] = useState(false);
-  const [showDebugMenu, setShowDebugMenu] = useState(false);
-  const [debugMaterialId, setDebugMaterialId] = useState('');
-  const [debugMaterialAmount, setDebugMaterialAmount] = useState('');
-  const [debugSanityLevel, setDebugSanityLevel] = useState('');
+  const [showDebugPanel, setShowDebugPanel] = useState(false);
   const [hoveredUpgrade, setHoveredUpgrade] = useState(null);
 
   const addMessage = useCallback((msg) => {
@@ -234,14 +232,6 @@ export default function Game() {
     }
   };
 
-  const handleSetSanity = () => {
-    const level = parseInt(debugSanityLevel);
-    if (!isNaN(level) && level >= 0 && level <= 100) {
-      setGameState(prev => ({ ...prev, sanity: level }));
-      addMessage(`Sanity set to ${level}%.`);
-      setDebugSanityLevel('');
-    }
-  };
 
   const purchaseDimensionalUpgrade = (upgrade) => {
     setGameState(prev => {
@@ -477,24 +467,6 @@ export default function Game() {
     });
   };
 
-  const handleAddMaterial = () => {
-    if (!debugMaterialId || !debugMaterialAmount) return;
-    
-    const amount = parseInt(debugMaterialAmount);
-    if (isNaN(amount)) return;
-    
-    setGameState(prev => ({
-      ...prev,
-      dimensionalInventory: {
-        ...(prev.dimensionalInventory || {}),
-        [debugMaterialId]: (prev.dimensionalInventory?.[debugMaterialId] || 0) + amount
-      }
-    }));
-    
-    addMessage(`Added ${amount} ${DIMENSIONAL_MATERIALS.find(m => m.id === debugMaterialId)?.name}`);
-    setDebugMaterialId('');
-    setDebugMaterialAmount('');
-  };
 
   if (gameState.showSkillTree) {
     return <SkillTreeModal gameState={gameState} onClose={() => setGameState(prev => ({ ...prev, showSkillTree: false }))} onPurchaseSkill={handlePurchaseSkill} />;
@@ -576,7 +548,7 @@ export default function Game() {
               💾 SAVE
             </button>
             <button
-              onClick={() => setShowDebugMenu(!showDebugMenu)}
+              onClick={() => setShowDebugPanel(!showDebugPanel)}
               style={{
                 background: 'none',
                 border: '1px solid #00ff00',
@@ -1222,209 +1194,13 @@ export default function Game() {
           </div>
         </div>
 
-        {showDebugMenu && (
-          <div style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000
-          }}>
-            <div style={{
-              fontFamily: "'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace",
-              maxWidth: '500px',
-              width: '90%',
-              border: '1px solid var(--border-color)',
-              padding: '40px',
-              backgroundColor: 'var(--bg-color)'
-            }}>
-              <div style={{
-                fontSize: '11px',
-                textTransform: 'uppercase',
-                letterSpacing: '1px',
-                opacity: 0.6,
-                marginBottom: '30px',
-                textAlign: 'center'
-              }}>
-                DEBUG MENU
-              </div>
-
-              <div style={{ marginBottom: '24px' }}>
-                <div style={{ fontSize: '11px', marginBottom: '12px', opacity: 0.7 }}>
-                  SET SANITY LEVEL
-                </div>
-                <input
-                  type="number"
-                  value={debugSanityLevel}
-                  onChange={(e) => setDebugSanityLevel(e.target.value)}
-                  placeholder="0-100"
-                  min="0"
-                  max="100"
-                  style={{
-                    width: '100%',
-                    padding: '12px',
-                    marginBottom: '12px',
-                    fontSize: '12px',
-                    fontFamily: 'inherit',
-                    backgroundColor: 'var(--hover-color)',
-                    border: '1px solid var(--border-color)',
-                    color: 'var(--text-color)'
-                  }}
-                />
-                <button
-                  onClick={handleSetSanity}
-                  disabled={!debugSanityLevel}
-                  style={{
-                    width: '100%',
-                    background: 'var(--accent-color)',
-                    border: '1px solid var(--border-color)',
-                    color: 'var(--bg-color)',
-                    padding: '12px',
-                    cursor: debugSanityLevel ? 'pointer' : 'not-allowed',
-                    fontSize: '12px',
-                    fontFamily: 'inherit',
-                    letterSpacing: '0.5px',
-                    opacity: debugSanityLevel ? 1 : 0.4
-                  }}
-                >
-                  SET SANITY
-                </button>
-              </div>
-
-              <div style={{ marginBottom: '24px', paddingTop: '24px', borderTop: '1px solid var(--border-color)' }}>
-                <div style={{ fontSize: '11px', marginBottom: '12px', opacity: 0.7 }}>
-                  ADD DIMENSIONAL MATERIALS
-                </div>
-                <select
-                  value={debugMaterialId}
-                  onChange={(e) => setDebugMaterialId(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '12px',
-                    marginBottom: '12px',
-                    fontSize: '12px',
-                    fontFamily: 'inherit',
-                    backgroundColor: 'var(--hover-color)',
-                    border: '1px solid var(--border-color)',
-                    color: 'var(--text-color)'
-                  }}
-                >
-                  <option value="">Select Material</option>
-                  {DIMENSIONAL_MATERIALS.map(mat => (
-                    <option key={mat.id} value={mat.id}>{mat.name}</option>
-                  ))}
-                </select>
-                <input
-                  type="number"
-                  value={debugMaterialAmount}
-                  onChange={(e) => setDebugMaterialAmount(e.target.value)}
-                  placeholder="Amount"
-                  style={{
-                    width: '100%',
-                    padding: '12px',
-                    marginBottom: '12px',
-                    fontSize: '12px',
-                    fontFamily: 'inherit',
-                    backgroundColor: 'var(--hover-color)',
-                    border: '1px solid var(--border-color)',
-                    color: 'var(--text-color)'
-                  }}
-                />
-                <button
-                  onClick={handleAddMaterial}
-                  disabled={!debugMaterialId || !debugMaterialAmount}
-                  style={{
-                    width: '100%',
-                    background: 'var(--accent-color)',
-                    border: '1px solid var(--border-color)',
-                    color: 'var(--bg-color)',
-                    padding: '12px',
-                    cursor: debugMaterialId && debugMaterialAmount ? 'pointer' : 'not-allowed',
-                    fontSize: '12px',
-                    fontFamily: 'inherit',
-                    letterSpacing: '0.5px',
-                    opacity: debugMaterialId && debugMaterialAmount ? 1 : 0.4
-                  }}
-                >
-                  ADD MATERIAL
-                </button>
-              </div>
-
-              <div style={{ marginBottom: '24px', paddingTop: '24px', borderTop: '1px solid var(--border-color)' }}>
-                <div style={{ fontSize: '11px', marginBottom: '12px', opacity: 0.7 }}>
-                  QUICK ACTIONS
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <button
-                    onClick={() => {
-                      setGameState(prev => ({
-                        ...prev,
-                        sanity: 100,
-                        energy: 100
-                      }));
-                      addMessage('Resources restored.');
-                    }}
-                    style={{
-                      background: 'none',
-                      border: '1px solid var(--border-color)',
-                      color: 'var(--text-color)',
-                      padding: '12px',
-                      cursor: 'pointer',
-                      fontSize: '11px',
-                      fontFamily: 'inherit',
-                      letterSpacing: '0.5px'
-                    }}
-                  >
-                    RESTORE SANITY & ENERGY
-                  </button>
-                  <button
-                    onClick={() => {
-                      setGameState(prev => ({
-                        ...prev,
-                        portalCooldown: 0,
-                        restCooldown: 0
-                      }));
-                      addMessage('Cooldowns reset.');
-                    }}
-                    style={{
-                      background: 'none',
-                      border: '1px solid var(--border-color)',
-                      color: 'var(--text-color)',
-                      padding: '12px',
-                      cursor: 'pointer',
-                      fontSize: '11px',
-                      fontFamily: 'inherit',
-                      letterSpacing: '0.5px'
-                    }}
-                  >
-                    RESET COOLDOWNS
-                  </button>
-                </div>
-              </div>
-
-              <button
-                onClick={() => setShowDebugMenu(false)}
-                style={{
-                  width: '100%',
-                  background: 'none',
-                  border: '1px solid var(--border-color)',
-                  color: 'var(--text-color)',
-                  padding: '12px',
-                  cursor: 'pointer',
-                  fontSize: '11px',
-                  fontFamily: 'inherit',
-                  letterSpacing: '0.5px'
-                }}
-              >
-                CLOSE
-              </button>
-            </div>
-          </div>
+        {showDebugPanel && (
+          <DebugPanel
+            gameState={gameState}
+            setGameState={setGameState}
+            addMessage={addMessage}
+            onClose={() => setShowDebugPanel(false)}
+          />
         )}
 
         {showSaveMenu && (
