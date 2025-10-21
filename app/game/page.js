@@ -12,6 +12,7 @@ import DimensionalUpgradesDisplay from './DimensionalUpgradesDisplay';
 import SkillTreeModal from './SkillTreeModal';
 import PrinterRoom from './PrinterRoom';
 import CombatModal from './CombatModal';
+import Armory from './Armory';
 import { createGameActions } from './gameActions';
 import { getDistortionStyle, distortText, getClockTime, createLevelUpParticles, createSkillPurchaseParticles, createScreenShake } from './gameUtils';
 import { saveGame, loadGame, exportToClipboard, importFromClipboard } from './saveSystem';
@@ -258,9 +259,13 @@ export default function Game() {
       if (upgrade.effect === 'ppPerSecond') {
         newState.ppPerSecond = (prev.ppPerSecond || 0) + upgrade.value;
       } else if (upgrade.effect === 'unlock') {
-        if (upgrade.value === 'drawer') {
-          newState.unlockedLocations = [...prev.unlockedLocations, 'drawer'];
+        if (upgrade.value === 'armory') {
+          newState.unlockedLocations = [...prev.unlockedLocations, 'armory'];
+          newState.recentMessages = ['The bottom drawer opens. Impossibly deep. An arsenal awaits.', '🔓 NEW LOCATION: The Armory', ...prev.recentMessages].slice(0, prev.maxLogMessages || 15);
         }
+      } else if (upgrade.effect === 'equipment') {
+        // Equipment is unlocked via dimensional upgrades, message added
+        newState.recentMessages = [`Crafted: ${upgrade.name}. Available in the Armory.`, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15);
       }
 
       grantXP(XP_REWARDS.purchaseDimensionalUpgrade);
@@ -385,10 +390,13 @@ export default function Game() {
           newState.sanity = 20;
         }
 
-        if (!prev.strangeColleagueEvent && !prev.debugMode && !prev.meditating && prev.day >= 3 && prev.location === 'cubicle' && Math.random() < 0.005) {
+        // Colleague events only trigger in Break Room
+        const currentLoc = LOCATIONS[prev.location];
+        if (!prev.strangeColleagueEvent && !prev.debugMode && !prev.meditating &&
+            prev.day >= 3 && currentLoc?.allowColleagueEvents && Math.random() < 0.01) {
           const randomDialogue = STRANGE_COLLEAGUE_DIALOGUES[Math.floor(Math.random() * STRANGE_COLLEAGUE_DIALOGUES.length)];
           newState.strangeColleagueEvent = randomDialogue;
-          addMessage('Someone approaches your desk. You don\'t recognize them.');
+          addMessage('A colleague approaches. Their smile doesn\'t reach their eyes.');
         }
 
         if (Math.random() < 0.02) {
@@ -489,6 +497,10 @@ export default function Game() {
     return <PrinterRoom gameState={gameState} setGameState={setGameState} onExit={() => setGameState(prev => ({ ...prev, inPrinterRoom: false }))} grantXP={grantXP} />;
   }
 
+  if (gameState.inArmory) {
+    return <Armory gameState={gameState} setGameState={setGameState} onExit={() => setGameState(prev => ({ ...prev, inArmory: false }))} />;
+  }
+
   if (gameState.meditating) {
     return <MeditationModal gameState={gameState} breatheAction={actions.breatheAction} cancelMeditation={actions.cancelMeditation} />;
   }
@@ -514,7 +526,8 @@ export default function Game() {
   }
 
   if (gameState.strangeColleagueEvent) {
-    const hasWeapon = gameState.dimensionalUpgrades?.shard_weapon || false;
+    // Player has weapon if equipped weapon is not the starter weapon
+    const hasWeapon = gameState.equippedWeapon && gameState.equippedWeapon !== 'stapler_shiv';
     return (
       <ColleagueModal
         event={gameState.strangeColleagueEvent}
@@ -760,54 +773,6 @@ export default function Game() {
                   >
                     <div>{distortText('DEBUG', gameState.sanity)}</div>
                     <div style={{ fontSize: '10px', opacity: 0.6, marginTop: '6px' }}>[-10 ENERGY]</div>
-                  </button>
-                )}
-                {gameState.printerUnlocked && (
-                  <button
-                    onClick={actions.enterPrinterRoom}
-                    style={{
-                      background: 'none',
-                      border: '1px solid var(--border-color)',
-                      color: 'var(--text-color)',
-                      padding: '20px',
-                      cursor: 'pointer',
-                      fontSize: '12px',
-                      fontFamily: 'inherit',
-                      letterSpacing: '0.5px',
-                      transition: 'all 0.2s',
-                      opacity: 1,
-                      textAlign: 'center'
-                    }}
-                  >
-                    <div>PRINTER ROOM</div>
-                    <div style={{ fontSize: '10px', opacity: 0.6, marginTop: '6px' }}>
-                      [ENTER]
-                    </div>
-                  </button>
-                )}
-                {gameState.location === 'portal' && (
-                  <button
-                    onClick={enterDimensionalArea}
-                    disabled={gameState.portalCooldown > 0}
-                    style={{
-                      ...getDistortionStyle(gameState.sanity),
-                      background: 'none',
-                      border: '1px solid var(--border-color)',
-                      color: 'var(--text-color)',
-                      padding: '20px',
-                      cursor: gameState.portalCooldown > 0 ? 'not-allowed' : 'pointer',
-                      fontSize: '12px',
-                      fontFamily: 'inherit',
-                      letterSpacing: '0.5px',
-                      transition: 'all 0.2s',
-                      textAlign: 'center',
-                      opacity: gameState.portalCooldown > 0 ? 0.4 : 1
-                    }}
-                  >
-                    <div>{distortText('ENTER PORTAL', gameState.sanity)}</div>
-                    <div style={{ fontSize: '10px', opacity: 0.6, marginTop: '6px' }}>
-                      {gameState.portalCooldown > 0 ? `[${Math.ceil(gameState.portalCooldown)}s]` : '[DIMENSIONAL MINING]'}
-                    </div>
                   </button>
                 )}
               </div>

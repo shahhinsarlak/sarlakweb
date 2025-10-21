@@ -318,11 +318,27 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
     setGameState(prev => {
       if (!prev.unlockedLocations.includes(loc)) return prev;
       const locationData = LOCATIONS[loc];
-      if (!locationData || !locationData.atmosphere) return prev;
-      const randomAtmo = locationData.atmosphere[Math.floor(Math.random() * locationData.atmosphere.length)];
-      return { 
-        ...prev, 
-        location: loc, 
+      if (!locationData) return prev;
+
+      // Handle direct locations
+      if (locationData.isDirect) {
+        if (loc === 'portal') {
+          return { ...prev, inDimensionalArea: true };
+        } else if (loc === 'printerroom') {
+          return { ...prev, inPrinterRoom: true };
+        } else if (loc === 'armory') {
+          return { ...prev, inArmory: true };
+        }
+      }
+
+      // Regular location change
+      const randomAtmo = locationData.atmosphere ?
+        locationData.atmosphere[Math.floor(Math.random() * locationData.atmosphere.length)] :
+        locationData.description;
+
+      return {
+        ...prev,
+        location: loc,
         energy: Math.max(0, prev.energy - 5),
         recentMessages: [randomAtmo, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
       };
@@ -419,7 +435,11 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
           messages.push('Debug access granted. Fix the system. Or break it further.');
         } else if (upgrade.value === 'printer') {
           newState.printerUnlocked = true;
+          newState.unlockedLocations = [...prev.unlockedLocations, 'printerroom'];
           messages.push('Printer Room unlocked. The machines await your command.');
+        } else if (upgrade.value === 'breakroom') {
+          newState.unlockedLocations = [...prev.unlockedLocations, 'breakroom'];
+          messages.push('Break Room unlocked. Time to meet your colleagues.');
         }
       }
 

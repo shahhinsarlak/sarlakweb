@@ -238,8 +238,9 @@ export const generateEnemy = (playerLevel = 1) => {
     }
   }
 
-  // Calculate stats with level scaling
-  const levelScaling = 1 + ((playerLevel - 1) * 0.1); // 10% increase per level
+  // Calculate stats with aggressive level scaling
+  // Scale more dramatically: 25% increase per level for better difficulty progression
+  const levelScaling = 1 + ((playerLevel - 1) * 0.25);
 
   let hpMultiplier = selectedPrefix.hpMultiplier;
   let damageMultiplier = selectedPrefix.damageMultiplier;
@@ -277,21 +278,25 @@ export const generateEnemy = (playerLevel = 1) => {
  * @returns {Object} Player combat stats
  */
 export const getPlayerCombatStats = (gameState) => {
-  const weapon = WEAPONS.shard_blade; // Currently only one weapon
+  // Get equipped weapon (fallback to stapler_shiv if none equipped)
+  const weaponId = gameState.equippedWeapon || 'stapler_shiv';
+  const weapon = WEAPONS[weaponId] || WEAPONS.stapler_shiv;
 
-  // Base stats
+  // Base stats from weapon
   let maxHP = COMBAT_MECHANICS.playerBaseHP;
   let damage = weapon.baseDamage;
   let critChance = weapon.critChance;
+  let critMultiplier = weapon.critMultiplier;
 
-  // TODO: Add skill tree bonuses here when implemented
+  // Equipment bonuses would be calculated here from equipmentConstants.js
+  // For now, using weapon stats only
 
   return {
     maxHP: maxHP,
     currentHP: gameState.playerCombatHP || maxHP,
     damage: damage,
     critChance: critChance,
-    critMultiplier: weapon.critMultiplier,
+    critMultiplier: critMultiplier,
     weapon: weapon
   };
 };
