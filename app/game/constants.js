@@ -1,4 +1,16 @@
-// Game constants and data
+/**
+ * Game Constants and Data
+ *
+ * Central location for all game data:
+ * - INITIAL_GAME_STATE: Default values for all game state properties
+ * - LOCATIONS: Office locations and their descriptions
+ * - UPGRADES: Purchasable improvements
+ * - ACHIEVEMENTS: Unlock conditions and descriptions
+ * - EVENTS: Random events that can occur
+ * - DEBUG_CHALLENGES: Code debugging puzzles
+ *
+ * CRITICAL: All new state properties MUST be added to INITIAL_GAME_STATE first
+ */
 
 export const INITIAL_GAME_STATE = {
   pp: 0,

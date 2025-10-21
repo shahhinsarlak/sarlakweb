@@ -1,5 +1,20 @@
-// Save/Load system for game state
+/**
+ * Save/Load System
+ *
+ * Handles game state persistence:
+ * - saveGame: Downloads save file to disk
+ * - loadGame: Loads save file from disk
+ * - exportToClipboard: Copies save data to clipboard
+ * - importFromClipboard: Loads save data from clipboard
+ *
+ * Save format: JSON with version and timestamp
+ */
 
+/**
+ * Saves current game state to a downloadable JSON file
+ *
+ * @param {Object} gameState - Current game state to save
+ */
 export const saveGame = (gameState) => {
     const saveData = {
       version: '1.0',
@@ -20,7 +35,15 @@ export const saveGame = (gameState) => {
     URL.revokeObjectURL(url);
   };
   
-  export const loadGame = (file, setGameState, addMessage) => {
+/**
+ * Loads game state from a file
+ *
+ * @param {File} file - File object containing save data
+ * @param {Function} setGameState - setState function to update game state
+ * @param {Function} addMessage - Function to add message to event log
+ * @returns {Promise<Object>} Resolves with save data or rejects with error
+ */
+export const loadGame = (file, setGameState, addMessage) => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       
@@ -50,7 +73,13 @@ export const saveGame = (gameState) => {
     });
   };
   
-  export const exportToClipboard = (gameState) => {
+/**
+ * Exports game state to clipboard as JSON string
+ *
+ * @param {Object} gameState - Current game state to export
+ * @returns {Promise<boolean>} True if successful, false otherwise
+ */
+export const exportToClipboard = (gameState) => {
     const saveData = {
       version: '1.0',
       timestamp: new Date().toISOString(),
@@ -68,7 +97,14 @@ export const saveGame = (gameState) => {
     return Promise.resolve(false);
   };
   
-  export const importFromClipboard = (setGameState, addMessage) => {
+/**
+ * Imports game state from clipboard
+ *
+ * @param {Function} setGameState - setState function to update game state
+ * @param {Function} addMessage - Function to add message to event log
+ * @returns {Promise<Object>} Resolves with save data or rejects with error
+ */
+export const importFromClipboard = (setGameState, addMessage) => {
     if (navigator.clipboard && navigator.clipboard.readText) {
       return navigator.clipboard.readText()
         .then(text => {

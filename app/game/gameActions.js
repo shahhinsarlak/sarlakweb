@@ -1,7 +1,21 @@
-// Game action handlers
+/**
+ * Game Action Handlers
+ *
+ * Contains all game actions that modify game state.
+ * Actions are created via factory function to access setState, addMessage, etc.
+ *
+ * Main actions:
+ * - sortPapers: Main productivity action (costs energy, grants PP)
+ * - rest: Restore energy (30s cooldown)
+ * - meditation: Breathing rhythm minigame for sanity
+ * - debug: Code debugging challenges
+ * - locations: Navigate between office areas
+ * - upgrades: Purchase permanent improvements
+ * - printer: Paper generation system
+ */
 import { LOCATIONS, UPGRADES, DEBUG_CHALLENGES, PRINTER_UPGRADES } from './constants';
 import {
-  applyEnergyCostReduction,  // <- Add this
+  applyEnergyCostReduction,
   applyPPMultiplier
 } from './skillSystemHelpers';
 import { XP_REWARDS } from './skillTreeConstants';

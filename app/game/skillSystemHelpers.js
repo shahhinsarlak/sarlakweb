@@ -1,8 +1,23 @@
-// Helper functions for the skill system
+/**
+ * Skill System Helpers
+ *
+ * Pure functions for skill tree logic:
+ * - Experience and leveling calculations
+ * - Skill purchasing and validation
+ * - Active skill effect aggregation
+ * - Skill effect application to game mechanics
+ */
 
 import { SKILLS, LEVEL_SYSTEM, XP_REWARDS } from './skillTreeConstants';
 
-// Add XP and handle level ups
+/**
+ * Adds experience points and handles level ups
+ *
+ * @param {Object} gameState - Current game state
+ * @param {number} xpAmount - Amount of XP to add
+ * @param {Function} addMessage - Function to add message to event log
+ * @returns {Object} Updated state properties: playerLevel, playerXP, skillPoints, leveledUp
+ */
 export const addExperience = (gameState, xpAmount, addMessage) => {
   const currentLevel = gameState.playerLevel || 1;
   const currentXP = gameState.playerXP || 0;
@@ -44,7 +59,14 @@ export const addExperience = (gameState, xpAmount, addMessage) => {
   };
 };
 
-// Purchase a skill
+/**
+ * Attempts to purchase a skill level
+ *
+ * @param {Object} gameState - Current game state
+ * @param {string} skillId - ID of skill to purchase
+ * @param {Function} addMessage - Function to add message to event log
+ * @returns {Object} Updated game state or unchanged state if purchase failed
+ */
 export const purchaseSkill = (gameState, skillId, addMessage) => {
   const skill = SKILLS[skillId];
   if (!skill) return gameState;
@@ -85,7 +107,12 @@ export const purchaseSkill = (gameState, skillId, addMessage) => {
   };
 };
 
-// Get all active skill effects
+/**
+ * Aggregates all active skill effects from purchased skills
+ *
+ * @param {Object} gameState - Current game state
+ * @returns {Object} Effect object with all bonuses: ppMultiplier, energyEfficiency, etc.
+ */
 export const getActiveSkillEffects = (gameState) => {
   const skills = gameState.skills || {};
   const effects = {
@@ -121,7 +148,14 @@ export const getActiveSkillEffects = (gameState) => {
   return effects;
 };
 
-// Apply skill effects to material collection
+/**
+ * Applies skill bonuses to material collection
+ *
+ * @param {string} materialId - ID of material being collected
+ * @param {number} baseAmount - Base amount before bonuses
+ * @param {Object} gameState - Current game state
+ * @returns {number} Final amount after skill bonuses applied
+ */
 export const applySkillsToMaterialCollection = (materialId, baseAmount, gameState) => {
   const effects = getActiveSkillEffects(gameState);
   let amount = baseAmount;
@@ -134,31 +168,61 @@ export const applySkillsToMaterialCollection = (materialId, baseAmount, gameStat
   return amount;
 };
 
-// Apply skill effects to portal cooldown
+/**
+ * Calculates portal cooldown with skill modifiers
+ *
+ * @param {number} baseCooldown - Base cooldown in seconds
+ * @param {Object} gameState - Current game state
+ * @returns {number} Modified cooldown (minimum 10 seconds)
+ */
 export const getModifiedPortalCooldown = (baseCooldown, gameState) => {
   const effects = getActiveSkillEffects(gameState);
   return Math.max(10, baseCooldown - effects.portalCooldownReduction);
 };
 
-// Apply skill effects to dimensional capacity
+/**
+ * Calculates dimensional inventory capacity with skill bonuses
+ *
+ * @param {number} baseCapacity - Base capacity without bonuses
+ * @param {Object} gameState - Current game state
+ * @returns {number} Total capacity with skill bonuses
+ */
 export const getModifiedCapacity = (baseCapacity, gameState) => {
   const effects = getActiveSkillEffects(gameState);
   return baseCapacity + effects.capacityBonus;
 };
 
-// Apply skill effects to PP generation
+/**
+ * Applies skill-based PP multiplier to base PP gain
+ *
+ * @param {number} basePP - Base PP amount before multipliers
+ * @param {Object} gameState - Current game state
+ * @returns {number} PP amount after skill multipliers
+ */
 export const applyPPMultiplier = (basePP, gameState) => {
   const effects = getActiveSkillEffects(gameState);
   return basePP * (1 + effects.ppMultiplier);  // Return decimal value
 };
 
-// Apply skill effects to energy costs
+/**
+ * Reduces energy costs based on efficiency skills
+ *
+ * @param {number} baseCost - Base energy cost
+ * @param {Object} gameState - Current game state
+ * @returns {number} Reduced energy cost (rounded up to integer)
+ */
 export const applyEnergyCostReduction = (baseCost, gameState) => {
   const effects = getActiveSkillEffects(gameState);
   return Math.ceil(baseCost * (1 - effects.energyEfficiency));
 };
 
-// Apply skill effects to meditation
+/**
+ * Applies meditation skill bonuses to sanity restoration
+ *
+ * @param {number} baseSanity - Base sanity restoration amount
+ * @param {Object} gameState - Current game state
+ * @returns {number} Final sanity amount with bonuses
+ */
 export const applyMeditationBonus = (baseSanity, gameState) => {
   const effects = getActiveSkillEffects(gameState);
   return baseSanity * (1 + effects.meditationBonus);  // Return decimal value
