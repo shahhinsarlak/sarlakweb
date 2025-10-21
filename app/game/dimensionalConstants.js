@@ -11,7 +11,7 @@ export const DIMENSIONAL_MATERIALS = [
   { id: 'reality_dust', name: 'Reality Dust', color: '#ff6b9d', rarity: 0.08, size: 'small' },
   { id: 'temporal_core', name: 'Temporal Core', color: '#00ffff', rarity: 0.015, size: 'medium' },
   { id: 'dimensional_essence', name: 'Dimensional Essence', color: '#ffd700', rarity: 0.004, size: 'large' },
-  { id: 'singularity_node', name: 'Singularity Node', color: '#ff0000', rarity: 0.001, size: 'large' }
+  { id: 'singularity_node', name: 'Singularity Node', color: '#ff0000', rarity: 0.0015, size: 'large' } // Increased from 0.001 (0.1%) to 0.0015 (0.15%) for better balance
 ];
 
 export const SIZE_RANGES = {

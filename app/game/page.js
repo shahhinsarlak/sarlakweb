@@ -131,7 +131,10 @@ export default function Game() {
               'Something tears open in the fabric of the office.',
               '🌀 NEW LOCATION: The Portal'
             ];
-            
+
+            // Trigger screen shake effect
+            setTimeout(() => createScreenShake(), 0);
+
             return {
               ...prev,
               themeToggleCount: newCount,

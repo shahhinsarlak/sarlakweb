@@ -17,8 +17,15 @@ export default function DimensionalArea({ gameState, setGameState, onExit, grant
   const effects = getActiveSkillEffects(gameState);
   const modifiedCapacity = getModifiedCapacity(DIMENSIONAL_CAPACITY, gameState);
   
+  // Generate encrypted text once per portal entry
   const encryptedText = useMemo(() => generateEncryptedText(3000), []);
-  const materialNodes = useMemo(() => generateMaterialNodes(encryptedText.length, gameState.dimensionalInventory || {}, effects), [encryptedText.length, gameState.dimensionalInventory, effects]);
+
+  // Generate material nodes once per portal entry (effects applied at generation time)
+  // DO NOT add dependencies here - nodes should be static for each portal session
+  const materialNodes = useMemo(() => {
+    return generateMaterialNodes(encryptedText.length, {}, effects);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   
   const currentCapacity = Object.values(currentInventory).reduce((sum, count) => sum + count, 0);
   const remainingCapacity = modifiedCapacity - currentCapacity;
