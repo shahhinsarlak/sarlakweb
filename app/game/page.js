@@ -9,6 +9,7 @@ import ExamineModal from './ExamineModal';
 import DimensionalArea from './DimensionalArea';
 import DimensionalUpgradesDisplay from './DimensionalUpgradesDisplay';
 import SkillTreeModal from './SkillTreeModal';
+import PrinterRoom from './PrinterRoom';
 import { createGameActions } from './gameActions';
 import { getDistortionStyle, distortText, getClockTime, createLevelUpParticles, createSkillPurchaseParticles, createScreenShake } from './gameUtils';
 import { saveGame, loadGame, exportToClipboard, importFromClipboard } from './saveSystem';
@@ -500,6 +501,10 @@ export default function Game() {
     return <DimensionalArea gameState={gameState} setGameState={setGameState} onExit={exitDimensionalArea} grantXP={grantXP} />;
   }
 
+  if (gameState.inPrinterRoom) {
+    return <PrinterRoom gameState={gameState} setGameState={setGameState} onExit={() => setGameState(prev => ({ ...prev, inPrinterRoom: false }))} grantXP={grantXP} />;
+  }
+
   if (gameState.meditating) {
     return <MeditationModal gameState={gameState} breatheAction={actions.breatheAction} cancelMeditation={actions.cancelMeditation} />;
   }
@@ -750,27 +755,24 @@ export default function Game() {
                 )}
                 {gameState.printerUnlocked && (
                   <button
-                    onClick={actions.printPaper}
-                    disabled={gameState.energy < 3}
+                    onClick={actions.enterPrinterRoom}
                     style={{
                       background: 'none',
-                      border: '1px solid #00ff88',
-                      color: '#00ff88',
+                      border: '1px solid var(--border-color)',
+                      color: 'var(--text-color)',
                       padding: '20px',
-                      cursor: gameState.energy >= 3 ? 'pointer' : 'not-allowed',
+                      cursor: 'pointer',
                       fontSize: '12px',
                       fontFamily: 'inherit',
                       letterSpacing: '0.5px',
                       transition: 'all 0.2s',
-                      opacity: gameState.energy >= 3 ? 1 : 0.4,
-                      textAlign: 'center',
-                      transform: gameState.printerQuality < 20 ? 'skew(-1deg)' : 'none',
-                      filter: gameState.printerQuality < 20 ? 'blur(0.5px)' : 'none'
+                      opacity: 1,
+                      textAlign: 'center'
                     }}
                   >
-                    <div>PRINT PAPERS</div>
+                    <div>PRINTER ROOM</div>
                     <div style={{ fontSize: '10px', opacity: 0.6, marginTop: '6px' }}>
-                      [+{gameState.paperPerPrint || 1} PAPER, -3 ENERGY]
+                      [ENTER]
                     </div>
                   </button>
                 )}
@@ -925,7 +927,7 @@ export default function Game() {
                 {gameState.printerUnlocked && (
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
                     <span>PAPER</span>
-                    <strong style={{ fontSize: '18px', color: '#00ff88' }}>{gameState.paper.toFixed(1)}</strong>
+                    <strong style={{ fontSize: '18px' }}>{gameState.paper.toFixed(1)}</strong>
                   </div>
                 )}
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
@@ -958,8 +960,7 @@ export default function Game() {
                     borderTop: gameState.ppPerSecond > 0 ? 'none' : '1px solid var(--border-color)',
                     textAlign: 'center',
                     opacity: 0.7,
-                    fontSize: '12px',
-                    color: '#00ff88'
+                    fontSize: '12px'
                   }}>
                     +{gameState.paperPerSecond.toFixed(1)} Paper/sec
                   </div>
@@ -1117,7 +1118,7 @@ export default function Game() {
                           style={{
                             width: '100%',
                             background: 'none',
-                            border: '1px solid #00ff88',
+                            border: '1px solid var(--border-color)',
                             color: 'var(--text-color)',
                             padding: '16px',
                             cursor: canAfford ? 'pointer' : 'not-allowed',
@@ -1138,7 +1139,7 @@ export default function Game() {
                             <span style={{ color: canAffordPP ? 'var(--accent-color)' : '#ff6666' }}>
                               {upgrade.costs.pp} PP
                             </span>
-                            <span style={{ color: canAffordPaper ? '#00ff88' : '#ff6666' }}>
+                            <span style={{ color: canAffordPaper ? 'var(--text-color)' : '#ff6666' }}>
                               {upgrade.costs.paper} Paper
                             </span>
                           </div>
@@ -1150,7 +1151,7 @@ export default function Game() {
                             left: '110%',
                             top: '0',
                             backgroundColor: 'var(--bg-color)',
-                            border: '1px solid #00ff88',
+                            border: '1px solid var(--accent-color)',
                             padding: '12px 16px',
                             borderRadius: '4px',
                             fontSize: '11px',
@@ -1160,7 +1161,7 @@ export default function Game() {
                             pointerEvents: 'none'
                           }}>
                             <div style={{
-                              color: '#00ff88',
+                              color: 'var(--accent-color)',
                               fontWeight: '500',
                               marginBottom: '4px',
                               textTransform: 'uppercase',

@@ -46,7 +46,8 @@ export const INITIAL_GAME_STATE = {
   printerQuality: 0,
   printerUnlocked: false,
   printCount: 0,
-  printerUpgrades: {}
+  printerUpgrades: {},
+  inPrinterRoom: false
 };
 
 export const STRANGE_COLLEAGUE_DIALOGUES = [

@@ -508,6 +508,13 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
     });
   };
 
+  const enterPrinterRoom = () => {
+    setGameState(prev => ({
+      ...prev,
+      inPrinterRoom: true
+    }));
+  };
+
   return {
     sortPapers,
     rest,
@@ -525,6 +532,7 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
     buyUpgrade,
     printPaper,
     buyPrinterUpgrade,
+    enterPrinterRoom,
     triggerScreenEffect
   };
 };
