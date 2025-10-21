@@ -285,7 +285,7 @@ export const DIMENSIONAL_UPGRADES = [
     materials: { temporal_core: 3 }, 
     effect: 'portalRespawn', 
     value: true, 
-    desc: 'Materials regenerate faster in the void.' 
+    desc: 'Portal cooldown reduced by additional 10s. Stacks with anchor.' 
   },
   
   // Sanity Management
@@ -404,7 +404,7 @@ export const DIMENSIONAL_UPGRADES = [
   {
     id: 'singularity_collapse',
     name: 'Singularity Collapse',
-    materials: { singularity_node: 3 },
+    materials: { singularity_node: 2 }, // Reduced from 3 to 2 for better balance
     effect: 'unlock',
     value: 'ending',
     desc: 'ESCAPE. TRANSCEND. ASCEND. LEAVE.'
@@ -510,7 +510,7 @@ export const PRINTER_UPGRADES = [
   {
     id: 'reality_printer',
     name: 'Reality Printer',
-    costs: { pp: 10000, paper: 1000 },
+    costs: { pp: 8000, paper: 800 }, // Reduced from 10000/1000 for better balance
     effect: 'ppPerPrint',
     value: 5,
     desc: 'What you print becomes real. +5 PP per print.'
