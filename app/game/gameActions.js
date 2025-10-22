@@ -396,7 +396,7 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
         };
 
         if (newDisagreements === 20 && !prev.unlockedLocations.includes('archive')) {
-          newState.unlockedLocations = [...prev.unlockedLocations, 'archive'];
+          newState.unlockedLocations = [...new Set([...prev.unlockedLocations, 'archive'])];
           newState.strangeColleagueEvent = null;
           
           triggerScreenEffect('shake');
@@ -435,10 +435,10 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
           messages.push('Debug access granted. Fix the system. Or break it further.');
         } else if (upgrade.value === 'printer') {
           newState.printerUnlocked = true;
-          newState.unlockedLocations = [...prev.unlockedLocations, 'printerroom'];
+          newState.unlockedLocations = [...new Set([...prev.unlockedLocations, 'printerroom'])];
           messages.push('Printer Room unlocked. The machines await your command.');
         } else if (upgrade.value === 'breakroom') {
-          newState.unlockedLocations = [...prev.unlockedLocations, 'breakroom'];
+          newState.unlockedLocations = [...new Set([...prev.unlockedLocations, 'breakroom'])];
           messages.push('Break Room unlocked. Time to meet your colleagues.');
         }
       }
