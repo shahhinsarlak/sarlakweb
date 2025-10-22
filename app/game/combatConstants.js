@@ -4,9 +4,10 @@
  * Defines the turn-based combat system:
  * - ENEMY_ARCHETYPES: Base enemy types with different combat styles
  * - ENEMY_PREFIXES: Modifiers that scale enemy stats
- * - WEAPONS: Player weapons and their stats
  * - Combat mechanics and balance
  */
+
+import { WEAPONS } from './equipmentConstants';
 
 // Enemy base archetypes - different combat patterns
 export const ENEMY_ARCHETYPES = {
@@ -185,19 +186,6 @@ export const ENEMY_PREFIXES = {
   }
 };
 
-// Player weapons - from dimensional upgrades
-export const WEAPONS = {
-  shard_blade: {
-    id: 'shard_blade',
-    name: 'Shard Blade',
-    baseDamage: 15,
-    critChance: 0.15, // 15% crit chance
-    critMultiplier: 2.0,
-    desc: 'Forged from glitch shards',
-    upgradeId: 'shard_weapon' // Matches dimensional upgrade
-  }
-};
-
 // Combat rewards
 export const COMBAT_REWARDS = {
   baseXP: 30,
@@ -284,7 +272,7 @@ export const getPlayerCombatStats = (gameState) => {
 
   // Base stats from weapon
   let maxHP = COMBAT_MECHANICS.playerBaseHP;
-  let damage = weapon.baseDamage;
+  let damage = weapon.damage; // Changed from baseDamage to damage
   let critChance = weapon.critChance;
   let critMultiplier = weapon.critMultiplier;
 
