@@ -99,7 +99,6 @@ export default function Armory({ gameState, setGameState, onExit }) {
                 cursor: 'pointer',
                 backgroundColor: isEquipped ? 'rgba(0, 0, 0, 0.1)' : 'var(--bg-color)',
                 transition: 'all 0.3s ease',
-                transform: isHovered ? 'scale(1.05)' : 'scale(1)',
                 boxShadow: isHovered || isEquipped ?
                   `0 0 ${20 * weapon.rarity.glowIntensity}px ${weapon.rarity.color}` :
                   'none',
@@ -236,7 +235,6 @@ export default function Armory({ gameState, setGameState, onExit }) {
                       cursor: 'pointer',
                       backgroundColor: isEquipped ? 'rgba(0, 0, 0, 0.1)' : 'var(--bg-color)',
                       transition: 'all 0.3s ease',
-                      transform: isHovered ? 'scale(1.05)' : 'scale(1)',
                       boxShadow: isHovered || isEquipped ?
                         `0 0 ${20 * armor.rarity.glowIntensity}px ${armor.rarity.color}` :
                         'none',
@@ -364,7 +362,6 @@ export default function Armory({ gameState, setGameState, onExit }) {
                   cursor: 'pointer',
                   backgroundColor: isEquipped ? 'rgba(0, 0, 0, 0.1)' : 'var(--bg-color)',
                   transition: 'all 0.3s ease',
-                  transform: isHovered ? 'scale(1.05)' : 'scale(1)',
                   boxShadow: isHovered || isEquipped ?
                     `0 0 ${20 * anomaly.rarity.glowIntensity}px ${anomaly.rarity.color}` :
                     'none',
