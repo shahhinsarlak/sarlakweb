@@ -157,17 +157,22 @@ export default function Armory({ gameState, setGameState, onExit }) {
                 ⚔️ DMG: {weapon.damage} | 🎯 CRIT: {(weapon.critChance * 100).toFixed(0)}%
               </div>
 
-              {/* Lore (on hover) */}
+              {/* Lore (on hover) - positioned absolutely to not affect card size */}
               {isHovered && (
                 <div style={{
+                  position: 'absolute',
+                  bottom: isEquipped ? '60px' : '20px',
+                  left: '20px',
+                  right: '20px',
                   fontSize: '11px',
-                  opacity: 0.8,
+                  opacity: 0.95,
                   fontStyle: 'italic',
                   lineHeight: '1.6',
-                  borderTop: '1px solid var(--border-color)',
-                  paddingTop: '12px',
-                  marginTop: '8px',
-                  color: weapon.rarity.textColor
+                  padding: '12px',
+                  backgroundColor: 'var(--bg-color)',
+                  border: '1px solid var(--border-color)',
+                  color: weapon.rarity.textColor,
+                  zIndex: 10
                 }}>
                   {weapon.lore}
                 </div>
@@ -295,14 +300,19 @@ export default function Armory({ gameState, setGameState, onExit }) {
 
                     {isHovered && (
                       <div style={{
+                        position: 'absolute',
+                        bottom: isEquipped ? '60px' : '20px',
+                        left: '20px',
+                        right: '20px',
                         fontSize: '11px',
-                        opacity: 0.8,
+                        opacity: 0.95,
                         fontStyle: 'italic',
                         lineHeight: '1.6',
-                        borderTop: '1px solid var(--border-color)',
-                        paddingTop: '12px',
-                        marginTop: '8px',
-                        color: armor.rarity.textColor
+                        padding: '12px',
+                        backgroundColor: 'var(--bg-color)',
+                        border: '1px solid var(--border-color)',
+                        color: armor.rarity.textColor,
+                        zIndex: 10
                       }}>
                         {armor.lore}
                       </div>
@@ -424,14 +434,19 @@ export default function Armory({ gameState, setGameState, onExit }) {
 
                 {isHovered && (
                   <div style={{
+                    position: 'absolute',
+                    bottom: isEquipped ? '60px' : '20px',
+                    left: '20px',
+                    right: '20px',
                     fontSize: '11px',
-                    opacity: 0.8,
+                    opacity: 0.95,
                     fontStyle: 'italic',
                     lineHeight: '1.6',
-                    borderTop: '1px solid var(--border-color)',
-                    paddingTop: '12px',
-                    marginTop: '8px',
-                    color: anomaly.rarity.textColor
+                    padding: '12px',
+                    backgroundColor: 'var(--bg-color)',
+                    border: '1px solid var(--border-color)',
+                    color: anomaly.rarity.textColor,
+                    zIndex: 10
                   }}>
                     {anomaly.lore}
                   </div>

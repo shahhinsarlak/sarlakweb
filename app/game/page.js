@@ -140,7 +140,7 @@ export default function Game() {
               ...prev,
               themeToggleCount: newCount,
               portalUnlocked: true,
-              unlockedLocations: [...prev.unlockedLocations, 'portal'],
+              unlockedLocations: [...new Set([...prev.unlockedLocations, 'portal'])],
               sanity: Math.max(0, prev.sanity - 10),
               recentMessages: [...messages.reverse(), ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
             };
@@ -260,7 +260,7 @@ export default function Game() {
         newState.ppPerSecond = (prev.ppPerSecond || 0) + upgrade.value;
       } else if (upgrade.effect === 'unlock') {
         if (upgrade.value === 'armory') {
-          newState.unlockedLocations = [...prev.unlockedLocations, 'armory'];
+          newState.unlockedLocations = [...new Set([...prev.unlockedLocations, 'armory'])];
           newState.recentMessages = ['The bottom drawer opens. Impossibly deep. An arsenal awaits.', '🔓 NEW LOCATION: The Armory', ...prev.recentMessages].slice(0, prev.maxLogMessages || 15);
         }
       } else if (upgrade.effect === 'equipment') {
