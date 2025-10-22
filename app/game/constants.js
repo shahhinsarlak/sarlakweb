@@ -67,7 +67,16 @@ export const INITIAL_GAME_STATE = {
   combatLog: [],
   isPlayerTurn: true,
   combatEnded: false,
-  combatVictories: 0
+  combatVictories: 0,
+  // Equipment System
+  equippedWeapon: 'stapler_shiv', // Default starting weapon
+  equippedArmor: {
+    head: 'standard_headset',
+    chest: 'dress_shirt',
+    accessory: 'id_badge'
+  },
+  equippedAnomalies: [], // Can equip up to 3
+  inArmory: false
 };
 
 export const STRANGE_COLLEAGUE_DIALOGUES = [
@@ -191,12 +200,24 @@ export const LOCATIONS = {
   cubicle: {
     name: 'CUBICLE 4B',
     description: 'Your desk. Four gray walls. The computer screen flickers.',
-    atmosphere: ['The air tastes stale.', 'You hear typing from the next cubicle. There is no next cubicle.', 'Your coffee is cold. It was always cold.']
+    atmosphere: ['The air tastes stale.', 'You hear typing from the next cubicle. There is no next cubicle.', 'Your coffee is cold. It was always cold.'],
+    allowColleagueEvents: false
+  },
+  breakroom: {
+    name: 'BREAK ROOM',
+    description: 'Fluorescent lights buzz. The coffee machine gurgles. Colleagues lurk.',
+    atmosphere: [
+      'The microwave beeps. No one put anything in it.',
+      'The vending machine hums. It\'s staring at you.',
+      'Someone left their lunch. It expired in 2003.'
+    ],
+    allowColleagueEvents: true
   },
   archive: {
     name: 'THE ARCHIVE',
     description: 'A place that shouldn\'t exist. Files from employees who never were.',
     atmosphere: ['The silence is deafening.', 'Every file is labeled with your name.', 'Time moves differently here.'],
+    allowColleagueEvents: false,
     items: [
       { 
         id: 'resignation', 
@@ -238,28 +259,32 @@ export const LOCATIONS = {
   portal: {
     name: 'THE PORTAL',
     description: 'A tear in reality. The lights flicker between existence and void.',
-    atmosphere: [
-      'You feel pulled in two directions at once.',
-      'The portal hums at frequencies that shouldn\'t exist.',
-      'Through the breach, you see yourself. Looking back.'
-    ],
-    items: []
+    isDirect: true, // Goes straight to dimensional area
+    allowColleagueEvents: false
   },
-  drawer: {
-    name: 'BOTTOM DRAWER',
-    description: 'You never noticed it before. Has it always been here?',
+  printerroom: {
+    name: 'PRINTER ROOM',
+    description: 'The machines hum in unison. Paper feeds endlessly.',
+    isDirect: true, // Goes straight to printer room
+    allowColleagueEvents: false
+  },
+  armory: {
+    name: 'THE ARMORY',
+    description: 'Bottom drawer revealed. Weapons that shouldn\'t exist. But they do.',
     atmosphere: [
-      'The drawer is deeper than it should be.',
-      'Something metallic glints in the darkness.',
-      'Your hand reaches in. It goes further. Further.'
+      'Each weapon whispers its own madness.',
+      'The metal is cold. Impossibly cold.',
+      'You hear echoes of battles that haven\'t happened yet.'
     ],
-    items: []
+    isDirect: true, // Goes straight to armory
+    allowColleagueEvents: false
   }
 };
 
 export const UPGRADES = [
   { id: 'stapler', name: 'Premium Stapler', cost: 50, effect: 'ppPerClick', value: 2, desc: 'It never jams. Never.' },
   { id: 'coffee', name: 'Coffee Machine', cost: 150, effect: 'ppPerSecond', value: 1, desc: 'Automatic productivity. Tastes like copper.' },
+  { id: 'breakroom', name: 'Break Room Access', cost: 250, effect: 'unlock', value: 'breakroom', desc: 'Take a break. Meet your colleagues. They want to talk.' },
   { id: 'printerroom', name: 'Printer Room Access', cost: 200, effect: 'unlock', value: 'printer', desc: 'The printer hums. Something is wrong with its output.' },
   { id: 'keyboard', name: 'Mechanical Keyboard', cost: 300, effect: 'ppPerClick', value: 5, desc: 'The clicking soothes you. Click. Click. Click.' },
   { id: 'debugger', name: 'Debug Access', cost: 500, effect: 'unlock', value: 'debug', desc: 'Fix the code. Fix reality. Same thing.' },
@@ -349,21 +374,69 @@ export const DIMENSIONAL_UPGRADES = [
   },
   
   // Combat/Weapons
-  { 
-    id: 'drawer_key', 
-    name: 'Bottom Drawer Key', 
-    materials: { void_fragment: 10, static_crystal: 5 }, 
-    effect: 'unlock', 
-    value: 'drawer', 
-    desc: 'You find a key in your pocket. It was always there.' 
+  {
+    id: 'drawer_key',
+    name: 'Bottom Drawer Key',
+    materials: { void_fragment: 10, static_crystal: 5 },
+    effect: 'unlock',
+    value: 'armory',
+    desc: 'You find a key in your pocket. It was always there. The Armory awaits.'
   },
-  { 
-    id: 'shard_weapon', 
-    name: 'Shard Blade', 
-    materials: { glitch_shard: 30, temporal_core: 5 }, 
-    effect: 'combat', 
-    value: 'blade', 
-    desc: 'Confront what haunts these halls.' 
+  {
+    id: 'shard_weapon',
+    name: 'Craft: Glitch Shard Blade',
+    materials: { glitch_shard: 30, temporal_core: 5 },
+    effect: 'equipment',
+    value: 'weapon',
+    desc: 'Forge a blade from reality\'s broken edges. (Unlocks in Armory)'
+  },
+  {
+    id: 'void_cleaver_craft',
+    name: 'Craft: Void Cleaver',
+    materials: { void_fragment: 50, dimensional_essence: 2 },
+    effect: 'equipment',
+    value: 'weapon',
+    desc: 'Carve a weapon from pure absence. (Unlocks in Armory)'
+  },
+  {
+    id: 'temporal_blade_craft',
+    name: 'Craft: Temporal Edge',
+    materials: { temporal_core: 10, reality_dust: 20 },
+    effect: 'equipment',
+    value: 'weapon',
+    desc: 'Forge a blade that exists in multiple timelines. (Unlocks in Armory)'
+  },
+  {
+    id: 'reality_weapon_craft',
+    name: 'Craft: Reality Render',
+    materials: { singularity_node: 1, dimensional_essence: 3, temporal_core: 8 },
+    effect: 'equipment',
+    value: 'weapon',
+    desc: 'The ultimate weapon. It doesn\'t destroy - it erases. (Unlocks in Armory)'
+  },
+  {
+    id: 'void_visor_craft',
+    name: 'Craft: Void Visor',
+    materials: { void_fragment: 25, static_crystal: 15 },
+    effect: 'equipment',
+    value: 'armor',
+    desc: 'See through the veil. Reduces sanity drain. (Unlocks in Armory)'
+  },
+  {
+    id: 'crystal_armor_craft',
+    name: 'Craft: Crystalline Suit',
+    materials: { static_crystal: 40, reality_dust: 15 },
+    effect: 'equipment',
+    value: 'armor',
+    desc: 'Woven from dimensional crystals. Reflects damage. (Unlocks in Armory)'
+  },
+  {
+    id: 'temporal_accessory_craft',
+    name: 'Craft: Temporal Watch',
+    materials: { temporal_core: 5, glitch_shard: 20 },
+    effect: 'equipment',
+    value: 'armor',
+    desc: 'Time moves differently when you wear it. (Unlocks in Armory)'
   },
   { 
     id: 'crystal_imbuer', 
