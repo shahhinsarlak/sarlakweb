@@ -262,7 +262,7 @@ export default function DebugPanel({ gameState, setGameState, addMessage, onClos
         skillPoints: 30,
         day: 60,
         portalUnlocked: true,
-        unlockedLocations: ['cubicle', 'archive', 'portal', 'drawer'],
+        unlockedLocations: ['cubicle', 'archive', 'portal', 'armory'],
         printerUnlocked: true,
         dimensionalInventory: {
           void_fragment: 100,
@@ -613,10 +613,10 @@ export default function DebugPanel({ gameState, setGameState, addMessage, onClos
             ARCHIVE
           </button>
           <button onClick={() => {
-            setGameState(prev => ({ ...prev, unlockedLocations: [...new Set([...prev.unlockedLocations, 'drawer'])] }));
-            addMessage('Bottom Drawer unlocked');
+            setGameState(prev => ({ ...prev, unlockedLocations: [...new Set([...prev.unlockedLocations, 'armory'])] }));
+            addMessage('The Armory unlocked');
           }} style={buttonStyle}>
-            DRAWER
+            ARMORY
           </button>
           <button onClick={() => {
             setGameState(prev => ({ ...prev, debugMode: true }));
