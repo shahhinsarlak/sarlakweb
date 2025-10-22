@@ -305,7 +305,7 @@ export default function Game() {
       const unlockMap = {
         'debug': 'Unlocks Debug challenges',
         'archive': 'Unlocks The Archive',
-        'drawer': 'Unlocks Bottom Drawer',
+        'armory': 'Unlocks The Armory',
         'converter': 'Unlocks Material Converter',
         'imbuing': 'Unlocks Weapon Imbuing',
         'lore': 'Unlocks Dimensional Codex',

@@ -102,7 +102,10 @@ export default function Armory({ gameState, setGameState, onExit }) {
                 boxShadow: isHovered || isEquipped ?
                   `0 0 ${20 * weapon.rarity.glowIntensity}px ${weapon.rarity.color}` :
                   'none',
-                position: 'relative'
+                position: 'relative',
+                minHeight: '350px',
+                display: 'flex',
+                flexDirection: 'column'
               }}
             >
               {/* Rarity badge */}
@@ -238,7 +241,10 @@ export default function Armory({ gameState, setGameState, onExit }) {
                       boxShadow: isHovered || isEquipped ?
                         `0 0 ${20 * armor.rarity.glowIntensity}px ${armor.rarity.color}` :
                         'none',
-                      position: 'relative'
+                      position: 'relative',
+                      minHeight: '320px',
+                      display: 'flex',
+                      flexDirection: 'column'
                     }}
                   >
                     <div style={{
@@ -365,7 +371,10 @@ export default function Armory({ gameState, setGameState, onExit }) {
                   boxShadow: isHovered || isEquipped ?
                     `0 0 ${20 * anomaly.rarity.glowIntensity}px ${anomaly.rarity.color}` :
                     'none',
-                  position: 'relative'
+                  position: 'relative',
+                  minHeight: '340px',
+                  display: 'flex',
+                  flexDirection: 'column'
                 }}
               >
                 <div style={{
