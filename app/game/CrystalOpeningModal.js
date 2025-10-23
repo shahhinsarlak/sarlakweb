@@ -15,6 +15,21 @@ export default function CrystalOpeningModal({ lootItem, onComplete, onClose }) {
   const [tapCount, setTapCount] = useState(0);
   const [isRevealing, setIsRevealing] = useState(false);
 
+  /**
+   * Get readable text color for rarity - always use light colors since modal is always on black background
+   */
+  const getReadableRarityColor = (rarity) => {
+    const voidColors = {
+      common: '#cccccc',
+      uncommon: '#66ff66',
+      rare: '#66b3ff',
+      epic: '#d966ff',
+      legendary: '#ffcc66',
+      mythic: '#ff6666'
+    };
+    return voidColors[rarity.id] || '#cccccc';
+  };
+
   const handleTap = () => {
     if (isRevealing) return;
 
@@ -120,7 +135,7 @@ export default function CrystalOpeningModal({ lootItem, onComplete, onClose }) {
             fontSize: '20px',
             whiteSpace: 'pre',
             lineHeight: '1.2',
-            color: lootItem.rarity.textColor,
+            color: getReadableRarityColor(lootItem.rarity),
             textShadow: `0 0 20px ${lootItem.rarity.color}`,
             marginBottom: '40px',
             animation: `crystalPulse ${2000 / (tapCount + 1)}ms ease-in-out infinite`,
@@ -213,7 +228,7 @@ export default function CrystalOpeningModal({ lootItem, onComplete, onClose }) {
           lineHeight: '1.2',
           textAlign: 'center',
           marginBottom: '24px',
-          color: lootItem.rarity.textColor,
+          color: getReadableRarityColor(lootItem.rarity),
           textShadow: `0 0 10px ${lootItem.rarity.color}`
         }}>
           {lootItem.ascii}
@@ -224,7 +239,7 @@ export default function CrystalOpeningModal({ lootItem, onComplete, onClose }) {
           fontSize: '18px',
           fontWeight: '500',
           marginBottom: '8px',
-          color: lootItem.rarity.textColor,
+          color: getReadableRarityColor(lootItem.rarity),
           textAlign: 'center',
           textTransform: 'uppercase',
           letterSpacing: '1px'
@@ -254,38 +269,38 @@ export default function CrystalOpeningModal({ lootItem, onComplete, onClose }) {
         }}>
           {lootItem.type === 'weapon' && (
             <>
-              <div>⚔️  Damage: <span style={{ color: lootItem.rarity.textColor }}>{lootItem.finalStats.damage}</span></div>
-              <div>🎯 Crit Chance: <span style={{ color: lootItem.rarity.textColor }}>{(lootItem.finalStats.critChance * 100).toFixed(1)}%</span></div>
-              <div>💥 Crit Multiplier: <span style={{ color: lootItem.rarity.textColor }}>{lootItem.finalStats.critMultiplier.toFixed(1)}x</span></div>
+              <div>⚔️  Damage: <span style={{ color: getReadableRarityColor(lootItem.rarity) }}>{lootItem.finalStats.damage}</span></div>
+              <div>🎯 Crit Chance: <span style={{ color: getReadableRarityColor(lootItem.rarity) }}>{(lootItem.finalStats.critChance * 100).toFixed(1)}%</span></div>
+              <div>💥 Crit Multiplier: <span style={{ color: getReadableRarityColor(lootItem.rarity) }}>{lootItem.finalStats.critMultiplier.toFixed(1)}x</span></div>
             </>
           )}
           {lootItem.type === 'armor' && (
             <>
-              <div>🛡️  Defense: <span style={{ color: lootItem.rarity.textColor }}>{lootItem.finalStats.defense}</span></div>
+              <div>🛡️  Defense: <span style={{ color: getReadableRarityColor(lootItem.rarity) }}>{lootItem.finalStats.defense}</span></div>
             </>
           )}
 
           {/* Bonus stats */}
           {lootItem.finalStats.damageBonus > 0 && (
-            <div>💪 Damage Bonus: <span style={{ color: lootItem.rarity.textColor }}>+{(lootItem.finalStats.damageBonus * 100).toFixed(0)}%</span></div>
+            <div>💪 Damage Bonus: <span style={{ color: getReadableRarityColor(lootItem.rarity) }}>+{(lootItem.finalStats.damageBonus * 100).toFixed(0)}%</span></div>
           )}
           {lootItem.finalStats.ppBonus > 0 && (
-            <div>📊 PP Bonus: <span style={{ color: lootItem.rarity.textColor }}>+{(lootItem.finalStats.ppBonus * 100).toFixed(0)}%</span></div>
+            <div>📊 PP Bonus: <span style={{ color: getReadableRarityColor(lootItem.rarity) }}>+{(lootItem.finalStats.ppBonus * 100).toFixed(0)}%</span></div>
           )}
           {lootItem.finalStats.xpBonus > 0 && (
-            <div>✨ XP Bonus: <span style={{ color: lootItem.rarity.textColor }}>+{(lootItem.finalStats.xpBonus * 100).toFixed(0)}%</span></div>
+            <div>✨ XP Bonus: <span style={{ color: getReadableRarityColor(lootItem.rarity) }}>+{(lootItem.finalStats.xpBonus * 100).toFixed(0)}%</span></div>
           )}
           {lootItem.finalStats.energyRegen > 0 && (
-            <div>⚡ Energy Regen: <span style={{ color: lootItem.rarity.textColor }}>+{lootItem.finalStats.energyRegen.toFixed(1)}/s</span></div>
+            <div>⚡ Energy Regen: <span style={{ color: getReadableRarityColor(lootItem.rarity) }}>+{lootItem.finalStats.energyRegen.toFixed(1)}/s</span></div>
           )}
           {lootItem.finalStats.sanityRegen > 0 && (
-            <div>🧠 Sanity Regen: <span style={{ color: lootItem.rarity.textColor }}>+{lootItem.finalStats.sanityRegen.toFixed(1)}/s</span></div>
+            <div>🧠 Sanity Regen: <span style={{ color: getReadableRarityColor(lootItem.rarity) }}>+{lootItem.finalStats.sanityRegen.toFixed(1)}/s</span></div>
           )}
           {lootItem.finalStats.damageReflect > 0 && (
-            <div>🔄 Damage Reflect: <span style={{ color: lootItem.rarity.textColor }}>{(lootItem.finalStats.damageReflect * 100).toFixed(0)}%</span></div>
+            <div>🔄 Damage Reflect: <span style={{ color: getReadableRarityColor(lootItem.rarity) }}>{(lootItem.finalStats.damageReflect * 100).toFixed(0)}%</span></div>
           )}
           {lootItem.finalStats.cooldownReduction > 0 && (
-            <div>⏱️  Cooldown Reduction: <span style={{ color: lootItem.rarity.textColor }}>-{(lootItem.finalStats.cooldownReduction * 100).toFixed(0)}%</span></div>
+            <div>⏱️  Cooldown Reduction: <span style={{ color: getReadableRarityColor(lootItem.rarity) }}>-{(lootItem.finalStats.cooldownReduction * 100).toFixed(0)}%</span></div>
           )}
         </div>
 
