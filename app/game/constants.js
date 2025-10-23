@@ -69,14 +69,24 @@ export const INITIAL_GAME_STATE = {
   combatEnded: false,
   combatVictories: 0,
   // Equipment System
-  equippedWeapon: 'stapler_shiv', // Default starting weapon
+  equippedWeapon: 'stapler_shiv', // Default starting weapon (legacy system)
   equippedArmor: {
     head: 'standard_headset',
     chest: 'dress_shirt',
     accessory: 'id_badge'
   },
   equippedAnomalies: [], // Can equip up to 3
-  inArmory: false
+  inArmory: false,
+  // Loot System (Added 2025-10-23)
+  // Stores randomly generated items from dimensional tears
+  lootInventory: [], // Array of generated loot items with random stats
+  equippedLootWeapon: null, // ID of equipped loot weapon
+  equippedLootArmor: {
+    head: null,
+    chest: null,
+    accessory: null
+  },
+  equippedLootAnomalies: [] // Array of equipped loot anomaly IDs (max 3)
 };
 
 export const STRANGE_COLLEAGUE_DIALOGUES = [
