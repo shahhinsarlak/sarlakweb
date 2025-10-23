@@ -383,7 +383,7 @@ export const DIMENSIONAL_UPGRADES = [
     desc: 'Harness the void itself. +50 PP/sec. Unlock The Void.' 
   },
   
-  // Combat/Weapons
+  // Combat/Weapons - Now obtained through dimensional tears
   {
     id: 'drawer_key',
     name: 'Bottom Drawer Key',
@@ -392,71 +392,7 @@ export const DIMENSIONAL_UPGRADES = [
     value: 'armory',
     desc: 'You find a key in your pocket. It was always there. The Armory awaits.'
   },
-  {
-    id: 'shard_weapon',
-    name: 'Craft: Glitch Shard Blade',
-    materials: { glitch_shard: 30, temporal_core: 5 },
-    effect: 'equipment',
-    value: 'weapon',
-    desc: 'Forge a blade from reality\'s broken edges. (Unlocks in Armory)'
-  },
-  {
-    id: 'void_cleaver_craft',
-    name: 'Craft: Void Cleaver',
-    materials: { void_fragment: 50, dimensional_essence: 2 },
-    effect: 'equipment',
-    value: 'weapon',
-    desc: 'Carve a weapon from pure absence. (Unlocks in Armory)'
-  },
-  {
-    id: 'temporal_blade_craft',
-    name: 'Craft: Temporal Edge',
-    materials: { temporal_core: 10, reality_dust: 20 },
-    effect: 'equipment',
-    value: 'weapon',
-    desc: 'Forge a blade that exists in multiple timelines. (Unlocks in Armory)'
-  },
-  {
-    id: 'reality_weapon_craft',
-    name: 'Craft: Reality Render',
-    materials: { singularity_node: 1, dimensional_essence: 3, temporal_core: 8 },
-    effect: 'equipment',
-    value: 'weapon',
-    desc: 'The ultimate weapon. It doesn\'t destroy - it erases. (Unlocks in Armory)'
-  },
-  {
-    id: 'void_visor_craft',
-    name: 'Craft: Void Visor',
-    materials: { void_fragment: 25, static_crystal: 15 },
-    effect: 'equipment',
-    value: 'armor',
-    desc: 'See through the veil. Reduces sanity drain. (Unlocks in Armory)'
-  },
-  {
-    id: 'crystal_armor_craft',
-    name: 'Craft: Crystalline Suit',
-    materials: { static_crystal: 40, reality_dust: 15 },
-    effect: 'equipment',
-    value: 'armor',
-    desc: 'Woven from dimensional crystals. Reflects damage. (Unlocks in Armory)'
-  },
-  {
-    id: 'temporal_accessory_craft',
-    name: 'Craft: Temporal Watch',
-    materials: { temporal_core: 5, glitch_shard: 20 },
-    effect: 'equipment',
-    value: 'armor',
-    desc: 'Time moves differently when you wear it. (Unlocks in Armory)'
-  },
-  { 
-    id: 'crystal_imbuer', 
-    name: 'Crystal Imbuer', 
-    materials: { static_crystal: 20, dimensional_essence: 1 }, 
-    effect: 'unlock', 
-    value: 'imbuing', 
-    desc: 'Weapons can be enhanced with dimensional crystals.' 
-  },
-  
+
   // Research
   { 
     id: 'temporal_rewind', 
