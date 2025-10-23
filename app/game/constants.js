@@ -86,7 +86,9 @@ export const INITIAL_GAME_STATE = {
     chest: null,
     accessory: null
   },
-  equippedLootAnomalies: [] // Array of equipped loot anomaly IDs (max 3)
+  equippedLootAnomalies: [], // Array of equipped loot anomaly IDs (max 3)
+  // Debug flags
+  debugForceTearSpawn: false // Force 100% tear spawn rate for testing
 };
 
 export const STRANGE_COLLEAGUE_DIALOGUES = [
