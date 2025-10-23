@@ -1,59 +1,72 @@
 /**
  * Armory Component
  *
- * Equipment management interface with grid layout
- * - Weapons tab: All available weapons with ASCII art
- * - Armor tab: Head, Chest, Accessory slots
- * - Anomalies tab: Relic system (equip up to 3)
- * - Hover effects: Glow based on rarity, show lore
- * - Click to equip/unequip
+ * Equipment management interface for loot system:
+ * - Weapons tab: All loot weapons from lootInventory
+ * - Armor tab: All loot armor from lootInventory (by slot)
+ * - Anomalies tab: All loot anomalies from lootInventory
+ * - Shows randomized stats, prefixes, and void imbuements
+ * - Borderlands-style loot display
  */
 
 import { useState } from 'react';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import EventLog from './EventLog';
-import {
-  getAllWeapons,
-  getAllArmor,
-  getAllAnomalies,
-  isEquipmentUnlocked,
-  RARITY
-} from './equipmentConstants';
+import { compareItems } from './lootGenerationHelpers';
 
 export default function Armory({ gameState, setGameState, onExit }) {
   const [activeTab, setActiveTab] = useState('weapons');
   const [hoveredItem, setHoveredItem] = useState(null);
 
-  const equipWeapon = (weaponId) => {
-    setGameState(prev => ({
-      ...prev,
-      equippedWeapon: weaponId,
-      recentMessages: [`Equipped: ${getAllWeapons().find(w => w.id === weaponId)?.name}`, ...prev.recentMessages].slice(0, 15)
-    }));
-  };
+  // Get loot items from inventory
+  const lootInventory = gameState.lootInventory || [];
+  const weapons = lootInventory.filter(item => item.type === 'weapon').sort(compareItems);
+  const armor = lootInventory.filter(item => item.type === 'armor').sort(compareItems);
+  const anomalies = lootInventory.filter(item => item.type === 'anomaly').sort(compareItems);
 
-  const equipArmor = (armorId, slot) => {
-    setGameState(prev => ({
-      ...prev,
-      equippedArmor: {
-        ...prev.equippedArmor,
-        [slot]: armorId
-      },
-      recentMessages: [`Equipped: ${getAllArmor().find(a => a.id === armorId)?.name}`, ...prev.recentMessages].slice(0, 15)
-    }));
-  };
-
-  const equipAnomaly = (anomalyId) => {
+  const equipWeapon = (itemId) => {
     setGameState(prev => {
-      const currentAnomalies = prev.equippedAnomalies || [];
+      const item = lootInventory.find(i => i.id === itemId);
+      if (!item) return prev;
+
+      return {
+        ...prev,
+        equippedLootWeapon: itemId,
+        recentMessages: [`Equipped: ${item.displayName}`, ...prev.recentMessages].slice(0, 15)
+      };
+    });
+  };
+
+  const equipArmor = (itemId, slot) => {
+    setGameState(prev => {
+      const item = lootInventory.find(i => i.id === itemId);
+      if (!item) return prev;
+
+      return {
+        ...prev,
+        equippedLootArmor: {
+          ...(prev.equippedLootArmor || {}),
+          [slot]: itemId
+        },
+        recentMessages: [`Equipped: ${item.displayName}`, ...prev.recentMessages].slice(0, 15)
+      };
+    });
+  };
+
+  const equipAnomaly = (itemId) => {
+    setGameState(prev => {
+      const item = lootInventory.find(i => i.id === itemId);
+      if (!item) return prev;
+
+      const currentAnomalies = prev.equippedLootAnomalies || [];
 
       // Toggle: if already equipped, unequip it
-      if (currentAnomalies.includes(anomalyId)) {
+      if (currentAnomalies.includes(itemId)) {
         return {
           ...prev,
-          equippedAnomalies: currentAnomalies.filter(id => id !== anomalyId),
-          recentMessages: [`Unequipped: ${getAllAnomalies().find(a => a.id === anomalyId)?.name}`, ...prev.recentMessages].slice(0, 15)
+          equippedLootAnomalies: currentAnomalies.filter(id => id !== itemId),
+          recentMessages: [`Unequipped: ${item.displayName}`, ...prev.recentMessages].slice(0, 15)
         };
       }
 
@@ -67,24 +80,35 @@ export default function Armory({ gameState, setGameState, onExit }) {
 
       return {
         ...prev,
-        equippedAnomalies: [...currentAnomalies, anomalyId],
-        recentMessages: [`Equipped: ${getAllAnomalies().find(a => a.id === anomalyId)?.name}`, ...prev.recentMessages].slice(0, 15)
+        equippedLootAnomalies: [...currentAnomalies, itemId],
+        recentMessages: [`Equipped: ${item.displayName}`, ...prev.recentMessages].slice(0, 15)
       };
     });
   };
 
   const renderWeaponsTab = () => {
-    const weapons = getAllWeapons().filter(w => isEquipmentUnlocked(w, gameState));
+    if (weapons.length === 0) {
+      return (
+        <div style={{
+          textAlign: 'center',
+          padding: '60px 20px',
+          opacity: 0.6
+        }}>
+          <div style={{ fontSize: '14px', marginBottom: '8px' }}>No weapons found</div>
+          <div style={{ fontSize: '11px' }}>Find dimensional tears in the void to discover weapons</div>
+        </div>
+      );
+    }
 
     return (
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
         gap: '20px',
         padding: '20px 0'
       }}>
         {weapons.map(weapon => {
-          const isEquipped = gameState.equippedWeapon === weapon.id;
+          const isEquipped = gameState.equippedLootWeapon === weapon.id;
           const isHovered = hoveredItem === weapon.id;
 
           return (
@@ -103,12 +127,10 @@ export default function Armory({ gameState, setGameState, onExit }) {
                   `0 0 ${20 * weapon.rarity.glowIntensity}px ${weapon.rarity.color}` :
                   'none',
                 position: 'relative',
-                minHeight: '350px',
                 display: 'flex',
                 flexDirection: 'column'
               }}
             >
-              {/* Rarity badge */}
               <div style={{
                 position: 'absolute',
                 top: '8px',
@@ -123,65 +145,63 @@ export default function Armory({ gameState, setGameState, onExit }) {
                 {weapon.rarity.name.toUpperCase()}
               </div>
 
-              {/* ASCII Art */}
               <div style={{
                 fontFamily: 'monospace',
                 fontSize: '14px',
                 whiteSpace: 'pre',
                 lineHeight: '1.2',
                 textAlign: 'center',
-                marginBottom: '16px',
+                marginBottom: '12px',
                 color: weapon.rarity.textColor
               }}>
                 {weapon.ascii}
               </div>
 
-              {/* Name */}
               <div style={{
-                fontSize: '13px',
+                fontSize: '12px',
                 fontWeight: '500',
-                marginBottom: '8px',
+                marginBottom: '12px',
                 color: weapon.rarity.textColor,
-                textAlign: 'center'
+                textAlign: 'center',
+                lineHeight: '1.4'
               }}>
-                {weapon.name}
+                {weapon.displayName}
               </div>
 
-              {/* Stats */}
               <div style={{
                 fontSize: '10px',
-                opacity: 0.7,
+                opacity: 0.8,
                 marginBottom: '12px',
-                textAlign: 'center'
+                lineHeight: '1.8',
+                borderTop: '1px solid var(--border-color)',
+                borderBottom: '1px solid var(--border-color)',
+                paddingTop: '8px',
+                paddingBottom: '8px'
               }}>
-                ⚔️ DMG: {weapon.damage} | 🎯 CRIT: {(weapon.critChance * 100).toFixed(0)}%
+                <div>⚔️ Damage: <span style={{ color: weapon.rarity.textColor, fontWeight: '500' }}>{weapon.finalStats.damage}</span></div>
+                <div>🎯 Crit Chance: <span style={{ color: weapon.rarity.textColor, fontWeight: '500' }}>{(weapon.finalStats.critChance * 100).toFixed(1)}%</span></div>
+                <div>💥 Crit Multiplier: <span style={{ color: weapon.rarity.textColor, fontWeight: '500' }}>{weapon.finalStats.critMultiplier.toFixed(1)}x</span></div>
               </div>
 
-              {/* Lore (on hover) - positioned absolutely to not affect card size */}
-              {isHovered && (
+              {weapon.imbuements && weapon.imbuements.length > 0 && (
                 <div style={{
-                  position: 'absolute',
-                  bottom: isEquipped ? '60px' : '20px',
-                  left: '20px',
-                  right: '20px',
-                  fontSize: '11px',
-                  opacity: 0.95,
-                  fontStyle: 'italic',
-                  lineHeight: '1.6',
-                  padding: '12px',
-                  backgroundColor: 'var(--bg-color)',
-                  border: '1px solid var(--border-color)',
-                  color: weapon.rarity.textColor,
-                  zIndex: 10
+                  fontSize: '9px',
+                  marginBottom: '12px',
+                  color: '#9966ff',
+                  lineHeight: '1.6'
                 }}>
-                  {weapon.lore}
+                  {weapon.imbuements.map((imb, idx) => (
+                    <div key={idx} style={{ marginBottom: '4px' }}>
+                      <span style={{ opacity: 0.8 }}>•</span> {imb.name}: {imb.desc}
+                    </div>
+                  ))}
                 </div>
               )}
 
               {isEquipped && (
                 <div style={{
-                  marginTop: '12px',
-                  padding: '6px',
+                  marginTop: 'auto',
+                  padding: '8px',
                   backgroundColor: weapon.rarity.color,
                   color: '#000',
                   fontSize: '10px',
@@ -200,16 +220,28 @@ export default function Armory({ gameState, setGameState, onExit }) {
   };
 
   const renderArmorTab = () => {
-    const armorPieces = getAllArmor().filter(a => isEquipmentUnlocked(a, gameState));
+    if (armor.length === 0) {
+      return (
+        <div style={{
+          textAlign: 'center',
+          padding: '60px 20px',
+          opacity: 0.6
+        }}>
+          <div style={{ fontSize: '14px', marginBottom: '8px' }}>No armor found</div>
+          <div style={{ fontSize: '11px' }}>Find dimensional tears in the void to discover armor</div>
+        </div>
+      );
+    }
+
     const groupedBySlot = {
-      head: armorPieces.filter(a => a.slot === 'head'),
-      chest: armorPieces.filter(a => a.slot === 'chest'),
-      accessory: armorPieces.filter(a => a.slot === 'accessory')
+      head: armor.filter(a => a.slot === 'head'),
+      chest: armor.filter(a => a.slot === 'chest'),
+      accessory: armor.filter(a => a.slot === 'accessory')
     };
 
     return (
       <div>
-        {Object.entries(groupedBySlot).map(([slot, items]) => (
+        {Object.entries(groupedBySlot).filter(([_, items]) => items.length > 0).map(([slot, items]) => (
           <div key={slot} style={{ marginBottom: '40px' }}>
             <div style={{
               fontSize: '11px',
@@ -219,35 +251,34 @@ export default function Armory({ gameState, setGameState, onExit }) {
               marginBottom: '16px',
               fontWeight: '500'
             }}>
-              {slot.toUpperCase()} SLOT
+              {slot.toUpperCase()} SLOT ({items.length})
             </div>
 
             <div style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
               gap: '20px'
             }}>
-              {items.map(armor => {
-                const isEquipped = gameState.equippedArmor?.[slot] === armor.id;
-                const isHovered = hoveredItem === armor.id;
+              {items.map(armorItem => {
+                const isEquipped = gameState.equippedLootArmor?.[slot] === armorItem.id;
+                const isHovered = hoveredItem === armorItem.id;
 
                 return (
                   <div
-                    key={armor.id}
-                    onClick={() => equipArmor(armor.id, slot)}
-                    onMouseEnter={() => setHoveredItem(armor.id)}
+                    key={armorItem.id}
+                    onClick={() => equipArmor(armorItem.id, slot)}
+                    onMouseEnter={() => setHoveredItem(armorItem.id)}
                     onMouseLeave={() => setHoveredItem(null)}
                     style={{
-                      border: `2px solid ${isEquipped ? armor.rarity.color : 'var(--border-color)'}`,
+                      border: `2px solid ${isEquipped ? armorItem.rarity.color : 'var(--border-color)'}`,
                       padding: '20px',
                       cursor: 'pointer',
                       backgroundColor: isEquipped ? 'rgba(0, 0, 0, 0.1)' : 'var(--bg-color)',
                       transition: 'all 0.3s ease',
                       boxShadow: isHovered || isEquipped ?
-                        `0 0 ${20 * armor.rarity.glowIntensity}px ${armor.rarity.color}` :
+                        `0 0 ${20 * armorItem.rarity.glowIntensity}px ${armorItem.rarity.color}` :
                         'none',
                       position: 'relative',
-                      minHeight: '320px',
                       display: 'flex',
                       flexDirection: 'column'
                     }}
@@ -258,12 +289,12 @@ export default function Armory({ gameState, setGameState, onExit }) {
                       right: '8px',
                       fontSize: '9px',
                       padding: '4px 8px',
-                      backgroundColor: armor.rarity.color,
+                      backgroundColor: armorItem.rarity.color,
                       color: '#000',
                       fontWeight: '500',
                       letterSpacing: '0.5px'
                     }}>
-                      {armor.rarity.name.toUpperCase()}
+                      {armorItem.rarity.name.toUpperCase()}
                     </div>
 
                     <div style={{
@@ -272,57 +303,62 @@ export default function Armory({ gameState, setGameState, onExit }) {
                       whiteSpace: 'pre',
                       lineHeight: '1.2',
                       textAlign: 'center',
-                      marginBottom: '16px',
-                      color: armor.rarity.textColor
+                      marginBottom: '12px',
+                      color: armorItem.rarity.textColor
                     }}>
-                      {armor.ascii}
+                      {armorItem.ascii}
                     </div>
 
                     <div style={{
-                      fontSize: '13px',
+                      fontSize: '12px',
                       fontWeight: '500',
-                      marginBottom: '8px',
-                      color: armor.rarity.textColor,
-                      textAlign: 'center'
+                      marginBottom: '12px',
+                      color: armorItem.rarity.textColor,
+                      textAlign: 'center',
+                      lineHeight: '1.4'
                     }}>
-                      {armor.name}
+                      {armorItem.displayName}
                     </div>
 
                     <div style={{
                       fontSize: '10px',
-                      opacity: 0.7,
+                      opacity: 0.8,
                       marginBottom: '12px',
-                      textAlign: 'center'
+                      lineHeight: '1.8',
+                      borderTop: '1px solid var(--border-color)',
+                      borderBottom: '1px solid var(--border-color)',
+                      paddingTop: '8px',
+                      paddingBottom: '8px'
                     }}>
-                      🛡️ DEF: {armor.defense}
-                      {armor.specialEffect && ` | ✨ Special`}
+                      <div>🛡️ Defense: <span style={{ color: armorItem.rarity.textColor, fontWeight: '500' }}>{armorItem.finalStats.defense}</span></div>
+                      {armorItem.finalStats.sanityResist > 0 && (
+                        <div>🧠 Sanity Resist: <span style={{ color: armorItem.rarity.textColor, fontWeight: '500' }}>{(armorItem.finalStats.sanityResist * 100).toFixed(0)}%</span></div>
+                      )}
+                      {armorItem.finalStats.damageReflect > 0 && (
+                        <div>🔄 Damage Reflect: <span style={{ color: armorItem.rarity.textColor, fontWeight: '500' }}>{(armorItem.finalStats.damageReflect * 100).toFixed(0)}%</span></div>
+                      )}
                     </div>
 
-                    {isHovered && (
+                    {armorItem.imbuements && armorItem.imbuements.length > 0 && (
                       <div style={{
-                        position: 'absolute',
-                        bottom: isEquipped ? '60px' : '20px',
-                        left: '20px',
-                        right: '20px',
-                        fontSize: '11px',
-                        opacity: 0.95,
-                        fontStyle: 'italic',
-                        lineHeight: '1.6',
-                        padding: '12px',
-                        backgroundColor: 'var(--bg-color)',
-                        border: '1px solid var(--border-color)',
-                        color: armor.rarity.textColor,
-                        zIndex: 10
+                        fontSize: '9px',
+                        marginBottom: '12px',
+                        color: '#9966ff',
+                        lineHeight: '1.6'
                       }}>
-                        {armor.lore}
+                        {armorItem.imbuements.map((imb, idx) => (
+                          <div key={idx} style={{ marginBottom: '4px' }}>
+                            <span style={{ opacity: 0.8 }}>•</span> {imb.name}: {imb.desc}
+                          </div>
+                        ))}
                       </div>
                     )}
 
                     {isEquipped && (
                       <div style={{
-                        marginTop: '12px',
-                        padding: '6px',
-                        backgroundColor: armor.rarity.color,
+                        marginTop: 'auto',
+                        padding: '8px',
+                        backgroundColor: armorItem.rarity.color,
                         color: '#000',
                         fontSize: '10px',
                         fontWeight: '500',
@@ -343,8 +379,20 @@ export default function Armory({ gameState, setGameState, onExit }) {
   };
 
   const renderAnomaliesTab = () => {
-    const anomalies = getAllAnomalies().filter(a => isEquipmentUnlocked(a, gameState));
-    const equippedAnomalies = gameState.equippedAnomalies || [];
+    const equippedAnomalies = gameState.equippedLootAnomalies || [];
+
+    if (anomalies.length === 0) {
+      return (
+        <div style={{
+          textAlign: 'center',
+          padding: '60px 20px',
+          opacity: 0.6
+        }}>
+          <div style={{ fontSize: '14px', marginBottom: '8px' }}>No anomalies found</div>
+          <div style={{ fontSize: '11px' }}>Find dimensional tears in the void to discover anomalies</div>
+        </div>
+      );
+    }
 
     return (
       <div>
@@ -352,14 +400,15 @@ export default function Armory({ gameState, setGameState, onExit }) {
           fontSize: '11px',
           opacity: 0.6,
           marginBottom: '20px',
-          textAlign: 'center'
+          textAlign: 'center',
+          letterSpacing: '1px'
         }}>
           EQUIPPED: {equippedAnomalies.length} / 3
         </div>
 
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
           gap: '20px'
         }}>
           {anomalies.map(anomaly => {
@@ -382,7 +431,6 @@ export default function Armory({ gameState, setGameState, onExit }) {
                     `0 0 ${20 * anomaly.rarity.glowIntensity}px ${anomaly.rarity.color}` :
                     'none',
                   position: 'relative',
-                  minHeight: '340px',
                   display: 'flex',
                   flexDirection: 'column'
                 }}
@@ -407,55 +455,69 @@ export default function Armory({ gameState, setGameState, onExit }) {
                   whiteSpace: 'pre',
                   lineHeight: '1.2',
                   textAlign: 'center',
-                  marginBottom: '16px',
+                  marginBottom: '12px',
                   color: anomaly.rarity.textColor
                 }}>
                   {anomaly.ascii}
                 </div>
 
                 <div style={{
-                  fontSize: '13px',
+                  fontSize: '12px',
                   fontWeight: '500',
-                  marginBottom: '8px',
+                  marginBottom: '12px',
                   color: anomaly.rarity.textColor,
-                  textAlign: 'center'
+                  textAlign: 'center',
+                  lineHeight: '1.4'
                 }}>
-                  {anomaly.name}
+                  {anomaly.displayName}
                 </div>
 
                 <div style={{
                   fontSize: '10px',
-                  opacity: 0.7,
+                  opacity: 0.8,
                   marginBottom: '12px',
-                  textAlign: 'center'
+                  lineHeight: '1.8',
+                  borderTop: '1px solid var(--border-color)',
+                  borderBottom: '1px solid var(--border-color)',
+                  paddingTop: '8px',
+                  paddingBottom: '8px'
                 }}>
-                  ✨ {anomaly.effect.toUpperCase().replace('_', ' ')}: +{(anomaly.effectValue * 100).toFixed(0)}%
+                  {anomaly.finalStats.xpBonus > 0 && (
+                    <div>✨ XP Bonus: <span style={{ color: anomaly.rarity.textColor, fontWeight: '500' }}>+{(anomaly.finalStats.xpBonus * 100).toFixed(0)}%</span></div>
+                  )}
+                  {anomaly.finalStats.ppBonus > 0 && (
+                    <div>📊 PP Bonus: <span style={{ color: anomaly.rarity.textColor, fontWeight: '500' }}>+{(anomaly.finalStats.ppBonus * 100).toFixed(0)}%</span></div>
+                  )}
+                  {anomaly.finalStats.energyRegen > 0 && (
+                    <div>⚡ Energy Regen: <span style={{ color: anomaly.rarity.textColor, fontWeight: '500' }}>+{anomaly.finalStats.energyRegen.toFixed(1)}/s</span></div>
+                  )}
+                  {anomaly.finalStats.damageBonus > 0 && (
+                    <div>💪 Damage Bonus: <span style={{ color: anomaly.rarity.textColor, fontWeight: '500' }}>+{(anomaly.finalStats.damageBonus * 100).toFixed(0)}%</span></div>
+                  )}
+                  {anomaly.finalStats.allStatsBonus > 0 && (
+                    <div>🌟 All Stats: <span style={{ color: anomaly.rarity.textColor, fontWeight: '500' }}>+{(anomaly.finalStats.allStatsBonus * 100).toFixed(0)}%</span></div>
+                  )}
                 </div>
 
-                {isHovered && (
+                {anomaly.imbuements && anomaly.imbuements.length > 0 && (
                   <div style={{
-                    position: 'absolute',
-                    bottom: isEquipped ? '60px' : '20px',
-                    left: '20px',
-                    right: '20px',
-                    fontSize: '11px',
-                    opacity: 0.95,
-                    fontStyle: 'italic',
-                    lineHeight: '1.6',
-                    padding: '12px',
-                    backgroundColor: 'var(--bg-color)',
-                    border: '1px solid var(--border-color)',
-                    color: anomaly.rarity.textColor,
-                    zIndex: 10
+                    fontSize: '9px',
+                    marginBottom: '12px',
+                    color: '#9966ff',
+                    lineHeight: '1.6'
                   }}>
-                    {anomaly.lore}
+                    {anomaly.imbuements.map((imb, idx) => (
+                      <div key={idx} style={{ marginBottom: '4px' }}>
+                        <span style={{ opacity: 0.8 }}>•</span> {imb.name}: {imb.desc}
+                      </div>
+                    ))}
                   </div>
                 )}
 
                 {isEquipped && (
                   <div style={{
-                    marginTop: '12px',
-                    padding: '6px',
+                    marginTop: 'auto',
+                    padding: '8px',
                     backgroundColor: anomaly.rarity.color,
                     color: '#000',
                     fontSize: '10px',
@@ -480,13 +542,12 @@ export default function Armory({ gameState, setGameState, onExit }) {
       <Header />
       <div style={{
         fontFamily: "'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace",
-        maxWidth: '1200px',
+        maxWidth: '1400px',
         margin: '0 auto',
         padding: '60px 40px',
         minHeight: '100vh',
         fontSize: '14px'
       }}>
-        {/* Header */}
         <div style={{
           display: 'flex',
           justifyContent: 'space-between',
@@ -507,7 +568,7 @@ export default function Armory({ gameState, setGameState, onExit }) {
               fontSize: '12px',
               opacity: 0.6
             }}>
-              Equip yourself for the battles ahead
+              Loot discovered from dimensional tears
             </div>
           </div>
 
@@ -528,7 +589,6 @@ export default function Armory({ gameState, setGameState, onExit }) {
           </button>
         </div>
 
-        {/* Tabs */}
         <div style={{
           display: 'flex',
           gap: '8px',
@@ -553,12 +613,11 @@ export default function Armory({ gameState, setGameState, onExit }) {
                 transition: 'all 0.2s'
               }}
             >
-              {tab}
+              {tab} ({tab === 'weapons' ? weapons.length : tab === 'armor' ? armor.length : anomalies.length})
             </button>
           ))}
         </div>
 
-        {/* Content */}
         {activeTab === 'weapons' && renderWeaponsTab()}
         {activeTab === 'armor' && renderArmorTab()}
         {activeTab === 'anomalies' && renderAnomaliesTab()}
