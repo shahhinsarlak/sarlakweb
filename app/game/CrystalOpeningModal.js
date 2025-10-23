@@ -337,7 +337,7 @@ export default function CrystalOpeningModal({ lootItem, onComplete, onClose }) {
           textAlign: 'center',
           color: '#888888'
         }}>
-          "{lootItem.lore}"
+          &ldquo;{lootItem.lore}&rdquo;
         </div>
 
         {/* Claim button */}
