@@ -25,6 +25,34 @@ export default function Armory({ gameState, setGameState, onExit }) {
   const armor = lootInventory.filter(item => item.type === 'armor').sort(compareItems);
   const anomalies = lootInventory.filter(item => item.type === 'anomaly').sort(compareItems);
 
+  /**
+   * Get readable text color for rarity based on theme
+   * Uses darker colors for light mode, lighter for dark mode
+   */
+  const getReadableRarityColor = (rarity) => {
+    const darkModeColors = {
+      common: '#cccccc',
+      uncommon: '#66ff66',
+      rare: '#66b3ff',
+      epic: '#d966ff',
+      legendary: '#ffcc66',
+      mythic: '#ff6666'
+    };
+
+    const lightModeColors = {
+      common: '#666666',
+      uncommon: '#228822',
+      rare: '#1a66cc',
+      epic: '#7722cc',
+      legendary: '#cc8800',
+      mythic: '#cc2222'
+    };
+
+    // Detect theme by checking computed styles
+    const isDarkMode = document.documentElement.getAttribute('data-theme') === 'dark';
+    return isDarkMode ? darkModeColors[rarity.id] : lightModeColors[rarity.id];
+  };
+
   const equipWeapon = (itemId) => {
     setGameState(prev => {
       const item = lootInventory.find(i => i.id === itemId);
@@ -152,7 +180,7 @@ export default function Armory({ gameState, setGameState, onExit }) {
                 lineHeight: '1.2',
                 textAlign: 'center',
                 marginBottom: '12px',
-                color: weapon.rarity.textColor
+                color: getReadableRarityColor(weapon.rarity)
               }}>
                 {weapon.ascii}
               </div>
@@ -161,7 +189,7 @@ export default function Armory({ gameState, setGameState, onExit }) {
                 fontSize: '12px',
                 fontWeight: '500',
                 marginBottom: '12px',
-                color: weapon.rarity.textColor,
+                color: getReadableRarityColor(weapon.rarity),
                 textAlign: 'center',
                 lineHeight: '1.4'
               }}>
@@ -178,9 +206,9 @@ export default function Armory({ gameState, setGameState, onExit }) {
                 paddingTop: '8px',
                 paddingBottom: '8px'
               }}>
-                <div>⚔️ Damage: <span style={{ color: weapon.rarity.textColor, fontWeight: '500' }}>{weapon.finalStats.damage}</span></div>
-                <div>🎯 Crit Chance: <span style={{ color: weapon.rarity.textColor, fontWeight: '500' }}>{(weapon.finalStats.critChance * 100).toFixed(1)}%</span></div>
-                <div>💥 Crit Multiplier: <span style={{ color: weapon.rarity.textColor, fontWeight: '500' }}>{weapon.finalStats.critMultiplier.toFixed(1)}x</span></div>
+                <div>⚔️ Damage: <span style={{ color: getReadableRarityColor(weapon.rarity), fontWeight: '500' }}>{weapon.finalStats.damage}</span></div>
+                <div>🎯 Crit Chance: <span style={{ color: getReadableRarityColor(weapon.rarity), fontWeight: '500' }}>{(weapon.finalStats.critChance * 100).toFixed(1)}%</span></div>
+                <div>💥 Crit Multiplier: <span style={{ color: getReadableRarityColor(weapon.rarity), fontWeight: '500' }}>{weapon.finalStats.critMultiplier.toFixed(1)}x</span></div>
               </div>
 
               {weapon.imbuements && weapon.imbuements.length > 0 && (
@@ -304,7 +332,7 @@ export default function Armory({ gameState, setGameState, onExit }) {
                       lineHeight: '1.2',
                       textAlign: 'center',
                       marginBottom: '12px',
-                      color: armorItem.rarity.textColor
+                      color: getReadableRarityColor(armorItem.rarity)
                     }}>
                       {armorItem.ascii}
                     </div>
@@ -313,7 +341,7 @@ export default function Armory({ gameState, setGameState, onExit }) {
                       fontSize: '12px',
                       fontWeight: '500',
                       marginBottom: '12px',
-                      color: armorItem.rarity.textColor,
+                      color: getReadableRarityColor(armorItem.rarity),
                       textAlign: 'center',
                       lineHeight: '1.4'
                     }}>
@@ -330,12 +358,12 @@ export default function Armory({ gameState, setGameState, onExit }) {
                       paddingTop: '8px',
                       paddingBottom: '8px'
                     }}>
-                      <div>🛡️ Defense: <span style={{ color: armorItem.rarity.textColor, fontWeight: '500' }}>{armorItem.finalStats.defense}</span></div>
+                      <div>🛡️ Defense: <span style={{ color: getReadableRarityColor(armorItem.rarity), fontWeight: '500' }}>{armorItem.finalStats.defense}</span></div>
                       {armorItem.finalStats.sanityResist > 0 && (
-                        <div>🧠 Sanity Resist: <span style={{ color: armorItem.rarity.textColor, fontWeight: '500' }}>{(armorItem.finalStats.sanityResist * 100).toFixed(0)}%</span></div>
+                        <div>🧠 Sanity Resist: <span style={{ color: getReadableRarityColor(armorItem.rarity), fontWeight: '500' }}>{(armorItem.finalStats.sanityResist * 100).toFixed(0)}%</span></div>
                       )}
                       {armorItem.finalStats.damageReflect > 0 && (
-                        <div>🔄 Damage Reflect: <span style={{ color: armorItem.rarity.textColor, fontWeight: '500' }}>{(armorItem.finalStats.damageReflect * 100).toFixed(0)}%</span></div>
+                        <div>🔄 Damage Reflect: <span style={{ color: getReadableRarityColor(armorItem.rarity), fontWeight: '500' }}>{(armorItem.finalStats.damageReflect * 100).toFixed(0)}%</span></div>
                       )}
                     </div>
 
@@ -456,7 +484,7 @@ export default function Armory({ gameState, setGameState, onExit }) {
                   lineHeight: '1.2',
                   textAlign: 'center',
                   marginBottom: '12px',
-                  color: anomaly.rarity.textColor
+                  color: getReadableRarityColor(anomaly.rarity)
                 }}>
                   {anomaly.ascii}
                 </div>
@@ -465,7 +493,7 @@ export default function Armory({ gameState, setGameState, onExit }) {
                   fontSize: '12px',
                   fontWeight: '500',
                   marginBottom: '12px',
-                  color: anomaly.rarity.textColor,
+                  color: getReadableRarityColor(anomaly.rarity),
                   textAlign: 'center',
                   lineHeight: '1.4'
                 }}>
@@ -483,19 +511,19 @@ export default function Armory({ gameState, setGameState, onExit }) {
                   paddingBottom: '8px'
                 }}>
                   {anomaly.finalStats.xpBonus > 0 && (
-                    <div>✨ XP Bonus: <span style={{ color: anomaly.rarity.textColor, fontWeight: '500' }}>+{(anomaly.finalStats.xpBonus * 100).toFixed(0)}%</span></div>
+                    <div>✨ XP Bonus: <span style={{ color: getReadableRarityColor(anomaly.rarity), fontWeight: '500' }}>+{(anomaly.finalStats.xpBonus * 100).toFixed(0)}%</span></div>
                   )}
                   {anomaly.finalStats.ppBonus > 0 && (
-                    <div>📊 PP Bonus: <span style={{ color: anomaly.rarity.textColor, fontWeight: '500' }}>+{(anomaly.finalStats.ppBonus * 100).toFixed(0)}%</span></div>
+                    <div>📊 PP Bonus: <span style={{ color: getReadableRarityColor(anomaly.rarity), fontWeight: '500' }}>+{(anomaly.finalStats.ppBonus * 100).toFixed(0)}%</span></div>
                   )}
                   {anomaly.finalStats.energyRegen > 0 && (
-                    <div>⚡ Energy Regen: <span style={{ color: anomaly.rarity.textColor, fontWeight: '500' }}>+{anomaly.finalStats.energyRegen.toFixed(1)}/s</span></div>
+                    <div>⚡ Energy Regen: <span style={{ color: getReadableRarityColor(anomaly.rarity), fontWeight: '500' }}>+{anomaly.finalStats.energyRegen.toFixed(1)}/s</span></div>
                   )}
                   {anomaly.finalStats.damageBonus > 0 && (
-                    <div>💪 Damage Bonus: <span style={{ color: anomaly.rarity.textColor, fontWeight: '500' }}>+{(anomaly.finalStats.damageBonus * 100).toFixed(0)}%</span></div>
+                    <div>💪 Damage Bonus: <span style={{ color: getReadableRarityColor(anomaly.rarity), fontWeight: '500' }}>+{(anomaly.finalStats.damageBonus * 100).toFixed(0)}%</span></div>
                   )}
                   {anomaly.finalStats.allStatsBonus > 0 && (
-                    <div>🌟 All Stats: <span style={{ color: anomaly.rarity.textColor, fontWeight: '500' }}>+{(anomaly.finalStats.allStatsBonus * 100).toFixed(0)}%</span></div>
+                    <div>🌟 All Stats: <span style={{ color: getReadableRarityColor(anomaly.rarity), fontWeight: '500' }}>+{(anomaly.finalStats.allStatsBonus * 100).toFixed(0)}%</span></div>
                   )}
                 </div>
 
