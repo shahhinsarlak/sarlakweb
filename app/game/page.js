@@ -526,8 +526,9 @@ export default function Game() {
   }
 
   if (gameState.strangeColleagueEvent) {
-    // Player has weapon if equipped weapon is not the starter weapon
-    const hasWeapon = gameState.equippedWeapon && gameState.equippedWeapon !== 'stapler_shiv';
+    // Player has weapon if they have any weapons in loot inventory or equipped weapon is not the starter
+    const hasLootWeapons = (gameState.lootInventory || []).some(item => item.type === 'weapon');
+    const hasWeapon = hasLootWeapons || (gameState.equippedWeapon && gameState.equippedWeapon !== 'stapler_shiv');
     return (
       <ColleagueModal
         event={gameState.strangeColleagueEvent}
