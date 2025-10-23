@@ -15,6 +15,8 @@ import { useState } from 'react';
 import { DIMENSIONAL_MATERIALS } from './dimensionalConstants';
 import { UPGRADES, PRINTER_UPGRADES, DIMENSIONAL_UPGRADES, ACHIEVEMENTS, EVENTS, LOCATIONS } from './constants';
 import { SKILLS, LEVEL_SYSTEM } from './skillTreeConstants';
+import { generateLootItem } from './lootGenerationHelpers';
+import { RARITY } from './equipmentConstants';
 
 export default function DebugPanel({ gameState, setGameState, addMessage, onClose }) {
   const [activeTab, setActiveTab] = useState('resources');
@@ -852,6 +854,164 @@ export default function DebugPanel({ gameState, setGameState, addMessage, onClos
     </div>
   );
 
+  const renderLootTab = () => {
+    const generateAndAddLoot = (rarityId = null, type = null) => {
+      const loot = generateLootItem(type);
+      if (!loot) {
+        addMessage('Failed to generate loot');
+        return;
+      }
+
+      // Override rarity if specified
+      if (rarityId && RARITY[rarityId]) {
+        loot.rarity = RARITY[rarityId];
+      }
+
+      setGameState(prev => ({
+        ...prev,
+        lootInventory: [...(prev.lootInventory || []), loot],
+        recentMessages: [
+          `DEBUG: Generated ${loot.rarity.name} ${loot.displayName}`,
+          ...prev.recentMessages
+        ].slice(0, 15)
+      }));
+      addMessage(`Generated ${loot.rarity.name} ${loot.displayName}`);
+    };
+
+    const clearLootInventory = () => {
+      setGameState(prev => ({
+        ...prev,
+        lootInventory: [],
+        equippedLootWeapon: null,
+        equippedLootArmor: { head: null, chest: null, accessory: null },
+        equippedLootAnomalies: []
+      }));
+      addMessage('Cleared all loot');
+    };
+
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div>
+          <div style={{ fontSize: '10px', opacity: 0.7, marginBottom: '8px' }}>LOOT GENERATION</div>
+          <div style={{ fontSize: '9px', opacity: 0.5, marginBottom: '12px' }}>
+            Generate random loot items for testing
+          </div>
+        </div>
+
+        <div>
+          <div style={{ fontSize: '10px', opacity: 0.7, marginBottom: '8px' }}>GENERATE BY TYPE</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
+            <button onClick={() => generateAndAddLoot(null, 'weapon')} style={buttonStyle}>
+              WEAPON
+            </button>
+            <button onClick={() => generateAndAddLoot(null, 'armor')} style={buttonStyle}>
+              ARMOR
+            </button>
+            <button onClick={() => generateAndAddLoot(null, 'anomaly')} style={buttonStyle}>
+              ANOMALY
+            </button>
+          </div>
+        </div>
+
+        <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
+          <div style={{ fontSize: '10px', opacity: 0.7, marginBottom: '8px' }}>GENERATE BY RARITY</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+            <button
+              onClick={() => generateAndAddLoot('common')}
+              style={{...buttonStyle, borderColor: RARITY.common.color}}
+            >
+              COMMON
+            </button>
+            <button
+              onClick={() => generateAndAddLoot('uncommon')}
+              style={{...buttonStyle, borderColor: RARITY.uncommon.color}}
+            >
+              UNCOMMON
+            </button>
+            <button
+              onClick={() => generateAndAddLoot('rare')}
+              style={{...buttonStyle, borderColor: RARITY.rare.color}}
+            >
+              RARE
+            </button>
+            <button
+              onClick={() => generateAndAddLoot('epic')}
+              style={{...buttonStyle, borderColor: RARITY.epic.color}}
+            >
+              EPIC
+            </button>
+            <button
+              onClick={() => generateAndAddLoot('legendary')}
+              style={{...buttonStyle, borderColor: RARITY.legendary.color}}
+            >
+              LEGENDARY
+            </button>
+            <button
+              onClick={() => generateAndAddLoot('mythic')}
+              style={{...buttonStyle, borderColor: RARITY.mythic.color}}
+            >
+              MYTHIC
+            </button>
+          </div>
+        </div>
+
+        <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
+          <div style={{ fontSize: '10px', opacity: 0.7, marginBottom: '8px' }}>BULK GENERATION</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+            <button onClick={() => {
+              for (let i = 0; i < 5; i++) generateAndAddLoot();
+            }} style={buttonStyle}>
+              +5 RANDOM
+            </button>
+            <button onClick={() => {
+              for (let i = 0; i < 10; i++) generateAndAddLoot();
+            }} style={buttonStyle}>
+              +10 RANDOM
+            </button>
+            <button onClick={() => {
+              for (let i = 0; i < 3; i++) generateAndAddLoot('legendary');
+            }} style={primaryButtonStyle}>
+              +3 LEGENDARY
+            </button>
+            <button onClick={() => {
+              generateAndAddLoot('mythic');
+            }} style={primaryButtonStyle}>
+              +1 MYTHIC
+            </button>
+          </div>
+        </div>
+
+        <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
+          <div style={{ fontSize: '10px', opacity: 0.7, marginBottom: '8px' }}>INVENTORY MANAGEMENT</div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', padding: '8px', backgroundColor: 'var(--hover-color)', border: '1px solid var(--border-color)' }}>
+            <span>Current Loot Items:</span>
+            <strong>{(gameState.lootInventory || []).length}</strong>
+          </div>
+          <button onClick={clearLootInventory} style={{...buttonStyle, borderColor: '#ff0000', color: '#ff0000'}}>
+            CLEAR ALL LOOT
+          </button>
+        </div>
+
+        <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
+          <div style={{ fontSize: '10px', opacity: 0.7, marginBottom: '8px' }}>ARMORY ACCESS</div>
+          <button onClick={() => {
+            setGameState(prev => ({
+              ...prev,
+              unlockedLocations: [...new Set([...(prev.unlockedLocations || []), 'armory'])],
+              dimensionalUpgrades: {
+                ...(prev.dimensionalUpgrades || {}),
+                drawer_key: true
+              }
+            }));
+            addMessage('Unlocked Armory');
+          }} style={primaryButtonStyle}>
+            UNLOCK ARMORY
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   // Main render
   return (
     <div style={{
@@ -933,6 +1093,9 @@ export default function DebugPanel({ gameState, setGameState, addMessage, onClos
           <button onClick={() => setActiveTab('materials')} style={tabStyle(activeTab === 'materials')}>
             MATERIALS
           </button>
+          <button onClick={() => setActiveTab('loot')} style={tabStyle(activeTab === 'loot')}>
+            LOOT
+          </button>
           <button onClick={() => setActiveTab('presets')} style={tabStyle(activeTab === 'presets')}>
             PRESETS
           </button>
@@ -952,6 +1115,7 @@ export default function DebugPanel({ gameState, setGameState, addMessage, onClos
           {activeTab === 'progression' && renderProgressionTab()}
           {activeTab === 'unlocks' && renderUnlocksTab()}
           {activeTab === 'materials' && renderMaterialsTab()}
+          {activeTab === 'loot' && renderLootTab()}
           {activeTab === 'presets' && renderPresetsTab()}
           {activeTab === 'utilities' && renderUtilitiesTab()}
         </div>
