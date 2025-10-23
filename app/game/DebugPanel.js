@@ -1008,6 +1008,43 @@ export default function DebugPanel({ gameState, setGameState, addMessage, onClos
             UNLOCK ARMORY
           </button>
         </div>
+
+        <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
+          <div style={{ fontSize: '10px', opacity: 0.7, marginBottom: '8px' }}>TEAR SPAWNING</div>
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '8px',
+            padding: '8px',
+            backgroundColor: 'var(--hover-color)',
+            border: '1px solid var(--border-color)'
+          }}>
+            <span>Force Tear Spawn:</span>
+            <strong style={{ color: gameState.debugForceTearSpawn ? '#00ff00' : '#ff0000' }}>
+              {gameState.debugForceTearSpawn ? 'ON (100%)' : 'OFF (8%)'}
+            </strong>
+          </div>
+          <button
+            onClick={() => {
+              setGameState(prev => ({
+                ...prev,
+                debugForceTearSpawn: !prev.debugForceTearSpawn
+              }));
+              addMessage(!gameState.debugForceTearSpawn ? 'Force tear spawn: ENABLED (100%)' : 'Force tear spawn: DISABLED (8%)');
+            }}
+            style={{
+              ...buttonStyle,
+              borderColor: gameState.debugForceTearSpawn ? '#00ff00' : 'var(--border-color)',
+              color: gameState.debugForceTearSpawn ? '#00ff00' : 'var(--text-color)'
+            }}
+          >
+            {gameState.debugForceTearSpawn ? 'DISABLE FORCE SPAWN' : 'ENABLE FORCE SPAWN'}
+          </button>
+          <div style={{ fontSize: '9px', opacity: 0.5, marginTop: '8px', lineHeight: '1.4' }}>
+            When enabled, dimensional tears will spawn 100% of the time. Useful for testing loot generation. Remember to exit and re-enter portal for changes to take effect.
+          </div>
+        </div>
       </div>
     );
   };

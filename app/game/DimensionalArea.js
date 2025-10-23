@@ -40,8 +40,11 @@ export default function DimensionalArea({ gameState, setGameState, onExit, grant
   const dimensionalTear = useMemo(() => {
     if (!armoryUnlocked) return null;
 
+    // Debug mode: force spawn
+    const forceTearSpawn = gameState.debugForceTearSpawn || false;
+
     const spawnRoll = Math.random();
-    if (spawnRoll > TEAR_CONFIG.spawnChance) return null;
+    if (!forceTearSpawn && spawnRoll > TEAR_CONFIG.spawnChance) return null;
 
     // Random position in the text
     const position = Math.floor(Math.random() * (encryptedText.length - 1000)) + 500;
@@ -59,7 +62,7 @@ export default function DimensionalArea({ gameState, setGameState, onExit, grant
       size
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [armoryUnlocked]); // Only regenerate if armory unlock status changes
+  }, [armoryUnlocked, gameState.debugForceTearSpawn]); // Regenerate when armory unlocked or debug flag changes
 
   const currentCapacity = Object.values(currentInventory).reduce((sum, count) => sum + count, 0);
   const remainingCapacity = modifiedCapacity - currentCapacity;
