@@ -538,7 +538,7 @@ ${printing ? '    │  ───────────────────
                       style={{
                         width: '100%',
                         background: 'none',
-                        border: '1px solid #ff6600',
+                        border: '1px solid var(--border-color)',
                         color: 'var(--text-color)',
                         padding: '8px',
                         cursor: check.canPrint ? 'pointer' : 'not-allowed',
@@ -549,7 +549,7 @@ ${printing ? '    │  ───────────────────
                         opacity: check.canPrint ? 1 : 0.4
                       }}
                     >
-                      <div style={{ fontWeight: 'bold', marginBottom: '2px', color: '#ff6600' }}>{contract.name}</div>
+                      <div style={{ fontWeight: 'bold', marginBottom: '2px' }}>{contract.name}</div>
                       <div style={{ opacity: 0.7 }}>{contract.desc}</div>
                     </button>
                   ))}
@@ -571,7 +571,7 @@ ${printing ? '    │  ───────────────────
                   style={{
                     width: '100%',
                     background: 'none',
-                    border: '1px solid #ff00ff',
+                    border: '1px solid var(--border-color)',
                     color: 'var(--text-color)',
                     padding: '12px',
                     cursor: check.canPrint ? 'pointer' : 'not-allowed',
@@ -581,7 +581,7 @@ ${printing ? '    │  ───────────────────
                     opacity: check.canPrint ? 1 : 0.4
                   }}
                 >
-                  <div style={{ fontWeight: 'bold', marginBottom: '4px', color: '#ff00ff' }}>🔮 {docData.name}</div>
+                  <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>🔮 {docData.name}</div>
                   <div style={{ fontSize: '9px', opacity: 0.7 }}>{docData.desc}</div>
                   <div style={{ fontSize: '9px', marginTop: '6px', opacity: 0.6 }}>
                     Cost: {docData.cost.paper} paper, {docData.cost.energy} energy
