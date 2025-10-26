@@ -82,43 +82,52 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
   
   const sortPapers = () => {
     setGameState(prev => {
-      // Apply skill effects to energy cost, then report buff modifier
-      const baseEnergyCost = 2;
-      let energyCost = applyEnergyCostReduction(baseEnergyCost, prev);
-      energyCost = applyEnergyCostModifier(energyCost, prev);
+      try {
+        // Apply skill effects to energy cost, then report buff modifier
+        const baseEnergyCost = 2;
+        let energyCost = applyEnergyCostReduction(baseEnergyCost, prev);
+        energyCost = applyEnergyCostModifier(energyCost, prev);
 
-      if (prev.energy < energyCost) {
-        return {
+        if (prev.energy < energyCost) {
+          return {
+            ...prev,
+            recentMessages: ['Too exhausted. Your hands won\'t move.', ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
+          };
+        }
+
+        // Apply skill effects to PP gain, then sanity-based modifier
+        const basePP = prev.ppPerClick;
+        const ppWithSkills = applyPPMultiplier(basePP, prev);
+        const ppGain = applySanityPPModifier(ppWithSkills, prev);
+
+        console.log('[sortPapers] basePP:', basePP, 'ppWithSkills:', ppWithSkills, 'ppGain:', ppGain);
+
+        // Clean expired buffs
+        const activeBuffs = cleanExpiredBuffs(prev);
+
+        const newState = {
           ...prev,
-          recentMessages: ['Too exhausted. Your hands won\'t move.', ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
+          pp: prev.pp + ppGain,
+          energy: Math.max(0, prev.energy - energyCost),
+          sortCount: (prev.sortCount || 0) + 1,
+          activeReportBuffs: activeBuffs
         };
+
+        console.log('[sortPapers] Old PP:', prev.pp, 'New PP:', newState.pp);
+
+        // Apply sanity modifier to XP as well - call after state update
+        setTimeout(() => {
+          const baseXP = XP_REWARDS.sortPapers;
+          const xpGain = applySanityXPModifier(baseXP, prev);
+          grantXP(xpGain);
+          checkAchievements();
+        }, 0);
+
+        return newState;
+      } catch (error) {
+        console.error('[sortPapers] ERROR:', error);
+        return prev;
       }
-
-      // Apply skill effects to PP gain, then sanity-based modifier
-      const basePP = prev.ppPerClick;
-      const ppWithSkills = applyPPMultiplier(basePP, prev);
-      const ppGain = applySanityPPModifier(ppWithSkills, prev);
-
-      // Clean expired buffs
-      const activeBuffs = cleanExpiredBuffs(prev);
-
-      const newState = {
-        ...prev,
-        pp: prev.pp + ppGain,
-        energy: Math.max(0, prev.energy - energyCost),
-        sortCount: (prev.sortCount || 0) + 1,
-        activeReportBuffs: activeBuffs
-      };
-
-      // Apply sanity modifier to XP as well - call after state update
-      setTimeout(() => {
-        const baseXP = XP_REWARDS.sortPapers;
-        const xpGain = applySanityXPModifier(baseXP, prev);
-        grantXP(xpGain);
-        checkAchievements();
-      }, 0);
-
-      return newState;
     });
   };
 
