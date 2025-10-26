@@ -74,6 +74,12 @@ export const INITIAL_GAME_STATE = {
   activeReportBuffs: [],
   // Paper trail for tracking patterns (for secrets/achievements)
   paperTrail: [],
+  // Help System (Added 2025-10-26)
+  // Tracks which help popups have been shown to avoid repetition
+  helpEnabled: true, // Can be toggled by player
+  shownHelpPopups: [], // Array of popup IDs that have been shown
+  currentHelpPopup: null, // Current popup to display (object with id, title, content)
+  meditationUnlocked: false, // Meditation button only appears after reaching 25% sanity
   // Combat System
   inCombat: false,
   currentEnemy: null,
@@ -743,5 +749,209 @@ export const SANITY_TIERS = {
       'Risk of Void events',
       'Paper becomes unreliable'
     ]
+  }
+};
+
+/**
+ * Help Popup Definitions
+ * Context-aware tutorial popups that appear at key moments
+ */
+export const HELP_POPUPS = {
+  welcome: {
+    id: 'welcome',
+    title: 'WELCOME TO THE OFFICE',
+    content: `You are here. You have always been here.
+
+Click SORT PAPERS to generate Productivity Points (PP).
+Each action costs energy. When exhausted, use REST.
+
+The fluorescent lights hum at 60Hz. This is normal.`,
+    category: 'basic'
+  },
+  firstPassiveIncome: {
+    id: 'firstPassiveIncome',
+    title: 'PASSIVE GENERATION',
+    content: `You've unlocked passive PP generation!
+
+The work continues even when you're not clicking.
+Watch the counter in the bottom-right of the resources panel.
+
+Automation is efficiency. Efficiency is mandatory.`,
+    category: 'progression'
+  },
+  lowSanity: {
+    id: 'lowSanity',
+    title: 'SANITY DECLINING',
+    content: `Your sanity is below 25%. Reality begins to fracture.
+
+MEDITATION is now available. This breathing exercise restores sanity.
+Match the rhythm: Inhale... Exhale... Repeat.
+
+Or embrace the madness. Low sanity increases PP and XP gains.
+The choice is yours.`,
+    category: 'mechanics'
+  },
+  sanityTiers: {
+    id: 'sanityTiers',
+    title: 'REALITY PERCEPTION',
+    content: `Your sanity level affects how you perceive reality:
+
+HIGH (80-100%): Safe but slow. -15% PP/XP gains.
+MEDIUM (40-79%): Normal. Standard gameplay.
+LOW (10-39%): Dangerous. +25% PP/XP gains.
+CRITICAL (0-9%): Void-touched. +50% PP/XP gains.
+
+Lower sanity = higher rewards, but paper quality degrades.
+This affects your ability to create documents.`,
+    category: 'mechanics'
+  },
+  skillTree: {
+    id: 'skillTree',
+    title: 'SKILL TREE UNLOCKED',
+    content: `You've gained a skill point!
+
+Skills provide permanent bonuses across three branches:
+• EFFICIENCY: Increase PP generation
+• FOCUS: Reduce energy costs
+• RESILIENCE: Improve sanity management
+
+Invest wisely. Reality remembers your choices.`,
+    category: 'progression'
+  },
+  archive: {
+    id: 'archive',
+    title: 'THE ARCHIVE AWAITS',
+    content: `You've discovered The Archive.
+
+Files from employees who never were.
+Documents that shouldn't exist.
+
+It might be worthwhile reading some of the files in there.
+Each one reveals something... unsettling.`,
+    category: 'exploration'
+  },
+  printerRoom: {
+    id: 'printerRoom',
+    title: 'PRINTER ROOM UNLOCKED',
+    content: `The machines hum in unison.
+
+PRINT PAPERS generates paper currency, but quality depends on:
+• Printer upgrades (70%)
+• Your sanity (30%)
+
+Low sanity corrupts the output. The text bleeds.
+Paper is used for printer upgrades and documents.`,
+    category: 'mechanics'
+  },
+  documentSystem: {
+    id: 'documentSystem',
+    title: 'DOCUMENT SYSTEM',
+    content: `Paper can be transformed into documents:
+
+MEMOS: Quick sanity restoration
+REPORTS: Temporary buffs (efficiency, focus, stability)
+CONTRACTS: Reality-bending effects (costs sanity!)
+PROPHECIES: Only at critical sanity. Reveals secrets.
+
+Paper quality must meet requirements or documents fail.`,
+    category: 'mechanics'
+  },
+  portal: {
+    id: 'portal',
+    title: 'DIMENSIONAL BREACH',
+    content: `Reality has torn open.
+
+The Portal leads to a dimensional space where materials exist
+outside normal reality. These materials craft powerful upgrades.
+
+Cooldown: 60 seconds between entries.
+Some say the void stares back.`,
+    category: 'exploration'
+  },
+  combat: {
+    id: 'combat',
+    title: 'COLLEAGUE CONFRONTATION',
+    content: `Your colleague wishes to discuss something.
+
+COMBAT uses your equipped weapon and armor.
+Attack, or attempt to escape (60% success rate).
+
+Victory grants PP, XP, and sometimes dimensional tears.
+Defeat costs sanity.
+
+The correct response was to agree. It's always to agree.`,
+    category: 'mechanics'
+  },
+  paperQuality: {
+    id: 'paperQuality',
+    title: 'PAPER QUALITY WARNING',
+    content: `Your paper quality has dropped below 50%.
+
+As sanity decreases, printed documents become corrupted.
+Higher-tier documents require minimum quality thresholds:
+
+• Memos: No requirement
+• Reports: 30% quality
+• Contracts: 60% quality
+• Prophecies: No requirement (madness required)
+
+Restore sanity or improve printer quality to stabilize output.`,
+    category: 'warning'
+  },
+  debug: {
+    id: 'debug',
+    title: 'DEBUG ACCESS GRANTED',
+    content: `You can now fix code errors for rewards.
+
+Each bug challenge has 3 attempts.
+Success grants PP and sanity restoration.
+Failure costs sanity.
+
+The bugs are not bugs. They are features of this reality.`,
+    category: 'mechanics'
+  },
+  dimensionalTear: {
+    id: 'dimensionalTear',
+    title: 'DIMENSIONAL TEAR',
+    content: `A tear in reality has appeared!
+
+These rare rifts contain powerful loot:
+• Weapons with random stats
+• Armor pieces
+• Anomalies
+
+Combat victories can spawn tears.
+The void is generous to victors.`,
+    category: 'mechanics'
+  }
+};
+
+/**
+ * Help popup trigger conditions
+ * Defines when each popup should appear
+ */
+export const HELP_TRIGGERS = {
+  welcome: (state, prevState) => state.sortCount === 1 && !prevState,
+  firstPassiveIncome: (state, prevState) => state.ppPerSecond > 0 && (!prevState || prevState.ppPerSecond === 0),
+  lowSanity: (state, prevState) => state.sanity <= 25 && (!prevState || prevState.sanity > 25) && !state.meditationUnlocked,
+  sanityTiers: (state, prevState) => state.sanity <= 39 && (!prevState || prevState.sanity > 39),
+  skillTree: (state, prevState) => state.skillPoints > 0 && (!prevState || prevState.skillPoints === 0),
+  archive: (state, prevState) => state.unlockedLocations.includes('archive') && (!prevState || !prevState.unlockedLocations.includes('archive')),
+  printerRoom: (state, prevState) => state.printerUnlocked && (!prevState || !prevState.printerUnlocked),
+  documentSystem: (state, prevState) => state.paper >= 5 && state.printerUnlocked && (!prevState || prevState.paper < 5),
+  portal: (state, prevState) => state.portalUnlocked && (!prevState || !prevState.portalUnlocked),
+  combat: (state, prevState) => state.inCombat && (!prevState || !prevState.inCombat),
+  paperQuality: (state, prevState) => {
+    // Trigger when paper quality drops below 50 for first time
+    const currentQuality = (state.paperQuality || 100);
+    const prevQuality = prevState ? (prevState.paperQuality || 100) : 100;
+    return currentQuality < 50 && prevQuality >= 50;
+  },
+  debug: (state, prevState) => state.debugMode && (!prevState || !prevState.debugMode),
+  dimensionalTear: (state, prevState) => {
+    // Check for new loot items
+    const currentLootCount = state.lootInventory?.length || 0;
+    const prevLootCount = prevState?.lootInventory?.length || 0;
+    return currentLootCount > prevLootCount;
   }
 };
