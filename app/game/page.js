@@ -13,6 +13,7 @@ import SkillTreeModal from './SkillTreeModal';
 import PrinterRoom from './PrinterRoom';
 import CombatModal from './CombatModal';
 import Armory from './Armory';
+import HelpPopup from './HelpPopup';
 import { createGameActions } from './gameActions';
 import { getDistortionStyle, distortText, getClockTime, createLevelUpParticles, createSkillPurchaseParticles, createScreenShake } from './gameUtils';
 import { saveGame, loadGame, exportToClipboard, importFromClipboard } from './saveSystem';
@@ -28,7 +29,9 @@ import {
   ACHIEVEMENTS,
   EVENTS,
   STRANGE_COLLEAGUE_DIALOGUES,
-  PRINTER_UPGRADES
+  PRINTER_UPGRADES,
+  HELP_POPUPS,
+  HELP_TRIGGERS
 } from './constants';
 
 export default function Game() {
@@ -455,6 +458,73 @@ export default function Game() {
     checkAchievements();
   }, [gameState.pp, gameState.day, gameState.sortCount, gameState.unlockedLocations.length, gameState.disagreementCount, gameState.examinedItems, gameState.sanity, checkAchievements]);
 
+  // Help system: Check for triggered popups
+  useEffect(() => {
+    if (!gameState.helpEnabled) return;
+
+    // Use a ref to store previous state for comparisons
+    const prevStateRef = {current: null};
+
+    return () => {
+      prevStateRef.current = gameState;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!gameState.helpEnabled || gameState.currentHelpPopup) return;
+
+    // Check each trigger
+    for (const [popupId, triggerFn] of Object.entries(HELP_TRIGGERS)) {
+      // Skip if already shown
+      if (gameState.shownHelpPopups.includes(popupId)) continue;
+
+      // Get the popup data
+      const popup = HELP_POPUPS[popupId];
+      if (!popup) continue;
+
+      // Check if trigger condition is met
+      // We pass both current and a simple previous state (from a tick ago)
+      if (triggerFn(gameState, null)) {
+        // Trigger this popup
+        setGameState(prev => ({
+          ...prev,
+          currentHelpPopup: popup
+        }));
+        break; // Only show one popup at a time
+      }
+    }
+  }, [gameState, gameState.helpEnabled, gameState.currentHelpPopup, gameState.shownHelpPopups]);
+
+  // Meditation unlock: Only unlock when sanity drops to 25% or below
+  useEffect(() => {
+    if (!gameState.meditationUnlocked && gameState.sanity <= 25) {
+      setGameState(prev => ({
+        ...prev,
+        meditationUnlocked: true
+      }));
+    }
+  }, [gameState.sanity, gameState.meditationUnlocked]);
+
+  const dismissHelpPopup = () => {
+    setGameState(prev => {
+      if (!prev.currentHelpPopup) return prev;
+
+      return {
+        ...prev,
+        currentHelpPopup: null,
+        shownHelpPopups: [...prev.shownHelpPopups, prev.currentHelpPopup.id]
+      };
+    });
+  };
+
+  const toggleHelpSystem = () => {
+    setGameState(prev => ({
+      ...prev,
+      helpEnabled: !prev.helpEnabled
+    }));
+    addMessage(gameState.helpEnabled ? 'Help popups disabled.' : 'Help popups enabled.');
+  };
+
   const currentLocation = LOCATIONS[gameState.location];
   const availableUpgrades = UPGRADES.filter(u => 
     !gameState.upgrades[u.id] && 
@@ -597,6 +667,21 @@ export default function Game() {
               💾 SAVE
             </button>
             <button
+              onClick={toggleHelpSystem}
+              style={{
+                background: 'none',
+                border: `1px solid ${gameState.helpEnabled ? '#ffaa00' : '#666666'}`,
+                color: gameState.helpEnabled ? '#ffaa00' : '#666666',
+                padding: '4px 8px',
+                cursor: 'pointer',
+                fontSize: '10px',
+                fontFamily: 'inherit',
+                opacity: 0.8
+              }}
+            >
+              {gameState.helpEnabled ? '📖 HELP' : '📕 HELP'}
+            </button>
+            <button
               onClick={() => setShowDebugPanel(!showDebugPanel)}
               style={{
                 background: 'none',
@@ -734,26 +819,28 @@ export default function Game() {
                     {gameState.restCooldown > 0 ? `[${Math.ceil(gameState.restCooldown)}s]` : '[RESTORE ENERGY]'}
                   </div>
                 </button>
-                <button
-                  onClick={actions.startMeditation}
-                  disabled={gameState.energy < 10}
-                  style={{
-                    background: 'none',
-                    border: '1px solid var(--border-color)',
-                    color: 'var(--text-color)',
-                    padding: '20px',
-                    cursor: gameState.energy >= 10 ? 'pointer' : 'not-allowed',
-                    fontSize: '12px',
-                    fontFamily: 'inherit',
-                    letterSpacing: '0.5px',
-                    transition: 'all 0.2s',
-                    opacity: gameState.energy >= 10 ? 1 : 0.4,
-                    textAlign: 'center'
-                  }}
-                >
-                  <div>MEDITATE</div>
-                  <div style={{ fontSize: '10px', opacity: 0.6, marginTop: '6px' }}>[-10 ENERGY, +SANITY]</div>
-                </button>
+                {gameState.meditationUnlocked && (
+                  <button
+                    onClick={actions.startMeditation}
+                    disabled={gameState.energy < 10}
+                    style={{
+                      background: 'none',
+                      border: '1px solid var(--border-color)',
+                      color: 'var(--text-color)',
+                      padding: '20px',
+                      cursor: gameState.energy >= 10 ? 'pointer' : 'not-allowed',
+                      fontSize: '12px',
+                      fontFamily: 'inherit',
+                      letterSpacing: '0.5px',
+                      transition: 'all 0.2s',
+                      opacity: gameState.energy >= 10 ? 1 : 0.4,
+                      textAlign: 'center'
+                    }}
+                  >
+                    <div>MEDITATE</div>
+                    <div style={{ fontSize: '10px', opacity: 0.6, marginTop: '6px' }}>[-10 ENERGY, +SANITY]</div>
+                  </button>
+                )}
                 {gameState.upgrades.debugger && (
                   <button
                     onClick={actions.startDebugSession}
@@ -1396,6 +1483,12 @@ export default function Game() {
         )}
       </div>
       <Footer />
+
+      {/* Help Popup System */}
+      <HelpPopup
+        popup={gameState.currentHelpPopup}
+        onDismiss={dismissHelpPopup}
+      />
     </>
   );
 }
