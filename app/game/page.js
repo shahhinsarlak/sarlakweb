@@ -468,7 +468,9 @@ export default function Game() {
     }
   }, [gameState.sanity, gameState.meditationUnlocked]);
 
-  // Help system: Check for triggered popups on specific state changes
+  // Help system: TEMPORARILY DISABLED TO DIAGNOSE PP GENERATION ISSUE
+  // TODO: Re-enable after fixing core sortPapers functionality
+  /*
   useEffect(() => {
     if (!gameState.helpEnabled || gameState.currentHelpPopup) return;
 
@@ -598,6 +600,7 @@ export default function Game() {
       }, 100);
     }
   }, [gameState.paper, gameState.printerUnlocked, gameState.helpEnabled, gameState.currentHelpPopup, gameState.shownHelpPopups]);
+  */
 
   const dismissHelpPopup = () => {
     setGameState(prev => {
