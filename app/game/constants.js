@@ -60,6 +60,20 @@ export const INITIAL_GAME_STATE = {
   printCount: 0,
   printerUpgrades: {},
   inPrinterRoom: false,
+  // Paper Quality & Document System (Added 2025-10-26)
+  // Paper quality determined by sanity + printer upgrades (0-100%)
+  paperQuality: 100,
+  // Document inventory: different types of paper with different uses
+  documents: {
+    memos: 0,      // Cheap, restore small sanity
+    reports: 0,    // Medium, lock in buffs
+    contracts: 0,  // Expensive, reality-bending effects
+    prophecies: 0  // Rare, only print at low sanity, provide hints
+  },
+  // Active buffs from filed reports
+  activeReportBuffs: [],
+  // Paper trail for tracking patterns (for secrets/achievements)
+  paperTrail: [],
   // Combat System
   inCombat: false,
   currentEnemy: null,
@@ -603,5 +617,131 @@ export const ACHIEVEMENTS = [
   { id: 'first_blood', name: 'First Blood', desc: 'Win your first combat encounter', check: (state) => (state.combatVictories || 0) >= 1 },
   { id: 'combatant', name: 'Combatant', desc: 'Win 10 combat encounters', check: (state) => (state.combatVictories || 0) >= 10 },
   { id: 'warrior', name: 'Office Warrior', desc: 'Win 50 combat encounters', check: (state) => (state.combatVictories || 0) >= 50 },
-  { id: 'slayer', name: 'Colleague Slayer', desc: 'Win 100 combat encounters', check: (state) => (state.combatVictories || 0) >= 100 }
+  { id: 'slayer', name: 'Colleague Slayer', desc: 'Win 100 combat encounters', check: (state) => (state.combatVictories || 0) >= 100 },
+  // Paper & Sanity System Achievements
+  { id: 'embrace_madness', name: 'Embrace Madness', desc: 'Generate PP at critical sanity (<10%)', check: (state) => state.sortCount >= 1 && state.sanity < 10 },
+  { id: 'bureaucrat', name: 'Master Bureaucrat', desc: 'File 50 reports', check: (state) => (state.documents?.reports || 0) >= 50 },
+  { id: 'prophet', name: 'Prophet', desc: 'Print a prophecy at critical sanity', check: (state) => (state.documents?.prophecies || 0) >= 1 },
+  { id: 'reality_bender_paper', name: 'Reality Contractor', desc: 'Use 10 reality contracts', check: (state) => (state.documents?.contracts || 0) >= 10 }
 ];
+
+/**
+ * Document Types and Costs
+ * Different types of paper with different uses and requirements
+ */
+export const DOCUMENT_TYPES = {
+  memo: {
+    id: 'memo',
+    name: 'Office Memo',
+    cost: { paper: 5, energy: 3 },
+    desc: 'Standard office communication. +10 Sanity.',
+    effect: 'sanity',
+    value: 10,
+    minPrinterQuality: 0
+  },
+  report: {
+    id: 'report',
+    name: 'Status Report',
+    cost: { paper: 15, energy: 8 },
+    desc: 'Formal documentation. Locks in a temporary buff.',
+    effect: 'buff',
+    minPrinterQuality: 30,
+    buffs: [
+      { id: 'efficiency', name: 'Efficiency Report', desc: '+15% PP generation for 300 seconds', duration: 300, ppMult: 1.15 },
+      { id: 'focus', name: 'Focus Report', desc: '-20% energy costs for 300 seconds', duration: 300, energyCostMult: 0.8 },
+      { id: 'stability', name: 'Stability Report', desc: 'Sanity drain paused for 300 seconds', duration: 300, noSanityDrain: true }
+    ]
+  },
+  contract: {
+    id: 'contract',
+    name: 'Reality Contract',
+    cost: { paper: 30, energy: 15, sanity: 10 },
+    desc: 'Reality-bending document. Powerful but dangerous.',
+    effect: 'contract',
+    minPrinterQuality: 60,
+    contracts: [
+      { id: 'temporal', name: 'Temporal Clause', desc: 'Instant +100 PP, -5 sanity', ppGain: 100, sanityCost: 5 },
+      { id: 'void', name: 'Void Clause', desc: 'Double next dimensional materials found, -10 sanity', sanityCost: 10, doubleMaterials: true, duration: 600 },
+      { id: 'essence', name: 'Essence Clause', desc: 'Convert 50 paper → 1 random dimensional material', paperCost: 50, grantMaterial: true }
+    ]
+  },
+  prophecy: {
+    id: 'prophecy',
+    name: 'Prophecy Print',
+    cost: { paper: 25, energy: 20 },
+    desc: 'Only prints at critical sanity. Reveals hidden truths.',
+    effect: 'prophecy',
+    maxSanity: 15, // Can only print when sanity <= 15
+    minPrinterQuality: 0
+  }
+};
+
+/**
+ * Sanity Tiers
+ * Defines gameplay changes at different sanity levels
+ */
+export const SANITY_TIERS = {
+  high: {
+    min: 80,
+    max: 100,
+    name: 'Stable Mind',
+    color: '#00ff00',
+    ppMultiplier: 0.85,
+    xpMultiplier: 0.85,
+    description: 'Normal office work. Safe but slow.',
+    effects: [
+      'Cannot see dimensional anomalies clearly',
+      'Lower PP gain (-15%)',
+      'Lower XP gain (-15%)',
+      'Reduced paper quality degradation'
+    ]
+  },
+  medium: {
+    min: 40,
+    max: 79,
+    name: 'Fractured Focus',
+    color: '#ffff00',
+    ppMultiplier: 1.0,
+    xpMultiplier: 1.0,
+    description: 'Reality begins to fray at the edges.',
+    effects: [
+      'Normal PP and XP gains',
+      'Text occasionally distorts',
+      'Colleagues may trigger combat'
+    ]
+  },
+  low: {
+    min: 10,
+    max: 39,
+    name: 'Unraveling Reality',
+    color: '#ff9900',
+    ppMultiplier: 1.25,
+    xpMultiplier: 1.25,
+    description: 'Madness reveals hidden opportunities.',
+    effects: [
+      'Increased PP gain (+25%)',
+      'Increased XP gain (+25%)',
+      'Heavy visual distortion',
+      'More dimensional materials spawn',
+      'Random glitch events',
+      'Paper quality degrades faster'
+    ]
+  },
+  critical: {
+    min: 0,
+    max: 9,
+    name: 'VOID TOUCHED',
+    color: '#ff0000',
+    ppMultiplier: 1.5,
+    xpMultiplier: 1.5,
+    description: 'The office is no longer real.',
+    effects: [
+      'Highest PP gain (+50%)',
+      'Highest XP gain (+50%)',
+      'Everything distorted',
+      'Can print prophecies',
+      'Risk of Void events',
+      'Paper becomes unreliable'
+    ]
+  }
+};

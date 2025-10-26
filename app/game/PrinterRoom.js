@@ -1,7 +1,9 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { DOCUMENT_TYPES } from './constants';
+import { calculatePaperQuality, canPrintDocument, getSanityTier } from './sanityPaperHelpers';
 
-export default function PrinterRoom({ gameState, setGameState, onExit, grantXP }) {
+export default function PrinterRoom({ gameState, setGameState, onExit, grantXP, actions }) {
   const [printing, setPrinting] = useState(false);
   const [printedPapers, setPrintedPapers] = useState([]);
   const [animationFrame, setAnimationFrame] = useState(0);
@@ -403,6 +405,193 @@ ${printing ? '    │  ───────────────────
                 </div>
               )}
             </div>
+          </div>
+
+          {/* Document System */}
+          <div style={{
+            border: '1px solid var(--border-color)',
+            padding: '24px',
+            marginBottom: '30px',
+            backgroundColor: 'var(--hover-color)'
+          }}>
+            <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6, marginBottom: '16px' }}>
+              DOCUMENT SYSTEM
+            </div>
+            <div style={{ fontSize: '10px', marginBottom: '16px', padding: '8px', backgroundColor: 'var(--bg-color)', border: '1px solid var(--border-color)' }}>
+              <div>Paper Quality: {calculatePaperQuality(gameState)}%</div>
+              <div style={{ opacity: 0.7, marginTop: '4px' }}>
+                Depends on Sanity ({gameState.sanity.toFixed(0)}%) + Printer Quality ({gameState.printerQuality || 0}%)
+              </div>
+            </div>
+
+            {/* Memo */}
+            {(() => {
+              const docData = DOCUMENT_TYPES.memo;
+              const check = canPrintDocument('memo', gameState);
+              return (
+                <button
+                  onClick={() => actions.printMemo()}
+                  disabled={!check.canPrint}
+                  style={{
+                    width: '100%',
+                    background: 'none',
+                    border: '1px solid var(--border-color)',
+                    color: 'var(--text-color)',
+                    padding: '12px',
+                    cursor: check.canPrint ? 'pointer' : 'not-allowed',
+                    fontSize: '11px',
+                    fontFamily: 'inherit',
+                    marginBottom: '8px',
+                    textAlign: 'left',
+                    opacity: check.canPrint ? 1 : 0.4
+                  }}
+                >
+                  <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>📝 {docData.name}</div>
+                  <div style={{ fontSize: '9px', opacity: 0.7 }}>{docData.desc}</div>
+                  <div style={{ fontSize: '9px', marginTop: '6px', opacity: 0.6 }}>
+                    Cost: {docData.cost.paper} paper, {docData.cost.energy} energy
+                  </div>
+                  {!check.canPrint && (
+                    <div style={{ fontSize: '9px', marginTop: '4px', color: '#ff4444' }}>{check.reason}</div>
+                  )}
+                </button>
+              );
+            })()}
+
+            {/* Report */}
+            {(() => {
+              const docData = DOCUMENT_TYPES.report;
+              const check = canPrintDocument('report', gameState);
+              return (
+                <div style={{ marginBottom: '8px' }}>
+                  <div style={{
+                    fontSize: '10px',
+                    fontWeight: 'bold',
+                    marginBottom: '6px',
+                    padding: '8px',
+                    backgroundColor: 'var(--bg-color)',
+                    border: '1px solid var(--border-color)'
+                  }}>
+                    📊 {docData.name}
+                    {!check.canPrint && (
+                      <div style={{ fontSize: '9px', marginTop: '4px', color: '#ff4444', fontWeight: 'normal' }}>
+                        {check.reason}
+                      </div>
+                    )}
+                  </div>
+                  {docData.buffs.map(buff => (
+                    <button
+                      key={buff.id}
+                      onClick={() => actions.printReport(buff.id)}
+                      disabled={!check.canPrint}
+                      style={{
+                        width: '100%',
+                        background: 'none',
+                        border: '1px solid var(--border-color)',
+                        color: 'var(--text-color)',
+                        padding: '8px',
+                        cursor: check.canPrint ? 'pointer' : 'not-allowed',
+                        fontSize: '9px',
+                        fontFamily: 'inherit',
+                        marginBottom: '4px',
+                        textAlign: 'left',
+                        opacity: check.canPrint ? 1 : 0.4
+                      }}
+                    >
+                      <div style={{ fontWeight: 'bold', marginBottom: '2px' }}>{buff.name}</div>
+                      <div style={{ opacity: 0.7 }}>{buff.desc}</div>
+                    </button>
+                  ))}
+                  <div style={{ fontSize: '8px', marginTop: '4px', marginLeft: '8px', opacity: 0.6 }}>
+                    Cost: {docData.cost.paper} paper, {docData.cost.energy} energy
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Contract */}
+            {(() => {
+              const docData = DOCUMENT_TYPES.contract;
+              const check = canPrintDocument('contract', gameState);
+              return (
+                <div style={{ marginBottom: '8px' }}>
+                  <div style={{
+                    fontSize: '10px',
+                    fontWeight: 'bold',
+                    marginBottom: '6px',
+                    padding: '8px',
+                    backgroundColor: 'var(--bg-color)',
+                    border: '1px solid var(--border-color)'
+                  }}>
+                    📜 {docData.name}
+                    {!check.canPrint && (
+                      <div style={{ fontSize: '9px', marginTop: '4px', color: '#ff4444', fontWeight: 'normal' }}>
+                        {check.reason}
+                      </div>
+                    )}
+                  </div>
+                  {docData.contracts.map(contract => (
+                    <button
+                      key={contract.id}
+                      onClick={() => actions.useContract(contract.id)}
+                      disabled={!check.canPrint}
+                      style={{
+                        width: '100%',
+                        background: 'none',
+                        border: '1px solid #ff6600',
+                        color: 'var(--text-color)',
+                        padding: '8px',
+                        cursor: check.canPrint ? 'pointer' : 'not-allowed',
+                        fontSize: '9px',
+                        fontFamily: 'inherit',
+                        marginBottom: '4px',
+                        textAlign: 'left',
+                        opacity: check.canPrint ? 1 : 0.4
+                      }}
+                    >
+                      <div style={{ fontWeight: 'bold', marginBottom: '2px', color: '#ff6600' }}>{contract.name}</div>
+                      <div style={{ opacity: 0.7 }}>{contract.desc}</div>
+                    </button>
+                  ))}
+                  <div style={{ fontSize: '8px', marginTop: '4px', marginLeft: '8px', opacity: 0.6 }}>
+                    Cost: {docData.cost.paper} paper, {docData.cost.energy} energy, {docData.cost.sanity} sanity
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Prophecy */}
+            {(() => {
+              const docData = DOCUMENT_TYPES.prophecy;
+              const check = canPrintDocument('prophecy', gameState);
+              return (
+                <button
+                  onClick={() => actions.printProphecy()}
+                  disabled={!check.canPrint}
+                  style={{
+                    width: '100%',
+                    background: 'none',
+                    border: '1px solid #ff00ff',
+                    color: 'var(--text-color)',
+                    padding: '12px',
+                    cursor: check.canPrint ? 'pointer' : 'not-allowed',
+                    fontSize: '11px',
+                    fontFamily: 'inherit',
+                    textAlign: 'left',
+                    opacity: check.canPrint ? 1 : 0.4
+                  }}
+                >
+                  <div style={{ fontWeight: 'bold', marginBottom: '4px', color: '#ff00ff' }}>🔮 {docData.name}</div>
+                  <div style={{ fontSize: '9px', opacity: 0.7 }}>{docData.desc}</div>
+                  <div style={{ fontSize: '9px', marginTop: '6px', opacity: 0.6 }}>
+                    Cost: {docData.cost.paper} paper, {docData.cost.energy} energy
+                  </div>
+                  {!check.canPrint && (
+                    <div style={{ fontSize: '9px', marginTop: '4px', color: '#ff4444' }}>{check.reason}</div>
+                  )}
+                </button>
+              );
+            })()}
           </div>
 
           <div style={{
