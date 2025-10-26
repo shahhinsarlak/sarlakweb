@@ -110,11 +110,14 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
         activeReportBuffs: activeBuffs
       };
 
-      // Apply sanity modifier to XP as well
-      const baseXP = XP_REWARDS.sortPapers;
-      const xpGain = applySanityXPModifier(baseXP, prev);
-      grantXP(xpGain);
-      checkAchievements();
+      // Apply sanity modifier to XP as well - call after state update
+      setTimeout(() => {
+        const baseXP = XP_REWARDS.sortPapers;
+        const xpGain = applySanityXPModifier(baseXP, prev);
+        grantXP(xpGain);
+        checkAchievements();
+      }, 0);
+
       return newState;
     });
   };
