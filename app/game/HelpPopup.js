@@ -61,9 +61,7 @@ export default function HelpPopup({ popup, onDismiss }) {
           letterSpacing: '2px',
           opacity: 0.5,
           marginBottom: '16px',
-          color: popup.category === 'warning' ? '#ff4444' :
-                 popup.category === 'exploration' ? '#4a90e2' :
-                 popup.category === 'progression' ? '#ffaa00' : 'var(--text-color)'
+          color: popup.category === 'warning' ? '#ff4444' : 'var(--text-color)'
         }}>
           {popup.category === 'warning' ? '⚠️ WARNING' :
            popup.category === 'exploration' ? '🗺️ DISCOVERY' :

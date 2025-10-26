@@ -458,43 +458,6 @@ export default function Game() {
     checkAchievements();
   }, [gameState.pp, gameState.day, gameState.sortCount, gameState.unlockedLocations.length, gameState.disagreementCount, gameState.examinedItems, gameState.sanity, checkAchievements]);
 
-  // Help system: Check for triggered popups
-  useEffect(() => {
-    if (!gameState.helpEnabled) return;
-
-    // Use a ref to store previous state for comparisons
-    const prevStateRef = {current: null};
-
-    return () => {
-      prevStateRef.current = gameState;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!gameState.helpEnabled || gameState.currentHelpPopup) return;
-
-    // Check each trigger
-    for (const [popupId, triggerFn] of Object.entries(HELP_TRIGGERS)) {
-      // Skip if already shown
-      if (gameState.shownHelpPopups.includes(popupId)) continue;
-
-      // Get the popup data
-      const popup = HELP_POPUPS[popupId];
-      if (!popup) continue;
-
-      // Check if trigger condition is met
-      // We pass both current and a simple previous state (from a tick ago)
-      if (triggerFn(gameState, null)) {
-        // Trigger this popup
-        setGameState(prev => ({
-          ...prev,
-          currentHelpPopup: popup
-        }));
-        break; // Only show one popup at a time
-      }
-    }
-  }, [gameState, gameState.helpEnabled, gameState.currentHelpPopup, gameState.shownHelpPopups]);
-
   // Meditation unlock: Only unlock when sanity drops to 25% or below
   useEffect(() => {
     if (!gameState.meditationUnlocked && gameState.sanity <= 25) {
@@ -504,6 +467,116 @@ export default function Game() {
       }));
     }
   }, [gameState.sanity, gameState.meditationUnlocked]);
+
+  // Help system: Check for triggered popups on specific state changes
+  useEffect(() => {
+    if (!gameState.helpEnabled || gameState.currentHelpPopup) return;
+
+    // Check welcome trigger
+    if (!gameState.shownHelpPopups.includes('welcome') && gameState.sortCount === 1) {
+      setGameState(prev => ({
+        ...prev,
+        currentHelpPopup: HELP_POPUPS.welcome
+      }));
+    }
+  }, [gameState.sortCount, gameState.helpEnabled, gameState.currentHelpPopup, gameState.shownHelpPopups]);
+
+  useEffect(() => {
+    if (!gameState.helpEnabled || gameState.currentHelpPopup) return;
+
+    // Check firstPassiveIncome trigger
+    if (!gameState.shownHelpPopups.includes('firstPassiveIncome') && gameState.ppPerSecond > 0) {
+      setGameState(prev => {
+        if (prev.ppPerSecond === 0) return prev; // Avoid double trigger
+        return {
+          ...prev,
+          currentHelpPopup: HELP_POPUPS.firstPassiveIncome
+        };
+      });
+    }
+  }, [gameState.ppPerSecond, gameState.helpEnabled, gameState.currentHelpPopup, gameState.shownHelpPopups]);
+
+  useEffect(() => {
+    if (!gameState.helpEnabled || gameState.currentHelpPopup || gameState.meditationUnlocked) return;
+
+    // Check lowSanity trigger
+    if (!gameState.shownHelpPopups.includes('lowSanity') && gameState.sanity <= 25) {
+      setGameState(prev => ({
+        ...prev,
+        currentHelpPopup: HELP_POPUPS.lowSanity
+      }));
+    }
+  }, [gameState.sanity, gameState.helpEnabled, gameState.currentHelpPopup, gameState.shownHelpPopups, gameState.meditationUnlocked]);
+
+  useEffect(() => {
+    if (!gameState.helpEnabled || gameState.currentHelpPopup) return;
+
+    // Check sanityTiers trigger
+    if (!gameState.shownHelpPopups.includes('sanityTiers') && gameState.sanity <= 39) {
+      setGameState(prev => ({
+        ...prev,
+        currentHelpPopup: HELP_POPUPS.sanityTiers
+      }));
+    }
+  }, [gameState.sanity, gameState.helpEnabled, gameState.currentHelpPopup, gameState.shownHelpPopups]);
+
+  useEffect(() => {
+    if (!gameState.helpEnabled || gameState.currentHelpPopup) return;
+
+    // Check skillTree trigger
+    if (!gameState.shownHelpPopups.includes('skillTree') && gameState.skillPoints > 0) {
+      setGameState(prev => ({
+        ...prev,
+        currentHelpPopup: HELP_POPUPS.skillTree
+      }));
+    }
+  }, [gameState.skillPoints, gameState.helpEnabled, gameState.currentHelpPopup, gameState.shownHelpPopups]);
+
+  useEffect(() => {
+    if (!gameState.helpEnabled || gameState.currentHelpPopup) return;
+
+    // Check other unlocks
+    if (!gameState.shownHelpPopups.includes('archive') && gameState.unlockedLocations.includes('archive')) {
+      setGameState(prev => ({
+        ...prev,
+        currentHelpPopup: HELP_POPUPS.archive
+      }));
+    } else if (!gameState.shownHelpPopups.includes('printerRoom') && gameState.printerUnlocked) {
+      setGameState(prev => ({
+        ...prev,
+        currentHelpPopup: HELP_POPUPS.printerRoom
+      }));
+    } else if (!gameState.shownHelpPopups.includes('portal') && gameState.portalUnlocked) {
+      setGameState(prev => ({
+        ...prev,
+        currentHelpPopup: HELP_POPUPS.portal
+      }));
+    }
+  }, [gameState.unlockedLocations, gameState.printerUnlocked, gameState.portalUnlocked, gameState.helpEnabled, gameState.currentHelpPopup, gameState.shownHelpPopups]);
+
+  useEffect(() => {
+    if (!gameState.helpEnabled || gameState.currentHelpPopup) return;
+
+    // Check combat trigger
+    if (!gameState.shownHelpPopups.includes('combat') && gameState.inCombat) {
+      setGameState(prev => ({
+        ...prev,
+        currentHelpPopup: HELP_POPUPS.combat
+      }));
+    }
+  }, [gameState.inCombat, gameState.helpEnabled, gameState.currentHelpPopup, gameState.shownHelpPopups]);
+
+  useEffect(() => {
+    if (!gameState.helpEnabled || gameState.currentHelpPopup) return;
+
+    // Check documentSystem trigger
+    if (!gameState.shownHelpPopups.includes('documentSystem') && gameState.paper >= 5 && gameState.printerUnlocked) {
+      setGameState(prev => ({
+        ...prev,
+        currentHelpPopup: HELP_POPUPS.documentSystem
+      }));
+    }
+  }, [gameState.paper, gameState.printerUnlocked, gameState.helpEnabled, gameState.currentHelpPopup, gameState.shownHelpPopups]);
 
   const dismissHelpPopup = () => {
     setGameState(prev => {
@@ -640,8 +713,8 @@ export default function Game() {
               onClick={() => setGameState(prev => ({ ...prev, showSkillTree: true }))}
               style={{
                 background: 'none',
-                border: '1px solid #4a90e2',
-                color: '#4a90e2',
+                border: '1px solid var(--accent-color)',
+                color: 'var(--accent-color)',
                 padding: '4px 8px',
                 cursor: 'pointer',
                 fontSize: '10px',
@@ -670,13 +743,13 @@ export default function Game() {
               onClick={toggleHelpSystem}
               style={{
                 background: 'none',
-                border: `1px solid ${gameState.helpEnabled ? '#ffaa00' : '#666666'}`,
-                color: gameState.helpEnabled ? '#ffaa00' : '#666666',
+                border: `1px solid ${gameState.helpEnabled ? 'var(--accent-color)' : '#666666'}`,
+                color: gameState.helpEnabled ? 'var(--accent-color)' : '#666666',
                 padding: '4px 8px',
                 cursor: 'pointer',
                 fontSize: '10px',
                 fontFamily: 'inherit',
-                opacity: 0.8
+                opacity: gameState.helpEnabled ? 0.8 : 0.4
               }}
             >
               {gameState.helpEnabled ? '📖 HELP' : '📕 HELP'}
@@ -946,9 +1019,9 @@ export default function Game() {
               <div style={{ fontSize: '14px', marginBottom: '16px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                   <span>LEVEL</span>
-                  <strong style={{ fontSize: '18px', color: '#4a90e2' }}>{gameState.playerLevel || 1}</strong>
+                  <strong style={{ fontSize: '18px' }}>{gameState.playerLevel || 1}</strong>
                 </div>
-                <div style={{ fontSize: '10px', color: '#888', marginBottom: '4px' }}>
+                <div style={{ fontSize: '10px', opacity: 0.6, marginBottom: '4px' }}>
                   {gameState.playerXP || 0} / {LEVEL_SYSTEM.getXPForLevel((gameState.playerLevel || 1) + 1)} XP
                 </div>
                 <div style={{
@@ -962,13 +1035,13 @@ export default function Game() {
                   <div style={{
                     width: `${((gameState.playerXP || 0) / LEVEL_SYSTEM.getXPForLevel((gameState.playerLevel || 1) + 1)) * 100}%`,
                     height: '100%',
-                    backgroundColor: '#4a90e2',
+                    backgroundColor: 'var(--accent-color)',
                     transition: 'width 0.3s'
                   }} />
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '8px', borderTop: '1px solid var(--border-color)' }}>
                   <span>SKILL POINTS</span>
-                  <strong style={{ fontSize: '18px', color: '#ffaa00' }}>{gameState.skillPoints || 0}</strong>
+                  <strong style={{ fontSize: '18px' }}>{gameState.skillPoints || 0}</strong>
                 </div>
               </div>
             </div>
@@ -1071,11 +1144,11 @@ export default function Game() {
                           fontSize: '10px',
                           padding: '6px',
                           backgroundColor: 'var(--bg-color)',
-                          border: '1px solid #4a90e2',
+                          border: '1px solid var(--accent-color)',
                           borderRadius: '2px',
                           marginBottom: '4px'
                         }}>
-                          <div style={{ color: '#4a90e2', fontWeight: 'bold' }}>{buff.name}</div>
+                          <div style={{ fontWeight: 'bold' }}>{buff.name}</div>
                           <div style={{ opacity: 0.8 }}>{timeLeft}s remaining</div>
                         </div>
                       );
