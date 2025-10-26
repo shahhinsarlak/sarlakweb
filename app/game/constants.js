@@ -692,14 +692,14 @@ export const SANITY_TIERS = {
     max: 100,
     name: 'Stable Mind',
     color: '#00ff00',
-    ppMultiplier: 0.85,
-    xpMultiplier: 0.85,
-    description: 'Normal office work. Safe but slow.',
+    ppMultiplier: 1.0,
+    xpMultiplier: 1.0,
+    description: 'Normal office work. Reality is stable.',
     effects: [
+      'Normal PP and XP gains',
       'Cannot see dimensional anomalies clearly',
-      'Lower PP gain (-15%)',
-      'Lower XP gain (-15%)',
-      'Reduced paper quality degradation'
+      'Stable paper quality',
+      'No visual distortions'
     ]
   },
   medium: {
@@ -707,11 +707,12 @@ export const SANITY_TIERS = {
     max: 79,
     name: 'Fractured Focus',
     color: '#ffff00',
-    ppMultiplier: 1.0,
-    xpMultiplier: 1.0,
+    ppMultiplier: 1.15,
+    xpMultiplier: 1.15,
     description: 'Reality begins to fray at the edges.',
     effects: [
-      'Normal PP and XP gains',
+      'Increased PP gain (+15%)',
+      'Increased XP gain (+15%)',
       'Text occasionally distorts',
       'Colleagues may trigger combat'
     ]
@@ -721,12 +722,12 @@ export const SANITY_TIERS = {
     max: 39,
     name: 'Unraveling Reality',
     color: '#ff9900',
-    ppMultiplier: 1.25,
-    xpMultiplier: 1.25,
+    ppMultiplier: 1.35,
+    xpMultiplier: 1.35,
     description: 'Madness reveals hidden opportunities.',
     effects: [
-      'Increased PP gain (+25%)',
-      'Increased XP gain (+25%)',
+      'Increased PP gain (+35%)',
+      'Increased XP gain (+35%)',
       'Heavy visual distortion',
       'More dimensional materials spawn',
       'Random glitch events',
