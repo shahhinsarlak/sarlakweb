@@ -20,6 +20,7 @@ import { addExperience, purchaseSkill, getActiveSkillEffects, getModifiedPortalC
 import { SKILLS, LEVEL_SYSTEM, XP_REWARDS } from './skillTreeConstants';
 import { DIMENSIONAL_MATERIALS } from './dimensionalConstants';
 import { getPlayerCombatStats } from './combatConstants';
+import { getSanityTierDisplay } from './sanityPaperHelpers';
 import {
   INITIAL_GAME_STATE,
   LOCATIONS,
@@ -494,7 +495,7 @@ export default function Game() {
   }
 
   if (gameState.inPrinterRoom) {
-    return <PrinterRoom gameState={gameState} setGameState={setGameState} onExit={() => setGameState(prev => ({ ...prev, inPrinterRoom: false }))} grantXP={grantXP} />;
+    return <PrinterRoom gameState={gameState} setGameState={setGameState} onExit={() => setGameState(prev => ({ ...prev, inPrinterRoom: false }))} grantXP={grantXP} actions={actions} />;
   }
 
   if (gameState.inArmory) {
@@ -912,12 +913,38 @@ export default function Game() {
                 <div style={{
                   display: 'flex',
                   justifyContent: 'space-between',
-                  marginBottom: '16px',
+                  marginBottom: '8px',
                   color: gameState.sanity < 30 ? '#ff0000' : 'inherit'
                 }}>
                   <span>SANITY</span>
                   <strong style={{ fontSize: '18px' }}>{gameState.sanity.toFixed(1)}%</strong>
                 </div>
+                {(() => {
+                  const sanityDisplay = getSanityTierDisplay(gameState);
+                  return (
+                    <div style={{
+                      fontSize: '10px',
+                      marginBottom: '16px',
+                      padding: '8px',
+                      backgroundColor: 'var(--bg-color)',
+                      border: `1px solid ${sanityDisplay.color}`,
+                      borderRadius: '2px'
+                    }}>
+                      <div style={{ color: sanityDisplay.color, fontWeight: 'bold', marginBottom: '4px' }}>
+                        {sanityDisplay.tierName}
+                      </div>
+                      <div style={{ opacity: 0.8, marginBottom: '4px' }}>
+                        PP: {sanityDisplay.ppModifier >= 1 ? '+' : ''}{((sanityDisplay.ppModifier - 1) * 100).toFixed(0)}% |
+                        XP: {sanityDisplay.xpModifier >= 1 ? '+' : ''}{((sanityDisplay.xpModifier - 1) * 100).toFixed(0)}%
+                      </div>
+                      {gameState.printerUnlocked && (
+                        <div style={{ opacity: 0.8 }}>
+                          Paper Quality: {sanityDisplay.paperQuality}%
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
                 {gameState.ppPerSecond > 0 && (
                   <div style={{
                     paddingTop: '16px',
@@ -938,6 +965,34 @@ export default function Game() {
                     fontSize: '12px'
                   }}>
                     +{gameState.paperPerSecond.toFixed(1)} Paper/sec
+                  </div>
+                )}
+                {gameState.activeReportBuffs && gameState.activeReportBuffs.length > 0 && (
+                  <div style={{
+                    paddingTop: '16px',
+                    borderTop: '1px solid var(--border-color)',
+                    marginTop: '16px'
+                  }}>
+                    <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6, marginBottom: '8px' }}>
+                      ACTIVE BUFFS
+                    </div>
+                    {gameState.activeReportBuffs.map((buff, idx) => {
+                      const timeLeft = Math.max(0, Math.ceil((buff.expiresAt - Date.now()) / 1000));
+                      if (timeLeft <= 0) return null;
+                      return (
+                        <div key={idx} style={{
+                          fontSize: '10px',
+                          padding: '6px',
+                          backgroundColor: 'var(--bg-color)',
+                          border: '1px solid #4a90e2',
+                          borderRadius: '2px',
+                          marginBottom: '4px'
+                        }}>
+                          <div style={{ color: '#4a90e2', fontWeight: 'bold' }}>{buff.name}</div>
+                          <div style={{ opacity: 0.8 }}>{timeLeft}s remaining</div>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
