@@ -181,6 +181,15 @@ export default function Game() {
     return () => window.removeEventListener('message', handleThemeChange);
   }, [addMessage]);
 
+  // Reset upgrade type selection if it becomes unavailable
+  useEffect(() => {
+    if (selectedUpgradeType === 'printer' && !gameState.printerUnlocked) {
+      setSelectedUpgradeType('pp');
+    } else if (selectedUpgradeType === 'dimensional' && !gameState.portalUnlocked) {
+      setSelectedUpgradeType('pp');
+    }
+  }, [selectedUpgradeType, gameState.printerUnlocked, gameState.portalUnlocked]);
+
   const actions = createGameActions(setGameState, addMessage, checkAchievements, grantXP);
 
   const handlePurchaseSkill = (skillId) => {
@@ -1268,8 +1277,12 @@ export default function Game() {
                   }}
                 >
                   <option value="pp">PP Upgrades</option>
-                  <option value="printer">Printer Upgrades</option>
-                  <option value="dimensional">Dimensional Upgrades</option>
+                  {gameState.printerUnlocked && (
+                    <option value="printer">Printer Upgrades</option>
+                  )}
+                  {gameState.portalUnlocked && (
+                    <option value="dimensional">Dimensional Upgrades</option>
+                  )}
                 </select>
               </div>
 
