@@ -1249,7 +1249,7 @@ export default function Game() {
                 alignItems: 'center',
                 marginBottom: '12px'
               }}>
-                <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6' }}>
+                <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6 }}>
                   UPGRADES
                 </div>
                 <select
