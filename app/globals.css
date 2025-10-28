@@ -40,6 +40,13 @@ body {
     flex-direction: column;
 }
 
+/* Game page header wrapper - centered without excessive padding */
+.game-header-wrapper {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 40px 40px 0 40px;
+}
+
 /* Custom scrollbar styling for better aesthetics */
 ::-webkit-scrollbar {
     width: 8px;
