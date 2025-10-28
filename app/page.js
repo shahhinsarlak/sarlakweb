@@ -40,45 +40,46 @@ export default function Home() {
       
       {/* Main Content */}
       <div style={{ position: 'relative', zIndex: 1 }}>
-        <Header />
-        
-        {/* Conway's Game of Life Toggle Button */}
-        <div style={{
-          position: 'fixed',
-          top: '20px',
-          right: '20px',
-          zIndex: 1000
-        }}>
-          <button
-            onClick={() => setShowConwaysGame(!showConwaysGame)}
-            style={{
-              background: showConwaysGame ? 'var(--accent-color)' : 'transparent',
-              color: showConwaysGame ? 'var(--bg-color)' : 'var(--text-color)',
-              border: '1px solid var(--border-color)',
-              padding: '8px 12px',
-              fontSize: '10px',
-              cursor: 'pointer',
-              transition: 'var(--transition)',
-              fontFamily: 'inherit',
-              textTransform: 'uppercase',
-              letterSpacing: '0.5px',
-              opacity: 0.7
-            }}
-            onMouseOver={(e) => {
-              e.target.style.opacity = '1';
-              e.target.style.borderColor = 'var(--accent-color)';
-            }}
-            onMouseOut={(e) => {
-              e.target.style.opacity = '0.7';
-              e.target.style.borderColor = 'var(--border-color)';
-            }}
-            title={showConwaysGame ? 'Hide Conway\'s Game of Life' : 'Show Conway\'s Game of Life'}
-          >
-            {showConwaysGame ? '◼ Game Off' : '▶ Game On'}
-          </button>
-        </div>
+        <div className="container">
+          <Header />
 
-        <main className="main-content">
+          {/* Conway's Game of Life Toggle Button */}
+          <div style={{
+            position: 'fixed',
+            top: '20px',
+            right: '20px',
+            zIndex: 1000
+          }}>
+            <button
+              onClick={() => setShowConwaysGame(!showConwaysGame)}
+              style={{
+                background: showConwaysGame ? 'var(--accent-color)' : 'transparent',
+                color: showConwaysGame ? 'var(--bg-color)' : 'var(--text-color)',
+                border: '1px solid var(--border-color)',
+                padding: '8px 12px',
+                fontSize: '10px',
+                cursor: 'pointer',
+                transition: 'var(--transition)',
+                fontFamily: 'inherit',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px',
+                opacity: 0.7
+              }}
+              onMouseOver={(e) => {
+                e.target.style.opacity = '1';
+                e.target.style.borderColor = 'var(--accent-color)';
+              }}
+              onMouseOut={(e) => {
+                e.target.style.opacity = '0.7';
+                e.target.style.borderColor = 'var(--border-color)';
+              }}
+              title={showConwaysGame ? 'Hide Conway\'s Game of Life' : 'Show Conway\'s Game of Life'}
+            >
+              {showConwaysGame ? '◼ Game Off' : '▶ Game On'}
+            </button>
+          </div>
+
+          <main className="main-content">
           <section className="section">
             <div className="status">
               <span className="status-dot"></span>
@@ -128,8 +129,9 @@ export default function Home() {
               <a href="#" className="link">Twitter</a>
             </div>
           </section>
-        </main>
-        <Footer />
+          </main>
+          <Footer />
+        </div>
       </div>
     </>
   );
