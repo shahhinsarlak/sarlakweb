@@ -711,7 +711,7 @@ export default function Game() {
 
   return (
     <>
-      <div className="container">
+      <div className="game-header-wrapper">
         <Header />
       </div>
       <div style={{
