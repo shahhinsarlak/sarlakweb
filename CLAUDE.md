@@ -3,8 +3,17 @@
 **Project:** Office Horror Incremental Game
 **Framework:** Next.js 15.5.6 with React 19.1.0
 **Language:** JavaScript (ES6+)
-**Version:** 1.0
-**Last Updated:** 2025-10-21
+**Version:** 2.0
+**Last Updated:** 2025-10-28
+
+**Major Changes in v2.0:**
+- Combat system added with turn-based mechanics
+- Loot generation system for randomized equipment
+- Sanity-paper mechanics with quality system
+- Help/tutorial popup system
+- Document creation system (memos, reports, contracts, prophecies)
+- Equipment and armory systems
+- Visual feedback patterns (screen shake, particles, flashes)
 
 ---
 
@@ -30,27 +39,53 @@
 ### Directory Structure
 ```
 /app
-  /game              # Main game application
-    page.js          # Main game component (UI orchestrator)
-    constants.js     # Game data: INITIAL_STATE, LOCATIONS, UPGRADES, etc.
-    gameActions.js   # All game action handlers
-    skillSystemHelpers.js    # Skill tree logic
-    skillTreeConstants.js    # Skill definitions
-    saveSystem.js    # Save/load functionality
-    dimensionalConstants.js  # Dimensional mining data
-    gameUtils.js     # Utility functions (distortion, particles, etc.)
-    [Modal].js       # Modal components (SkillTreeModal, MeditationModal, etc.)
-  /apps              # Apps showcase page
-  page.js            # Home page
-  layout.js          # Root layout
-  globals.css        # Global styles & CSS variables
+  /game                    # Main game application
+    page.js                # Main game component (UI orchestrator)
+
+    # Constants & Data
+    constants.js           # Core game data: INITIAL_GAME_STATE, LOCATIONS, UPGRADES, ACHIEVEMENTS
+    skillTreeConstants.js  # Skill tree definitions and XP system
+    dimensionalConstants.js  # Dimensional mining materials
+    combatConstants.js     # Combat system: enemies, mechanics, balance
+    equipmentConstants.js  # Weapons, armor, and equipment definitions
+    lootConstants.js       # Loot tables, rarities, prefixes, imbuements
+
+    # Core Systems
+    gameActions.js         # All game action handlers (factory pattern)
+    skillSystemHelpers.js  # Skill tree logic and effect calculations
+    sanityPaperHelpers.js  # Sanity-paper mechanics and quality system
+    lootGenerationHelpers.js  # Loot generation algorithms
+    gameUtils.js           # Utility functions (distortion, particles, effects)
+    saveSystem.js          # Save/load/export/import functionality
+
+    # UI Components
+    SkillTreeModal.js      # Skill tree interface
+    MeditationModal.js     # Breathing meditation minigame
+    DebugModal.js          # Code debugging challenges
+    DebugPanel.js          # Developer debug tools
+    ColleagueModal.js      # Colleague interaction dialogs
+    ExamineModal.js        # Archive item examination
+    CombatModal.js         # Turn-based combat interface
+    Armory.js              # Equipment management UI
+    PrinterRoom.js         # Paper printing system UI
+    DimensionalArea.js     # Dimensional mining UI
+    DimensionalUpgradesDisplay.js  # Dimensional upgrade shop
+    HelpPopup.js           # Context-aware tutorial system
+    EventLog.js            # Message log display component
+    CrystalOpeningModal.js # Loot reveal UI
+
+  /apps                    # Apps showcase page
+  page.js                  # Home page
+  layout.js                # Root layout
+  globals.css              # Global styles & CSS variables
 
 /components
-  Header.js          # Navigation & theme toggle
-  Footer.js          # Footer component
-  [Other].js         # Shared components
+  Header.js                # Navigation & theme toggle
+  Footer.js                # Footer component
+  CursorShadow.js          # Custom cursor effect
+  ConwaysGameOfLife.js     # Easter egg component
 
-/public              # Static assets (images, icons)
+/public                    # Static assets (images, icons)
 ```
 
 ### Core Principles
@@ -167,12 +202,14 @@ gameState.day             // Day counter
 gameState.timeInOffice    // Time counter in seconds
 gameState.phase           // Game phase (1, 2, etc.)
 
-// Collections (Objects, NOT Arrays)
+// Collections (Objects, NOT Arrays unless specified)
 gameState.upgrades        // { upgradeId: true }
 gameState.printerUpgrades // { upgradeId: true }
 gameState.dimensionalUpgrades  // { upgradeId: true }
 gameState.dimensionalInventory // { materialId: count }
 gameState.achievements    // Array of achievement IDs
+gameState.unlockedLocations    // Array of location IDs
+gameState.discoveredEvents     // Array of event IDs
 
 // Flags & Counters
 gameState.sortCount       // Number of times papers sorted
@@ -180,6 +217,7 @@ gameState.printCount      // Number of prints
 gameState.disagreementCount  // Colleague disagreements
 gameState.examinedItems   // Items examined in archive
 gameState.themeToggleCount   // Theme toggle easter egg
+gameState.combatVictories // Number of combat wins
 
 // UI State
 gameState.recentMessages  // Array of recent event log messages
@@ -188,6 +226,8 @@ gameState.meditating      // Boolean flag
 gameState.examiningItem   // Item object or null
 gameState.inDimensionalArea  // Boolean flag
 gameState.inPrinterRoom   // Boolean flag
+gameState.inArmory        // Boolean flag
+gameState.inCombat        // Boolean flag
 
 // Cooldowns (in seconds)
 gameState.restCooldown    // Rest action cooldown
@@ -198,7 +238,53 @@ gameState.ppPerClick      // PP gained per sort action
 gameState.ppPerSecond     // Passive PP generation
 gameState.paperPerPrint   // Paper per print action
 gameState.paperPerSecond  // Passive paper generation
-gameState.printerQuality  // 0-100 quality percentage
+gameState.printerQuality  // 0-100 quality percentage (printer upgrades only)
+gameState.paperQuality    // 0-100 quality (70% printer, 30% sanity)
+
+// Paper & Document System (Added 2025-10-26)
+gameState.documents       // Object: { memos: 0, reports: 0, contracts: 0, prophecies: 0 }
+gameState.activeReportBuffs  // Array of active buff objects with expiresAt timestamps
+gameState.paperTrail      // Array tracking paper creation patterns (for secrets)
+
+// Help System (Added 2025-10-26)
+gameState.helpEnabled     // Boolean: Can be toggled by player
+gameState.shownHelpPopups // Array of popup IDs that have been shown
+gameState.currentHelpPopup // Object or null: { id, title, content }
+gameState.meditationUnlocked  // Boolean: Meditation appears at <= 25% sanity
+
+// Combat System (Added 2025-10-23)
+gameState.currentEnemy    // Object or null: current enemy data
+gameState.playerCombatHP  // Number: player HP during combat
+gameState.combatLog       // Array of combat message objects
+gameState.isPlayerTurn    // Boolean: whose turn it is
+gameState.combatEnded     // Boolean: combat finished flag
+
+// Equipment System (Added 2025-10-23)
+gameState.equippedWeapon  // String: legacy weapon ID (for old system)
+gameState.equippedArmor   // Object: { head: 'id', chest: 'id', accessory: 'id' }
+gameState.equippedAnomalies  // Array of up to 3 anomaly IDs
+
+// Loot System (Added 2025-10-23)
+gameState.lootInventory   // Array of generated loot item objects
+gameState.equippedLootWeapon  // String or null: ID of equipped loot weapon
+gameState.equippedLootArmor   // Object: { head: null, chest: null, accessory: null }
+gameState.equippedLootAnomalies  // Array of equipped loot anomaly IDs (max 3)
+
+// Special Mechanics
+gameState.strangeColleagueEvent  // Object or null: current colleague dialog
+gameState.debugMode       // Boolean: debug challenge active
+gameState.currentBug      // Object or null: current debug challenge
+gameState.debugAttempts   // Number: attempts on current bug
+gameState.breathCount     // Number: meditation breath counter
+gameState.portalUnlocked  // Boolean: portal access flag
+gameState.printerUnlocked // Boolean: printer room access
+gameState.timeRewindUsed  // Boolean: temporal rewind used today flag
+gameState.voidClauseActive  // Boolean: void contract buff active
+gameState.voidClauseExpires  // Number: timestamp when void clause expires
+
+// Debug Flags (Development Only)
+gameState.debugForceTearSpawn  // Boolean: Force 100% dimensional tear spawn rate
+gameState.maxLogMessages  // Number: Max messages in event log (default 15)
 ```
 
 ### Message System Pattern
@@ -243,18 +329,61 @@ export const INITIAL_GAME_STATE = {
 
 ### constants.js Structure
 ```javascript
-// 1. Initial game state (FIRST)
+// 1. Initial game state (ALWAYS FIRST)
 export const INITIAL_GAME_STATE = { ... };
 
-// 2. Game data structures (alphabetically)
-export const ACHIEVEMENTS = [ ... ];
-export const DEBUG_CHALLENGES = [ ... ];
-export const DIMENSIONAL_UPGRADES = [ ... ];
-export const EVENTS = [ ... ];
-export const LOCATIONS = { ... };
-export const PRINTER_UPGRADES = [ ... ];
-export const STRANGE_COLLEAGUE_DIALOGUES = [ ... ];
-export const UPGRADES = [ ... ];
+// 2. Dialogue & Interaction Data
+export const STRANGE_COLLEAGUE_DIALOGUES = [ ... ];  // ASCII art + dialogue trees
+export const DEBUG_CHALLENGES = [ ... ];              // Code debugging puzzles
+
+// 3. Location Data
+export const LOCATIONS = { ... };  // Office locations with atmosphere arrays
+
+// 4. Upgrade & Progression Data
+export const UPGRADES = [ ... ];            // Core PP/energy upgrades
+export const PRINTER_UPGRADES = [ ... ];    // Printer system upgrades
+export const DIMENSIONAL_UPGRADES = [ ... ]; // Portal/dimensional upgrades
+
+// 5. Event & Achievement Data
+export const EVENTS = [ ... ];        // Random events with probabilities
+export const ACHIEVEMENTS = [ ... ];  // Achievement definitions with check functions
+
+// 6. Document System Data (Added 2025-10-26)
+export const DOCUMENT_TYPES = { ... };  // Memos, reports, contracts, prophecies
+export const SANITY_TIERS = { ... };    // Sanity level tiers with modifiers
+
+// 7. Help System Data (Added 2025-10-26)
+export const HELP_POPUPS = { ... };    // Tutorial popup content
+export const HELP_TRIGGERS = { ... };  // Conditions for showing help popups
+```
+
+### Other Constants Files Structure
+```javascript
+// skillTreeConstants.js
+export const LEVEL_SYSTEM = { ... };  // XP curve and leveling rules
+export const SKILLS = { ... };        // Skill definitions by ID
+export const XP_REWARDS = { ... };    // XP amounts for different actions
+
+// combatConstants.js
+export const ENEMY_ARCHETYPES = { ... };  // Base enemy types
+export const ENEMY_PREFIXES = { ... };    // Enemy modifiers by level
+export const COMBAT_MECHANICS = { ... };  // Combat rules and balance
+
+// equipmentConstants.js
+export const WEAPONS = { ... };     // Weapon definitions
+export const ARMOR = { ... };       // Armor definitions
+export const ANOMALIES = { ... };   // Anomaly/accessory definitions
+export const RARITY = { ... };      // Rarity tiers for loot
+
+// lootConstants.js
+export const BASE_LOOT_ITEMS = { ... };     // Base loot templates
+export const LOOT_PREFIXES = { ... };       // Prefix modifiers
+export const VOID_IMBUEMENTS = { ... };     // Special loot effects
+export const LOOT_DROP_RATES = { ... };     // Rarity drop chances
+export const IMBUEMENT_COUNTS = { ... };    // Imbuements by rarity
+
+// dimensionalConstants.js
+export const DIMENSIONAL_MATERIALS = { ... };  // Material definitions
 ```
 
 ### gameActions.js Pattern
@@ -383,19 +512,35 @@ import Link from 'next/link';
 // 2. Third-party libraries
 // (none currently used)
 
-// 3. Local components
+// 3. Local components (alphabetically by type)
+// Shared components
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
+
+// Game modals & UI
+import SkillTreeModal from './SkillTreeModal';
 import MeditationModal from './MeditationModal';
+import CombatModal from './CombatModal';
+import Armory from './Armory';
+import PrinterRoom from './PrinterRoom';
+import HelpPopup from './HelpPopup';
+// ... other modals
 
-// 4. Local utilities & helpers
+// 4. Local utilities & helpers (alphabetically)
 import { createGameActions } from './gameActions';
-import { getDistortionStyle, distortText } from './gameUtils';
-import { saveGame, loadGame } from './saveSystem';
+import { getDistortionStyle, distortText, createLevelUpParticles } from './gameUtils';
+import { saveGame, loadGame, exportToClipboard } from './saveSystem';
+import { addExperience, purchaseSkill, getActiveSkillEffects } from './skillSystemHelpers';
+import { getSanityTier, applySanityPPModifier } from './sanityPaperHelpers';
+import { generateLootItem } from './lootGenerationHelpers';
+import { generateEnemy, getPlayerCombatStats } from './combatConstants';
 
-// 5. Constants (last)
-import { INITIAL_GAME_STATE, LOCATIONS, UPGRADES } from './constants';
-import { SKILLS, LEVEL_SYSTEM } from './skillTreeConstants';
+// 5. Constants (last, alphabetically by file)
+import { INITIAL_GAME_STATE, LOCATIONS, UPGRADES, ACHIEVEMENTS } from './constants';
+import { SKILLS, LEVEL_SYSTEM, XP_REWARDS } from './skillTreeConstants';
+import { DIMENSIONAL_MATERIALS } from './dimensionalConstants';
+import { ENEMY_ARCHETYPES, COMBAT_MECHANICS } from './combatConstants';
+import { WEAPONS, ARMOR, RARITY } from './equipmentConstants';
 ```
 
 ### Export Patterns
@@ -581,6 +726,150 @@ export const applyPPMultiplier = (basePP, gameState) => {
   const effects = getActiveSkillEffects(gameState);
   return basePP * (1 + effects.ppMultiplier);
 };
+```
+
+### Combat System Pattern (Added 2025-10-23)
+```javascript
+// Turn-based combat state machine
+const startCombat = () => {
+  setGameState(prev => {
+    const enemy = generateEnemy(prev.playerLevel || 1);
+    const playerStats = getPlayerCombatStats(prev);
+
+    return {
+      ...prev,
+      inCombat: true,
+      currentEnemy: enemy,
+      playerCombatHP: playerStats.maxHP,
+      combatLog: [],
+      isPlayerTurn: true,
+      combatEnded: false,
+      strangeColleagueEvent: null // Clear colleague event
+    };
+  });
+};
+
+// Enemy generation uses level scaling
+const enemy = generateEnemy(playerLevel);
+// Returns: { displayName, currentHP, maxHP, damage, ppReward, xpReward }
+
+// Player stats calculated from equipment
+const playerStats = getPlayerCombatStats(gameState);
+// Returns: { maxHP, damage, defense, critChance, critMultiplier }
+
+// Combat actions update log and handle turn switching
+const playerAttack = () => {
+  setGameState(prev => {
+    // Calculate damage with crit chance
+    // Update enemy HP
+    // Add to combat log
+    // Check for victory/defeat
+    // Switch turns
+  });
+};
+```
+
+### Loot Generation Pattern (Added 2025-10-23)
+```javascript
+// Loot items are generated with random stats
+import { generateLootItem } from './lootGenerationHelpers';
+
+const lootItem = generateLootItem('weapon', playerLevel);
+// Returns object with: { id, name, type, rarity, stats, prefix, imbuements }
+
+// Rarity affects stat ranges and imbuement count
+// Common: 1 imbuement, 80-100% base stats
+// Uncommon: 1 imbuement, 100-120% base stats
+// Rare: 2 imbuements, 120-150% base stats
+// Epic: 2 imbuements, 150-200% base stats
+// Legendary: 3 imbuements, 200-300% base stats
+// Mythic: 4 imbuements, 300-500% base stats
+
+// Loot is stored in lootInventory array
+setGameState(prev => ({
+  ...prev,
+  lootInventory: [...prev.lootInventory, newLootItem]
+}));
+
+// Equipped loot IDs reference inventory items
+gameState.equippedLootWeapon  // Item ID from lootInventory
+gameState.equippedLootArmor.head  // Item ID from lootInventory
+```
+
+### Sanity-Paper System Pattern (Added 2025-10-26)
+```javascript
+// Sanity tiers modify PP/XP gains
+import { getSanityTier, applySanityPPModifier } from './sanityPaperHelpers';
+
+const tier = getSanityTier(gameState.sanity);
+// Returns: { name, ppMultiplier, xpMultiplier, effects, color }
+
+// High sanity (80-100): 1.0x multiplier - safe but slow
+// Medium sanity (40-79): 1.15x multiplier - normal gameplay
+// Low sanity (10-39): 1.35x multiplier - risk vs reward
+// Critical sanity (0-9): 1.5x multiplier - maximum chaos
+
+// Paper quality depends on both printer and sanity
+const paperQuality = calculatePaperQuality(gameState);
+// Formula: (printerQuality * 0.7) + (sanity * 0.3)
+// At critical sanity, weights shift to 50/50
+
+// Document printing requires minimum quality
+const checkResult = canPrintDocument('contract', gameState);
+if (!checkResult.canPrint) {
+  return { reason: checkResult.reason };
+}
+
+// Report buffs are timed effects stored in activeReportBuffs
+const buff = {
+  id: 'efficiency',
+  name: 'Efficiency Report',
+  ppMult: 1.15,
+  expiresAt: Date.now() + (300 * 1000)  // 5 minutes
+};
+```
+
+### Screen Effects Pattern (Added 2025-10-26)
+```javascript
+// Visual feedback for dramatic moments
+const triggerScreenEffect = (effectType) => {
+  if (effectType === 'flash') {
+    // White flash for major events
+  } else if (effectType === 'shake') {
+    // Screen shake for reality breaks
+  }
+  // Creates temporary DOM overlay with animation
+};
+
+// Particle effects for level ups and skill purchases
+import { createLevelUpParticles, createSkillPurchaseParticles } from './gameUtils';
+
+setTimeout(() => {
+  createLevelUpParticles();  // Celebration particles
+}, 100);
+```
+
+### Help System Pattern (Added 2025-10-26)
+```javascript
+// Context-aware help popups with trigger conditions
+import { HELP_POPUPS, HELP_TRIGGERS } from './constants';
+
+// Triggers check game state changes
+export const HELP_TRIGGERS = {
+  welcome: (state, prevState) => state.sortCount === 1 && !prevState,
+  lowSanity: (state, prevState) =>
+    state.sanity <= 25 && (!prevState || prevState.sanity > 25),
+  // ... more triggers
+};
+
+// Help popups displayed once per ID
+if (!gameState.shownHelpPopups.includes(popupId)) {
+  setGameState(prev => ({
+    ...prev,
+    currentHelpPopup: HELP_POPUPS[popupId],
+    shownHelpPopups: [...prev.shownHelpPopups, popupId]
+  }));
+}
 ```
 
 ---
@@ -940,26 +1229,62 @@ gameState.playerXP
 
 When implementing new features, verify:
 
+**State Management:**
 - [ ] Added to `INITIAL_GAME_STATE` if new property needed
 - [ ] Used functional `setState` pattern
-- [ ] Extracted magic numbers to named constants
-- [ ] Added JSDoc comments to functions
 - [ ] Used correct property names from state
 - [ ] Validated inputs/costs before processing
+- [ ] No direct state mutations (always spread objects/arrays)
+
+**Game Logic:**
+- [ ] Extracted magic numbers to named constants
+- [ ] Added JSDoc comments to functions
 - [ ] Added messages to event log with slice(0, 15)
 - [ ] Called `grantXP()` for player actions
 - [ ] Called `checkAchievements()` with 50ms delay
-- [ ] Used CSS variables for colors
+- [ ] Used setTimeout for side effects (XP, achievements)
+
+**New Systems (if applicable):**
+- [ ] Combat: Used turn-based state machine pattern
+- [ ] Loot: Generated items stored in lootInventory array
+- [ ] Sanity: Applied tier modifiers to PP/XP
+- [ ] Paper Quality: Calculated with 70/30 printer/sanity split
+- [ ] Buffs: Used expiresAt timestamps for timed effects
+- [ ] Help: Added trigger condition to HELP_TRIGGERS
+
+**UI & Styling:**
+- [ ] Used CSS variables for all colors
+- [ ] Applied monospace font stack to all game UI
 - [ ] Imported in correct order (React → Components → Utils → Constants)
 - [ ] Tested with both light and dark themes
 - [ ] Checked mobile responsiveness
+
+**Code Quality:**
 - [ ] No console.log statements left in code
 - [ ] Error handling for file/API operations
 - [ ] Performance: used useCallback/useMemo where appropriate
+- [ ] File header comments present
+- [ ] No nested ternaries or deeply nested conditionals
 
 ---
 
 ## Version History
+
+**v2.0** (2025-10-28) - Major Systems Update
+- **Complete file structure audit**: Added 15+ new files to documentation
+- **Comprehensive state properties**: Documented 60+ game state properties
+- **Combat system**: Turn-based combat with enemy generation and equipment stats
+- **Loot system**: Randomized loot generation with rarities, prefixes, and imbuements
+- **Sanity-paper mechanics**: Multi-tier sanity system affecting PP/XP gains
+- **Paper quality system**: Dynamic quality calculation (70% printer, 30% sanity)
+- **Document system**: Memos, reports, contracts, and prophecies
+- **Help system**: Context-aware tutorial popups with trigger conditions
+- **Visual feedback**: Screen effects (shake, flash) and particle systems
+- **Equipment system**: Weapons, armor, and anomalies with stat calculations
+- **Buff/debuff system**: Timed effects with expiration timestamps
+- **Updated constants organization**: Better categorization across 6 files
+- **New helper patterns**: sanityPaperHelpers.js and lootGenerationHelpers.js
+- **Enhanced checklist**: Added system-specific verification steps
 
 **v1.0** (2025-10-21) - Initial ruleset creation
 - Established coding standards
