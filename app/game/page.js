@@ -711,13 +711,15 @@ export default function Game() {
 
   return (
     <>
-      <Header />
+      <div className="container">
+        <Header />
+      </div>
       <div style={{
         fontFamily: "'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace",
-        padding: isMobile ? '16px' : '20px 32px',
+        padding: isMobile ? '16px' : '20px 40px',
         minHeight: 'calc(100vh - 100px)',
         fontSize: '14px',
-        maxWidth: '1800px',
+        maxWidth: '1400px',
         margin: '0 auto'
       }}>
         <div style={{
@@ -831,7 +833,7 @@ export default function Game() {
 
         <div style={{
           display: 'grid',
-          gridTemplateColumns: isMobile ? '1fr' : '1fr 400px',
+          gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
           gap: isMobile ? '24px' : '32px',
           alignItems: 'start'
         }}>
@@ -1030,14 +1032,7 @@ export default function Game() {
             )}
           </div>
 
-          <div style={{
-            position: isMobile ? 'relative' : 'sticky',
-            top: isMobile ? 'auto' : '20px',
-            alignSelf: 'start',
-            maxHeight: isMobile ? 'none' : 'calc(100vh - 40px)',
-            overflowY: isMobile ? 'visible' : 'auto',
-            overflowX: 'hidden'
-          }}>
+          <div>
             <div style={{
               border: '1px solid var(--border-color)',
               padding: '16px',
