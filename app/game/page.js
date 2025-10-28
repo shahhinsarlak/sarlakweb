@@ -1439,6 +1439,7 @@ export default function Game() {
                     );
                   })}
                 </div>
+              </div>
               )}
 
               {/* Dimensional Upgrades */}
