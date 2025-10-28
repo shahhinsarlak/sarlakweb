@@ -14,6 +14,7 @@ import PrinterRoom from './PrinterRoom';
 import CombatModal from './CombatModal';
 import Armory from './Armory';
 import HelpPopup from './HelpPopup';
+import AchievementsModal from './AchievementsModal';
 import { createGameActions } from './gameActions';
 import { getDistortionStyle, distortText, getClockTime, createLevelUpParticles, createSkillPurchaseParticles, createScreenShake } from './gameUtils';
 import { saveGame, loadGame, exportToClipboard, importFromClipboard } from './saveSystem';
@@ -30,6 +31,7 @@ import {
   EVENTS,
   STRANGE_COLLEAGUE_DIALOGUES,
   PRINTER_UPGRADES,
+  DIMENSIONAL_UPGRADES,
   HELP_POPUPS,
   HELP_TRIGGERS
 } from './constants';
@@ -40,6 +42,8 @@ export default function Game() {
   const [showSaveMenu, setShowSaveMenu] = useState(false);
   const [showDebugPanel, setShowDebugPanel] = useState(false);
   const [hoveredUpgrade, setHoveredUpgrade] = useState(null);
+  const [showAchievements, setShowAchievements] = useState(false);
+  const [selectedUpgradeType, setSelectedUpgradeType] = useState('pp'); // 'pp', 'printer', 'dimensional'
 
   const addMessage = useCallback((msg) => {
     setGameState(prev => {
@@ -654,6 +658,10 @@ export default function Game() {
     return <SkillTreeModal gameState={gameState} onClose={() => setGameState(prev => ({ ...prev, showSkillTree: false }))} onPurchaseSkill={handlePurchaseSkill} />;
   }
 
+  if (showAchievements) {
+    return <AchievementsModal gameState={gameState} achievements={ACHIEVEMENTS} onClose={() => setShowAchievements(false)} />;
+  }
+
   if (gameState.inDimensionalArea) {
     return <DimensionalArea gameState={gameState} setGameState={setGameState} onExit={exitDimensionalArea} grantXP={grantXP} />;
   }
@@ -748,6 +756,21 @@ export default function Game() {
               }}
             >
               ⚡ SKILLS
+            </button>
+            <button
+              onClick={() => setShowAchievements(true)}
+              style={{
+                background: 'none',
+                border: '1px solid var(--accent-color)',
+                color: 'var(--accent-color)',
+                padding: '4px 8px',
+                cursor: 'pointer',
+                fontSize: '10px',
+                fontFamily: 'inherit',
+                opacity: 0.8
+              }}
+            >
+              🏆 ACHIEVEMENTS
             </button>
             <button
               onClick={() => setShowSaveMenu(!showSaveMenu)}
@@ -1218,15 +1241,40 @@ export default function Game() {
               </div>
             )}
 
-            {Object.keys(gameState.dimensionalInventory || {}).some(key => gameState.dimensionalInventory[key] > 0) && (
-              <DimensionalUpgradesDisplay gameState={gameState} onPurchase={purchaseDimensionalUpgrade} />
-            )}
-
-            {availableUpgrades.length > 0 && (
-              <div style={{ marginBottom: '30px' }}>
-                <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6, marginBottom: '16px' }}>
+            {/* Consolidated Upgrades Section */}
+            <div style={{ marginBottom: '16px' }}>
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '12px'
+              }}>
+                <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6' }}>
                   UPGRADES
                 </div>
+                <select
+                  value={selectedUpgradeType}
+                  onChange={(e) => setSelectedUpgradeType(e.target.value)}
+                  style={{
+                    background: 'var(--bg-color)',
+                    border: '1px solid var(--border-color)',
+                    color: 'var(--text-color)',
+                    padding: '4px 8px',
+                    fontSize: '10px',
+                    fontFamily: 'inherit',
+                    cursor: 'pointer',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px'
+                  }}
+                >
+                  <option value="pp">PP Upgrades</option>
+                  <option value="printer">Printer Upgrades</option>
+                  <option value="dimensional">Dimensional Upgrades</option>
+                </select>
+              </div>
+
+              {/* PP Upgrades */}
+              {selectedUpgradeType === 'pp' && availableUpgrades.length > 0 && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   {availableUpgrades.slice(0, 5).map(upgrade => (
                     <div
@@ -1295,14 +1343,11 @@ export default function Game() {
                     </div>
                   ))}
                 </div>
-              </div>
-            )}
+              )}
 
-            {gameState.printerUnlocked && PRINTER_UPGRADES.filter(u => !gameState.printerUpgrades?.[u.id]).length > 0 && (
-              <div style={{ marginBottom: '30px' }}>
-                <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6, marginBottom: '16px' }}>
-                  PRINTER UPGRADES
-                </div>
+              {/* Printer Upgrades */}
+              {selectedUpgradeType === 'printer' && gameState.printerUnlocked && (
+                <div>
                 {gameState.printerQuality !== undefined && (
                   <div style={{
                     fontSize: '11px',
@@ -1394,43 +1439,62 @@ export default function Game() {
                     );
                   })}
                 </div>
-              </div>
-            )}
+              )}
 
-            <div>
-              <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6, marginBottom: '16px' }}>
-                ACHIEVEMENTS ({gameState.achievements.length}/{ACHIEVEMENTS.length})
-              </div>
-              <div style={{
-                border: '1px solid var(--border-color)',
-                padding: '16px',
-                backgroundColor: 'var(--hover-color)',
-                maxHeight: '300px',
-                overflowY: 'auto'
-              }}>
-                {ACHIEVEMENTS.map(ach => {
-                  const unlocked = gameState.achievements.includes(ach.id);
-                  return (
-                    <div
-                      key={ach.id}
-                      style={{
-                        marginBottom: '12px',
-                        paddingBottom: '12px',
-                        borderBottom: '1px solid var(--border-color)',
-                        opacity: unlocked ? 1 : 0.4,
-                        fontSize: '11px'
-                      }}
-                    >
-                      <div style={{ fontWeight: '500', marginBottom: '4px' }}>
-                        {unlocked ? '🏆' : '🔒'} {unlocked ? ach.name : '???'}
+              {/* Dimensional Upgrades */}
+              {selectedUpgradeType === 'dimensional' && Object.keys(gameState.dimensionalInventory || {}).some(key => gameState.dimensionalInventory[key] > 0) && (
+                <div>
+                  {DIMENSIONAL_UPGRADES.filter(u => !gameState.dimensionalUpgrades?.[u.id]).slice(0, 5).map(upgrade => {
+                    const canAfford = upgrade.materials.every(({ material, amount }) =>
+                      (gameState.dimensionalInventory?.[material] || 0) >= amount
+                    );
+
+                    return (
+                      <div
+                        key={upgrade.id}
+                        style={{ marginBottom: '12px' }}
+                      >
+                        <button
+                          onClick={() => purchaseDimensionalUpgrade(upgrade)}
+                          disabled={!canAfford}
+                          style={{
+                            width: '100%',
+                            background: 'none',
+                            border: '1px solid var(--border-color)',
+                            color: 'var(--text-color)',
+                            padding: '16px',
+                            cursor: canAfford ? 'pointer' : 'not-allowed',
+                            fontSize: '12px',
+                            fontFamily: 'inherit',
+                            textAlign: 'left',
+                            transition: 'all 0.2s',
+                            opacity: canAfford ? 1 : 0.4
+                          }}
+                        >
+                          <div style={{ fontWeight: '500', marginBottom: '8px', fontSize: '13px' }}>
+                            {upgrade.name}
+                          </div>
+                          <div style={{ fontSize: '11px', opacity: 0.7, marginBottom: '8px' }}>
+                            {upgrade.desc}
+                          </div>
+                          <div style={{ fontSize: '11px', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                            {upgrade.materials.map(({ material, amount }) => {
+                              const materialDef = DIMENSIONAL_MATERIALS.find(m => m.id === material);
+                              const has = gameState.dimensionalInventory?.[material] || 0;
+                              const hasEnough = has >= amount;
+                              return (
+                                <span key={material} style={{ color: hasEnough ? 'var(--accent-color)' : '#ff6666' }}>
+                                  {materialDef?.name || material}: {has}/{amount}
+                                </span>
+                              );
+                            })}
+                          </div>
+                        </button>
                       </div>
-                      <div style={{ fontSize: '10px', opacity: 0.7 }}>
-                        {unlocked ? ach.desc : 'Hidden achievement'}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
         </div>
