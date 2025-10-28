@@ -28,8 +28,9 @@ export default function Apps() {
 
   return (
     <>
-      <Header />
-      <main className="main-content">
+      <div className="container">
+        <Header />
+        <main className="main-content">
         <section className="section">
           <h1 className="page-title">Web Applications</h1>
           <p className="intro-text">
@@ -155,8 +156,9 @@ export default function Apps() {
             </div>
           </div>
         </section>
-      </main>
-      <Footer />
+        </main>
+        <Footer />
+      </div>
     </>
   );
 }
