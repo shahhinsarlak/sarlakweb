@@ -714,9 +714,11 @@ export default function Game() {
       <Header />
       <div style={{
         fontFamily: "'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace",
-        padding: isMobile ? '20px' : '40px 60px',
-        minHeight: 'calc(100vh - 200px)',
-        fontSize: '14px'
+        padding: isMobile ? '16px' : '20px 32px',
+        minHeight: 'calc(100vh - 100px)',
+        fontSize: '14px',
+        maxWidth: '1800px',
+        margin: '0 auto'
       }}>
         <div style={{
           display: 'flex',
@@ -829,8 +831,9 @@ export default function Game() {
 
         <div style={{
           display: 'grid',
-          gridTemplateColumns: isMobile ? '1fr' : '65fr 35fr',
-          gap: '40px'
+          gridTemplateColumns: isMobile ? '1fr' : '1fr 400px',
+          gap: isMobile ? '24px' : '32px',
+          alignItems: 'start'
         }}>
           <div>
             <div style={{ marginBottom: '40px' }}>
@@ -839,20 +842,20 @@ export default function Game() {
               </p>
             </div>
 
-            <div style={{ marginBottom: '40px' }}>
-              <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6, marginBottom: '16px' }}>
+            <div style={{ marginBottom: '32px' }}>
+              <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6, marginBottom: '12px' }}>
                 EVENT LOG
               </div>
               <div style={{
                 border: '1px solid var(--border-color)',
-                padding: '16px',
+                padding: '12px',
                 backgroundColor: 'var(--hover-color)',
-                fontSize: '13px',
+                fontSize: '12px',
                 opacity: 0.7,
-                lineHeight: '1.8',
-                maxHeight: '200px',
+                lineHeight: '1.6',
+                maxHeight: '160px',
                 overflowY: 'auto',
-                minHeight: '120px'
+                minHeight: '100px'
               }}>
                 {gameState.recentMessages.map((msg, i) => (
                   <div key={i} style={{ marginBottom: '8px', paddingBottom: '8px', borderBottom: i < gameState.recentMessages.length - 1 ? '1px solid var(--border-color)' : 'none' }}>
@@ -862,14 +865,14 @@ export default function Game() {
               </div>
             </div>
 
-            <div style={{ marginBottom: '40px' }}>
-              <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6, marginBottom: '16px' }}>
+            <div style={{ marginBottom: '32px' }}>
+              <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6, marginBottom: '12px' }}>
                 ACTIONS
               </div>
               <div style={{
                 display: 'grid',
-                gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(200px, 1fr))',
-                gap: '12px'
+                gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(180px, 1fr))',
+                gap: '10px'
               }}>
                 <button
                   onClick={actions.sortPapers}
@@ -1027,14 +1030,21 @@ export default function Game() {
             )}
           </div>
 
-          <div>
+          <div style={{
+            position: isMobile ? 'relative' : 'sticky',
+            top: isMobile ? 'auto' : '20px',
+            alignSelf: 'start',
+            maxHeight: isMobile ? 'none' : 'calc(100vh - 40px)',
+            overflowY: isMobile ? 'visible' : 'auto',
+            overflowX: 'hidden'
+          }}>
             <div style={{
               border: '1px solid var(--border-color)',
-              padding: '24px',
-              marginBottom: '30px',
+              padding: '16px',
+              marginBottom: '16px',
               backgroundColor: 'var(--hover-color)'
             }}>
-              <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6, marginBottom: '20px' }}>
+              <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6, marginBottom: '12px' }}>
                 PLAYER
               </div>
               <div style={{ fontSize: '14px', marginBottom: '16px' }}>
@@ -1069,11 +1079,11 @@ export default function Game() {
 
             <div style={{
               border: '1px solid var(--border-color)',
-              padding: '24px',
-              marginBottom: '30px',
+              padding: '16px',
+              marginBottom: '16px',
               backgroundColor: 'var(--hover-color)'
             }}>
-              <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6, marginBottom: '20px' }}>
+              <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6, marginBottom: '12px' }}>
                 RESOURCES
               </div>
               <div style={{ fontSize: '14px' }}>
@@ -1182,8 +1192,8 @@ export default function Game() {
             {Object.keys(gameState.dimensionalInventory || {}).length > 0 && (
               <div style={{
                 border: '1px solid var(--border-color)',
-                padding: '24px',
-                marginBottom: '30px',
+                padding: '16px',
+                marginBottom: '16px',
                 backgroundColor: 'var(--hover-color)'
               }}>
                 <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6, marginBottom: '20px' }}>
@@ -1465,7 +1475,7 @@ export default function Game() {
                 textTransform: 'uppercase',
                 letterSpacing: '1px',
                 opacity: 0.6,
-                marginBottom: '30px',
+                marginBottom: '16px',
                 textAlign: 'center'
               }}>
                 SAVE / LOAD GAME
