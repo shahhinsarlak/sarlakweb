@@ -634,22 +634,15 @@ export default function Game() {
     addMessage(gameState.helpEnabled ? 'Help popups disabled.' : 'Help popups enabled.');
   };
 
-  // Calculate effective PP per click with all modifiers (for display - shows decimals)
+  // Calculate effective PP per click with all modifiers - MATCHES ACTUAL GAME LOGIC
   const calculateEffectivePPPerClick = () => {
     const basePP = gameState.ppPerClick;
     const ppWithSkills = applyPPMultiplier(basePP, gameState);
 
-    // Calculate sanity and buff modifiers manually (without Math.floor for display)
-    const tier = getSanityTierDisplay(gameState);
-    const sanityMod = tier.ppModifier;
+    // Use the same logic as the actual sortPapers action
+    const ppGain = applySanityPPModifier(ppWithSkills, gameState);
 
-    // Check for active report buffs
-    const activeBuffs = gameState.activeReportBuffs || [];
-    const efficiencyBuff = activeBuffs.find(b => b.id === 'efficiency' && b.expiresAt > Date.now());
-    const buffMod = efficiencyBuff ? efficiencyBuff.ppMult : 1.0;
-
-    const finalPP = ppWithSkills * sanityMod * buffMod;
-    return finalPP.toFixed(1); // Show 1 decimal place
+    return ppGain; // This is already floored by applySanityPPModifier
   };
 
   const currentLocation = LOCATIONS[gameState.location];
@@ -1151,16 +1144,29 @@ export default function Game() {
                     +{calculateEffectivePPPerClick()} PP
                   </div>
                   <div style={{ fontSize: '9px', opacity: 0.6, marginTop: '4px' }}>
-                    Base: {gameState.ppPerClick} • Skills: {(() => {
+                    {(() => {
                       const effects = getActiveSkillEffects(gameState);
-                      return effects.ppMultiplier > 0 ? `+${(effects.ppMultiplier * 100).toFixed(0)}%` : 'none';
-                    })()} • Sanity: {(() => {
                       const tier = getSanityTierDisplay(gameState);
-                      return tier.ppModifier !== 1 ? `${tier.ppModifier >= 1 ? '+' : ''}${((tier.ppModifier - 1) * 100).toFixed(0)}%` : '0%';
+                      const skillBonus = effects.ppMultiplier > 0 ? `+${(effects.ppMultiplier * 100).toFixed(0)}%` : 'none';
+                      const sanityBonus = tier.ppModifier !== 1 ? `${tier.ppModifier >= 1 ? '+' : ''}${((tier.ppModifier - 1) * 100).toFixed(0)}%` : '0%';
+
+                      // Calculate before-floor value
+                      const basePP = gameState.ppPerClick;
+                      const ppWithSkills = applyPPMultiplier(basePP, gameState);
+                      const beforeFloor = ppWithSkills * tier.ppModifier;
+                      const afterFloor = calculateEffectivePPPerClick();
+
+                      return (
+                        <>
+                          Base: {gameState.ppPerClick} • Skills: {skillBonus} • Sanity: {sanityBonus}
+                          {beforeFloor !== afterFloor && (
+                            <div style={{ fontSize: '8px', opacity: 0.5, marginTop: '2px' }}>
+                              ({beforeFloor.toFixed(1)} before floor)
+                            </div>
+                          )}
+                        </>
+                      );
                     })()}
-                  </div>
-                  <div style={{ fontSize: '8px', opacity: 0.5, marginTop: '4px', fontStyle: 'italic' }}>
-                    (Actual gain rounded down)
                   </div>
                 </div>
                 {gameState.printerUnlocked && (
