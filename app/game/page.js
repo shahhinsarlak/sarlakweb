@@ -634,12 +634,22 @@ export default function Game() {
     addMessage(gameState.helpEnabled ? 'Help popups disabled.' : 'Help popups enabled.');
   };
 
-  // Calculate effective PP per click with all modifiers
+  // Calculate effective PP per click with all modifiers (for display - shows decimals)
   const calculateEffectivePPPerClick = () => {
     const basePP = gameState.ppPerClick;
     const ppWithSkills = applyPPMultiplier(basePP, gameState);
-    const ppWithSanity = applySanityPPModifier(ppWithSkills, gameState);
-    return ppWithSanity;
+
+    // Calculate sanity and buff modifiers manually (without Math.floor for display)
+    const tier = getSanityTierDisplay(gameState);
+    const sanityMod = tier.ppModifier;
+
+    // Check for active report buffs
+    const activeBuffs = gameState.activeReportBuffs || [];
+    const efficiencyBuff = activeBuffs.find(b => b.id === 'efficiency' && b.expiresAt > Date.now());
+    const buffMod = efficiencyBuff ? efficiencyBuff.ppMult : 1.0;
+
+    const finalPP = ppWithSkills * sanityMod * buffMod;
+    return finalPP.toFixed(1); // Show 1 decimal place
   };
 
   const currentLocation = LOCATIONS[gameState.location];
@@ -1141,7 +1151,16 @@ export default function Game() {
                     +{calculateEffectivePPPerClick()} PP
                   </div>
                   <div style={{ fontSize: '9px', opacity: 0.6, marginTop: '4px' }}>
-                    Base: {gameState.ppPerClick} • With modifiers
+                    Base: {gameState.ppPerClick} • Skills: {(() => {
+                      const effects = getActiveSkillEffects(gameState);
+                      return effects.ppMultiplier > 0 ? `+${(effects.ppMultiplier * 100).toFixed(0)}%` : 'none';
+                    })()} • Sanity: {(() => {
+                      const tier = getSanityTierDisplay(gameState);
+                      return tier.ppModifier !== 1 ? `${tier.ppModifier >= 1 ? '+' : ''}${((tier.ppModifier - 1) * 100).toFixed(0)}%` : '0%';
+                    })()}
+                  </div>
+                  <div style={{ fontSize: '8px', opacity: 0.5, marginTop: '4px', fontStyle: 'italic' }}>
+                    (Actual gain rounded down)
                   </div>
                 </div>
                 {gameState.printerUnlocked && (
