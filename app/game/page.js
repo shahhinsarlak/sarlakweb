@@ -569,6 +569,13 @@ export default function Game() {
           return { ...prev, currentHelpPopup: HELP_POPUPS.archive };
         });
       }, 100);
+    } else if (!gameState.shownHelpPopups.includes('breakRoom') && gameState.unlockedLocations.includes('breakroom')) {
+      setTimeout(() => {
+        setGameState(prev => {
+          if (prev.currentHelpPopup || prev.shownHelpPopups.includes('breakRoom')) return prev;
+          return { ...prev, currentHelpPopup: HELP_POPUPS.breakRoom };
+        });
+      }, 100);
     } else if (!gameState.shownHelpPopups.includes('printerRoom') && gameState.printerUnlocked) {
       setTimeout(() => {
         setGameState(prev => {
@@ -642,7 +649,7 @@ export default function Game() {
     // Use the same logic as the actual sortPapers action
     const ppGain = applySanityPPModifier(ppWithSkills, gameState);
 
-    return ppGain; // This is already floored by applySanityPPModifier
+    return ppGain.toFixed(1); // Show 1 decimal place
   };
 
   const currentLocation = LOCATIONS[gameState.location];
@@ -1150,22 +1157,7 @@ export default function Game() {
                       const skillBonus = effects.ppMultiplier > 0 ? `+${(effects.ppMultiplier * 100).toFixed(0)}%` : 'none';
                       const sanityBonus = tier.ppModifier !== 1 ? `${tier.ppModifier >= 1 ? '+' : ''}${((tier.ppModifier - 1) * 100).toFixed(0)}%` : '0%';
 
-                      // Calculate before-floor value
-                      const basePP = gameState.ppPerClick;
-                      const ppWithSkills = applyPPMultiplier(basePP, gameState);
-                      const beforeFloor = ppWithSkills * tier.ppModifier;
-                      const afterFloor = calculateEffectivePPPerClick();
-
-                      return (
-                        <>
-                          Base: {gameState.ppPerClick} • Skills: {skillBonus} • Sanity: {sanityBonus}
-                          {beforeFloor !== afterFloor && (
-                            <div style={{ fontSize: '8px', opacity: 0.5, marginTop: '2px' }}>
-                              ({beforeFloor.toFixed(1)} before floor)
-                            </div>
-                          )}
-                        </>
-                      );
+                      return `Base: ${gameState.ppPerClick} • Skills: ${skillBonus} • Sanity: ${sanityBonus}`;
                     })()}
                   </div>
                 </div>
