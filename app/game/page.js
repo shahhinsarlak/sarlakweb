@@ -726,6 +726,7 @@ export default function Game() {
         respondToColleague={actions.respondToColleague}
         hasWeapon={hasWeapon}
         onStartCombat={actions.startCombat}
+        gameState={gameState}
       />
     );
   }

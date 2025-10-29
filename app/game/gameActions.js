@@ -386,54 +386,76 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
     }));
   };
 
-  const respondToColleague = (response, responseIndex) => {
+  const respondToColleague = (responseOption) => {
     setGameState(prev => {
       if (!prev.strangeColleagueEvent) return prev;
-      
-      if (response === "Agree with him") {
-        const reward = Math.floor(300 + Math.random() * 500);
-        grantXP(25); // XP_REWARDS.defeatColleague
-        
-        checkAchievements();
-        
-        return {
-          ...prev,
-          pp: prev.pp + reward,
-          strangeColleagueEvent: null,
-          sanity: Math.max(0, prev.sanity - 15),
-          recentMessages: [`He smiles. It doesn't reach his eyes. You receive: Existential Token (+${reward} PP)`, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
-        };
-      } else {
-        const horribleReply = prev.strangeColleagueEvent.wrongResponses[responseIndex];
-        
-        const newDisagreements = prev.disagreementCount + 1;
-        const newState = {
-          ...prev,
-          sanity: Math.max(0, prev.sanity - 5),
-          disagreementCount: newDisagreements,
-          strangeColleagueEvent: {
-            ...prev.strangeColleagueEvent,
-            lastResponse: horribleReply
-          }
-        };
 
-        if (newDisagreements === 20 && !prev.unlockedLocations.includes('archive')) {
-          newState.unlockedLocations = [...new Set([...prev.unlockedLocations, 'archive'])];
-          newState.strangeColleagueEvent = null;
-          
-          triggerScreenEffect('shake');
-          
-          setTimeout(() => {
-            setGameState(prevState => ({
-              ...prevState,
-              recentMessages: ['Reality fractures. A door appears that was always there. THE ARCHIVE calls to you.', '🔓 NEW LOCATION: The Archive', ...prevState.recentMessages].slice(0, prevState.maxLogMessages || 15)
-            }));
-          }, 600);
+      const colleague = prev.strangeColleagueEvent;
+      const outcome = responseOption.outcome;
+      const colleagueId = colleague.id;
+
+      // Update colleague relationship
+      const currentRelationship = prev.colleagueRelationships[colleagueId] || { trust: 0, encounters: 0, lastResponseType: null };
+      const newRelationships = {
+        ...prev.colleagueRelationships,
+        [colleagueId]: {
+          trust: currentRelationship.trust + outcome.trust,
+          encounters: currentRelationship.encounters + 1,
+          lastResponseType: responseOption.type
         }
+      };
 
-        checkAchievements();
-        return newState;
+      // Grant XP
+      grantXP(outcome.xp);
+
+      // Check for endgame events based on new trust level
+      const newRelationship = newRelationships[colleagueId];
+      let endgameMessage = null;
+
+      if (newRelationship.encounters >= 5) {
+        if (newRelationship.trust >= 10) {
+          // Ally path - they become helpful
+          endgameMessage = `Your kindness has transformed them. They are no longer lost. They offer to help you.`;
+        } else if (newRelationship.trust <= -8) {
+          // Hostility path - triggers combat
+          endgameMessage = `Your constant hostility has pushed them over the edge. Their eyes turn dark. Violence is inevitable.`;
+        }
       }
+
+      // Build new state
+      const newState = {
+        ...prev,
+        pp: prev.pp + outcome.pp,
+        sanity: Math.max(0, prev.sanity + outcome.sanity),
+        colleagueRelationships: newRelationships,
+        strangeColleagueEvent: null,
+        disagreementCount: prev.disagreementCount + (responseOption.type === 'hostile' ? 1 : 0)
+      };
+
+      // Build messages
+      const messages = [outcome.message];
+      if (endgameMessage) {
+        messages.push(endgameMessage);
+      }
+
+      newState.recentMessages = [...messages, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15);
+
+      // Keep archive unlock mechanic for hostile responses
+      if (newState.disagreementCount >= 20 && !prev.unlockedLocations.includes('archive')) {
+        newState.unlockedLocations = [...new Set([...prev.unlockedLocations, 'archive'])];
+
+        triggerScreenEffect('shake');
+
+        setTimeout(() => {
+          setGameState(prevState => ({
+            ...prevState,
+            recentMessages: ['Reality fractures. A door appears that was always there. THE ARCHIVE calls to you.', '🔓 NEW LOCATION: The Archive', ...prevState.recentMessages].slice(0, prevState.maxLogMessages || 15)
+          }));
+        }, 600);
+      }
+
+      checkAchievements();
+      return newState;
     });
   };
 
