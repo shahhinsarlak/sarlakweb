@@ -188,13 +188,26 @@ export default function Armory({ gameState, setGameState, onExit }) {
               <div style={{
                 fontSize: '12px',
                 fontWeight: '500',
-                marginBottom: '12px',
+                marginBottom: '4px',
                 color: getReadableRarityColor(weapon.rarity),
                 textAlign: 'center',
                 lineHeight: '1.4'
               }}>
                 {weapon.displayName}
               </div>
+
+              {weapon.itemLevel && (
+                <div style={{
+                  fontSize: '9px',
+                  opacity: 0.5,
+                  marginBottom: '12px',
+                  textAlign: 'center',
+                  textTransform: 'uppercase',
+                  letterSpacing: '1px'
+                }}>
+                  Level {weapon.itemLevel}
+                </div>
+              )}
 
               <div style={{
                 fontSize: '10px',
@@ -340,13 +353,26 @@ export default function Armory({ gameState, setGameState, onExit }) {
                     <div style={{
                       fontSize: '12px',
                       fontWeight: '500',
-                      marginBottom: '12px',
+                      marginBottom: '4px',
                       color: getReadableRarityColor(armorItem.rarity),
                       textAlign: 'center',
                       lineHeight: '1.4'
                     }}>
                       {armorItem.displayName}
                     </div>
+
+                    {armorItem.itemLevel && (
+                      <div style={{
+                        fontSize: '9px',
+                        opacity: 0.5,
+                        marginBottom: '12px',
+                        textAlign: 'center',
+                        textTransform: 'uppercase',
+                        letterSpacing: '1px'
+                      }}>
+                        Level {armorItem.itemLevel}
+                      </div>
+                    )}
 
                     <div style={{
                       fontSize: '10px',
@@ -492,13 +518,26 @@ export default function Armory({ gameState, setGameState, onExit }) {
                 <div style={{
                   fontSize: '12px',
                   fontWeight: '500',
-                  marginBottom: '12px',
+                  marginBottom: '4px',
                   color: getReadableRarityColor(anomaly.rarity),
                   textAlign: 'center',
                   lineHeight: '1.4'
                 }}>
                   {anomaly.displayName}
                 </div>
+
+                {anomaly.itemLevel && (
+                  <div style={{
+                    fontSize: '9px',
+                    opacity: 0.5,
+                    marginBottom: '12px',
+                    textAlign: 'center',
+                    textTransform: 'uppercase',
+                    letterSpacing: '1px'
+                  }}>
+                    Level {anomaly.itemLevel}
+                  </div>
+                )}
 
                 <div style={{
                   fontSize: '10px',

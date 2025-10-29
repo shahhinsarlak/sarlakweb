@@ -251,13 +251,27 @@ export default function CrystalOpeningModal({ lootItem, onComplete, onClose }) {
         <div style={{
           fontSize: '11px',
           opacity: 0.6,
-          marginBottom: '24px',
+          marginBottom: '8px',
           textAlign: 'center',
           textTransform: 'uppercase',
           letterSpacing: '1px'
         }}>
           {lootItem.type === 'armor' ? `${lootItem.slot} Armor` : lootItem.type}
         </div>
+
+        {/* Item level */}
+        {lootItem.itemLevel && (
+          <div style={{
+            fontSize: '11px',
+            opacity: 0.6,
+            marginBottom: '24px',
+            textAlign: 'center',
+            textTransform: 'uppercase',
+            letterSpacing: '1px'
+          }}>
+            Level {lootItem.itemLevel}
+          </div>
+        )}
 
         {/* Stats */}
         <div style={{

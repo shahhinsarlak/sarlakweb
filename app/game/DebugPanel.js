@@ -856,7 +856,7 @@ export default function DebugPanel({ gameState, setGameState, addMessage, onClos
 
   const renderLootTab = () => {
     const generateAndAddLoot = (rarityId = null, type = null) => {
-      const loot = generateLootItem(type);
+      const loot = generateLootItem(type, gameState.playerLevel || 1);
       if (!loot) {
         addMessage('Failed to generate loot');
         return;
