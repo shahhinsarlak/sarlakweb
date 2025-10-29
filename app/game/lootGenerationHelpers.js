@@ -152,15 +152,16 @@ export const getRarityMultiplier = (rarity) => {
  * @param {Object} rarity - Rarity object
  * @param {Object|null} prefix - Prefix object or null
  * @param {Array} imbuements - Array of imbuement objects
+ * @param {number} levelScaling - Level scaling multiplier (default 1.0)
  * @returns {Object} Final calculated stats
  */
-export const calculateFinalStats = (baseItem, rarity, prefix, imbuements) => {
+export const calculateFinalStats = (baseItem, rarity, prefix, imbuements, levelScaling = 1.0) => {
   const rarityMultiplier = getRarityMultiplier(rarity);
 
   const stats = {
-    // Base stats multiplied by rarity
-    damage: Math.floor((baseItem.baseDamage || 0) * rarityMultiplier),
-    defense: Math.floor((baseItem.baseDefense || 0) * rarityMultiplier),
+    // Base stats multiplied by level scaling and rarity
+    damage: Math.floor((baseItem.baseDamage || 0) * levelScaling * rarityMultiplier),
+    defense: Math.floor((baseItem.baseDefense || 0) * levelScaling * rarityMultiplier),
     critChance: (baseItem.baseCritChance || 0),
     critMultiplier: (baseItem.baseCritMultiplier || 1.0),
 
@@ -275,9 +276,10 @@ export const calculateFinalStats = (baseItem, rarity, prefix, imbuements) => {
 /**
  * Generate a complete randomized loot item
  * @param {string|null} forceType - Optional: force a specific type ('weapon', 'armor', 'anomaly')
+ * @param {number} playerLevel - Player's current level (default 1)
  * @returns {Object} Complete loot item with all properties
  */
-export const generateLootItem = (forceType = null) => {
+export const generateLootItem = (forceType = null, playerLevel = 1) => {
   // Determine item type
   const type = forceType || getRandomLootType();
 
@@ -294,8 +296,11 @@ export const generateLootItem = (forceType = null) => {
   // Roll imbuements based on rarity
   const imbuements = rollImbuements(rarity);
 
-  // Calculate final stats
-  const finalStats = calculateFinalStats(baseItem, rarity, prefix, imbuements);
+  // Calculate level scaling (25% increase per level, same as enemies)
+  const levelScaling = 1 + ((playerLevel - 1) * 0.25);
+
+  // Calculate final stats with level scaling
+  const finalStats = calculateFinalStats(baseItem, rarity, prefix, imbuements, levelScaling);
 
   // Generate unique item ID
   const itemId = `${baseItem.id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -320,7 +325,9 @@ export const generateLootItem = (forceType = null) => {
     ascii: baseItem.ascii,
     lore: baseItem.lore,
     isEquipped: false,
-    generatedAt: Date.now()
+    generatedAt: Date.now(),
+    itemLevel: playerLevel,
+    levelScaling: levelScaling
   };
 };
 

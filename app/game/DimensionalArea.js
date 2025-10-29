@@ -92,8 +92,8 @@ export default function DimensionalArea({ gameState, setGameState, onExit, grant
   const handleTearClick = () => {
     if (tearCollected) return;
 
-    // Generate random loot item
-    const lootItem = generateLootItem();
+    // Generate random loot item at player's current level
+    const lootItem = generateLootItem(null, gameState.playerLevel || 1);
     if (!lootItem) return;
 
     setCurrentLootItem(lootItem);
