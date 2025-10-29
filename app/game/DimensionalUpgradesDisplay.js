@@ -3,6 +3,12 @@ import { DIMENSIONAL_UPGRADES } from './constants';
 
 export default function DimensionalUpgradesDisplay({ gameState, onPurchase }) {
   const canAfford = (upgrade) => {
+    // Safety check: ensure materials exists and is an object
+    if (!upgrade.materials || typeof upgrade.materials !== 'object') {
+      console.warn(`[DIMENSIONAL_UPGRADES] Invalid materials for upgrade "${upgrade.id || upgrade.name}"`, upgrade);
+      return false;
+    }
+
     return Object.entries(upgrade.materials).every(([materialId, required]) => {
       return (gameState.dimensionalInventory?.[materialId] || 0) >= required;
     });
@@ -63,7 +69,7 @@ export default function DimensionalUpgradesDisplay({ gameState, onPurchase }) {
                 {upgrade.desc}
               </div>
               <div style={{ fontSize: '11px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                {Object.entries(upgrade.materials).map(([materialId, required]) => {
+                {upgrade.materials && Object.entries(upgrade.materials).map(([materialId, required]) => {
                   const material = DIMENSIONAL_MATERIALS.find(m => m.id === materialId);
                   const owned = gameState.dimensionalInventory?.[materialId] || 0;
                   const hasEnough = owned >= required;
