@@ -22,7 +22,7 @@ import { addExperience, purchaseSkill, getActiveSkillEffects, getModifiedPortalC
 import { SKILLS, LEVEL_SYSTEM, XP_REWARDS } from './skillTreeConstants';
 import { DIMENSIONAL_MATERIALS } from './dimensionalConstants';
 import { getPlayerCombatStats } from './combatConstants';
-import { getSanityTierDisplay } from './sanityPaperHelpers';
+import { getSanityTierDisplay, isSanityDrainPaused, calculatePaperQuality } from './sanityPaperHelpers';
 import {
   INITIAL_GAME_STATE,
   LOCATIONS,
@@ -386,20 +386,28 @@ export default function Game() {
 
         // Sanity drain system - base drain reduced by upgrades
         if (prev.phase >= 2) {
-          let sanityDrainRate = 0.05; // Base drain rate
+          // Check if sanity drain is paused by stability report buff
+          if (!isSanityDrainPaused(prev)) {
+            let sanityDrainRate = 0.05; // Base drain rate
 
-          // Pills reduce drain by 50%
-          if (prev.upgrades.pills) {
-            sanityDrainRate *= 0.5;
+            // Pills reduce drain by 50%
+            if (prev.upgrades.pills) {
+              sanityDrainRate *= 0.5;
+            }
+
+            // Void Shield reduces drain by additional 50%
+            if (prev.dimensionalUpgrades?.void_shield) {
+              sanityDrainRate *= 0.5;
+            }
+
+            // Apply sanity drain
+            newState.sanity = Math.max(0, prev.sanity - sanityDrainRate);
           }
+        }
 
-          // Void Shield reduces drain by additional 50%
-          if (prev.dimensionalUpgrades?.void_shield) {
-            sanityDrainRate *= 0.5;
-          }
-
-          // Apply sanity drain
-          newState.sanity = Math.max(0, prev.sanity - sanityDrainRate);
+        // Update paper quality based on current sanity + printer quality
+        if (prev.printerUnlocked) {
+          newState.paperQuality = calculatePaperQuality(newState);
         }
 
         // Reality Anchor sets minimum sanity threshold
