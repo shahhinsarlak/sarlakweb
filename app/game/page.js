@@ -18,11 +18,11 @@ import AchievementsModal from './AchievementsModal';
 import { createGameActions } from './gameActions';
 import { getDistortionStyle, distortText, getClockTime, createLevelUpParticles, createSkillPurchaseParticles, createScreenShake } from './gameUtils';
 import { saveGame, loadGame, exportToClipboard, importFromClipboard } from './saveSystem';
-import { addExperience, purchaseSkill, getActiveSkillEffects, getModifiedPortalCooldown, getModifiedCapacity } from './skillSystemHelpers';
+import { addExperience, purchaseSkill, getActiveSkillEffects, getModifiedPortalCooldown, getModifiedCapacity, applyPPMultiplier } from './skillSystemHelpers';
 import { SKILLS, LEVEL_SYSTEM, XP_REWARDS } from './skillTreeConstants';
 import { DIMENSIONAL_MATERIALS } from './dimensionalConstants';
 import { getPlayerCombatStats } from './combatConstants';
-import { getSanityTierDisplay, isSanityDrainPaused, calculatePaperQuality } from './sanityPaperHelpers';
+import { getSanityTierDisplay, isSanityDrainPaused, calculatePaperQuality, applySanityPPModifier } from './sanityPaperHelpers';
 import {
   INITIAL_GAME_STATE,
   LOCATIONS,
@@ -634,9 +634,17 @@ export default function Game() {
     addMessage(gameState.helpEnabled ? 'Help popups disabled.' : 'Help popups enabled.');
   };
 
+  // Calculate effective PP per click with all modifiers
+  const calculateEffectivePPPerClick = () => {
+    const basePP = gameState.ppPerClick;
+    const ppWithSkills = applyPPMultiplier(basePP, gameState);
+    const ppWithSanity = applySanityPPModifier(ppWithSkills, gameState);
+    return ppWithSanity;
+  };
+
   const currentLocation = LOCATIONS[gameState.location];
-  const availableUpgrades = UPGRADES.filter(u => 
-    !gameState.upgrades[u.id] && 
+  const availableUpgrades = UPGRADES.filter(u =>
+    !gameState.upgrades[u.id] &&
     (u.effect !== 'unlock' || gameState.pp >= u.cost * 0.5)
   );
 
@@ -929,7 +937,6 @@ export default function Game() {
                   }}
                 >
                   <div>{distortText('SORT PAPERS', gameState.sanity)}</div>
-                  <div style={{ fontSize: '10px', opacity: 0.6, marginTop: '6px' }}>[+{gameState.ppPerClick} PP]</div>
                 </button>
                 <button
                   onClick={actions.rest}
@@ -1120,6 +1127,22 @@ export default function Game() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
                   <span>PP</span>
                   <strong style={{ fontSize: '18px' }}>{gameState.pp.toFixed(1)}</strong>
+                </div>
+                <div style={{
+                  fontSize: '11px',
+                  marginBottom: '16px',
+                  padding: '8px',
+                  backgroundColor: 'var(--bg-color)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '2px'
+                }}>
+                  <div style={{ opacity: 0.7, marginBottom: '2px' }}>PP per click:</div>
+                  <div style={{ fontWeight: 'bold', fontSize: '13px' }}>
+                    +{calculateEffectivePPPerClick()} PP
+                  </div>
+                  <div style={{ fontSize: '9px', opacity: 0.6, marginTop: '4px' }}>
+                    Base: {gameState.ppPerClick} • With modifiers
+                  </div>
                 </div>
                 {gameState.printerUnlocked && (
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
