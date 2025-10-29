@@ -2,14 +2,15 @@ import { useState } from 'react';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import EventLog from './EventLog';
+import { getColleagueDialogue, getAvailableResponses } from './colleagueHelpers';
 
-export default function ColleagueModal({ event, recentMessages, respondToColleague, hasWeapon, onStartCombat }) {
+export default function ColleagueModal({ event, recentMessages, respondToColleague, hasWeapon, onStartCombat, gameState }) {
   const [clickedButton, setClickedButton] = useState(null);
 
-  const handleResponse = (response, index) => {
+  const handleResponse = (responseOption, index) => {
     setClickedButton(index);
     setTimeout(() => {
-      respondToColleague(response, index);
+      respondToColleague(responseOption);
       setClickedButton(null);
     }, 150);
   };
@@ -18,6 +19,26 @@ export default function ColleagueModal({ event, recentMessages, respondToColleag
     if (onStartCombat) {
       onStartCombat();
     }
+  };
+
+  // Get context-aware dialogue and responses
+  const relationship = gameState?.colleagueRelationships?.[event.id] || { trust: 0, encounters: 0, lastResponseType: null };
+  const currentDialogue = getColleagueDialogue(event, relationship);
+  const availableResponses = getAvailableResponses(event, gameState || {});
+
+  // Response type styling
+  const getResponseTypeStyle = (type) => {
+    const styles = {
+      empathetic: { borderColor: '#4a9eff', color: '#4a9eff', icon: '💙' },
+      dismissive: { borderColor: '#888', color: '#888', icon: '🚪' },
+      hostile: { borderColor: '#ff4a4a', color: '#ff4a4a', icon: '⚔️' },
+      compliant: { borderColor: '#9d4edd', color: '#9d4edd', icon: '🤝' },
+      dark_pact: { borderColor: '#6a0dad', color: '#6a0dad', icon: '👁️' },
+      esoteric: { borderColor: '#ffd700', color: '#ffd700', icon: '✨' },
+      prophetic: { borderColor: '#00ced1', color: '#00ced1', icon: '📜' },
+      void_touched: { borderColor: '#1a1a1a', color: '#1a1a1a', icon: '🌀' }
+    };
+    return styles[type] || { borderColor: 'var(--border-color)', color: 'var(--text-color)', icon: '💬' };
   };
 
   // If player has a weapon, show combat option instead of dialogue
@@ -101,7 +122,13 @@ export default function ColleagueModal({ event, recentMessages, respondToColleag
             </button>
 
             <button
-              onClick={() => respondToColleague("Agree with him", 0)}
+              onClick={() => {
+                // Find a compliant response option
+                const compliantResponse = availableResponses.find(r => r.type === 'compliant');
+                if (compliantResponse) {
+                  respondToColleague(compliantResponse);
+                }
+              }}
               style={{
                 background: 'none',
                 border: '1px solid var(--border-color)',
@@ -115,7 +142,7 @@ export default function ColleagueModal({ event, recentMessages, respondToColleag
                 opacity: 0.7
               }}
             >
-              🏳️ Try to reason with them (Agree)
+              🏳️ Try to reason with them
             </button>
           </div>
 
@@ -204,17 +231,25 @@ export default function ColleagueModal({ event, recentMessages, respondToColleag
           fontSize: '14px',
           lineHeight: '1.8'
         }}>
-          <div style={{ 
-            fontSize: '11px', 
-            textTransform: 'uppercase', 
-            letterSpacing: '1px', 
-            opacity: 0.6, 
-            marginBottom: '16px' 
+          <div style={{
+            fontSize: '11px',
+            textTransform: 'uppercase',
+            letterSpacing: '1px',
+            opacity: 0.6,
+            marginBottom: '16px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
           }}>
-            COLLEAGUE FROM FLOOR ??
+            <span>COLLEAGUE FROM FLOOR ??</span>
+            {relationship.encounters > 0 && (
+              <span style={{ fontSize: '10px', opacity: 0.5 }}>
+                Encounter #{relationship.encounters + 1} | Trust: {relationship.trust > 0 ? '+' : ''}{relationship.trust}
+              </span>
+            )}
           </div>
           <p style={{ fontStyle: 'italic' }}>
-            &lsquo;{event.dialogue}&lsquo;
+            &lsquo;{currentDialogue}&lsquo;
           </p>
         </div>
 
@@ -223,36 +258,54 @@ export default function ColleagueModal({ event, recentMessages, respondToColleag
           flexDirection: 'column',
           gap: '12px'
         }}>
-          <div style={{ 
-            fontSize: '11px', 
-            textTransform: 'uppercase', 
-            letterSpacing: '1px', 
-            opacity: 0.6, 
-            marginBottom: '8px' 
+          <div style={{
+            fontSize: '11px',
+            textTransform: 'uppercase',
+            letterSpacing: '1px',
+            opacity: 0.6,
+            marginBottom: '8px'
           }}>
             YOUR RESPONSE
           </div>
-          {event.responses.map((response, i) => (
-            <button
-              key={i}
-              onClick={() => handleResponse(response, i)}
-              style={{
-                background: clickedButton === i ? 'var(--accent-color)' : 'none',
-                border: '1px solid var(--border-color)',
-                color: clickedButton === i ? 'var(--bg-color)' : 'var(--text-color)',
-                padding: '12px 16px',
-                cursor: 'pointer',
-                fontSize: '12px',
-                fontFamily: 'inherit',
-                textAlign: 'left',
-                transition: 'all 0.1s cubic-bezier(0.4, 0.0, 0.2, 1)',
-                letterSpacing: '0.5px',
-                transform: clickedButton === i ? 'scale(0.98)' : 'scale(1)'
-              }}
-            >
-              {response}
-            </button>
-          ))}
+          {availableResponses.map((response, i) => {
+            const typeStyle = getResponseTypeStyle(response.type);
+            const isSpecial = response.contextType !== undefined;
+
+            return (
+              <button
+                key={i}
+                onClick={() => handleResponse(response, i)}
+                style={{
+                  background: clickedButton === i ? typeStyle.color : 'none',
+                  border: `1px solid ${typeStyle.borderColor}`,
+                  color: clickedButton === i ? 'var(--bg-color)' : typeStyle.color,
+                  padding: '12px 16px',
+                  cursor: 'pointer',
+                  fontSize: '12px',
+                  fontFamily: 'inherit',
+                  textAlign: 'left',
+                  transition: 'all 0.1s cubic-bezier(0.4, 0.0, 0.2, 1)',
+                  letterSpacing: '0.5px',
+                  transform: clickedButton === i ? 'scale(0.98)' : 'scale(1)',
+                  position: 'relative',
+                  boxShadow: isSpecial ? '0 0 8px rgba(255, 215, 0, 0.3)' : 'none'
+                }}
+              >
+                <span style={{ marginRight: '8px' }}>{typeStyle.icon}</span>
+                {response.text}
+                {isSpecial && (
+                  <span style={{
+                    marginLeft: '8px',
+                    fontSize: '10px',
+                    opacity: 0.6,
+                    textTransform: 'uppercase'
+                  }}>
+                    [Special]
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
 
         <div style={{

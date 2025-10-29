@@ -107,12 +107,22 @@ export const INITIAL_GAME_STATE = {
     accessory: null
   },
   equippedLootAnomalies: [], // Array of equipped loot anomaly IDs (max 3)
+  // Colleague Relationship System (Added 2025-10-29)
+  // Tracks relationship progression with strange colleagues
+  colleagueRelationships: {
+    spiral_philosopher: { trust: 0, encounters: 0, lastResponseType: null },
+    void_clerk: { trust: 0, encounters: 0, lastResponseType: null },
+    productivity_zealot: { trust: 0, encounters: 0, lastResponseType: null },
+    temporal_trapped: { trust: 0, encounters: 0, lastResponseType: null },
+    light_herald: { trust: 0, encounters: 0, lastResponseType: null }
+  },
   // Debug flags
   debugForceTearSpawn: false // Force 100% tear spawn rate for testing
 };
 
 export const STRANGE_COLLEAGUE_DIALOGUES = [
   {
+    id: 'spiral_philosopher',
     ascii: `∩＿＿∩
 （ ＼  ／＼
 ｜  ●  ● ｜
@@ -120,67 +130,328 @@ export const STRANGE_COLLEAGUE_DIALOGUES = [
 ＼  ∧  ／
 ￣～～～￣`,
     dialogue: "Time is a flat circle, but circles are lies. We spiral. Always spiraling. Do you feel it? The spiral? It's in the coffee. It's in the reports. We're all just... rotating.",
-    responses: ["That makes no sense", "Are you okay?", "I need to get back to work", "Agree with him"],
-    wrongResponses: [
-      "You don't understand. Your incomprehension is noted. Filed. Archived.",
-      "Okay? OKAY? I am the most okay person in this building. You are the one who is... incorrect.",
-      "Work? WORK? This IS the work. Standing here. Explaining. Forever."
+    // First encounter dialogue
+    firstEncounterDialogue: "Time is a flat circle, but circles are lies. We spiral. Always spiraling. Do you feel it? The spiral? It's in the coffee. It's in the reports. We're all just... rotating.",
+    // Repeat encounter dialogues based on relationship
+    repeatDialogues: {
+      empathetic: "You... you listened last time. The spiral noticed. It wants you to know: patterns repeat, but understanding breaks them. Do you see it now?",
+      dismissive: "You dismissed me before. But you're still here. Still spiraling. The coffee never lies.",
+      hostile: "Your hostility changes nothing. We all spiral. Fighting it only makes the rotation faster.",
+      compliant: "Yes... yes, you agreed. You understand. The spiral embraces you. It always has."
+    },
+    responseOptions: [
+      {
+        text: "That makes no sense",
+        type: "hostile",
+        available: () => true,
+        outcome: {
+          message: "You don't understand. Your incomprehension is noted. Filed. Archived.",
+          pp: 100,
+          xp: 5,
+          sanity: -8,
+          trust: -2
+        }
+      },
+      {
+        text: "Are you okay? Can I help?",
+        type: "empathetic",
+        available: () => true,
+        outcome: {
+          message: "For a moment, their eyes clear. 'Help? No one has asked that in... how long?' They press a warm cup into your hands and vanish.",
+          pp: 500,
+          xp: 30,
+          sanity: -5,
+          trust: 3
+        }
+      },
+      {
+        text: "I need to get back to work",
+        type: "dismissive",
+        available: () => true,
+        outcome: {
+          message: "Work. Yes. Work is the constant. They leave a crumpled note on your desk and walk away.",
+          pp: 200,
+          xp: 10,
+          sanity: -3,
+          trust: -1
+        }
+      },
+      {
+        text: "You're right. I feel the spiral.",
+        type: "compliant",
+        available: () => true,
+        outcome: {
+          message: "He smiles. It doesn't reach his eyes. 'Good. Acceptance is the first rotation.' You receive: Existential Token.",
+          pp: 400,
+          xp: 25,
+          sanity: -15,
+          trust: 1
+        }
+      }
     ]
   },
   {
+    id: 'productivity_zealot',
     ascii: `╭───╮
 ┃◉  ◉┃
 ┃  ▽ ┃
 ┃ ─── ┃
 ╰───╯`,
     dialogue: "Productivity is the measure of a soul's weight. When you sort those papers, you're sorting... yourself. Each click is a piece of you, filed away. Archived. Forever. Don't you see? You ARE the productivity.",
-    responses: ["That's disturbing", "Please leave me alone", "I don't understand", "Agree with him"],
-    wrongResponses: [
-      "Disturbing? Your discomfort has been logged. Your soul weighs 247 grams less now.",
-      "Leave you alone? But we're never alone. The database sees everything. I am the database.",
-      "Understanding comes after agreement. Agreement is mandatory. Why are you resisting?"
+    firstEncounterDialogue: "Productivity is the measure of a soul's weight. When you sort those papers, you're sorting... yourself. Each click is a piece of you, filed away. Archived. Forever. Don't you see? You ARE the productivity.",
+    repeatDialogues: {
+      empathetic: "You showed concern for me. That was... inefficient. But strangely comforting. Perhaps productivity isn't everything?",
+      dismissive: "You left last time. Abandoned the conversation. Just like you abandon unfinished tasks. I've been tracking your metrics.",
+      hostile: "Your anger is logged. Filed. It becomes data. Even your resistance adds to the productivity quotient.",
+      compliant: "You understand! The sacred truth of output! Together we can optimize... everything."
+    },
+    responseOptions: [
+      {
+        text: "That's a disturbing way to think",
+        type: "hostile",
+        available: () => true,
+        outcome: {
+          message: "Disturbing? Your discomfort has been logged. Your soul weighs 247 grams less now.",
+          pp: 100,
+          xp: 5,
+          sanity: -8,
+          trust: -2
+        }
+      },
+      {
+        text: "You seem stressed. When did you last rest?",
+        type: "empathetic",
+        available: () => true,
+        outcome: {
+          message: "Rest? I... I don't remember. They stare at their hands, trembling. 'Thank you.' They leave something valuable and disappear.",
+          pp: 550,
+          xp: 30,
+          sanity: -5,
+          trust: 3
+        }
+      },
+      {
+        text: "Please leave me alone",
+        type: "dismissive",
+        available: () => true,
+        outcome: {
+          message: "Leave you alone? Request logged. Processed. They turn and walk away mechanically.",
+          pp: 200,
+          xp: 10,
+          sanity: -3,
+          trust: -1
+        }
+      },
+      {
+        text: "I am the productivity. I understand.",
+        type: "compliant",
+        available: () => true,
+        outcome: {
+          message: "YES. The database acknowledges you. You are now indexed. Catalogued. Optimized.",
+          pp: 400,
+          xp: 25,
+          sanity: -15,
+          trust: 1
+        }
+      }
     ]
   },
   {
+    id: 'void_clerk',
     ascii: `┌─────┐
 │ ○ ○ │
 │  ─  │
 │ ＼◡／│
 └─────┘`,
     dialogue: "Reality is just consensus. If we all agree the walls are breathing... then they are. I've tested this. The photocopier knows. Ask it. It will answer in toner and regret.",
-    responses: ["You're not well", "I should go", "This is inappropriate", "Agree with him"],
-    wrongResponses: [
-      "Not well? I've never felt better. The walls told me so. Why won't they talk to you?",
-      "Go? GO WHERE? There is only here. There has only ever been here.",
-      "HR has been notified. They agree with me. Everyone agrees with me. Except you."
+    firstEncounterDialogue: "Reality is just consensus. If we all agree the walls are breathing... then they are. I've tested this. The photocopier knows. Ask it. It will answer in toner and regret.",
+    repeatDialogues: {
+      empathetic: "You tried to help me last time. That was... kind. The photocopier noticed. It prints different now. Softer.",
+      dismissive: "You fled from truth. But truth waits. The walls remember your name. They whisper it.",
+      hostile: "You were hostile before. The walls laughed. They feed on conflict. You made them stronger.",
+      compliant: "You agreed! The consensus strengthens! Reality bends! Do you feel it bending?"
+    },
+    responseOptions: [
+      {
+        text: "You're not well. Get help.",
+        type: "hostile",
+        available: () => true,
+        outcome: {
+          message: "Not well? I've never felt better. The walls told me so. Why won't they talk to you?",
+          pp: 100,
+          xp: 5,
+          sanity: -8,
+          trust: -2
+        }
+      },
+      {
+        text: "What do you need? I'm listening.",
+        type: "empathetic",
+        available: () => true,
+        outcome: {
+          message: "Listening? You're... listening? Their smile becomes genuine. 'No one listens anymore.' Reality stabilizes briefly. They gift you clarity.",
+          pp: 500,
+          xp: 30,
+          sanity: -5,
+          trust: 3
+        }
+      },
+      {
+        text: "I should go. This is too much.",
+        type: "dismissive",
+        available: () => true,
+        outcome: {
+          message: "Go? GO WHERE? There is only here. But fine. Leave. They fade into the walls.",
+          pp: 200,
+          xp: 10,
+          sanity: -3,
+          trust: -1
+        }
+      },
+      {
+        text: "The walls ARE breathing. I see it too.",
+        type: "compliant",
+        available: () => true,
+        outcome: {
+          message: "YES! Consensus achieved! Reality reshapes around you both. The photocopier hums approval.",
+          pp: 400,
+          xp: 25,
+          sanity: -15,
+          trust: 1
+        }
+      }
     ]
   },
   {
+    id: 'temporal_trapped',
     ascii: `╔═══╗
 ║● ●║
 ║ △ ║
 ║___║
 ╚═══╝`,
     dialogue: "We never leave. You know that, right? Even when we 'go home,' we're still here. The office exists in all timelines simultaneously. I've been here for three days. Or thirty years. Same thing.",
-    responses: ["That can't be true", "Stop talking to me", "I'm calling security", "Agree with him"],
-    wrongResponses: [
-      "Can't be true? Check your contract. Page 847, subsection ∞. It's all there.",
-      "I can't stop. Stopping would create a vacuum. Nature abhors a vacuum. So do I.",
-      "Security? They sent me. I AM security now. We all become security eventually."
+    firstEncounterDialogue: "We never leave. You know that, right? Even when we 'go home,' we're still here. The office exists in all timelines simultaneously. I've been here for three days. Or thirty years. Same thing.",
+    repeatDialogues: {
+      empathetic: "You were kind before. Time remembers kindness. It loops back. I feel... less trapped when you're near.",
+      dismissive: "You left. But in another timeline, you stayed. I remember both. All timelines hurt.",
+      hostile: "Your anger echoes across timelines. In one, you struck me. In another, you helped. Which is real?",
+      compliant: "You agreed! In all timelines! The loop tightens! We're both trapped now! Forever!"
+    },
+    responseOptions: [
+      {
+        text: "That can't be true. You're delusional.",
+        type: "hostile",
+        available: () => true,
+        outcome: {
+          message: "Can't be true? Check your contract. Page 847, subsection ∞. It's all there.",
+          pp: 100,
+          xp: 5,
+          sanity: -8,
+          trust: -2
+        }
+      },
+      {
+        text: "That sounds terrifying. Is there a way out?",
+        type: "empathetic",
+        available: () => true,
+        outcome: {
+          message: "A way... out? They look at you with desperate hope. 'Maybe together we can break the loop?' They hand you a temporal key.",
+          pp: 500,
+          xp: 30,
+          sanity: -5,
+          trust: 3
+        }
+      },
+      {
+        text: "Stop talking to me. Just stop.",
+        type: "dismissive",
+        available: () => true,
+        outcome: {
+          message: "I can't stop. Stopping would create a vacuum. But... I'll try. They flicker and fade.",
+          pp: 200,
+          xp: 10,
+          sanity: -3,
+          trust: -1
+        }
+      },
+      {
+        text: "We're all trapped. Time is a prison.",
+        type: "compliant",
+        available: () => true,
+        outcome: {
+          message: "YES. The eternal office. The endless shift. Welcome to forever. Your contract renews automatically.",
+          pp: 400,
+          xp: 25,
+          sanity: -15,
+          trust: 1
+        }
+      }
     ]
   },
   {
+    id: 'light_herald',
     ascii: `┏━━━┓
 ┃⊙ ⊙┃
 ┃ ▬ ┃
 ┃╰─╯┃
 ┗━━━┛`,
     dialogue: "The fluorescent lights hum at 60Hz. That's the frequency of thought. They're thinking. We're not thinking. We're being thought BY the lights. Receptacles of luminescence. Vessels of wattage.",
-    responses: ["That's pseudoscience", "I need to work", "This conversation is over", "Agree with him"],
-    wrongResponses: [
-      "Pseudoscience? The lights disagree. They're thinking about you right now. Can you hear them?",
-      "You ARE working. This conversation is billable. 0.3 hours. Your productivity increases.",
-      "It's over when I say it's over. The lights say it's not over. Listen. LISTEN."
+    firstEncounterDialogue: "The fluorescent lights hum at 60Hz. That's the frequency of thought. They're thinking. We're not thinking. We're being thought BY the lights. Receptacles of luminescence. Vessels of wattage.",
+    repeatDialogues: {
+      empathetic: "You showed me warmth. Light is warmth. You understand more than most. The lights have chosen you.",
+      dismissive: "You dimmed our last conversation. But the lights never forget. They hum your frequency now.",
+      hostile: "Your darkness calls to the lights. They want to illuminate you. Forcefully. Painfully.",
+      compliant: "You hear them too! The hum! The thoughts! We are conduits! Blessed vessels of illumination!"
+    },
+    responseOptions: [
+      {
+        text: "That's pseudoscience nonsense",
+        type: "hostile",
+        available: () => true,
+        outcome: {
+          message: "Pseudoscience? The lights disagree. They're thinking about you right now. Can you hear them?",
+          pp: 100,
+          xp: 5,
+          sanity: -8,
+          trust: -2
+        }
+      },
+      {
+        text: "The lights can't hurt you. You're safe.",
+        type: "empathetic",
+        available: () => true,
+        outcome: {
+          message: "Safe? You... you think I'm safe? Tears form. 'Thank you.' The lights dim peacefully. They leave you a glowing gift.",
+          pp: 500,
+          xp: 30,
+          sanity: -5,
+          trust: 3
+        }
+      },
+      {
+        text: "I need to work. Goodbye.",
+        type: "dismissive",
+        available: () => true,
+        outcome: {
+          message: "You ARE working. This conversation is billable. 0.3 hours logged. They flicker away.",
+          pp: 200,
+          xp: 10,
+          sanity: -3,
+          trust: -1
+        }
+      },
+      {
+        text: "I hear the hum too. I understand.",
+        type: "compliant",
+        available: () => true,
+        outcome: {
+          message: "GOOD. You are now a receiver. The lights will speak through you. You are blessed. Illuminated.",
+          pp: 400,
+          xp: 25,
+          sanity: -15,
+          trust: 1
+        }
+      }
     ]
   }
 ];
