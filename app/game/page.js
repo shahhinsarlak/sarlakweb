@@ -255,6 +255,12 @@ export default function Game() {
 
   const purchaseDimensionalUpgrade = (upgrade) => {
     setGameState(prev => {
+      // Safety check for materials
+      if (!upgrade.materials || typeof upgrade.materials !== 'object') {
+        console.warn('[PURCHASE] Invalid materials for upgrade:', upgrade);
+        return prev;
+      }
+
       const canAfford = Object.entries(upgrade.materials).every(([materialId, required]) => {
         return (prev.dimensionalInventory?.[materialId] || 0) >= required;
       });
@@ -1456,8 +1462,13 @@ export default function Game() {
               {selectedUpgradeType === 'dimensional' && Object.keys(gameState.dimensionalInventory || {}).some(key => gameState.dimensionalInventory[key] > 0) && (
                 <div>
                   {DIMENSIONAL_UPGRADES.filter(u => !gameState.dimensionalUpgrades?.[u.id]).slice(0, 5).map(upgrade => {
-                    const canAfford = upgrade.materials.every(({ material, amount }) =>
-                      (gameState.dimensionalInventory?.[material] || 0) >= amount
+                    // Safety check for materials
+                    if (!upgrade.materials || typeof upgrade.materials !== 'object') {
+                      return null;
+                    }
+
+                    const canAfford = Object.entries(upgrade.materials).every(([materialId, required]) =>
+                      (gameState.dimensionalInventory?.[materialId] || 0) >= required
                     );
 
                     return (
@@ -1489,13 +1500,13 @@ export default function Game() {
                             {upgrade.desc}
                           </div>
                           <div style={{ fontSize: '11px', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                            {upgrade.materials.map(({ material, amount }) => {
-                              const materialDef = DIMENSIONAL_MATERIALS.find(m => m.id === material);
-                              const has = gameState.dimensionalInventory?.[material] || 0;
-                              const hasEnough = has >= amount;
+                            {Object.entries(upgrade.materials).map(([materialId, required]) => {
+                              const materialDef = DIMENSIONAL_MATERIALS.find(m => m.id === materialId);
+                              const has = gameState.dimensionalInventory?.[materialId] || 0;
+                              const hasEnough = has >= required;
                               return (
-                                <span key={material} style={{ color: hasEnough ? 'var(--accent-color)' : '#ff6666' }}>
-                                  {materialDef?.name || material}: {has}/{amount}
+                                <span key={materialId} style={{ color: hasEnough ? 'var(--accent-color)' : '#ff6666' }}>
+                                  {materialDef?.name || materialId}: {has}/{required}
                                 </span>
                               );
                             })}
