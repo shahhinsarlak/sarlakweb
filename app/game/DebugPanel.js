@@ -1027,11 +1027,17 @@ export default function DebugPanel({ gameState, setGameState, addMessage, onClos
           </div>
           <button
             onClick={() => {
-              setGameState(prev => ({
-                ...prev,
-                debugForceTearSpawn: !prev.debugForceTearSpawn
-              }));
-              addMessage(!gameState.debugForceTearSpawn ? 'Force tear spawn: ENABLED (100%)' : 'Force tear spawn: DISABLED (8%)');
+              setGameState(prev => {
+                const newValue = !prev.debugForceTearSpawn;
+                // Use setTimeout to ensure message shows after state update
+                setTimeout(() => {
+                  addMessage(newValue ? 'Force tear spawn: ENABLED (100%)' : 'Force tear spawn: DISABLED (8%)');
+                }, 0);
+                return {
+                  ...prev,
+                  debugForceTearSpawn: newValue
+                };
+              });
             }}
             style={{
               ...buttonStyle,

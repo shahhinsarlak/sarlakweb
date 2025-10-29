@@ -67,10 +67,17 @@ export default function DimensionalUpgradesDisplay({ gameState, onPurchase }) {
                   const material = DIMENSIONAL_MATERIALS.find(m => m.id === materialId);
                   const owned = gameState.dimensionalInventory?.[materialId] || 0;
                   const hasEnough = owned >= required;
+
+                  // Safety check: if material not found, skip rendering
+                  if (!material) {
+                    console.warn(`[DIMENSIONAL_UPGRADES] Material ID "${materialId}" not found in DIMENSIONAL_MATERIALS`);
+                    return null;
+                  }
+
                   return (
-                    <span key={materialId} style={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
+                    <span key={materialId} style={{
+                      display: 'flex',
+                      alignItems: 'center',
                       gap: '4px',
                       color: hasEnough ? 'var(--accent-color)' : '#ff6b6b'
                     }}>
