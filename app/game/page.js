@@ -446,18 +446,6 @@ export default function Game() {
           newState.recentMessages = ['Something has changed. Or has it always been this way?', ...prev.recentMessages].slice(0, prev.maxLogMessages || 15);
         }
 
-        if (prev.sanity < 30 && Math.random() < 0.1) {
-          const glitchMessages = [
-            'T̷h̷e̷ ̷w̷a̷l̷l̷s̷',
-            'Your name is... what is your name?',
-            '404: REALITY NOT FOUND',
-            'You are doing great! You are doing great! You are doing great!',
-            'The exit is everywhere and nowhere.'
-          ];
-          const selectedMessage = glitchMessages[Math.floor(Math.random() * glitchMessages.length)];
-          newState.recentMessages = [selectedMessage, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15);
-        }
-
         return newState;
       });
     }, 100);
