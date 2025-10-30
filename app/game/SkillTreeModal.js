@@ -39,23 +39,27 @@ export default function SkillTreeModal({ gameState, onClose, onPurchaseSkill }) 
         {branchSkills.map(skill => {
           const status = getSkillStatus(skill);
           const currentLevel = getSkillLevel(skill.id);
-          
-          let borderColor = '#333';
+
+          let borderColor = 'var(--border-color)';
           let bgColor = 'transparent';
-          let textColor = '#666';
-          
+          let textColor = 'var(--text-color)';
+          let textOpacity = 0.5;
+
           if (status === 'maxed') {
             borderColor = '#00ff00';
             bgColor = 'rgba(0, 255, 0, 0.05)';
             textColor = '#00ff00';
+            textOpacity = 1;
           } else if (status === 'learned') {
             borderColor = '#4a90e2';
             bgColor = 'rgba(74, 144, 226, 0.05)';
             textColor = '#4a90e2';
+            textOpacity = 1;
           } else if (status === 'available') {
             borderColor = '#ffaa00';
             bgColor = 'rgba(255, 170, 0, 0.05)';
             textColor = '#ffaa00';
+            textOpacity = 1;
           }
 
           return (
@@ -79,7 +83,7 @@ export default function SkillTreeModal({ gameState, onClose, onPurchaseSkill }) 
                   fontFamily: 'inherit',
                   textAlign: 'left',
                   transition: 'all 0.2s',
-                  opacity: status === 'locked' ? 0.3 : 1
+                  opacity: status === 'locked' ? 0.3 : textOpacity
                 }}
               >
                 <div style={{ fontWeight: '600', marginBottom: '6px', fontSize: '12px' }}>
@@ -100,7 +104,7 @@ export default function SkillTreeModal({ gameState, onClose, onPurchaseSkill }) 
                   position: 'absolute',
                   left: '110%',
                   top: '0',
-                  backgroundColor: '#000',
+                  backgroundColor: 'var(--bg-color)',
                   border: '1px solid #4a90e2',
                   padding: '12px',
                   borderRadius: '4px',
@@ -113,10 +117,10 @@ export default function SkillTreeModal({ gameState, onClose, onPurchaseSkill }) 
                   <div style={{ color: '#4a90e2', fontWeight: '600', marginBottom: '8px' }}>
                     {skill.name}
                   </div>
-                  <div style={{ color: '#aaa', marginBottom: '8px', lineHeight: '1.4' }}>
+                  <div style={{ color: 'var(--text-color)', opacity: 0.8, marginBottom: '8px', lineHeight: '1.4' }}>
                     {skill.desc}
                   </div>
-                  <div style={{ color: '#888', fontSize: '9px' }}>
+                  <div style={{ color: 'var(--text-color)', opacity: 0.6, fontSize: '9px' }}>
                     Max Level: {skill.maxLevel}
                   </div>
                 </div>
@@ -137,15 +141,16 @@ export default function SkillTreeModal({ gameState, onClose, onPurchaseSkill }) 
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.95)',
+        backgroundColor: 'var(--bg-color)',
         zIndex: 1000,
         display: 'flex',
         flexDirection: 'column',
-        fontFamily: "'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace"
+        fontFamily: "'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace",
+        color: 'var(--text-color)'
       }}>
         {/* Header */}
         <div style={{
-          borderBottom: '1px solid #333',
+          borderBottom: '1px solid var(--border-color)',
           padding: '20px 40px',
           display: 'flex',
           justifyContent: 'space-between',
@@ -155,7 +160,7 @@ export default function SkillTreeModal({ gameState, onClose, onPurchaseSkill }) 
             <div style={{ fontSize: '14px', marginBottom: '8px' }}>
               SKILL TREE
             </div>
-            <div style={{ fontSize: '10px', color: '#888' }}>
+            <div style={{ fontSize: '10px', color: 'var(--text-color)', opacity: 0.6 }}>
               Level {playerLevel} • {availableSkillPoints} Skill Points Available
             </div>
           </div>
@@ -163,8 +168,8 @@ export default function SkillTreeModal({ gameState, onClose, onPurchaseSkill }) 
             onClick={onClose}
             style={{
               background: 'none',
-              border: '1px solid #666',
-              color: '#fff',
+              border: '1px solid var(--border-color)',
+              color: 'var(--text-color)',
               padding: '8px 16px',
               cursor: 'pointer',
               fontSize: '11px',
@@ -176,15 +181,15 @@ export default function SkillTreeModal({ gameState, onClose, onPurchaseSkill }) 
         </div>
 
         {/* XP Bar */}
-        <div style={{ padding: '20px 40px', borderBottom: '1px solid #333' }}>
-          <div style={{ fontSize: '9px', color: '#888', marginBottom: '8px' }}>
+        <div style={{ padding: '20px 40px', borderBottom: '1px solid var(--border-color)' }}>
+          <div style={{ fontSize: '9px', color: 'var(--text-color)', opacity: 0.6, marginBottom: '8px' }}>
             XP: {currentXP} / {xpForNextLevel}
           </div>
           <div style={{
             width: '100%',
             height: '8px',
-            backgroundColor: '#1a1a1a',
-            border: '1px solid #333',
+            backgroundColor: 'var(--hover-color)',
+            border: '1px solid var(--border-color)',
             overflow: 'hidden'
           }}>
             <div style={{
@@ -199,7 +204,7 @@ export default function SkillTreeModal({ gameState, onClose, onPurchaseSkill }) 
         {/* Branch Tabs */}
         <div style={{
           display: 'flex',
-          borderBottom: '1px solid #333'
+          borderBottom: '1px solid var(--border-color)'
         }}>
           {['efficiency', 'portal', 'survival'].map(branch => (
             <button
@@ -207,10 +212,11 @@ export default function SkillTreeModal({ gameState, onClose, onPurchaseSkill }) 
               onClick={() => setSelectedBranch(branch)}
               style={{
                 flex: 1,
-                background: selectedBranch === branch ? '#1a1a1a' : 'none',
+                background: selectedBranch === branch ? 'var(--hover-color)' : 'none',
                 border: 'none',
                 borderBottom: selectedBranch === branch ? '2px solid #4a90e2' : '2px solid transparent',
-                color: selectedBranch === branch ? '#fff' : '#666',
+                color: selectedBranch === branch ? 'var(--text-color)' : 'var(--text-color)',
+                opacity: selectedBranch === branch ? 1 : 0.5,
                 padding: '16px',
                 cursor: 'pointer',
                 fontSize: '11px',
@@ -231,7 +237,7 @@ export default function SkillTreeModal({ gameState, onClose, onPurchaseSkill }) 
           padding: '40px',
           overflowY: 'auto'
         }}>
-          <div style={{ fontSize: '11px', color: '#888', textAlign: 'center', marginBottom: '32px' }}>
+          <div style={{ fontSize: '11px', color: 'var(--text-color)', opacity: 0.6, textAlign: 'center', marginBottom: '32px' }}>
             {selectedBranch === 'efficiency' && 'Optimize PP generation and resource usage'}
             {selectedBranch === 'portal' && 'Improve dimensional material collection'}
             {selectedBranch === 'survival' && 'Increase resilience and combat effectiveness'}
@@ -241,16 +247,17 @@ export default function SkillTreeModal({ gameState, onClose, onPurchaseSkill }) 
 
         {/* Legend */}
         <div style={{
-          borderTop: '1px solid #333',
+          borderTop: '1px solid var(--border-color)',
           padding: '16px 40px',
           display: 'flex',
           justifyContent: 'center',
           gap: '24px',
           fontSize: '9px',
-          color: '#888'
+          color: 'var(--text-color)',
+          opacity: 0.6
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <div style={{ width: '10px', height: '10px', border: '2px solid #333' }} />
+            <div style={{ width: '10px', height: '10px', border: '2px solid var(--border-color)' }} />
             Locked
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>

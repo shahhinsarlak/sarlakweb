@@ -275,17 +275,34 @@ export const getDistortionStyle = (sanity) => {
   };
 
   export const createScreenShake = () => {
-    document.body.style.animation = 'screenShake 0.4s ease-in-out';
-    const style = document.createElement('style');
-    style.textContent = `
-      @keyframes screenShake {
-        0%, 100% { transform: translate(0, 0); }
-        10%, 30%, 50%, 70%, 90% { transform: translate(-3px, -3px); }
-        20%, 40%, 60%, 80% { transform: translate(3px, 3px); }
-      }
-    `;
-    document.head.appendChild(style);
-    setTimeout(() => {
-      document.body.style.animation = '';
-    }, 400);
+    // Create a wrapper element for shaking instead of shaking the body
+    // This prevents interference with body's theme-related transitions
+    const gameContainer = document.querySelector('[data-game-container]') || document.body.firstChild;
+
+    if (gameContainer && gameContainer.style) {
+      const originalTransform = gameContainer.style.transform;
+      gameContainer.style.animation = 'screenShake 0.4s ease-in-out';
+
+      const style = document.createElement('style');
+      style.id = 'screen-shake-style';
+      style.textContent = `
+        @keyframes screenShake {
+          0%, 100% { transform: translate(0, 0); }
+          10%, 30%, 50%, 70%, 90% { transform: translate(-3px, -3px); }
+          20%, 40%, 60%, 80% { transform: translate(3px, 3px); }
+        }
+      `;
+
+      // Remove existing screen shake style if present
+      const existingStyle = document.getElementById('screen-shake-style');
+      if (existingStyle) existingStyle.remove();
+
+      document.head.appendChild(style);
+
+      setTimeout(() => {
+        gameContainer.style.animation = '';
+        gameContainer.style.transform = originalTransform;
+        style.remove();
+      }, 400);
+    }
   };
