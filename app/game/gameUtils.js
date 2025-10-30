@@ -274,22 +274,32 @@ export const getDistortionStyle = (sanity) => {
     }, 2500);
   };
 
-  export const createScreenShake = () => {
+  export const createScreenShake = (intensity = 'normal') => {
     // Create a wrapper element for shaking instead of shaking the body
     // This prevents interference with body's theme-related transitions
     const gameContainer = document.querySelector('[data-game-container]') || document.body.firstChild;
 
     if (gameContainer && gameContainer.style) {
       const originalTransform = gameContainer.style.transform;
-      gameContainer.style.animation = 'screenShake 0.4s ease-in-out';
+
+      // Different shake intensities
+      const shakeParams = {
+        small: { distance: 2, duration: 0.2 },
+        normal: { distance: 3, duration: 0.4 }
+      };
+
+      const params = shakeParams[intensity] || shakeParams.normal;
+      const animationName = `screenShake${intensity.charAt(0).toUpperCase() + intensity.slice(1)}`;
+
+      gameContainer.style.animation = `${animationName} ${params.duration}s ease-in-out`;
 
       const style = document.createElement('style');
       style.id = 'screen-shake-style';
       style.textContent = `
-        @keyframes screenShake {
+        @keyframes ${animationName} {
           0%, 100% { transform: translate(0, 0); }
-          10%, 30%, 50%, 70%, 90% { transform: translate(-3px, -3px); }
-          20%, 40%, 60%, 80% { transform: translate(3px, 3px); }
+          10%, 30%, 50%, 70%, 90% { transform: translate(-${params.distance}px, -${params.distance}px); }
+          20%, 40%, 60%, 80% { transform: translate(${params.distance}px, ${params.distance}px); }
         }
       `;
 
@@ -303,6 +313,6 @@ export const getDistortionStyle = (sanity) => {
         gameContainer.style.animation = '';
         gameContainer.style.transform = originalTransform;
         style.remove();
-      }, 400);
+      }, params.duration * 1000);
     }
   };

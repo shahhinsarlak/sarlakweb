@@ -195,10 +195,10 @@ export default function Game() {
   const handlePurchaseSkill = (skillId) => {
     setGameState(prev => {
       const result = purchaseSkill(prev, skillId, addMessage);
-      
+
       // If purchase failed (not enough points)
       if (result === prev && (prev.skillPoints || 0) < 1) {
-        createScreenShake();
+        createScreenShake('small');
         return prev;
       }
       

@@ -3,7 +3,6 @@ import { SKILLS, LEVEL_SYSTEM } from './skillTreeConstants';
 import EventLog from './EventLog';
 
 export default function SkillTreeModal({ gameState, onClose, onPurchaseSkill }) {
-  const [selectedBranch, setSelectedBranch] = useState('efficiency');
   const [hoveredSkill, setHoveredSkill] = useState(null);
   
   const playerLevel = gameState.playerLevel || 1;
@@ -31,7 +30,8 @@ export default function SkillTreeModal({ gameState, onClose, onPurchaseSkill }) 
     return 'locked';
   };
 
-  const branchSkills = Object.values(SKILLS).filter(s => s.branch === selectedBranch);
+  // Only show efficiency branch for now
+  const branchSkills = Object.values(SKILLS).filter(s => s.branch === 'efficiency');
 
   const renderBranch = () => {
     return (
@@ -201,47 +201,12 @@ export default function SkillTreeModal({ gameState, onClose, onPurchaseSkill }) 
           </div>
         </div>
 
-        {/* Branch Tabs */}
-        <div style={{
-          display: 'flex',
-          borderBottom: '1px solid var(--border-color)'
-        }}>
-          {['efficiency', 'portal', 'survival'].map(branch => (
-            <button
-              key={branch}
-              onClick={() => setSelectedBranch(branch)}
-              style={{
-                flex: 1,
-                background: selectedBranch === branch ? 'var(--hover-color)' : 'none',
-                border: 'none',
-                borderBottom: selectedBranch === branch ? '2px solid #4a90e2' : '2px solid transparent',
-                color: selectedBranch === branch ? 'var(--text-color)' : 'var(--text-color)',
-                opacity: selectedBranch === branch ? 1 : 0.5,
-                padding: '16px',
-                cursor: 'pointer',
-                fontSize: '11px',
-                fontFamily: 'inherit',
-                textTransform: 'uppercase',
-                letterSpacing: '1px',
-                transition: 'all 0.2s'
-              }}
-            >
-              {branch === 'efficiency' ? '📊 Efficiency' : branch === 'portal' ? '🌀 Portal' : '🛡️ Survival'}
-            </button>
-          ))}
-        </div>
-
         {/* Content */}
         <div style={{
           flex: 1,
           padding: '40px',
           overflowY: 'auto'
         }}>
-          <div style={{ fontSize: '11px', color: 'var(--text-color)', opacity: 0.6, textAlign: 'center', marginBottom: '32px' }}>
-            {selectedBranch === 'efficiency' && 'Optimize PP generation and resource usage'}
-            {selectedBranch === 'portal' && 'Improve dimensional material collection'}
-            {selectedBranch === 'survival' && 'Increase resilience and combat effectiveness'}
-          </div>
           {renderBranch()}
         </div>
 
