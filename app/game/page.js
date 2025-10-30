@@ -752,14 +752,16 @@ export default function Game() {
       <div className="game-header-wrapper">
         <Header />
       </div>
-      <div style={{
-        fontFamily: "'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace",
-        padding: isMobile ? '16px' : '20px 40px',
-        minHeight: 'calc(100vh - 100px)',
-        fontSize: '14px',
-        maxWidth: '1400px',
-        margin: '0 auto'
-      }}>
+      <div
+        data-game-container
+        style={{
+          fontFamily: "'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace",
+          padding: isMobile ? '16px' : '20px 40px',
+          minHeight: 'calc(100vh - 100px)',
+          fontSize: '14px',
+          maxWidth: '1400px',
+          margin: '0 auto'
+        }}>
         <div style={{
           display: 'flex',
           justifyContent: 'space-between',
