@@ -27,7 +27,7 @@ export const getSanityTier = (sanity) => {
  * Apply sanity-based modifier to PP generation
  * @param {number} basePP - Base PP value
  * @param {Object} gameState - Current game state
- * @returns {number} Modified PP value
+ * @returns {number} Modified PP value (with decimals)
  */
 export const applySanityPPModifier = (basePP, gameState) => {
   const tier = getSanityTier(gameState.sanity);
@@ -38,7 +38,7 @@ export const applySanityPPModifier = (basePP, gameState) => {
   const efficiencyBuff = activeBuffs.find(b => b.id === 'efficiency' && b.expiresAt > Date.now());
   const buffMod = efficiencyBuff ? efficiencyBuff.ppMult : 1.0;
 
-  return Math.floor(basePP * sanityMod * buffMod);
+  return basePP * sanityMod * buffMod; // No floor - allow decimals
 };
 
 /**

@@ -1102,6 +1102,23 @@ It might be worthwhile reading some of the files in there.
 Each one reveals something... unsettling.`,
     category: 'exploration'
   },
+  breakRoom: {
+    id: 'breakRoom',
+    title: 'BREAK ROOM UNLOCKED',
+    content: `A place where colleagues gather.
+
+Your coworkers wander here, seeking connection.
+Their smiles don't quite reach their eyes.
+
+They will approach you. How you respond matters.
+• Be KIND to build trust
+• Be NEUTRAL to stay safe
+• Be HOSTILE to... see what happens
+
+Choose wisely. Some paths lead to revelation.
+Others lead to violence.`,
+    category: 'exploration'
+  },
   printerRoom: {
     id: 'printerRoom',
     title: 'PRINTER ROOM UNLOCKED',
@@ -1209,6 +1226,7 @@ export const HELP_TRIGGERS = {
   sanityTiers: (state, prevState) => state.sanity <= 39 && (!prevState || prevState.sanity > 39),
   skillTree: (state, prevState) => state.skillPoints > 0 && (!prevState || prevState.skillPoints === 0),
   archive: (state, prevState) => state.unlockedLocations.includes('archive') && (!prevState || !prevState.unlockedLocations.includes('archive')),
+  breakRoom: (state, prevState) => state.unlockedLocations.includes('breakroom') && (!prevState || !prevState.unlockedLocations.includes('breakroom')),
   printerRoom: (state, prevState) => state.printerUnlocked && (!prevState || !prevState.printerUnlocked),
   documentSystem: (state, prevState) => state.paper >= 5 && state.printerUnlocked && (!prevState || prevState.paper < 5),
   portal: (state, prevState) => state.portalUnlocked && (!prevState || !prevState.portalUnlocked),
