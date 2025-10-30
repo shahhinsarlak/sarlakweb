@@ -196,25 +196,25 @@ export default function Game() {
     setGameState(prev => {
       const result = purchaseSkill(prev, skillId, addMessage);
 
-      // If purchase failed (not enough points)
-      if (result === prev && (prev.skillPoints || 0) < 1) {
-        createScreenShake('small');
+      // If purchase failed for any reason (returns same state)
+      if (result === prev) {
+        setTimeout(() => createScreenShake('small'), 0);
         return prev;
       }
-      
+
       // If purchase was successful
       if (result !== prev) {
         const skill = SKILLS[skillId];
         const newLevel = result.skills?.[skillId] || 0;
-        
+
         setTimeout(() => createSkillPurchaseParticles(), 0);
-        
+
         return {
           ...result,
           recentMessages: [`✨ Learned ${skill.name} (Level ${newLevel})!`, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
         };
       }
-      
+
       return result;
     });
   };
