@@ -275,12 +275,11 @@ export const getDistortionStyle = (sanity) => {
   };
 
   export const createScreenShake = (intensity = 'normal') => {
-    // Create a wrapper element for shaking instead of shaking the body
-    // This prevents interference with body's theme-related transitions
-    const gameContainer = document.querySelector('[data-game-container]') || document.body.firstChild;
+    // Shake the entire document to include modals
+    const shakeElement = document.documentElement;
 
-    if (gameContainer && gameContainer.style) {
-      const originalTransform = gameContainer.style.transform;
+    if (shakeElement && shakeElement.style) {
+      const originalTransform = shakeElement.style.transform;
 
       // Different shake intensities
       const shakeParams = {
@@ -291,7 +290,7 @@ export const getDistortionStyle = (sanity) => {
       const params = shakeParams[intensity] || shakeParams.normal;
       const animationName = `screenShake${intensity.charAt(0).toUpperCase() + intensity.slice(1)}`;
 
-      gameContainer.style.animation = `${animationName} ${params.duration}s ease-in-out`;
+      shakeElement.style.animation = `${animationName} ${params.duration}s ease-in-out`;
 
       const style = document.createElement('style');
       style.id = 'screen-shake-style';
@@ -310,8 +309,8 @@ export const getDistortionStyle = (sanity) => {
       document.head.appendChild(style);
 
       setTimeout(() => {
-        gameContainer.style.animation = '';
-        gameContainer.style.transform = originalTransform;
+        shakeElement.style.animation = '';
+        shakeElement.style.transform = originalTransform;
         style.remove();
       }, params.duration * 1000);
     }
