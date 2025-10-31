@@ -10,6 +10,7 @@ import { XP_REWARDS } from './skillTreeConstants';
 import { TEAR_CONFIG } from './lootConstants';
 import { generateLootItem } from './lootGenerationHelpers';
 import CrystalOpeningModal from './CrystalOpeningModal';
+import { discoverEquipmentFromLoot } from './journalHelpers';
 
 
 export default function DimensionalArea({ gameState, setGameState, onExit, grantXP }) {
@@ -113,9 +114,15 @@ export default function DimensionalArea({ gameState, setGameState, onExit, grant
     setGameState(prev => {
       const newLootInventory = [...(prev.lootInventory || []), lootItem];
 
+      // Track equipment discovery for journal
+      const equipmentDiscoveries = discoverEquipmentFromLoot(prev, lootItem);
+
       return {
         ...prev,
         lootInventory: newLootInventory,
+        discoveredBaseWeapons: equipmentDiscoveries.weapons,
+        discoveredBaseArmor: equipmentDiscoveries.armor,
+        discoveredBaseAnomalies: equipmentDiscoveries.anomalies,
         recentMessages: [
           `Found: ${lootItem.displayName} [${lootItem.rarity.name}]`,
           ...prev.recentMessages

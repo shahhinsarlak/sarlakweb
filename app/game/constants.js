@@ -116,6 +116,15 @@ export const INITIAL_GAME_STATE = {
     temporal_trapped: { trust: 0, encounters: 0, lastResponseType: null },
     light_herald: { trust: 0, encounters: 0, lastResponseType: null }
   },
+  // Journal System (Added 2025-10-31)
+  // Tracks discoveries for the player's journal
+  journalOpen: false,              // Is journal UI visible
+  journalTab: 'locations',         // Current tab: locations, colleagues, equipment
+  discoveredLocations: ['cubicle'], // Location IDs that have been visited
+  discoveredColleagues: [],        // Colleague IDs that have been met
+  discoveredBaseWeapons: ['stapler_shiv'], // Base weapon types found (starts with default weapon)
+  discoveredBaseArmor: ['standard_headset', 'dress_shirt', 'id_badge'], // Base armor types found (starts with default armor)
+  discoveredBaseAnomalies: [],     // Base anomaly types found
   // Debug flags
   debugForceTearSpawn: false // Force 100% tear spawn rate for testing
 };
@@ -1243,5 +1252,202 @@ export const HELP_TRIGGERS = {
     const currentLootCount = state.lootInventory?.length || 0;
     const prevLootCount = prevState?.lootInventory?.length || 0;
     return currentLootCount > prevLootCount;
+  }
+};
+
+/**
+ * Journal Entries
+ *
+ * Lore and flavor text for discovered locations, colleagues, and equipment
+ * Organized by category for the journal system
+ * (Added 2025-10-31)
+ */
+export const JOURNAL_ENTRIES = {
+  // Location Lore
+  locations: {
+    cubicle: {
+      name: 'Cubicle 4B',
+      unlockHint: 'Your starting location',
+      lore: 'Your desk. Four gray walls define your existence. The computer screen flickers with a rhythm that feels almost... intentional. This is where it all begins. Where it always begins. The fluorescent lights hum their eternal song.',
+      notes: 'The coffee on your desk is cold. It was always cold.'
+    },
+    breakroom: {
+      name: 'Break Room',
+      unlockHint: 'Purchase Break Room Access upgrade',
+      lore: 'Fluorescent lights buzz in frequencies that shouldn\'t be audible. The coffee machine gurgles, producing a liquid that might be coffee. Might be something else. This is where colleagues gather. This is where they wait.',
+      notes: 'The vending machine hums. Sometimes it stares back.'
+    },
+    archive: {
+      name: 'The Archive',
+      unlockHint: 'Work enough days to discover it exists',
+      lore: 'A place that shouldn\'t exist according to the office layout. Files from employees who never were. Documents dated from impossible years. Every file is labeled with your name. Time moves differently here. The silence is absolute.',
+      notes: 'You found your resignation letter. It\'s dated three years from now.'
+    },
+    portal: {
+      name: 'The Portal',
+      unlockHint: 'Reach a breaking point with reality',
+      lore: 'A tear in the fabric of the office. The dimensional barrier is thin here. Through it, you can see the void between realities, taste static on your tongue. The lights flicker between existence and non-existence. This is a door. This is a wound.',
+      notes: 'The portal hums. It knows your name.'
+    },
+    printerroom: {
+      name: 'Printer Room',
+      unlockHint: 'Purchase Printer Room Access upgrade',
+      lore: 'The machines hum in perfect unison. Paper feeds endlessly from sources unknown. The ink is always fresh, always ready. Reality is malleable here. Words printed on paper can reshape truth itself.',
+      notes: 'The printers never jam. They never stop. Never.'
+    },
+    armory: {
+      name: 'The Armory',
+      unlockHint: 'Discover what\'s hidden in your desk drawer',
+      lore: 'Your bottom desk drawer, revealed for what it truly is. Weapons forged from office supplies and existential dread. Armor woven from static and forgotten memos. Each piece whispers its own madness. The metal is impossibly cold.',
+      notes: 'You hear echoes of battles that haven\'t happened yet.'
+    }
+  },
+
+  // Colleague Lore (references to STRANGE_COLLEAGUE_DIALOGUES)
+  colleagues: {
+    spiral_philosopher: {
+      name: 'The Spiral Philosopher',
+      title: 'Trapped in Recursion',
+      lore: 'A colleague who speaks in spirals and circles. They claim time is a lie, that we rotate endlessly through the same moments. Coffee stains mark their clothes in perfect fractal patterns. Their eyes track movements that haven\'t happened yet.',
+      personality: 'Obsessed with patterns and repetition. Sees spirals everywhere.',
+      firstMet: 'Encountered in the break room, muttering about circles and coffee.'
+    },
+    void_clerk: {
+      name: 'The Void Clerk',
+      title: 'Herald of Absence',
+      lore: 'Files papers into drawers that don\'t open. Speaks of the void with casual familiarity, as one might discuss the weather. Their employee badge is blank. Their shadow doesn\'t match their body. They\'ve worked here forever. They\'ve never existed.',
+      personality: 'Eerily calm. Treats impossible things as mundane bureaucracy.',
+      firstMet: 'Found filing documents into non-existent cabinets.'
+    },
+    productivity_zealot: {
+      name: 'The Productivity Zealot',
+      title: 'Apostle of Efficiency',
+      lore: 'Consumed by the need for productivity. Every moment must be optimized, every second measured and maximized. They haven\'t blinked in three days. Their spreadsheets calculate things that shouldn\'t be quantified. They smile when they speak of quotas.',
+      personality: 'Intense focus on metrics and output. Frighteningly dedicated.',
+      firstMet: 'Approached you with spreadsheets and an unsettling smile.'
+    },
+    temporal_trapped: {
+      name: 'The Temporal Prisoner',
+      title: 'Unstuck in Time',
+      lore: 'Caught in a temporal loop, experiencing moments out of sequence. They greet you before you\'ve met. They apologize for things you haven\'t done yet. Time is a prison, and they are its only inmate. They remember futures that never happen.',
+      personality: 'Confused chronology. Speaks of past and future simultaneously.',
+      firstMet: 'Said "Nice to see you again" when you\'d never met before.'
+    },
+    light_herald: {
+      name: 'The Light Herald',
+      title: 'Prophet of Fluorescence',
+      lore: 'Worships the fluorescent lights. Claims they are sentient, watching, judging. The lights flicker in response to their prayers. Their eyes reflect more light than they should. They speak of photons and prophecy in the same breath.',
+      personality: 'Reverent toward the lights. Sees meaning in every flicker.',
+      firstMet: 'Caught speaking to the ceiling lights. They answered.'
+    }
+  },
+
+  // Equipment Lore (base types only, not loot instances)
+  equipment: {
+    // Weapons
+    stapler_shiv: {
+      name: 'Stapler Shiv',
+      category: 'Weapon',
+      lore: 'Your first weapon, improvised from office supplies. The stapler\'s spring provides just enough force. The metal edge, sharpened on the underside of your desk, gleams with possibility. A tool of productivity, repurposed for survival.',
+      discoveryNote: 'Found: In your desk drawer, beneath the TPS reports.'
+    },
+    shard_blade: {
+      name: 'Glitch Shard Blade',
+      category: 'Weapon',
+      lore: 'Forged from the broken edges of reality itself. Glitch shards, harvested from dimensional tears, bound together with static and determination. It cuts through matter and meaning alike. Reality bleeds where this blade passes.',
+      discoveryNote: 'Crafted: From dimensional materials. The void approves.'
+    },
+    void_cleaver: {
+      name: 'Void Cleaver',
+      category: 'Weapon',
+      lore: 'Carved from pure absence. A weapon that shouldn\'t exist, made from the spaces between things. Where it strikes, existence ceases retroactively. Targets don\'t die - they cease to have been. The void smiles through its edge.',
+      discoveryNote: 'Manifested: From the depths of the dimensional portal.'
+    },
+    temporal_edge: {
+      name: 'Temporal Edge',
+      category: 'Weapon',
+      lore: 'A blade that exists in multiple timelines simultaneously. Each swing creates branching realities where your enemy is already defeated. Time itself bends around this weapon. Your enemies fall before you strike.',
+      discoveryNote: 'Discovered: In a timeline that hasn\'t happened yet.'
+    },
+    reality_render: {
+      name: 'Reality Render',
+      category: 'Weapon',
+      lore: 'The office\'s final secret. The ultimate expression of corporate violence. It doesn\'t destroy - it removes. Targets are excised from the narrative of reality itself. They never were. They never will be. The office forgets them.',
+      discoveryNote: 'Acquired: Through means that can\'t be written down.'
+    },
+
+    // Armor - Head
+    standard_headset: {
+      name: 'Standard Headset',
+      category: 'Armor (Head)',
+      lore: 'Company-issued noise-cancelling headset. Blocks out the screaming. Both the screaming of colleagues and the screaming of reality as it tears. The cushions are worn from use. They remember every horror you\'ve heard.',
+      discoveryNote: 'Issued: On your first day. Or was it always there?'
+    },
+    void_visor: {
+      name: 'Void Visor',
+      category: 'Armor (Head)',
+      lore: 'See through the veil between realities. The lenses are made from crystallized void-stuff. Through them, you perceive the truth. The truth is worse than you imagined. The truth is better than ignorance.',
+      discoveryNote: 'Crafted: From dimensional void crystals.'
+    },
+
+    // Armor - Chest
+    dress_shirt: {
+      name: 'Dress Shirt',
+      category: 'Armor (Chest)',
+      lore: 'Business casual. The uniform of corporate servitude. Wrinkle-resistant fabric that never stains. The collar is always too tight. The buttons are all the same size. You\'ve worn this shirt every day. You\'ve never washed it.',
+      discoveryNote: 'Provided: Standard office dress code compliance.'
+    },
+    crystalline_suit: {
+      name: 'Crystalline Suit',
+      category: 'Armor (Chest)',
+      lore: 'Woven from static crystals harvested from dimensional tears. The fabric shifts and refracts light in impossible ways. Reality bends around you when you wear it. Attacks slide off like water on glass. Like truth on bureaucracy.',
+      discoveryNote: 'Assembled: From fragments of broken realities.'
+    },
+
+    // Armor - Accessory
+    id_badge: {
+      name: 'Employee ID Badge',
+      category: 'Armor (Accessory)',
+      lore: 'Your identity. Or someone\'s identity. The photo doesn\'t quite look like you. The employee number changes when you\'re not looking. But it grants you access. It proves you belong. You belong here. You\'ve always belonged here.',
+      discoveryNote: 'Assigned: On a day you don\'t remember.'
+    },
+    temporal_watch: {
+      name: 'Temporal Watch',
+      category: 'Armor (Accessory)',
+      lore: 'Time moves differently when you wear this watch. Hours compress into minutes. Minutes expand into hours. The hands move backwards and forwards simultaneously. You have more time. You have all the time. Time has you.',
+      discoveryNote: 'Found: In the archive, dated to next Tuesday.'
+    },
+
+    // Anomalies
+    coffee_stain: {
+      name: 'Eternal Coffee Stain',
+      category: 'Anomaly',
+      lore: 'From your first day at the office. The stain has never dried, never faded. It pulses with forgotten caffeine and broken dreams. When you carry it, you feel the energy of a thousand overtime shifts. It remembers when you still had hope.',
+      discoveryNote: 'Preserved: A relic of your first morning here.'
+    },
+    forgotten_memo: {
+      name: 'Forgotten Memo',
+      category: 'Anomaly',
+      lore: 'You can\'t read it. The text shifts every time you look, rearranging itself into new configurations. But somehow, you learn from it. Knowledge seeps into your mind through osmosis. The memo remembers things you\'ve forgotten.',
+      discoveryNote: 'Retrieved: From the archive\'s deepest drawer.'
+    },
+    glitched_keycard: {
+      name: 'G̷l̷i̷t̷c̷h̷e̷d̷ Keycard',
+      category: 'Anomaly',
+      lore: 'Opens doors that don\'t exist. Closes doors that do. The magnetic strip contains impossible data. Swipe it and reality negotiates. Access is granted to spaces between spaces. The keycard glitches. Reality glitches with it.',
+      discoveryNote: 'Discovered: Phasing between dimensions in the portal.'
+    },
+    void_fragment_shard: {
+      name: 'Void Fragment Shard',
+      category: 'Anomaly',
+      lore: 'A piece of pure nothing, crystallized into something. It weighs impossibly heavy for its size. Carry it and feel the weight of absence. The void gives strength through negation. You are stronger because you hold emptiness.',
+      discoveryNote: 'Extracted: From the heart of a dimensional tear.'
+    },
+    singularity_core: {
+      name: 'Singularity Core Fragment',
+      category: 'Anomaly',
+      lore: 'The office\'s heart. The center around which all reality orbits. It consumes everything - light, hope, time. But somehow you hold it. It makes you stronger. It makes you worse. The singularity holds you back.',
+      discoveryNote: 'Acquired: By reaching the center of everything.'
+    }
   }
 };
