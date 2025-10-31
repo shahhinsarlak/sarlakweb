@@ -98,7 +98,7 @@ export default function JournalModal({ gameState, onClose, onSwitchTab }) {
               </div>
 
               <div style={{ fontSize: '11px', fontStyle: 'italic', opacity: 0.8, borderTop: '1px dotted var(--border-color)', paddingTop: '8px', marginTop: '8px' }}>
-                "{entry?.notes}"
+                &ldquo;{entry?.notes}&rdquo;
               </div>
             </div>
           );
