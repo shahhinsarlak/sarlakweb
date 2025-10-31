@@ -15,6 +15,7 @@ import CombatModal from './CombatModal';
 import Armory from './Armory';
 import HelpPopup from './HelpPopup';
 import AchievementsModal from './AchievementsModal';
+import JournalModal from './JournalModal';
 import { createGameActions } from './gameActions';
 import { getDistortionStyle, distortText, getClockTime, createLevelUpParticles, createSkillPurchaseParticles, createScreenShake } from './gameUtils';
 import { saveGame, loadGame, exportToClipboard, importFromClipboard } from './saveSystem';
@@ -463,10 +464,31 @@ export default function Game() {
     const checkMobile = () => {
       setIsMobile(window.innerWidth <= 768);
     };
-    
+
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Keyboard shortcuts (Added 2025-10-31)
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Don't trigger shortcuts if user is typing in an input field
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+        return;
+      }
+
+      // 'J' key opens/closes journal
+      if (e.key === 'j' || e.key === 'J') {
+        setGameState(prev => ({
+          ...prev,
+          journalOpen: !prev.journalOpen
+        }));
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   useEffect(() => {
@@ -691,6 +713,10 @@ export default function Game() {
     return <AchievementsModal gameState={gameState} achievements={ACHIEVEMENTS} onClose={() => setShowAchievements(false)} />;
   }
 
+  if (gameState.journalOpen) {
+    return <JournalModal gameState={gameState} onClose={actions.closeJournal} onSwitchTab={actions.switchJournalTab} />;
+  }
+
   if (gameState.inDimensionalArea) {
     return <DimensionalArea gameState={gameState} setGameState={setGameState} onExit={exitDimensionalArea} grantXP={grantXP} />;
   }
@@ -803,6 +829,21 @@ export default function Game() {
               }}
             >
               🏆 ACHIEVEMENTS
+            </button>
+            <button
+              onClick={actions.openJournal}
+              style={{
+                background: 'none',
+                border: '1px solid var(--accent-color)',
+                color: 'var(--accent-color)',
+                padding: '4px 8px',
+                cursor: 'pointer',
+                fontSize: '10px',
+                fontFamily: 'inherit',
+                opacity: 0.8
+              }}
+            >
+              📖 JOURNAL [J]
             </button>
             <button
               onClick={() => setShowSaveMenu(!showSaveMenu)}

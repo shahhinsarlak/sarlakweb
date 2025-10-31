@@ -30,6 +30,10 @@ import {
   getRandomDimensionalMaterial,
   cleanExpiredBuffs
 } from './sanityPaperHelpers';
+import {
+  discoverLocation,
+  discoverColleague
+} from './journalHelpers';
 
 
 export const createGameActions = (setGameState, addMessage, checkAchievements, grantXP) => {
@@ -342,14 +346,17 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       const locationData = LOCATIONS[loc];
       if (!locationData) return prev;
 
+      // Track location discovery for journal
+      const discoveredLocations = discoverLocation(prev, loc);
+
       // Handle direct locations
       if (locationData.isDirect) {
         if (loc === 'portal') {
-          return { ...prev, inDimensionalArea: true };
+          return { ...prev, inDimensionalArea: true, discoveredLocations };
         } else if (loc === 'printerroom') {
-          return { ...prev, inPrinterRoom: true };
+          return { ...prev, inPrinterRoom: true, discoveredLocations };
         } else if (loc === 'armory') {
-          return { ...prev, inArmory: true };
+          return { ...prev, inArmory: true, discoveredLocations };
         }
       }
 
@@ -362,6 +369,7 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
         ...prev,
         location: loc,
         energy: Math.max(0, prev.energy - 5),
+        discoveredLocations,
         recentMessages: [randomAtmo, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
       };
     });
@@ -393,6 +401,9 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       const colleague = prev.strangeColleagueEvent;
       const outcome = responseOption.outcome;
       const colleagueId = colleague.id;
+
+      // Track colleague discovery for journal
+      const discoveredColleagues = discoverColleague(prev, colleagueId);
 
       // Update colleague relationship
       const currentRelationship = prev.colleagueRelationships[colleagueId] || { trust: 0, encounters: 0, lastResponseType: null };
@@ -429,7 +440,8 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
         sanity: Math.max(0, prev.sanity + outcome.sanity),
         colleagueRelationships: newRelationships,
         strangeColleagueEvent: null,
-        disagreementCount: prev.disagreementCount + (responseOption.type === 'hostile' ? 1 : 0)
+        disagreementCount: prev.disagreementCount + (responseOption.type === 'hostile' ? 1 : 0),
+        discoveredColleagues
       };
 
       // Build messages
@@ -959,6 +971,32 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
     });
   };
 
+  /**
+   * Journal System Actions
+   * (Added 2025-10-31)
+   */
+
+  const openJournal = () => {
+    setGameState(prev => ({
+      ...prev,
+      journalOpen: true
+    }));
+  };
+
+  const closeJournal = () => {
+    setGameState(prev => ({
+      ...prev,
+      journalOpen: false
+    }));
+  };
+
+  const switchJournalTab = (tabId) => {
+    setGameState(prev => ({
+      ...prev,
+      journalTab: tabId
+    }));
+  };
+
   return {
     sortPapers,
     rest,
@@ -986,6 +1024,10 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
     printMemo,
     printReport,
     useContract,
-    printProphecy
+    printProphecy,
+    // Journal system actions
+    openJournal,
+    closeJournal,
+    switchJournalTab
   };
 };
