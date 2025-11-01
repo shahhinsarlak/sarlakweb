@@ -118,15 +118,16 @@ export const INITIAL_GAME_STATE = {
     temporal_trapped: { trust: 0, encounters: 0, lastResponseType: null },
     light_herald: { trust: 0, encounters: 0, lastResponseType: null }
   },
-  // Journal System (Added 2025-10-31)
+  // Journal System (Added 2025-10-31, Revised 2025-11-01)
   // Tracks discoveries for the player's journal
   journalOpen: false,              // Is journal UI visible
-  journalTab: 'locations',         // Current tab: locations, colleagues, equipment
+  journalTab: 'locations',         // Current tab: locations, colleagues, equipment, mechanics
   discoveredLocations: ['cubicle'], // Location IDs that have been visited
   discoveredColleagues: [],        // Colleague IDs that have been met
   discoveredBaseWeapons: ['stapler_shiv'], // Base weapon types found (starts with default weapon)
   discoveredBaseArmor: ['standard_headset', 'dress_shirt', 'id_badge'], // Base armor types found (starts with default armor)
   discoveredBaseAnomalies: [],     // Base anomaly types found
+  discoveredMechanics: [],         // Mechanic IDs learned from help popups
   // Debug flags
   debugForceTearSpawn: false // Force 100% tear spawn rate for testing
 };
@@ -1696,5 +1697,225 @@ export const JOURNAL_ENTRIES = {
       lore: 'The office\'s heart. The center around which all reality orbits. It consumes everything - light, hope, time. But somehow you hold it. It makes you stronger. It makes you worse. The singularity holds you back.',
       discoveryNote: 'Acquired: By reaching the center of everything.'
     }
+  }
+};
+
+/**
+ * Mechanics Entries for Journal
+ * Tied to HELP_POPUPS - when a help popup is dismissed, the mechanic is "learned"
+ * Gradually reveals game systems without spoiling everything
+ * (Added 2025-11-01)
+ */
+export const MECHANICS_ENTRIES = {
+  welcome: {
+    id: 'welcome',
+    title: 'Basic Productivity',
+    category: 'Core Mechanics',
+    summary: 'The foundation of office existence.',
+    details: `You generate Productivity Points (PP) by sorting papers. Each action costs energy, which regenerates over time or through resting.
+
+The fluorescent lights provide ambient energy. The hum is constant.`
+  },
+  firstPassiveIncome: {
+    id: 'firstPassiveIncome',
+    title: 'Passive Generation',
+    category: 'Automation',
+    summary: 'Work continues in your absence.',
+    details: `Certain upgrades grant passive PP generation (PP/sec). This accumulates even when not actively clicking.
+
+Automation is the apex of productivity. The system needs no rest.`
+  },
+  lowSanity: {
+    id: 'lowSanity',
+    title: 'Meditation System',
+    category: 'Sanity Management',
+    summary: 'Breathing exercises restore mental clarity.',
+    details: `When sanity drops below 25%, MEDITATION becomes available. Match the breathing rhythm (Inhale → Exhale) to restore sanity.
+
+Better timing grants more sanity. Perfect timing is enlightenment.
+
+Cost: 10 energy per session.`
+  },
+  sanityTiers: {
+    id: 'sanityTiers',
+    title: 'Sanity Tier System',
+    category: 'Risk vs Reward',
+    summary: 'Madness magnifies productivity.',
+    details: `Your sanity level affects PP and XP generation:
+
+🟢 HIGH (80-100%): 1.0x multiplier
+🟡 MEDIUM (40-79%): 1.15x multiplier
+🟠 LOW (10-39%): 1.35x multiplier
+🔴 CRITICAL (0-9%): 1.5x multiplier
+
+Lower sanity also degrades paper quality, affecting document creation.`
+  },
+  skillTree: {
+    id: 'skillTree',
+    title: 'Skill Tree',
+    category: 'Progression',
+    summary: 'Permanent character advancement.',
+    details: `Gain skill points by leveling up. Three branches available:
+
+⚡ EFFICIENCY: Boost PP generation
+🎯 FOCUS: Reduce energy costs & improve meditation
+🛡️ RESILIENCE: Sanity management & paper quality
+
+Skills are permanent. Choose wisely.`
+  },
+  printerRoom: {
+    id: 'printerRoom',
+    title: 'Printer & Paper System',
+    category: 'Core Mechanics',
+    summary: 'Transform energy into physical currency.',
+    details: `PRINT PAPERS converts 3 energy into paper currency.
+
+Paper Quality = (Printer Quality × 70%) + (Sanity × 30%)
+
+At critical sanity, weights shift to 50/50.
+
+Paper is used for:
+• Printer upgrades
+• Creating documents
+• Crafting dimensional upgrades`
+  },
+  documentSystem: {
+    id: 'documentSystem',
+    title: 'Document Creation (Revised)',
+    category: 'Advanced Mechanics',
+    summary: 'Paper transformed into power.',
+    details: `Documents have 5 TIERS each, unlocked by printing:
+• Tier 1: 0 prints (always available)
+• Tier 2: 5 prints
+• Tier 3: 15 prints
+• Tier 4: 30 prints
+• Tier 5: 50 prints
+
+Every print ROLLS for QUALITY OUTCOME:
+💀 Corrupted (0-30%): Negative effects
+📄 Standard (31-60%): Base effect
+✨ Pristine (61-90%): Enhanced effect
+⭐ Perfect (91-100%): Exceptional effect
+
+Higher tiers = higher stakes. Tier 5 Perfect outcomes grant permanent upgrades.
+
+MEMOS: Sanity restoration + buffs
+REPORTS: PP/XP/material multipliers
+CONTRACTS: Instant rewards + permanent PP/sec
+PROPHECIES: Lore + materials (requires low sanity)`
+  },
+  portal: {
+    id: 'portal',
+    title: 'Dimensional Portal',
+    category: 'Exploration',
+    summary: 'A tear in reality.',
+    details: `Enter to collect dimensional materials from floating nodes.
+
+Capacity limit depends on upgrades. Exit to transfer materials to inventory.
+
+Materials craft powerful dimensional upgrades at the portal shop.
+
+Cooldown: 60 seconds (reducible with upgrades)`
+  },
+  combat: {
+    id: 'combat',
+    title: 'Combat System',
+    category: 'Core Mechanics',
+    summary: 'Colleague confrontations.',
+    details: `Turn-based battles triggered by disagreeing with colleagues.
+
+Your stats depend on equipped weapon + armor + anomalies.
+
+ATTACK: Deal damage based on weapon power
+ESCAPE: 60% success rate, costs HP on failure
+
+Victory: Grants PP, XP, possible dimensional tear
+Defeat: Lose 20 sanity
+
+Tip: Agreeing with colleagues avoids combat entirely.`
+  },
+  paperQuality: {
+    id: 'paperQuality',
+    title: 'Paper Quality Thresholds',
+    category: 'Document System',
+    summary: 'Quality gates document creation.',
+    details: `Minimum quality required per tier varies by document type.
+
+Low-tier documents are more forgiving. High-tier documents demand precision.
+
+At critical sanity, corrupted outcomes become more likely regardless of printer quality.
+
+Raise sanity or upgrade printers to improve quality.`
+  },
+  debug: {
+    id: 'debug',
+    title: 'Code Debugging',
+    category: 'Minigames',
+    summary: 'Fix reality\'s syntax errors.',
+    details: `Debug challenges appear randomly in certain locations.
+
+Find and fix the bug in the code snippet.
+• 3 attempts per challenge
+• Success: PP reward + sanity restore
+• Failure: Lose sanity
+
+The bugs are features. The features are bugs.`
+  },
+  dimensionalTear: {
+    id: 'dimensionalTear',
+    title: 'Dimensional Tears & Loot',
+    category: 'Advanced Mechanics',
+    summary: 'Rifts containing powerful equipment.',
+    details: `Tears spawn after combat victories (chance-based).
+
+Clicking a tear generates RANDOMIZED LOOT:
+• Weapons
+• Armor (head/chest/accessory)
+• Anomalies (special effects)
+
+RARITY TIERS:
+Common → Uncommon → Rare → Epic → Legendary → Mythic
+
+Higher rarities have:
+• Better stat ranges
+• More imbuement effects
+• Stronger bonuses
+
+Loot is stored in inventory and can be equipped in the Armory.`
+  },
+  breakRoom: {
+    id: 'breakRoom',
+    title: 'Break Room & Colleagues',
+    category: 'Exploration',
+    summary: 'Social interactions with consequences.',
+    details: `Colleagues appear with dialogue choices. Your responses affect:
+• Trust level (increases/decreases based on response type)
+• PP/XP rewards
+• Sanity impact
+• Combat likelihood
+
+Response Types:
+🤝 EMPATHETIC: Build trust, good rewards, sanity cost
+🤐 DISMISSIVE: Neutral rewards, small sanity cost
+⚔️ HOSTILE: Combat trigger, high risk/reward
+🤝 COMPLIANT: Agree with them, best immediate rewards
+
+High trust with colleagues unlocks... something.`
+  },
+  archive: {
+    id: 'archive',
+    title: 'The Archive',
+    category: 'Exploration',
+    summary: 'Files that shouldn\'t exist.',
+    details: `Examine documents to read lore entries.
+
+Each examination grants small rewards and increases discovery counter.
+
+The files contain:
+• Employee records from non-existent people
+• Memos dated from impossible years
+• Your own documents from timelines that never were
+
+Reading them all reveals... patterns.`
   }
 };

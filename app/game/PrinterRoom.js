@@ -614,6 +614,39 @@ ${printing ? '    │  ───────────────────
           </div>
         </div>
       </div>
+
+      {/* Event Log (Added 2025-11-01) */}
+      <div style={{
+        marginTop: '40px',
+        border: '1px solid var(--border-color)',
+        padding: '20px',
+        backgroundColor: 'var(--hover-color)'
+      }}>
+        <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6, marginBottom: '12px' }}>
+          EVENT LOG
+        </div>
+        <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+          {(gameState.recentMessages || []).slice(0, 10).map((msg, index) => (
+            <div
+              key={index}
+              style={{
+                fontSize: '10px',
+                padding: '6px 0',
+                borderBottom: index < 9 ? '1px dotted var(--border-color)' : 'none',
+                opacity: 1 - (index * 0.08),
+                lineHeight: '1.4'
+              }}
+            >
+              {msg}
+            </div>
+          ))}
+          {(!gameState.recentMessages || gameState.recentMessages.length === 0) && (
+            <div style={{ fontSize: '10px', opacity: 0.5, fontStyle: 'italic' }}>
+              No recent events...
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
