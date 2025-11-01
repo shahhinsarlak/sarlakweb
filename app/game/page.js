@@ -679,7 +679,12 @@ export default function Game() {
       return {
         ...prev,
         currentHelpPopup: null,
-        shownHelpPopups: [...prev.shownHelpPopups, prev.currentHelpPopup.id]
+        shownHelpPopups: [...prev.shownHelpPopups, prev.currentHelpPopup.id],
+        // Add mechanic to discovered list for journal (Added 2025-11-01)
+        discoveredMechanics: [
+          ...(prev.discoveredMechanics || []),
+          ...(prev.discoveredMechanics?.includes(prev.currentHelpPopup.id) ? [] : [prev.currentHelpPopup.id])
+        ]
       };
     });
   };

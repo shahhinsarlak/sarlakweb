@@ -13,7 +13,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { JOURNAL_ENTRIES, LOCATIONS, STRANGE_COLLEAGUE_DIALOGUES } from './constants';
+import { JOURNAL_ENTRIES, LOCATIONS, STRANGE_COLLEAGUE_DIALOGUES, MECHANICS_ENTRIES } from './constants';
 import { WEAPONS, ARMOR, ANOMALIES } from './equipmentConstants';
 import { getColleagueRelationshipSummary } from './journalHelpers';
 
@@ -205,6 +205,85 @@ export default function JournalModal({ gameState, onClose, onSwitchTab }) {
             </div>
           );
         })}
+      </div>
+    );
+  };
+
+  // Render mechanics tab (Added 2025-11-01)
+  const renderMechanicsTab = () => {
+    const allMechanicIds = Object.keys(MECHANICS_ENTRIES);
+    const discoveredMechanics = gameState.discoveredMechanics || [];
+
+    // Group mechanics by category
+    const categories = {};
+    allMechanicIds.forEach(mechanicId => {
+      const mechanic = MECHANICS_ENTRIES[mechanicId];
+      if (!categories[mechanic.category]) {
+        categories[mechanic.category] = [];
+      }
+      categories[mechanic.category].push({ ...mechanic, id: mechanicId });
+    });
+
+    return (
+      <div>
+        <h3 style={{ marginTop: 0, marginBottom: '20px', fontSize: '16px' }}>
+          📚 LEARNED MECHANICS ({discoveredMechanics.length}/{allMechanicIds.length})
+        </h3>
+
+        {Object.keys(categories).map(categoryName => (
+          <div key={categoryName} style={{ marginBottom: '30px' }}>
+            <h4 style={{ fontSize: '14px', marginBottom: '15px', borderBottom: '1px solid var(--border-color)', paddingBottom: '5px', opacity: 0.9 }}>
+              {categoryName}
+            </h4>
+
+            {categories[categoryName].map(mechanic => {
+              const isDiscovered = discoveredMechanics.includes(mechanic.id);
+
+              if (!isDiscovered) {
+                return (
+                  <div
+                    key={mechanic.id}
+                    style={{
+                      marginBottom: '15px',
+                      padding: '12px',
+                      border: '1px dashed var(--border-color)',
+                      opacity: 0.3
+                    }}
+                  >
+                    <div style={{ fontSize: '13px', fontWeight: 'bold' }}>??? UNDISCOVERED</div>
+                    <div style={{ fontSize: '11px', marginTop: '5px', fontStyle: 'italic' }}>
+                      Learn by experiencing this mechanic
+                    </div>
+                  </div>
+                );
+              }
+
+              return (
+                <div
+                  key={mechanic.id}
+                  style={{
+                    marginBottom: '15px',
+                    padding: '15px',
+                    border: '1px solid var(--border-color)',
+                    backgroundColor: 'rgba(255, 255, 255, 0.02)'
+                  }}
+                >
+                  <div style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '6px' }}>
+                    {mechanic.title}
+                  </div>
+
+                  <div style={{ fontSize: '11px', fontStyle: 'italic', opacity: 0.7, marginBottom: '10px' }}>
+                    {mechanic.summary}
+                  </div>
+
+                  <div style={{ fontSize: '12px', lineHeight: '1.6', whiteSpace: 'pre-line' }}>
+                    {mechanic.details}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ))}
       </div>
     );
   };
@@ -470,7 +549,8 @@ export default function JournalModal({ gameState, onClose, onSwitchTab }) {
           {[
             { id: 'locations', label: '📍 Locations' },
             { id: 'colleagues', label: '👥 Colleagues' },
-            { id: 'equipment', label: '⚔️ Equipment' }
+            { id: 'equipment', label: '⚔️ Equipment' },
+            { id: 'mechanics', label: '📚 Mechanics' }
           ].map(tab => (
             <button
               key={tab.id}
@@ -503,6 +583,7 @@ export default function JournalModal({ gameState, onClose, onSwitchTab }) {
           {currentTab === 'locations' && renderLocationsTab()}
           {currentTab === 'colleagues' && renderColleaguesTab()}
           {currentTab === 'equipment' && renderEquipmentTab()}
+          {currentTab === 'mechanics' && renderMechanicsTab()}
         </div>
       </div>
     </div>
