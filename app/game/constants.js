@@ -62,15 +62,15 @@ export const INITIAL_GAME_STATE = {
   printCount: 0,
   printerUpgrades: {},
   inPrinterRoom: false,
-  // Paper Quality & Document System (Added 2025-10-26)
+  // Paper Quality & Document System (Added 2025-10-26, Revised 2025-11-01)
   // Paper quality determined by sanity + printer upgrades (0-100%)
   paperQuality: 100,
-  // Document inventory: different types of paper with different uses
-  documents: {
-    memos: 0,      // Cheap, restore small sanity
-    reports: 0,    // Medium, lock in buffs
-    contracts: 0,  // Expensive, reality-bending effects
-    prophecies: 0  // Rare, only print at low sanity, provide hints
+  // Document Mastery: tracks total prints per document type (for tier unlocks)
+  documentMastery: {
+    memos: 0,      // Total memos printed (unlocks tiers at 0, 5, 15, 30, 50)
+    reports: 0,    // Total reports printed
+    contracts: 0,  // Total contracts printed
+    prophecies: 0  // Total prophecies printed
   },
   // Active buffs from filed reports
   activeReportBuffs: [],
@@ -917,50 +917,295 @@ export const ACHIEVEMENTS = [
  * Document Types and Costs
  * Different types of paper with different uses and requirements
  */
+/**
+ * Document Tier System (Revised 2025-11-01)
+ *
+ * Each document type has 5 tiers that unlock based on mastery (total prints):
+ * - Tier 1: 0 prints (always available)
+ * - Tier 2: 5 prints
+ * - Tier 3: 15 prints
+ * - Tier 4: 30 prints
+ * - Tier 5: 50 prints
+ *
+ * Each tier has 4 quality outcomes based on paper quality roll:
+ * - Corrupted (0-30%): Negative or weak effects
+ * - Standard (31-60%): Intended base effect
+ * - Pristine (61-90%): Enhanced effect
+ * - Perfect (91-100%): Exceptional effect
+ */
 export const DOCUMENT_TYPES = {
   memo: {
     id: 'memo',
-    name: 'Office Memo',
-    cost: { paper: 5, energy: 3 },
-    desc: 'Standard office communication. +10 Sanity.',
-    effect: 'sanity',
-    value: 10,
-    minPrinterQuality: 0
+    name: 'Memo',
+    description: 'Office communications. Restores sanity.',
+    tiers: [
+      {
+        tier: 1,
+        name: 'Office Memo',
+        unlockAt: 0,
+        cost: { paper: 5, energy: 3 },
+        outcomes: {
+          corrupted: { desc: 'Smudged text', sanity: 5, pp: -10 },
+          standard: { desc: 'Clear memo', sanity: 15 },
+          pristine: { desc: 'Professional memo', sanity: 25 },
+          perfect: { desc: 'Perfect memo', sanity: 40, freeActions: 1 }
+        }
+      },
+      {
+        tier: 2,
+        name: 'Formal Memo',
+        unlockAt: 5,
+        cost: { paper: 10, energy: 6 },
+        outcomes: {
+          corrupted: { desc: 'Coffee-stained', sanity: 10, pp: -20 },
+          standard: { desc: 'Formal tone', sanity: 25 },
+          pristine: { desc: 'Executive quality', sanity: 40, buff: { ppMult: 1.05, duration: 120 } },
+          perfect: { desc: 'Inspirational', sanity: 60, buff: { ppMult: 1.10, duration: 180 } }
+        }
+      },
+      {
+        tier: 3,
+        name: 'Executive Memo',
+        unlockAt: 15,
+        cost: { paper: 20, energy: 10 },
+        outcomes: {
+          corrupted: { desc: 'Contradictory directives', sanity: 15, pp: -30, energy: -5 },
+          standard: { desc: 'Clear directives', sanity: 35, buff: { ppMult: 1.05, duration: 180 } },
+          pristine: { desc: 'Motivating directives', sanity: 50, buff: { ppMult: 1.10, duration: 300 } },
+          perfect: { desc: 'Vision statement', sanity: 75, buff: { ppMult: 1.15, xpMult: 1.15, duration: 420 } }
+        }
+      },
+      {
+        tier: 4,
+        name: "Director's Memo",
+        unlockAt: 30,
+        cost: { paper: 35, energy: 15 },
+        outcomes: {
+          corrupted: { desc: 'Ominous undertones', sanity: 20, pp: -50, energy: -10 },
+          standard: { desc: 'Strategic vision', sanity: 50, buff: { ppMult: 1.10, duration: 300 } },
+          pristine: { desc: 'Rallying message', sanity: 70, buff: { ppMult: 1.15, xpMult: 1.15, duration: 420 } },
+          perfect: { desc: 'Transformative vision', sanity: 90, buff: { ppMult: 1.20, xpMult: 1.20, duration: 600 } }
+        }
+      },
+      {
+        tier: 5,
+        name: 'CEO Mandate',
+        unlockAt: 50,
+        cost: { paper: 50, energy: 25 },
+        outcomes: {
+          corrupted: { desc: 'Reality-warping typos', sanity: 30, pp: -100, energy: -20 },
+          standard: { desc: 'Company-wide mandate', sanity: 100, buff: { ppMult: 1.15, duration: 480 } },
+          pristine: { desc: 'Paradigm shift', sanity: 100, buff: { ppMult: 1.25, xpMult: 1.25, duration: 720 } },
+          perfect: { desc: 'REALITY REWRITE', sanity: 100, buff: { ppMult: 1.35, xpMult: 1.35, duration: 900 }, skillPoint: 1 }
+        }
+      }
+    ]
   },
   report: {
     id: 'report',
-    name: 'Status Report',
-    cost: { paper: 15, energy: 8 },
-    desc: 'Formal documentation. Locks in a temporary buff.',
-    effect: 'buff',
-    minPrinterQuality: 30,
-    buffs: [
-      { id: 'efficiency', name: 'Efficiency Report', desc: '+15% PP generation for 300 seconds', duration: 300, ppMult: 1.15 },
-      { id: 'focus', name: 'Focus Report', desc: '-20% energy costs for 300 seconds', duration: 300, energyCostMult: 0.8 },
-      { id: 'stability', name: 'Stability Report', desc: 'Sanity drain paused for 300 seconds', duration: 300, noSanityDrain: true }
+    name: 'Report',
+    description: 'Performance documentation. Grants powerful buffs.',
+    tiers: [
+      {
+        tier: 1,
+        name: 'Status Update',
+        unlockAt: 0,
+        cost: { paper: 15, energy: 8 },
+        outcomes: {
+          corrupted: { desc: 'Errors detected', sanity: -20, debuff: { energyCostMult: 1.30, duration: 120 } },
+          standard: { desc: 'Acceptable report', buff: { ppMult: 1.20, duration: 180 } },
+          pristine: { desc: 'Thorough analysis', buff: { ppMult: 1.30, duration: 240 } },
+          perfect: { desc: 'Excellence recognized', buff: { ppMult: 1.45, xpMult: 1.45, duration: 300 } }
+        }
+      },
+      {
+        tier: 2,
+        name: 'Quarterly Report',
+        unlockAt: 5,
+        cost: { paper: 25, energy: 12 },
+        outcomes: {
+          corrupted: { desc: 'Audit flags raised', sanity: -30, debuff: { energyCostMult: 1.50, duration: 180 } },
+          standard: { desc: 'Goals met', buff: { ppMult: 1.30, duration: 300 } },
+          pristine: { desc: 'Exceeded expectations', buff: { ppMult: 1.45, xpMult: 1.45, duration: 360 } },
+          perfect: { desc: 'Record-breaking quarter', buff: { ppMult: 1.60, xpMult: 1.60, duration: 480, noSanityDrain: true } }
+        }
+      },
+      {
+        tier: 3,
+        name: 'Annual Report',
+        unlockAt: 15,
+        cost: { paper: 40, energy: 20 },
+        outcomes: {
+          corrupted: { desc: 'Cooked books detected', sanity: -40, debuff: { ppMult: 0.50, duration: 180 } },
+          standard: { desc: 'Solid performance', buff: { ppMult: 1.45, xpMult: 1.45, duration: 360 } },
+          pristine: { desc: 'Outstanding year', buff: { ppMult: 1.60, xpMult: 1.60, duration: 480, energyCostMult: 0.70 } },
+          perfect: { desc: 'Historic achievement', buff: { ppMult: 1.80, xpMult: 1.80, duration: 600, energyCostMult: 0.50 } }
+        }
+      },
+      {
+        tier: 4,
+        name: 'Strategic Analysis',
+        unlockAt: 30,
+        cost: { paper: 60, energy: 30 },
+        outcomes: {
+          corrupted: { desc: 'Flawed methodology', sanity: -50, debuff: { ppMult: 0.25, xpMult: 0.25, duration: 240 } },
+          standard: { desc: 'Data-driven insights', buff: { ppMult: 1.60, xpMult: 1.60, duration: 480, energyCostMult: 0.70 } },
+          pristine: { desc: 'Breakthrough findings', buff: { ppMult: 1.80, xpMult: 1.80, duration: 600, energyCostMult: 0.50 } },
+          perfect: { desc: 'Prophetic accuracy', buff: { ppMult: 2.00, xpMult: 2.00, duration: 720, energyCostMult: 0.25 } }
+        }
+      },
+      {
+        tier: 5,
+        name: 'Reality Audit',
+        unlockAt: 50,
+        cost: { paper: 100, energy: 50 },
+        outcomes: {
+          corrupted: { desc: 'AUDIT FAILURE', sanity: -60, debuff: { ppMult: 0.25, xpMult: 0.25, duration: 300, cannotRest: true } },
+          standard: { desc: 'Reality audited', buff: { ppMult: 1.80, xpMult: 1.80, duration: 720, energyCostMult: 0.50 } },
+          pristine: { desc: 'REALITY OPTIMIZED', buff: { ppMult: 2.20, xpMult: 2.20, duration: 900, energyCostMult: 0.25, materialMult: 2 } },
+          perfect: { desc: 'EXISTENCE PERFECTED', buff: { ppMult: 2.50, xpMult: 2.50, duration: 1200, energyCostMult: 0.10, materialMult: 3 } }
+        }
+      }
     ]
   },
   contract: {
     id: 'contract',
-    name: 'Reality Contract',
-    cost: { paper: 30, energy: 15, sanity: 10 },
-    desc: 'Reality-bending document. Powerful but dangerous.',
-    effect: 'contract',
-    minPrinterQuality: 60,
-    contracts: [
-      { id: 'temporal', name: 'Temporal Clause', desc: 'Instant +100 PP, -5 sanity', ppGain: 100, sanityCost: 5 },
-      { id: 'void', name: 'Void Clause', desc: 'Double next dimensional materials found, -10 sanity', sanityCost: 10, doubleMaterials: true, duration: 600 },
-      { id: 'essence', name: 'Essence Clause', desc: 'Convert 50 paper → 1 random dimensional material', paperCost: 50, grantMaterial: true }
+    name: 'Contract',
+    description: 'Reality-bending agreements. High risk, high reward.',
+    tiers: [
+      {
+        tier: 1,
+        name: 'Minor Pact',
+        unlockAt: 0,
+        cost: { paper: 30, energy: 15, sanity: 10 },
+        outcomes: {
+          corrupted: { desc: 'Breach of contract', pp: -50, sanity: -20 },
+          standard: { desc: 'Terms accepted', pp: 150 },
+          pristine: { desc: 'Favorable terms', pp: 250, materials: 1 },
+          perfect: { desc: 'Bargain struck', pp: 400, materials: 2 }
+        }
+      },
+      {
+        tier: 2,
+        name: 'Standard Contract',
+        unlockAt: 5,
+        cost: { paper: 45, energy: 20, sanity: 15 },
+        outcomes: {
+          corrupted: { desc: 'Penalty clause invoked', pp: -100, sanity: -30, portalLock: 180 },
+          standard: { desc: 'Obligations met', pp: 300, materials: 1 },
+          pristine: { desc: 'Windfall clause', pp: 500, materials: 2, xp: 100 },
+          perfect: { desc: 'Golden contract', pp: 800, materials: 3, xp: 200 }
+        }
+      },
+      {
+        tier: 3,
+        name: 'Binding Agreement',
+        unlockAt: 15,
+        cost: { paper: 65, energy: 30, sanity: 20 },
+        outcomes: {
+          corrupted: { desc: 'VOID REJECTS', pp: -200, sanity: -40, allLocks: 60 },
+          standard: { desc: 'Pact sealed', pp: 500, materials: 2 },
+          pristine: { desc: 'Reality bends', pp: 800, materials: 4, buff: { materialMult: 2, duration: 300 } },
+          perfect: { desc: 'VOID FAVORS YOU', pp: 1200, materials: 5, buff: { materialMult: 2, duration: 600 } }
+        }
+      },
+      {
+        tier: 4,
+        name: 'Soul Contract',
+        unlockAt: 30,
+        cost: { paper: 90, energy: 45, sanity: 30 },
+        outcomes: {
+          corrupted: { desc: 'SOUL REJECTED', pp: -999, sanity: -50, dimensionalLock: 300 },
+          standard: { desc: 'Soul bargained', pp: 800, materials: 3, buff: { ppPerSecondMult: 2, duration: 480 } },
+          pristine: { desc: 'ESSENCE AMPLIFIED', pp: 1200, materials: 5, buff: { ppPerSecondMult: 3, duration: 600 } },
+          perfect: { desc: 'TRANSCENDENCE', pp: 2000, materials: 8, buff: { ppPerSecondMult: 4, duration: 900 } }
+        }
+      },
+      {
+        tier: 5,
+        name: 'Void Bargain',
+        unlockAt: 50,
+        cost: { paper: 150, energy: 80, sanity: 50 },
+        outcomes: {
+          corrupted: { desc: 'THE VOID CONSUMES', pp: -9999, sanity: -80, allDebuffs: true },
+          standard: { desc: 'VOID PACT', pp: 1500, materials: 5, permanentPPPerSec: 0.5 },
+          pristine: { desc: 'VOID BLESSING', pp: 2500, materials: 8, permanentPPPerSec: 1.0 },
+          perfect: { desc: 'VOID MASTERY', pp: 4000, materials: 12, permanentPPPerSec: 2.0 }
+        }
+      }
     ]
   },
   prophecy: {
     id: 'prophecy',
-    name: 'Prophecy Print',
-    cost: { paper: 25, energy: 20 },
-    desc: 'Only prints at critical sanity. Reveals hidden truths.',
-    effect: 'prophecy',
-    maxSanity: 15, // Can only print when sanity <= 15
-    minPrinterQuality: 0
+    name: 'Prophecy',
+    description: 'Forbidden knowledge. Requires low sanity.',
+    tiers: [
+      {
+        tier: 1,
+        name: 'Whisper',
+        unlockAt: 0,
+        maxSanity: 40,
+        cost: { paper: 25, energy: 20 },
+        outcomes: {
+          corrupted: { desc: 'THE VOID LAUGHS', sanity: -10, lore: 'static' },
+          standard: { desc: 'Faint voices', lore: 'hint' },
+          pristine: { desc: 'Clear message', lore: 'hint', materials: 1 },
+          perfect: { desc: 'Revelation', lore: 'secret', materials: 2 }
+        }
+      },
+      {
+        tier: 2,
+        name: 'Vision',
+        unlockAt: 5,
+        maxSanity: 30,
+        cost: { paper: 40, energy: 30 },
+        outcomes: {
+          corrupted: { desc: 'MADNESS CONSUMES', sanity: -20, lore: 'static' },
+          standard: { desc: 'Visions surface', lore: 'hint', materials: 2 },
+          pristine: { desc: 'Truth revealed', lore: 'secret', materials: 3, xp: 200 },
+          perfect: { desc: 'CLARITY', lore: 'major', materials: 4, xp: 300 }
+        }
+      },
+      {
+        tier: 3,
+        name: 'Revelation',
+        unlockAt: 15,
+        maxSanity: 20,
+        cost: { paper: 60, energy: 45 },
+        outcomes: {
+          corrupted: { desc: 'REALITY BREAKS', sanity: -30, debuff: { ppMult: 0.50, duration: 180 } },
+          standard: { desc: 'Secrets unveiled', lore: 'major', materials: 4 },
+          pristine: { desc: 'HIDDEN PATHS', lore: 'location', materials: 6, xp: 400 },
+          perfect: { desc: 'ENLIGHTENMENT', lore: 'location', materials: 8, xp: 500, skillPoint: 1 }
+        }
+      },
+      {
+        tier: 4,
+        name: 'Epiphany',
+        unlockAt: 30,
+        maxSanity: 15,
+        cost: { paper: 85, energy: 60 },
+        outcomes: {
+          corrupted: { desc: 'THE ABYSS STARES BACK', sanity: -40, debuff: { ppMult: 0.25, xpMult: 0.25, duration: 240 } },
+          standard: { desc: 'TRUTH BREAKS THROUGH', lore: 'major', materials: 6, pp: 500 },
+          pristine: { desc: 'REALITY UNVEILED', lore: 'ending', materials: 10, pp: 1000, skillPoint: 1 },
+          perfect: { desc: 'ASCENSION GLIMPSED', lore: 'ending', materials: 15, pp: 2000, skillPoint: 2 }
+        }
+      },
+      {
+        tier: 5,
+        name: 'APOTHEOSIS',
+        unlockAt: 50,
+        maxSanity: 10,
+        cost: { paper: 120, energy: 100 },
+        outcomes: {
+          corrupted: { desc: 'YOU ARE NOT READY', sanity: -60, allDebuffs: true },
+          standard: { desc: 'NEW PATH OPENS', lore: 'ending', materials: 10, pp: 1000 },
+          pristine: { desc: 'REALITY TRANSCENDED', lore: 'ending', materials: 15, pp: 2000, skillPoint: 2 },
+          perfect: { desc: 'GODHOOD ACHIEVED', lore: 'ending', materials: 20, pp: 5000, skillPoint: 5, permanentUnlock: true }
+        }
+      }
+    ]
   }
 };
 

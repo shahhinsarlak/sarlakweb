@@ -72,7 +72,18 @@ export default function DimensionalArea({ gameState, setGameState, onExit, grant
     if (remainingCapacity <= 0) return;
 
     const material = DIMENSIONAL_MATERIALS.find(m => m.id === node.materialId);
-    const amount = applySkillsToMaterialCollection(node.materialId, 1, gameState);
+    let amount = applySkillsToMaterialCollection(node.materialId, 1, gameState);
+
+    // Apply material multipliers from active buffs (contracts/reports)
+    const activeBuffs = gameState.activeReportBuffs || [];
+    const now = Date.now();
+    const materialBuffs = activeBuffs.filter(b => b.expiresAt > now && b.materialMult);
+
+    if (materialBuffs.length > 0) {
+      // Take the highest multiplier if multiple buffs exist
+      const maxMult = Math.max(...materialBuffs.map(b => b.materialMult));
+      amount = Math.floor(amount * maxMult);
+    }
 
     setCurrentInventory(prev => ({
       ...prev,

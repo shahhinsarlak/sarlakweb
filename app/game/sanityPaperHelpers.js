@@ -246,3 +246,133 @@ export const getSanityTierDisplay = (gameState) => {
     effects: tier.effects
   };
 };
+
+/**
+ * Document Tier System Helpers (Added 2025-11-01)
+ */
+
+/**
+ * Get all unlocked tiers for a document type
+ * @param {string} docType - Document type ID ('memo', 'report', 'contract', 'prophecy')
+ * @param {Object} gameState - Current game state
+ * @returns {Array} Array of unlocked tier objects
+ */
+export const getUnlockedTiers = (docType, gameState) => {
+  const docData = DOCUMENT_TYPES[docType];
+  if (!docData || !docData.tiers) return [];
+
+  const mastery = gameState.documentMastery?.[`${docType}s`] || 0;
+
+  return docData.tiers.filter(tier => mastery >= tier.unlockAt);
+};
+
+/**
+ * Get a specific tier's data
+ * @param {string} docType - Document type ID
+ * @param {number} tierNumber - Tier number (1-5)
+ * @returns {Object|null} Tier data object or null if not found
+ */
+export const getTierData = (docType, tierNumber) => {
+  const docData = DOCUMENT_TYPES[docType];
+  if (!docData || !docData.tiers) return null;
+
+  return docData.tiers.find(t => t.tier === tierNumber) || null;
+};
+
+/**
+ * Check if a specific tier is unlocked
+ * @param {string} docType - Document type ID
+ * @param {number} tierNumber - Tier number (1-5)
+ * @param {Object} gameState - Current game state
+ * @returns {boolean} True if tier is unlocked
+ */
+export const isTierUnlocked = (docType, tierNumber, gameState) => {
+  const tierData = getTierData(docType, tierNumber);
+  if (!tierData) return false;
+
+  const mastery = gameState.documentMastery?.[`${docType}s`] || 0;
+  return mastery >= tierData.unlockAt;
+};
+
+/**
+ * Roll quality outcome based on paper quality
+ * @param {number} paperQuality - Current paper quality (0-100)
+ * @returns {string} Outcome bracket: 'corrupted', 'standard', 'pristine', or 'perfect'
+ */
+export const rollQualityOutcome = (paperQuality) => {
+  // Add some randomness to the quality roll (±10%)
+  const variance = (Math.random() - 0.5) * 20; // -10 to +10
+  const effectiveQuality = Math.max(0, Math.min(100, paperQuality + variance));
+
+  if (effectiveQuality <= 30) return 'corrupted';
+  if (effectiveQuality <= 60) return 'standard';
+  if (effectiveQuality <= 90) return 'pristine';
+  return 'perfect';
+};
+
+/**
+ * Check if a document tier can be printed
+ * @param {string} docType - Document type ID
+ * @param {number} tierNumber - Tier number (1-5)
+ * @param {Object} gameState - Current game state
+ * @returns {Object} { canPrint: boolean, reason: string }
+ */
+export const canPrintDocumentTier = (docType, tierNumber, gameState) => {
+  // Check if tier is unlocked
+  if (!isTierUnlocked(docType, tierNumber, gameState)) {
+    const tierData = getTierData(docType, tierNumber);
+    return {
+      canPrint: false,
+      reason: `Locked: Need ${tierData?.unlockAt || 0} total ${docType}s printed`
+    };
+  }
+
+  const tierData = getTierData(docType, tierNumber);
+  if (!tierData) return { canPrint: false, reason: 'Invalid tier' };
+
+  // Check sanity requirement for prophecies
+  if (tierData.maxSanity !== undefined && gameState.sanity > tierData.maxSanity) {
+    return {
+      canPrint: false,
+      reason: `Requires sanity ≤ ${tierData.maxSanity}%. Current: ${Math.floor(gameState.sanity)}%`
+    };
+  }
+
+  // Check resource costs
+  const costs = tierData.cost;
+  if (costs.paper && gameState.paper < costs.paper) {
+    return { canPrint: false, reason: `Need ${costs.paper} paper` };
+  }
+  if (costs.energy && gameState.energy < costs.energy) {
+    return { canPrint: false, reason: `Need ${costs.energy} energy` };
+  }
+  if (costs.sanity && gameState.sanity < costs.sanity) {
+    return { canPrint: false, reason: `Need ${costs.sanity} sanity` };
+  }
+
+  return { canPrint: true, reason: '' };
+};
+
+/**
+ * Get progress to next tier unlock
+ * @param {string} docType - Document type ID
+ * @param {Object} gameState - Current game state
+ * @returns {Object} { current: number, next: number, nextTier: number }
+ */
+export const getTierProgress = (docType, gameState) => {
+  const mastery = gameState.documentMastery?.[`${docType}s`] || 0;
+  const docData = DOCUMENT_TYPES[docType];
+
+  if (!docData || !docData.tiers) {
+    return { current: 0, next: 0, nextTier: null };
+  }
+
+  // Find next locked tier
+  const nextTier = docData.tiers.find(tier => tier.unlockAt > mastery);
+
+  return {
+    current: mastery,
+    next: nextTier ? nextTier.unlockAt : mastery,
+    nextTier: nextTier ? nextTier.tier : null
+  };
+};
