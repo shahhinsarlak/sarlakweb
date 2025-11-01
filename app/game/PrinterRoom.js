@@ -1,12 +1,22 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { DOCUMENT_TYPES } from './constants';
-import { calculatePaperQuality, canPrintDocument, getSanityTier } from './sanityPaperHelpers';
+import {
+  calculatePaperQuality,
+  canPrintDocument,
+  getSanityTier,
+  getUnlockedTiers,
+  getTierProgress,
+  canPrintDocumentTier,
+  getTierData
+} from './sanityPaperHelpers';
 
 export default function PrinterRoom({ gameState, setGameState, onExit, grantXP, actions }) {
   const [printing, setPrinting] = useState(false);
   const [printedPapers, setPrintedPapers] = useState([]);
   const [animationFrame, setAnimationFrame] = useState(0);
+  const [selectedDocType, setSelectedDocType] = useState('memo'); // Document type tabs
+  const [expandedTier, setExpandedTier] = useState(1); // Which tier details are expanded
 
   // Printing animation effect
   useEffect(() => {
@@ -407,7 +417,7 @@ ${printing ? '    │  ───────────────────
             </div>
           </div>
 
-          {/* Document System */}
+          {/* Document System - Revised 2025-11-01 */}
           <div style={{
             border: '1px solid var(--border-color)',
             padding: '24px',
@@ -417,179 +427,171 @@ ${printing ? '    │  ───────────────────
             <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6, marginBottom: '16px' }}>
               DOCUMENT SYSTEM
             </div>
-            <div style={{ fontSize: '10px', marginBottom: '16px', padding: '8px', backgroundColor: 'var(--bg-color)', border: '1px solid var(--border-color)' }}>
-              <div>Paper Quality: {calculatePaperQuality(gameState)}%</div>
-              <div style={{ opacity: 0.7, marginTop: '4px' }}>
-                Depends on Sanity ({gameState.sanity.toFixed(0)}%) + Printer Quality ({gameState.printerQuality || 0}%)
+
+            {/* Paper Quality Display */}
+            <div style={{ fontSize: '10px', marginBottom: '16px', padding: '12px', backgroundColor: 'var(--bg-color)', border: '1px solid var(--border-color)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                <span>Paper Quality:</span>
+                <span style={{ fontWeight: 'bold' }}>{calculatePaperQuality(gameState)}%</span>
+              </div>
+              <div style={{ opacity: 0.6, fontSize: '9px' }}>
+                Quality affects outcome rolls
+              </div>
+              <div style={{ marginTop: '8px', padding: '6px', backgroundColor: 'rgba(0,0,0,0.2)', fontSize: '8px' }}>
+                💀 Corrupted (0-30%) • 📄 Standard (31-60%) • ✨ Pristine (61-90%) • ⭐ Perfect (91-100%)
               </div>
             </div>
 
-            {/* Memo */}
-            {(() => {
-              const docData = DOCUMENT_TYPES.memo;
-              const check = canPrintDocument('memo', gameState);
-              return (
-                <button
-                  onClick={() => actions.printMemo()}
-                  disabled={!check.canPrint}
-                  style={{
-                    width: '100%',
-                    background: 'none',
-                    border: '1px solid var(--border-color)',
-                    color: 'var(--text-color)',
-                    padding: '12px',
-                    cursor: check.canPrint ? 'pointer' : 'not-allowed',
-                    fontSize: '11px',
-                    fontFamily: 'inherit',
-                    marginBottom: '8px',
-                    textAlign: 'left',
-                    opacity: check.canPrint ? 1 : 0.4
-                  }}
-                >
-                  <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>📝 {docData.name}</div>
-                  <div style={{ fontSize: '9px', opacity: 0.7 }}>{docData.desc}</div>
-                  <div style={{ fontSize: '9px', marginTop: '6px', opacity: 0.6 }}>
-                    Cost: {docData.cost.paper} paper, {docData.cost.energy} energy
-                  </div>
-                  {!check.canPrint && (
-                    <div style={{ fontSize: '9px', marginTop: '4px', color: '#ff4444' }}>{check.reason}</div>
-                  )}
-                </button>
-              );
-            })()}
+            {/* Document Type Tabs */}
+            <div style={{ display: 'flex', gap: '4px', marginBottom: '16px' }}>
+              {['memo', 'report', 'contract', 'prophecy'].map(type => {
+                const icons = { memo: '📝', report: '📊', contract: '📜', prophecy: '🔮' };
+                const progress = getTierProgress(type, gameState);
+                return (
+                  <button
+                    key={type}
+                    onClick={() => { setSelectedDocType(type); setExpandedTier(1); }}
+                    style={{
+                      flex: 1,
+                      background: selectedDocType === type ? 'var(--bg-color)' : 'none',
+                      border: '1px solid var(--border-color)',
+                      color: 'var(--text-color)',
+                      padding: '8px 4px',
+                      cursor: 'pointer',
+                      fontSize: '10px',
+                      fontFamily: 'inherit',
+                      fontWeight: selectedDocType === type ? 'bold' : 'normal',
+                      textAlign: 'center'
+                    }}
+                  >
+                    <div>{icons[type]}</div>
+                    <div style={{ fontSize: '7px', opacity: 0.6, marginTop: '2px' }}>
+                      {progress.current}/{progress.next}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
 
-            {/* Report */}
+            {/* Selected Document Type Details */}
             {(() => {
-              const docData = DOCUMENT_TYPES.report;
-              const check = canPrintDocument('report', gameState);
-              return (
-                <div style={{ marginBottom: '8px' }}>
-                  <div style={{
-                    fontSize: '10px',
-                    fontWeight: 'bold',
-                    marginBottom: '6px',
-                    padding: '8px',
-                    backgroundColor: 'var(--bg-color)',
-                    border: '1px solid var(--border-color)'
-                  }}>
-                    📊 {docData.name}
-                    {!check.canPrint && (
-                      <div style={{ fontSize: '9px', marginTop: '4px', color: '#ff4444', fontWeight: 'normal' }}>
-                        {check.reason}
-                      </div>
-                    )}
-                  </div>
-                  {docData.buffs.map(buff => (
-                    <button
-                      key={buff.id}
-                      onClick={() => actions.printReport(buff.id)}
-                      disabled={!check.canPrint}
-                      style={{
-                        width: '100%',
-                        background: 'none',
-                        border: '1px solid var(--border-color)',
-                        color: 'var(--text-color)',
-                        padding: '8px',
-                        cursor: check.canPrint ? 'pointer' : 'not-allowed',
-                        fontSize: '9px',
-                        fontFamily: 'inherit',
-                        marginBottom: '4px',
-                        textAlign: 'left',
-                        opacity: check.canPrint ? 1 : 0.4
-                      }}
-                    >
-                      <div style={{ fontWeight: 'bold', marginBottom: '2px' }}>{buff.name}</div>
-                      <div style={{ opacity: 0.7 }}>{buff.desc}</div>
-                    </button>
-                  ))}
-                  <div style={{ fontSize: '8px', marginTop: '4px', marginLeft: '8px', opacity: 0.6 }}>
-                    Cost: {docData.cost.paper} paper, {docData.cost.energy} energy
-                  </div>
-                </div>
-              );
-            })()}
+              const docData = DOCUMENT_TYPES[selectedDocType];
+              const progress = getTierProgress(selectedDocType, gameState);
+              const unlockedTiers = getUnlockedTiers(selectedDocType, gameState);
 
-            {/* Contract */}
-            {(() => {
-              const docData = DOCUMENT_TYPES.contract;
-              const check = canPrintDocument('contract', gameState);
               return (
-                <div style={{ marginBottom: '8px' }}>
-                  <div style={{
-                    fontSize: '10px',
-                    fontWeight: 'bold',
-                    marginBottom: '6px',
-                    padding: '8px',
-                    backgroundColor: 'var(--bg-color)',
-                    border: '1px solid var(--border-color)'
-                  }}>
-                    📜 {docData.name}
-                    {!check.canPrint && (
-                      <div style={{ fontSize: '9px', marginTop: '4px', color: '#ff4444', fontWeight: 'normal' }}>
-                        {check.reason}
-                      </div>
-                    )}
+                <>
+                  {/* Mastery Progress */}
+                  <div style={{ marginBottom: '16px', padding: '12px', backgroundColor: 'var(--bg-color)', border: '1px solid var(--border-color)' }}>
+                    <div style={{ fontSize: '10px', fontWeight: 'bold', marginBottom: '6px' }}>
+                      {docData.name} Mastery: Tier {unlockedTiers.length}/5
+                    </div>
+                    <div style={{ fontSize: '9px', opacity: 0.7, marginBottom: '6px' }}>
+                      {progress.current} printed • {progress.nextTier ? `${progress.next - progress.current} more for Tier ${progress.nextTier}` : 'All tiers unlocked!'}
+                    </div>
+                    <div style={{ height: '6px', backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: '3px', overflow: 'hidden' }}>
+                      <div style={{
+                        height: '100%',
+                        width: `${progress.nextTier ? (progress.current / progress.next * 100) : 100}%`,
+                        backgroundColor: 'var(--accent-color)',
+                        transition: 'width 0.3s ease'
+                      }} />
+                    </div>
                   </div>
-                  {docData.contracts.map(contract => (
-                    <button
-                      key={contract.id}
-                      onClick={() => actions.useContract(contract.id)}
-                      disabled={!check.canPrint}
-                      style={{
-                        width: '100%',
-                        background: 'none',
-                        border: '1px solid var(--border-color)',
-                        color: 'var(--text-color)',
-                        padding: '8px',
-                        cursor: check.canPrint ? 'pointer' : 'not-allowed',
-                        fontSize: '9px',
-                        fontFamily: 'inherit',
-                        marginBottom: '4px',
-                        textAlign: 'left',
-                        opacity: check.canPrint ? 1 : 0.4
-                      }}
-                    >
-                      <div style={{ fontWeight: 'bold', marginBottom: '2px' }}>{contract.name}</div>
-                      <div style={{ opacity: 0.7 }}>{contract.desc}</div>
-                    </button>
-                  ))}
-                  <div style={{ fontSize: '8px', marginTop: '4px', marginLeft: '8px', opacity: 0.6 }}>
-                    Cost: {docData.cost.paper} paper, {docData.cost.energy} energy, {docData.cost.sanity} sanity
-                  </div>
-                </div>
-              );
-            })()}
 
-            {/* Prophecy */}
-            {(() => {
-              const docData = DOCUMENT_TYPES.prophecy;
-              const check = canPrintDocument('prophecy', gameState);
-              return (
-                <button
-                  onClick={() => actions.printProphecy()}
-                  disabled={!check.canPrint}
-                  style={{
-                    width: '100%',
-                    background: 'none',
-                    border: '1px solid var(--border-color)',
-                    color: 'var(--text-color)',
-                    padding: '12px',
-                    cursor: check.canPrint ? 'pointer' : 'not-allowed',
-                    fontSize: '11px',
-                    fontFamily: 'inherit',
-                    textAlign: 'left',
-                    opacity: check.canPrint ? 1 : 0.4
-                  }}
-                >
-                  <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>🔮 {docData.name}</div>
-                  <div style={{ fontSize: '9px', opacity: 0.7 }}>{docData.desc}</div>
-                  <div style={{ fontSize: '9px', marginTop: '6px', opacity: 0.6 }}>
-                    Cost: {docData.cost.paper} paper, {docData.cost.energy} energy
+                  {/* Tier List */}
+                  <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                    {docData.tiers.map(tier => {
+                      const isUnlocked = unlockedTiers.some(t => t.tier === tier.tier);
+                      const check = canPrintDocumentTier(selectedDocType, tier.tier, gameState);
+                      const isExpanded = expandedTier === tier.tier;
+
+                      return (
+                        <div
+                          key={tier.tier}
+                          style={{
+                            marginBottom: '8px',
+                            border: '1px solid var(--border-color)',
+                            backgroundColor: 'var(--bg-color)',
+                            opacity: isUnlocked ? 1 : 0.5
+                          }}
+                        >
+                          {/* Tier Header */}
+                          <div
+                            onClick={() => setExpandedTier(isExpanded ? null : tier.tier)}
+                            style={{
+                              padding: '10px',
+                              cursor: 'pointer',
+                              borderBottom: isExpanded ? '1px solid var(--border-color)' : 'none'
+                            }}
+                          >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <div style={{ fontSize: '10px', fontWeight: 'bold' }}>
+                                {isUnlocked ? `Tier ${tier.tier}` : `🔒 Tier ${tier.tier}`} - {tier.name}
+                              </div>
+                              <div style={{ fontSize: '9px', opacity: 0.6 }}>
+                                {isExpanded ? '▼' : '▶'}
+                              </div>
+                            </div>
+                            {!isUnlocked && (
+                              <div style={{ fontSize: '8px', opacity: 0.6, marginTop: '4px' }}>
+                                Unlock at {tier.unlockAt} total {selectedDocType}s
+                              </div>
+                            )}
+                            {isUnlocked && (
+                              <div style={{ fontSize: '8px', opacity: 0.6, marginTop: '4px' }}>
+                                Cost: {tier.cost.paper}p
+                                {tier.cost.energy && `, ${tier.cost.energy}e`}
+                                {tier.cost.sanity && `, ${tier.cost.sanity}s`}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Tier Details (Expanded) */}
+                          {isExpanded && isUnlocked && (
+                            <div style={{ padding: '10px', fontSize: '9px' }}>
+                              {/* Show possible outcomes */}
+                              <div style={{ marginBottom: '8px', opacity: 0.7, fontSize: '8px' }}>Possible Outcomes:</div>
+                              {['corrupted', 'standard', 'pristine', 'perfect'].map(quality => {
+                                const outcome = tier.outcomes[quality];
+                                const icons = { corrupted: '💀', standard: '📄', pristine: '✨', perfect: '⭐' };
+                                return (
+                                  <div key={quality} style={{ marginBottom: '6px', padding: '6px', backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: '2px' }}>
+                                    <div style={{ fontWeight: 'bold', marginBottom: '2px' }}>
+                                      {icons[quality]} {quality.toUpperCase()}
+                                    </div>
+                                    <div style={{ opacity: 0.8, fontSize: '8px' }}>{outcome.desc}</div>
+                                  </div>
+                                );
+                              })}
+
+                              {/* Print Button */}
+                              <button
+                                onClick={() => actions.printDocument(selectedDocType, tier.tier)}
+                                disabled={!check.canPrint}
+                                style={{
+                                  width: '100%',
+                                  background: check.canPrint ? 'var(--accent-color)' : 'none',
+                                  border: '1px solid var(--border-color)',
+                                  color: check.canPrint ? 'var(--bg-color)' : 'var(--text-color)',
+                                  padding: '10px',
+                                  cursor: check.canPrint ? 'pointer' : 'not-allowed',
+                                  fontSize: '10px',
+                                  fontFamily: 'inherit',
+                                  fontWeight: 'bold',
+                                  marginTop: '8px',
+                                  opacity: check.canPrint ? 1 : 0.4
+                                }}
+                              >
+                                {check.canPrint ? `PRINT ${tier.name.toUpperCase()} & GAMBLE` : check.reason}
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
-                  {!check.canPrint && (
-                    <div style={{ fontSize: '9px', marginTop: '4px', color: '#ff4444' }}>{check.reason}</div>
-                  )}
-                </button>
+                </>
               );
             })()}
           </div>

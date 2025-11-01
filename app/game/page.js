@@ -396,7 +396,19 @@ export default function Game() {
         }
         
         if (prev.ppPerSecond > 0) {
-          newState.pp = prev.pp + (prev.ppPerSecond / 10);
+          let passiveGain = prev.ppPerSecond / 10;
+
+          // Apply ppPerSecond multipliers from active buffs (contracts)
+          const activeBuffs = prev.activeReportBuffs || [];
+          const now = Date.now();
+          const ppSecBuffs = activeBuffs.filter(b => b.expiresAt > now && b.ppPerSecondMult);
+
+          if (ppSecBuffs.length > 0) {
+            const maxMult = Math.max(...ppSecBuffs.map(b => b.ppPerSecondMult));
+            passiveGain *= maxMult;
+          }
+
+          newState.pp = prev.pp + passiveGain;
         }
 
         if (prev.paperPerSecond > 0) {

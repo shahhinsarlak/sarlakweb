@@ -28,7 +28,10 @@ import {
   canPrintDocument,
   generateProphecy,
   getRandomDimensionalMaterial,
-  cleanExpiredBuffs
+  cleanExpiredBuffs,
+  getTierData,
+  canPrintDocumentTier,
+  rollQualityOutcome
 } from './sanityPaperHelpers';
 import {
   discoverLocation,
@@ -816,9 +819,14 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
   };
 
   // Document System Actions
-  const printMemo = () => {
+  /**
+   * Document Tier System (Revised 2025-11-01)
+   * Unified document printing with quality outcome rolls
+   */
+  const printDocument = (docType, tierNumber) => {
     setGameState(prev => {
-      const checkResult = canPrintDocument('memo', prev);
+      // Check if tier can be printed
+      const checkResult = canPrintDocumentTier(docType, tierNumber, prev);
       if (!checkResult.canPrint) {
         return {
           ...prev,
@@ -826,148 +834,138 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
         };
       }
 
-      const docData = DOCUMENT_TYPES.memo;
+      const tierData = getTierData(docType, tierNumber);
+      if (!tierData) return prev;
+
+      // Roll quality outcome
+      const paperQuality = calculatePaperQuality(prev);
+      const qualityOutcome = rollQualityOutcome(paperQuality);
+      const outcome = tierData.outcomes[qualityOutcome];
+
+      // Deduct costs
       const newState = {
         ...prev,
-        paper: prev.paper - docData.cost.paper,
-        energy: Math.max(0, prev.energy - docData.cost.energy),
-        sanity: Math.min(100, prev.sanity + docData.value),
-        documents: {
-          ...prev.documents,
-          memos: (prev.documents?.memos || 0) + 1
-        },
-        recentMessages: [`📝 Printed memo. +${docData.value} sanity.`, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
-      };
-
-      checkAchievements();
-      return newState;
-    });
-  };
-
-  const printReport = (buffId) => {
-    setGameState(prev => {
-      const checkResult = canPrintDocument('report', prev);
-      if (!checkResult.canPrint) {
-        return {
-          ...prev,
-          recentMessages: [checkResult.reason, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
-        };
-      }
-
-      const docData = DOCUMENT_TYPES.report;
-      const buffData = docData.buffs.find(b => b.id === buffId);
-      if (!buffData) return prev;
-
-      // Create buff with expiration time
-      const buff = {
-        ...buffData,
-        expiresAt: Date.now() + (buffData.duration * 1000)
-      };
-
-      const newState = {
-        ...prev,
-        paper: prev.paper - docData.cost.paper,
-        energy: Math.max(0, prev.energy - docData.cost.energy),
-        documents: {
-          ...prev.documents,
-          reports: (prev.documents?.reports || 0) + 1
-        },
-        activeReportBuffs: [...(prev.activeReportBuffs || []), buff],
-        recentMessages: [`📊 Filed report: ${buffData.name}`, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
-      };
-
-      checkAchievements();
-      return newState;
-    });
-  };
-
-  const useContract = (contractId) => {
-    setGameState(prev => {
-      const checkResult = canPrintDocument('contract', prev);
-      if (!checkResult.canPrint) {
-        return {
-          ...prev,
-          recentMessages: [checkResult.reason, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
-        };
-      }
-
-      const docData = DOCUMENT_TYPES.contract;
-      const contractData = docData.contracts.find(c => c.id === contractId);
-      if (!contractData) return prev;
-
-      const messages = [];
-      const newState = {
-        ...prev,
-        paper: prev.paper - docData.cost.paper,
-        energy: Math.max(0, prev.energy - docData.cost.energy),
-        sanity: Math.max(0, prev.sanity - docData.cost.sanity - (contractData.sanityCost || 0)),
-        documents: {
-          ...prev.documents,
-          contracts: (prev.documents?.contracts || 0) + 1
+        paper: prev.paper - (tierData.cost.paper || 0),
+        energy: Math.max(0, prev.energy - (tierData.cost.energy || 0)),
+        sanity: Math.max(0, prev.sanity - (tierData.cost.sanity || 0)),
+        documentMastery: {
+          ...prev.documentMastery,
+          [`${docType}s`]: (prev.documentMastery?.[`${docType}s`] || 0) + 1
         }
       };
 
-      // Apply contract effects
-      if (contractData.ppGain) {
-        newState.pp = prev.pp + contractData.ppGain;
-        messages.push(`⚡ Reality bends. +${contractData.ppGain} PP`);
+      const messages = [];
+      let xpGain = 0;
+
+      // Apply outcome effects
+      if (outcome.pp) {
+        newState.pp = Math.max(0, prev.pp + outcome.pp);
+      }
+      if (outcome.sanity) {
+        newState.sanity = Math.max(0, Math.min(100, newState.sanity + outcome.sanity));
+      }
+      if (outcome.energy) {
+        newState.energy = Math.max(0, newState.energy + outcome.energy);
+      }
+      if (outcome.xp) {
+        xpGain = outcome.xp;
+      }
+      if (outcome.skillPoint) {
+        newState.skillPoints = (prev.skillPoints || 0) + outcome.skillPoint;
+        messages.push(`⭐ +${outcome.skillPoint} Skill Point${outcome.skillPoint > 1 ? 's' : ''}!`);
       }
 
-      if (contractData.grantMaterial && prev.paper >= contractData.paperCost) {
-        const material = getRandomDimensionalMaterial();
-        newState.paper = prev.paper - contractData.paperCost;
-        newState.dimensionalInventory = {
-          ...prev.dimensionalInventory,
-          [material]: (prev.dimensionalInventory?.[material] || 0) + 1
+      // Handle materials
+      if (outcome.materials) {
+        for (let i = 0; i < outcome.materials; i++) {
+          const material = getRandomDimensionalMaterial();
+          newState.dimensionalInventory = {
+            ...newState.dimensionalInventory,
+            [material]: (newState.dimensionalInventory?.[material] || 0) + 1
+          };
+        }
+        messages.push(`✨ +${outcome.materials} dimensional material${outcome.materials > 1 ? 's' : ''}`);
+      }
+
+      // Handle buffs
+      if (outcome.buff) {
+        const buff = {
+          id: `${docType}_${tierNumber}_${qualityOutcome}_${Date.now()}`,
+          name: tierData.name,
+          desc: outcome.desc,
+          expiresAt: Date.now() + (outcome.buff.duration * 1000),
+          ...outcome.buff
         };
-        messages.push(`✨ Paper becomes reality. Gained ${material.replace(/_/g, ' ')}`);
+        newState.activeReportBuffs = [...(prev.activeReportBuffs || []), buff];
       }
 
-      if (contractData.doubleMaterials) {
-        // This will be checked in dimensional area logic
-        messages.push(`🌀 Void clause activated. Next materials doubled.`);
-        // We'll need to add a flag for this
-        newState.voidClauseActive = true;
-        newState.voidClauseExpires = Date.now() + (contractData.duration * 1000);
-      }
-
-      messages.push(`📜 Contract signed: ${contractData.name}`);
-      newState.recentMessages = [...messages.reverse(), ...prev.recentMessages].slice(0, prev.maxLogMessages || 15);
-
-      checkAchievements();
-      return newState;
-    });
-  };
-
-  const printProphecy = () => {
-    setGameState(prev => {
-      const checkResult = canPrintDocument('prophecy', prev);
-      if (!checkResult.canPrint) {
-        return {
-          ...prev,
-          recentMessages: [checkResult.reason, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
+      // Handle debuffs
+      if (outcome.debuff) {
+        const debuff = {
+          id: `debuff_${docType}_${tierNumber}_${Date.now()}`,
+          name: `${tierData.name} (CORRUPTED)`,
+          desc: outcome.desc,
+          expiresAt: Date.now() + (outcome.debuff.duration * 1000),
+          ...outcome.debuff
         };
+        newState.activeReportBuffs = [...(prev.activeReportBuffs || []), debuff];
       }
 
-      const docData = DOCUMENT_TYPES.prophecy;
-      const prophecyText = generateProphecy(prev);
+      // Handle permanent PP/sec increase
+      if (outcome.permanentPPPerSec) {
+        newState.ppPerSecond = (prev.ppPerSecond || 0) + outcome.permanentPPPerSec;
+        messages.push(`♾️ PERMANENT +${outcome.permanentPPPerSec} PP/sec`);
+      }
 
-      const newState = {
-        ...prev,
-        paper: prev.paper - docData.cost.paper,
-        energy: Math.max(0, prev.energy - docData.cost.energy),
-        documents: {
-          ...prev.documents,
-          prophecies: (prev.documents?.prophecies || 0) + 1
-        },
-        recentMessages: [
-          '🔮 PROPHECY MANIFESTS:',
-          prophecyText,
-          ...prev.recentMessages
-        ].slice(0, prev.maxLogMessages || 15)
+      // Handle lore/prophecy
+      if (outcome.lore) {
+        if (outcome.lore === 'static') {
+          messages.push(outcome.desc);
+        } else {
+          const prophecyText = generateProphecy(prev);
+          messages.push('🔮 PROPHECY:', prophecyText);
+        }
+      }
+
+      // Handle locks
+      if (outcome.portalLock) {
+        newState.portalCooldown = outcome.portalLock;
+      }
+      if (outcome.allLocks) {
+        newState.portalCooldown = outcome.allLocks;
+        newState.restCooldown = outcome.allLocks;
+      }
+
+      // Visual effects based on quality
+      setTimeout(() => {
+        if (qualityOutcome === 'perfect') {
+          triggerScreenEffect('flash');
+        } else if (qualityOutcome === 'corrupted') {
+          triggerScreenEffect('shake');
+        }
+      }, 100);
+
+      // Quality indicator icons
+      const qualityIcons = {
+        corrupted: '💀',
+        standard: '📄',
+        pristine: '✨',
+        perfect: '⭐'
       };
 
-      checkAchievements();
+      // Main message
+      const icon = qualityIcons[qualityOutcome];
+      const qualityLabel = qualityOutcome.toUpperCase();
+      messages.unshift(`${icon} ${tierData.name} [${qualityLabel}]: ${outcome.desc}`);
+
+      newState.recentMessages = [...messages, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15);
+
+      // Grant XP
+      if (xpGain > 0) {
+        setTimeout(() => grantXP(xpGain), 50);
+      }
+      setTimeout(() => checkAchievements(), 100);
+
       return newState;
     });
   };
@@ -1021,11 +1019,8 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
     playerAttack,
     escapeCombat,
     endCombat,
-    // Document system actions
-    printMemo,
-    printReport,
-    useContract,
-    printProphecy,
+    // Document system actions (Revised 2025-11-01)
+    printDocument,
     // Journal system actions
     openJournal,
     closeJournal,
