@@ -441,6 +441,7 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
         colleagueRelationships: newRelationships,
         strangeColleagueEvent: null,
         disagreementCount: prev.disagreementCount + (responseOption.type === 'hostile' ? 1 : 0),
+        colleagueResponseCount: (prev.colleagueResponseCount || 0) + 1, // Track all responses
         discoveredColleagues
       };
 
@@ -452,8 +453,8 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
 
       newState.recentMessages = [...messages, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15);
 
-      // Keep archive unlock mechanic for hostile responses
-      if (newState.disagreementCount >= 20 && !prev.unlockedLocations.includes('archive')) {
+      // Archive unlock mechanic - triggers after 20 total colleague responses
+      if (newState.colleagueResponseCount >= 20 && !prev.unlockedLocations.includes('archive')) {
         newState.unlockedLocations = [...new Set([...prev.unlockedLocations, 'archive'])];
 
         triggerScreenEffect('shake');

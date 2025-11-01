@@ -45,11 +45,11 @@ export const applySanityPPModifier = (basePP, gameState) => {
  * Apply sanity-based modifier to XP generation
  * @param {number} baseXP - Base XP value
  * @param {Object} gameState - Current game state
- * @returns {number} Modified XP value
+ * @returns {number} Modified XP value (with decimals for accurate accumulation)
  */
 export const applySanityXPModifier = (baseXP, gameState) => {
   const tier = getSanityTier(gameState.sanity);
-  return Math.floor(baseXP * tier.xpMultiplier);
+  return baseXP * tier.xpMultiplier; // No floor - allow decimals to accumulate
 };
 
 /**
