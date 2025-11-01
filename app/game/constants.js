@@ -31,7 +31,9 @@ export const INITIAL_GAME_STATE = {
   debugAttempts: 0,
   restCooldown: 0,
   strangeColleagueEvent: null,
+  pendingColleagueEncounter: null, // Briefing screen before colleague interaction
   disagreementCount: 0,
+  colleagueResponseCount: 0, // Total responses to colleagues (for archive unlock)
   achievements: [],
   examiningItem: null,
   sortCount: 0,

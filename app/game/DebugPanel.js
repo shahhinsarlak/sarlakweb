@@ -803,7 +803,8 @@ export default function DebugPanel({ gameState, setGameState, addMessage, onClos
         <button onClick={() => {
           setGameState(prev => ({
             ...prev,
-            strangeColleagueEvent: null
+            strangeColleagueEvent: null,
+            pendingColleagueEncounter: null
           }));
         }} style={buttonStyle}>
           CLEAR COLLEAGUE EVENT

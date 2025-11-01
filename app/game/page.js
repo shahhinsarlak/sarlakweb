@@ -6,6 +6,7 @@ import MeditationModal from './MeditationModal';
 import DebugModal from './DebugModal';
 import DebugPanel from './DebugPanel';
 import ColleagueModal from './ColleagueModal';
+import ColleagueBriefingModal from './ColleagueBriefingModal';
 import ExamineModal from './ExamineModal';
 import DimensionalArea from './DimensionalArea';
 import DimensionalUpgradesDisplay from './DimensionalUpgradesDisplay';
@@ -253,6 +254,22 @@ export default function Game() {
     }
   };
 
+  const handleApproachColleague = () => {
+    setGameState(prev => ({
+      ...prev,
+      strangeColleagueEvent: prev.pendingColleagueEncounter,
+      pendingColleagueEncounter: null
+    }));
+  };
+
+  const handleWalkAway = () => {
+    setGameState(prev => ({
+      ...prev,
+      pendingColleagueEncounter: null,
+      sanity: Math.max(0, prev.sanity - 2), // Small sanity cost for avoiding interaction
+      recentMessages: ['You turn away. The colleague watches you leave.', ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
+    }));
+  };
 
   const purchaseDimensionalUpgrade = (upgrade) => {
     setGameState(prev => {
@@ -424,11 +441,11 @@ export default function Game() {
 
         // Colleague events only trigger in Break Room
         const currentLoc = LOCATIONS[prev.location];
-        if (!prev.strangeColleagueEvent && !prev.debugMode && !prev.meditating &&
+        if (!prev.strangeColleagueEvent && !prev.pendingColleagueEncounter && !prev.debugMode && !prev.meditating &&
             prev.day >= 3 && currentLoc?.allowColleagueEvents && Math.random() < 0.01) {
           const randomDialogue = STRANGE_COLLEAGUE_DIALOGUES[Math.floor(Math.random() * STRANGE_COLLEAGUE_DIALOGUES.length)];
-          newState.strangeColleagueEvent = randomDialogue;
-          addMessage('A colleague approaches. Their smile doesn\'t reach their eyes.');
+          newState.pendingColleagueEncounter = randomDialogue; // Show briefing screen first
+          addMessage('You notice a colleague approaching...');
         }
 
         if (Math.random() < 0.02) {
@@ -749,6 +766,16 @@ export default function Game() {
         combatLog={gameState.combatLog}
         isPlayerTurn={gameState.isPlayerTurn}
         combatEnded={gameState.combatEnded}
+      />
+    );
+  }
+
+  if (gameState.pendingColleagueEncounter) {
+    return (
+      <ColleagueBriefingModal
+        colleague={gameState.pendingColleagueEncounter}
+        onApproach={handleApproachColleague}
+        onWalkAway={handleWalkAway}
       />
     );
   }
