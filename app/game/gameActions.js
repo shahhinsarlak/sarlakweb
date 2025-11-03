@@ -856,19 +856,24 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
 
       const messages = [];
       let xpGain = 0;
+      const effectDetails = []; // Track all effects for detailed feedback
 
       // Apply outcome effects
       if (outcome.pp) {
         newState.pp = Math.max(0, prev.pp + outcome.pp);
+        effectDetails.push(`${outcome.pp > 0 ? '+' : ''}${outcome.pp} PP`);
       }
       if (outcome.sanity) {
         newState.sanity = Math.max(0, Math.min(100, newState.sanity + outcome.sanity));
+        effectDetails.push(`${outcome.sanity > 0 ? '+' : ''}${outcome.sanity} sanity`);
       }
       if (outcome.energy) {
         newState.energy = Math.max(0, newState.energy + outcome.energy);
+        effectDetails.push(`${outcome.energy > 0 ? '+' : ''}${outcome.energy} energy`);
       }
       if (outcome.xp) {
         xpGain = outcome.xp;
+        effectDetails.push(`+${outcome.xp} XP`);
       }
       if (outcome.skillPoint) {
         newState.skillPoints = (prev.skillPoints || 0) + outcome.skillPoint;
@@ -884,7 +889,7 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
             [material]: (newState.dimensionalInventory?.[material] || 0) + 1
           };
         }
-        messages.push(`✨ +${outcome.materials} dimensional material${outcome.materials > 1 ? 's' : ''}`);
+        effectDetails.push(`+${outcome.materials} material${outcome.materials > 1 ? 's' : ''}`);
       }
 
       // Handle buffs
@@ -897,6 +902,20 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
           ...outcome.buff
         };
         newState.activeReportBuffs = [...(prev.activeReportBuffs || []), buff];
+
+        // Build buff description
+        const buffParts = [];
+        if (buff.ppMult) buffParts.push(`${((buff.ppMult - 1) * 100).toFixed(0)}% more PP`);
+        if (buff.xpMult) buffParts.push(`${((buff.xpMult - 1) * 100).toFixed(0)}% more XP`);
+        if (buff.energyCostMult) {
+          const reduction = ((1 - buff.energyCostMult) * 100).toFixed(0);
+          buffParts.push(`${reduction}% less energy cost`);
+        }
+        if (buff.noSanityDrain) buffParts.push('sanity drain paused');
+        if (buff.materialMult) buffParts.push(`${buff.materialMult}x materials`);
+
+        const duration = Math.floor(buff.duration / 60);
+        messages.push(`📈 BUFF: ${buffParts.join(', ')} for ${duration}min`);
       }
 
       // Handle debuffs
@@ -909,6 +928,18 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
           ...outcome.debuff
         };
         newState.activeReportBuffs = [...(prev.activeReportBuffs || []), debuff];
+
+        // Build debuff description
+        const debuffParts = [];
+        if (debuff.ppMult && debuff.ppMult < 1) {
+          debuffParts.push(`${((1 - debuff.ppMult) * 100).toFixed(0)}% LESS PP`);
+        }
+        if (debuff.energyCostMult && debuff.energyCostMult > 1) {
+          debuffParts.push(`${((debuff.energyCostMult - 1) * 100).toFixed(0)}% MORE energy cost`);
+        }
+
+        const duration = Math.floor(debuff.duration / 60);
+        messages.push(`⚠️ DEBUFF: ${debuffParts.join(', ')} for ${duration}min`);
       }
 
       // Handle permanent PP/sec increase
@@ -930,10 +961,12 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       // Handle locks
       if (outcome.portalLock) {
         newState.portalCooldown = outcome.portalLock;
+        messages.push(`⏳ Portal locked for ${Math.floor(outcome.portalLock / 60)}min`);
       }
       if (outcome.allLocks) {
         newState.portalCooldown = outcome.allLocks;
         newState.restCooldown = outcome.allLocks;
+        messages.push(`🔒 All actions locked for ${Math.floor(outcome.allLocks / 60)}min`);
       }
 
       // Visual effects based on quality
@@ -953,10 +986,11 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
         perfect: '⭐'
       };
 
-      // Main message
+      // Main message with detailed effects
       const icon = qualityIcons[qualityOutcome];
       const qualityLabel = qualityOutcome.toUpperCase();
-      messages.unshift(`${icon} ${tierData.name} [${qualityLabel}]: ${outcome.desc}`);
+      const effectSummary = effectDetails.length > 0 ? ` [${effectDetails.join(', ')}]` : '';
+      messages.unshift(`${icon} ${tierData.name} [${qualityLabel}]: ${outcome.desc}${effectSummary}`);
 
       newState.recentMessages = [...messages, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15);
 

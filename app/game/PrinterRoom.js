@@ -290,6 +290,39 @@ ${printing ? '    │  ───────────────────
             </button>
           </div>
 
+          {/* Event Log - Moved under print button for better visibility */}
+          <div style={{
+            marginBottom: '30px',
+            border: '1px solid var(--border-color)',
+            padding: '16px',
+            backgroundColor: 'var(--hover-color)'
+          }}>
+            <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6, marginBottom: '12px' }}>
+              EVENT LOG
+            </div>
+            <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+              {(gameState.recentMessages || []).slice(0, 10).map((msg, index) => (
+                <div
+                  key={index}
+                  style={{
+                    fontSize: '10px',
+                    padding: '6px 0',
+                    borderBottom: index < 9 ? '1px dotted var(--border-color)' : 'none',
+                    opacity: 1 - (index * 0.08),
+                    lineHeight: '1.4'
+                  }}
+                >
+                  {msg}
+                </div>
+              ))}
+              {(!gameState.recentMessages || gameState.recentMessages.length === 0) && (
+                <div style={{ fontSize: '10px', opacity: 0.5, fontStyle: 'italic' }}>
+                  No recent events...
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* Printed Papers Output */}
           {printedPapers.length > 0 && (
             <div>
@@ -481,6 +514,16 @@ ${printing ? '    │  ───────────────────
 
               return (
                 <>
+                  {/* Document Type Description & Tier System Explanation */}
+                  <div style={{ marginBottom: '16px', padding: '10px', backgroundColor: 'var(--bg-color)', border: '1px solid var(--border-color)' }}>
+                    <div style={{ fontSize: '10px', fontWeight: 'bold', marginBottom: '6px', color: 'var(--accent-color)' }}>
+                      {docData.name}: {docData.description}
+                    </div>
+                    <div style={{ fontSize: '8px', opacity: 0.7, lineHeight: '1.5' }}>
+                      Higher tiers = Higher costs BUT stronger effects. Each tier has 4 quality outcomes (Corrupted/Standard/Pristine/Perfect) based on your paper quality. Better quality = better outcomes. Unlock new tiers by printing more {selectedDocType}s.
+                    </div>
+                  </div>
+
                   {/* Mastery Progress */}
                   <div style={{ marginBottom: '16px', padding: '12px', backgroundColor: 'var(--bg-color)', border: '1px solid var(--border-color)' }}>
                     <div style={{ fontSize: '10px', fontWeight: 'bold', marginBottom: '6px' }}>
@@ -539,11 +582,20 @@ ${printing ? '    │  ───────────────────
                               </div>
                             )}
                             {isUnlocked && (
-                              <div style={{ fontSize: '8px', opacity: 0.6, marginTop: '4px' }}>
-                                Cost: {tier.cost.paper}p
-                                {tier.cost.energy && `, ${tier.cost.energy}e`}
-                                {tier.cost.sanity && `, ${tier.cost.sanity}s`}
-                              </div>
+                              <>
+                                <div style={{ fontSize: '8px', opacity: 0.6, marginTop: '4px' }}>
+                                  Cost: {tier.cost.paper}p
+                                  {tier.cost.energy && `, ${tier.cost.energy}e`}
+                                  {tier.cost.sanity && `, ${tier.cost.sanity}s`}
+                                </div>
+                                <div style={{ fontSize: '7px', opacity: 0.5, marginTop: '2px', fontStyle: 'italic' }}>
+                                  {tier.tier === 1 && 'Starter tier - Low risk, low reward'}
+                                  {tier.tier === 2 && 'Higher stakes - Balanced risk/reward'}
+                                  {tier.tier === 3 && 'Significant stakes - Strong effects'}
+                                  {tier.tier === 4 && 'Major stakes - Powerful effects'}
+                                  {tier.tier === 5 && 'MAXIMUM STAKES - Reality-altering effects'}
+                                </div>
+                              </>
                             )}
                           </div>
 
@@ -612,39 +664,6 @@ ${printing ? '    │  ───────────────────
               Total prints: {gameState.printCount || 0}
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* Event Log (Added 2025-11-01) */}
-      <div style={{
-        marginTop: '40px',
-        border: '1px solid var(--border-color)',
-        padding: '20px',
-        backgroundColor: 'var(--hover-color)'
-      }}>
-        <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6, marginBottom: '12px' }}>
-          EVENT LOG
-        </div>
-        <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
-          {(gameState.recentMessages || []).slice(0, 10).map((msg, index) => (
-            <div
-              key={index}
-              style={{
-                fontSize: '10px',
-                padding: '6px 0',
-                borderBottom: index < 9 ? '1px dotted var(--border-color)' : 'none',
-                opacity: 1 - (index * 0.08),
-                lineHeight: '1.4'
-              }}
-            >
-              {msg}
-            </div>
-          ))}
-          {(!gameState.recentMessages || gameState.recentMessages.length === 0) && (
-            <div style={{ fontSize: '10px', opacity: 0.5, fontStyle: 'italic' }}>
-              No recent events...
-            </div>
-          )}
         </div>
       </div>
     </div>
