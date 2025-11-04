@@ -47,6 +47,7 @@ export default function Game() {
   const [hoveredUpgrade, setHoveredUpgrade] = useState(null);
   const [showAchievements, setShowAchievements] = useState(false);
   const [selectedUpgradeType, setSelectedUpgradeType] = useState('pp'); // 'pp', 'printer', 'dimensional'
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
   const addMessage = useCallback((msg) => {
     setGameState(prev => {
@@ -1209,7 +1210,7 @@ export default function Game() {
                   <strong style={{ fontSize: '18px' }}>{gameState.playerLevel || 1}</strong>
                 </div>
                 <div style={{ fontSize: '10px', opacity: 0.6, marginBottom: '4px' }}>
-                  {gameState.playerXP || 0} / {LEVEL_SYSTEM.getXPForLevel((gameState.playerLevel || 1) + 1)} XP
+                  {(gameState.playerXP || 0).toFixed(1)} / {LEVEL_SYSTEM.getXPForLevel((gameState.playerLevel || 1) + 1).toFixed(1)} XP
                 </div>
                 <div style={{
                   width: '100%',
@@ -1447,6 +1448,7 @@ export default function Game() {
                       style={{ position: 'relative' }}
                       onMouseEnter={() => setHoveredUpgrade(upgrade.id)}
                       onMouseLeave={() => setHoveredUpgrade(null)}
+                      onMouseMove={(e) => setMousePos({ x: e.clientX, y: e.clientY })}
                     >
                       <button
                         onClick={() => actions.buyUpgrade(upgrade)}
@@ -1478,9 +1480,9 @@ export default function Game() {
 
                       {hoveredUpgrade === upgrade.id && (
                         <div style={{
-                          position: 'absolute',
-                          left: '110%',
-                          top: '0',
+                          position: 'fixed',
+                          left: `${mousePos.x + 15}px`,
+                          top: `${mousePos.y + 15}px`,
                           backgroundColor: 'var(--bg-color)',
                           border: '1px solid var(--accent-color)',
                           padding: '12px 16px',
@@ -1537,6 +1539,7 @@ export default function Game() {
                         style={{ position: 'relative' }}
                         onMouseEnter={() => setHoveredUpgrade(`printer_${upgrade.id}`)}
                         onMouseLeave={() => setHoveredUpgrade(null)}
+                        onMouseMove={(e) => setMousePos({ x: e.clientX, y: e.clientY })}
                       >
                         <button
                           onClick={() => actions.buyPrinterUpgrade(upgrade)}
@@ -1573,9 +1576,9 @@ export default function Game() {
 
                         {hoveredUpgrade === `printer_${upgrade.id}` && (
                           <div style={{
-                            position: 'absolute',
-                            left: '110%',
-                            top: '0',
+                            position: 'fixed',
+                            left: `${mousePos.x + 15}px`,
+                            top: `${mousePos.y + 15}px`,
                             backgroundColor: 'var(--bg-color)',
                             border: '1px solid var(--accent-color)',
                             padding: '12px 16px',
