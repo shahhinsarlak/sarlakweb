@@ -14,6 +14,7 @@ import SkillTreeModal from './SkillTreeModal';
 import PrinterRoom from './PrinterRoom';
 import CombatModal from './CombatModal';
 import Armory from './Armory';
+import FileDrawer from './FileDrawer';
 import HelpPopup from './HelpPopup';
 import AchievementsModal from './AchievementsModal';
 import JournalModal from './JournalModal';
@@ -763,6 +764,10 @@ export default function Game() {
     return <Armory gameState={gameState} setGameState={setGameState} onExit={() => setGameState(prev => ({ ...prev, inArmory: false }))} />;
   }
 
+  if (gameState.fileDrawerOpen) {
+    return <FileDrawer gameState={gameState} onClose={actions.closeFileDrawer} actions={actions} />;
+  }
+
   if (gameState.meditating) {
     return <MeditationModal gameState={gameState} breatheAction={actions.breatheAction} cancelMeditation={actions.cancelMeditation} />;
   }
@@ -889,6 +894,23 @@ export default function Game() {
             >
               📖 JOURNAL [J]
             </button>
+            {gameState.printerUnlocked && (
+              <button
+                onClick={actions.openFileDrawer}
+                style={{
+                  background: 'none',
+                  border: `1px solid ${(gameState.storedDocuments?.length || 0) > 0 ? '#ffaa00' : 'var(--accent-color)'}`,
+                  color: (gameState.storedDocuments?.length || 0) > 0 ? '#ffaa00' : 'var(--accent-color)',
+                  padding: '4px 8px',
+                  cursor: 'pointer',
+                  fontSize: '10px',
+                  fontFamily: 'inherit',
+                  opacity: 0.8
+                }}
+              >
+                📂 FILE DRAWER {(gameState.storedDocuments?.length || 0) > 0 && `(${gameState.storedDocuments.length})`}
+              </button>
+            )}
             <button
               onClick={() => setShowSaveMenu(!showSaveMenu)}
               style={{
