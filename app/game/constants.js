@@ -62,7 +62,7 @@ export const INITIAL_GAME_STATE = {
   printCount: 0,
   printerUpgrades: {},
   inPrinterRoom: false,
-  // Paper Quality & Document System (Added 2025-10-26, Revised 2025-11-01)
+  // Paper Quality & Document System (Added 2025-10-26, Revised 2025-11-01, Redesigned 2025-11-04)
   // Paper quality determined by sanity + printer upgrades (0-100%)
   paperQuality: 100,
   // Document Mastery: tracks total prints per document type (for tier unlocks)
@@ -72,7 +72,12 @@ export const INITIAL_GAME_STATE = {
     contracts: 0,  // Total contracts printed
     prophecies: 0  // Total prophecies printed
   },
-  // Active buffs from filed reports
+  // File Drawer System (Redesigned 2025-11-04)
+  // Documents are stored here and can be consumed/shredded
+  storedDocuments: [],  // Array of document objects with { id, type, tier, quality, outcome, createdAt, important }
+  fileDrawerOpen: false,  // Is file drawer UI visible
+  documentSortBy: 'newest',  // Sort order: 'newest', 'oldest', 'quality', 'type'
+  // Active buffs from consumed documents
   activeReportBuffs: [],
   // Paper trail for tracking patterns (for secrets/achievements)
   paperTrail: [],

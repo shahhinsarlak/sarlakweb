@@ -823,6 +823,10 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
    * Document Tier System (Revised 2025-11-01)
    * Unified document printing with quality outcome rolls
    */
+  /**
+   * Print Document - Creates and stores document (Redesigned 2025-11-04)
+   * Documents are stored in File Drawer instead of being consumed immediately
+   */
   const printDocument = (docType, tierNumber) => {
     setGameState(prev => {
       // Check if tier can be printed
@@ -842,7 +846,27 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       const qualityOutcome = rollQualityOutcome(paperQuality);
       const outcome = tierData.outcomes[qualityOutcome];
 
-      // Deduct costs
+      // Quality indicator icons
+      const qualityIcons = {
+        corrupted: '💀',
+        standard: '📄',
+        pristine: '✨',
+        perfect: '⭐'
+      };
+
+      // Create document object to store
+      const document = {
+        id: `${docType}_${tierNumber}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        type: docType,
+        tier: tierNumber,
+        tierName: tierData.name,
+        quality: qualityOutcome,
+        outcome: outcome,
+        createdAt: Date.now(),
+        important: false
+      };
+
+      // Deduct costs and store document
       const newState = {
         ...prev,
         paper: prev.paper - (tierData.cost.paper || 0),
@@ -851,12 +875,136 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
         documentMastery: {
           ...prev.documentMastery,
           [`${docType}s`]: (prev.documentMastery?.[`${docType}s`] || 0) + 1
+        },
+        storedDocuments: [...(prev.storedDocuments || []), document]
+      };
+
+      // Visual effects based on quality
+      setTimeout(() => {
+        if (qualityOutcome === 'perfect') {
+          triggerScreenEffect('flash');
+        } else if (qualityOutcome === 'corrupted') {
+          triggerScreenEffect('shake');
         }
+      }, 100);
+
+      // Notification message
+      const icon = qualityIcons[qualityOutcome];
+      const qualityLabel = qualityOutcome.toUpperCase();
+      const message = `${icon} ${tierData.name} [${qualityLabel}] created! Check File Drawer to consume.`;
+
+      newState.recentMessages = [message, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15);
+
+      setTimeout(() => checkAchievements(), 100);
+
+      return newState;
+    });
+  };
+
+  /**
+   * Journal System Actions
+   * (Added 2025-10-31)
+   */
+
+  const openJournal = () => {
+    setGameState(prev => ({
+      ...prev,
+      journalOpen: true
+    }));
+  };
+
+  const closeJournal = () => {
+    setGameState(prev => ({
+      ...prev,
+      journalOpen: false
+    }));
+  };
+
+  const switchJournalTab = (tabId) => {
+    setGameState(prev => ({
+      ...prev,
+      journalTab: tabId
+    }));
+  };
+
+  /**
+   * File Drawer System Actions
+   * (Added 2025-11-04)
+   */
+
+  const openFileDrawer = () => {
+    setGameState(prev => ({
+      ...prev,
+      fileDrawerOpen: true
+    }));
+  };
+
+  const closeFileDrawer = () => {
+    setGameState(prev => ({
+      ...prev,
+      fileDrawerOpen: false
+    }));
+  };
+
+  const toggleDocumentImportant = (docId) => {
+    setGameState(prev => ({
+      ...prev,
+      storedDocuments: prev.storedDocuments.map(doc =>
+        doc.id === docId ? { ...doc, important: !doc.important } : doc
+      )
+    }));
+  };
+
+  const sortDocuments = (sortBy) => {
+    setGameState(prev => ({
+      ...prev,
+      documentSortBy: sortBy
+    }));
+  };
+
+  const shredDocument = (docId) => {
+    setGameState(prev => {
+      const doc = prev.storedDocuments.find(d => d.id === docId);
+      if (!doc) return prev;
+
+      // Calculate paper return based on quality
+      const qualityMultipliers = {
+        corrupted: 0.1,
+        standard: 0.3,
+        pristine: 0.5,
+        perfect: 0.7
+      };
+
+      const tierCosts = [0, 5, 10, 20, 35, 50]; // Approximate paper costs per tier
+      const basePaperCost = tierCosts[doc.tier] || 5;
+      const paperReturn = Math.floor(basePaperCost * qualityMultipliers[doc.quality]);
+
+      return {
+        ...prev,
+        storedDocuments: prev.storedDocuments.filter(d => d.id !== docId),
+        paper: prev.paper + paperReturn,
+        recentMessages: [
+          `🗑️ Shredded ${doc.tierName} [${doc.quality.toUpperCase()}] → +${paperReturn} paper`,
+          ...prev.recentMessages
+        ].slice(0, prev.maxLogMessages || 15)
+      };
+    });
+  };
+
+  const consumeDocument = (docId) => {
+    setGameState(prev => {
+      const doc = prev.storedDocuments.find(d => d.id === docId);
+      if (!doc) return prev;
+
+      const outcome = doc.outcome;
+      const newState = {
+        ...prev,
+        storedDocuments: prev.storedDocuments.filter(d => d.id !== docId)
       };
 
       const messages = [];
       let xpGain = 0;
-      const effectDetails = []; // Track all effects for detailed feedback
+      const effectDetails = [];
 
       // Apply outcome effects
       if (outcome.pp) {
@@ -864,11 +1012,11 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
         effectDetails.push(`${outcome.pp > 0 ? '+' : ''}${outcome.pp} PP`);
       }
       if (outcome.sanity) {
-        newState.sanity = Math.max(0, Math.min(100, newState.sanity + outcome.sanity));
+        newState.sanity = Math.max(0, Math.min(100, prev.sanity + outcome.sanity));
         effectDetails.push(`${outcome.sanity > 0 ? '+' : ''}${outcome.sanity} sanity`);
       }
       if (outcome.energy) {
-        newState.energy = Math.max(0, newState.energy + outcome.energy);
+        newState.energy = Math.max(0, Math.min(100, prev.energy + outcome.energy));
         effectDetails.push(`${outcome.energy > 0 ? '+' : ''}${outcome.energy} energy`);
       }
       if (outcome.xp) {
@@ -895,15 +1043,14 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       // Handle buffs
       if (outcome.buff) {
         const buff = {
-          id: `${docType}_${tierNumber}_${qualityOutcome}_${Date.now()}`,
-          name: tierData.name,
+          id: `${doc.type}_${doc.tier}_${doc.quality}_${Date.now()}`,
+          name: doc.tierName,
           desc: outcome.desc,
           expiresAt: Date.now() + (outcome.buff.duration * 1000),
           ...outcome.buff
         };
         newState.activeReportBuffs = [...(prev.activeReportBuffs || []), buff];
 
-        // Build buff description
         const buffParts = [];
         if (buff.ppMult) buffParts.push(`${((buff.ppMult - 1) * 100).toFixed(0)}% more PP`);
         if (buff.xpMult) buffParts.push(`${((buff.xpMult - 1) * 100).toFixed(0)}% more XP`);
@@ -921,15 +1068,14 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       // Handle debuffs
       if (outcome.debuff) {
         const debuff = {
-          id: `debuff_${docType}_${tierNumber}_${Date.now()}`,
-          name: `${tierData.name} (CORRUPTED)`,
+          id: `debuff_${doc.type}_${doc.tier}_${Date.now()}`,
+          name: `${doc.tierName} (CORRUPTED)`,
           desc: outcome.desc,
           expiresAt: Date.now() + (outcome.debuff.duration * 1000),
           ...outcome.debuff
         };
         newState.activeReportBuffs = [...(prev.activeReportBuffs || []), debuff];
 
-        // Build debuff description
         const debuffParts = [];
         if (debuff.ppMult && debuff.ppMult < 1) {
           debuffParts.push(`${((1 - debuff.ppMult) * 100).toFixed(0)}% LESS PP`);
@@ -969,15 +1115,6 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
         messages.push(`🔒 All actions locked for ${Math.floor(outcome.allLocks / 60)}min`);
       }
 
-      // Visual effects based on quality
-      setTimeout(() => {
-        if (qualityOutcome === 'perfect') {
-          triggerScreenEffect('flash');
-        } else if (qualityOutcome === 'corrupted') {
-          triggerScreenEffect('shake');
-        }
-      }, 100);
-
       // Quality indicator icons
       const qualityIcons = {
         corrupted: '💀',
@@ -987,10 +1124,10 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       };
 
       // Main message with detailed effects
-      const icon = qualityIcons[qualityOutcome];
-      const qualityLabel = qualityOutcome.toUpperCase();
+      const icon = qualityIcons[doc.quality];
+      const qualityLabel = doc.quality.toUpperCase();
       const effectSummary = effectDetails.length > 0 ? ` [${effectDetails.join(', ')}]` : '';
-      messages.unshift(`${icon} ${tierData.name} [${qualityLabel}]: ${outcome.desc}${effectSummary}`);
+      messages.unshift(`${icon} ${doc.tierName} [${qualityLabel}]: ${outcome.desc}${effectSummary}`);
 
       newState.recentMessages = [...messages, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15);
 
@@ -1002,32 +1139,6 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
 
       return newState;
     });
-  };
-
-  /**
-   * Journal System Actions
-   * (Added 2025-10-31)
-   */
-
-  const openJournal = () => {
-    setGameState(prev => ({
-      ...prev,
-      journalOpen: true
-    }));
-  };
-
-  const closeJournal = () => {
-    setGameState(prev => ({
-      ...prev,
-      journalOpen: false
-    }));
-  };
-
-  const switchJournalTab = (tabId) => {
-    setGameState(prev => ({
-      ...prev,
-      journalTab: tabId
-    }));
   };
 
   return {
@@ -1053,8 +1164,15 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
     playerAttack,
     escapeCombat,
     endCombat,
-    // Document system actions (Revised 2025-11-01)
+    // Document system actions (Revised 2025-11-01, Redesigned 2025-11-04)
     printDocument,
+    // File drawer system actions (Added 2025-11-04)
+    openFileDrawer,
+    closeFileDrawer,
+    consumeDocument,
+    shredDocument,
+    toggleDocumentImportant,
+    sortDocuments,
     // Journal system actions
     openJournal,
     closeJournal,
