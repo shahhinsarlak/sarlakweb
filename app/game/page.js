@@ -398,9 +398,17 @@ export default function Game() {
         }
         
         if (prev.ppPerSecond > 0) {
+          // Base passive gain (divide by 10 since interval runs 10x per second)
           let passiveGain = prev.ppPerSecond / 10;
 
-          // Apply ppPerSecond multipliers from active buffs (contracts)
+          // Apply the same buff chain as ppPerClick:
+          // 1. Skill multipliers (from purchased skills)
+          passiveGain = applyPPMultiplier(passiveGain, prev);
+
+          // 2. Sanity tier multipliers + efficiency report buffs
+          passiveGain = applySanityPPModifier(passiveGain, prev);
+
+          // 3. Void contract multipliers (ppPerSecondMult from contracts)
           const activeBuffs = prev.activeReportBuffs || [];
           const now = Date.now();
           const ppSecBuffs = activeBuffs.filter(b => b.expiresAt > now && b.ppPerSecondMult);
