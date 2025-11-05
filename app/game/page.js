@@ -1401,16 +1401,31 @@ export default function Game() {
                   <div style={{
                     paddingTop: '16px',
                     borderTop: '1px solid var(--border-color)',
-                    textAlign: 'center',
-                    opacity: 0.7,
-                    fontSize: '12px'
+                    padding: '8px',
+                    backgroundColor: 'var(--bg-color)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '2px'
                   }}>
-                    +{getEffectivePPPerSecond().toFixed(1)} PP/sec
-                    {getPPPerSecondMultiplier() > 0 && (
-                      <span style={{ marginLeft: '6px', fontSize: '10px', opacity: 0.6 }}>
-                        (+{getPPPerSecondMultiplier().toFixed(0)}%)
-                      </span>
-                    )}
+                    <div style={{ opacity: 0.7, marginBottom: '2px' }}>PP per second:</div>
+                    <div style={{ fontWeight: 'bold', fontSize: '13px' }}>
+                      +{getEffectivePPPerSecond().toFixed(1)} PP/sec
+                    </div>
+                    <div style={{ fontSize: '9px', opacity: 0.6, marginTop: '4px' }}>
+                      {(() => {
+                        const effects = getActiveSkillEffects(gameState);
+                        const tier = getSanityTierDisplay(gameState);
+                        const skillBonus = effects.ppMultiplier > 0 ? `+${(effects.ppMultiplier * 100).toFixed(0)}%` : 'none';
+                        const sanityBonus = tier.ppModifier !== 1 ? `${tier.ppModifier >= 1 ? '+' : ''}${((tier.ppModifier - 1) * 100).toFixed(0)}%` : '0%';
+
+                        // Check for void contract buffs
+                        const activeBuffs = gameState.activeReportBuffs || [];
+                        const now = Date.now();
+                        const ppSecBuffs = activeBuffs.filter(b => b.expiresAt > now && b.ppPerSecondMult);
+                        const buffBonus = ppSecBuffs.length > 0 ? `+${((Math.max(...ppSecBuffs.map(b => b.ppPerSecondMult)) - 1) * 100).toFixed(0)}%` : 'none';
+
+                        return `Base: ${gameState.ppPerSecond} • Skills: ${skillBonus} • Sanity: ${sanityBonus} • Buffs: ${buffBonus}`;
+                      })()}
+                    </div>
                   </div>
                 )}
                 {gameState.paperPerSecond > 0 && (
