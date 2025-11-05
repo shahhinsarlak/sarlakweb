@@ -75,9 +75,9 @@ export default function Game() {
         const skillPointsGained = xpResult.skillPoints - (prev.skillPoints || 0);
         
         if (levelsGained === 1) {
-          messages.push(`🎉 LEVEL UP! You are now level ${xpResult.playerLevel}. +${skillPointsGained} Skill Point${skillPointsGained > 1 ? 's' : ''}!`);
+          messages.push(`LEVEL UP! You are now level ${xpResult.playerLevel}. +${skillPointsGained} Skill Point${skillPointsGained > 1 ? 's' : ''}!`);
         } else {
-          messages.push(`🎉 LEVEL UP! You gained ${levelsGained} levels and are now level ${xpResult.playerLevel}. +${skillPointsGained} Skill Points!`);
+          messages.push(`LEVEL UP! You gained ${levelsGained} levels and are now level ${xpResult.playerLevel}. +${skillPointsGained} Skill Points!`);
         }
         
         setTimeout(() => {
@@ -106,7 +106,7 @@ export default function Game() {
         if (!newAchievements.includes(achievement.id) && achievement.check(prev)) {
           newAchievements.push(achievement.id);
           hasNew = true;
-          achievementMessages.push(`🏆 ACHIEVEMENT: ${achievement.name} (+${XP_REWARDS.completeAchievement} XP)`);
+          achievementMessages.push(`ACHIEVEMENT: ${achievement.name} (+${XP_REWARDS.completeAchievement} XP)`);
           totalXP += XP_REWARDS.completeAchievement;
         }
       });
@@ -145,7 +145,7 @@ export default function Game() {
             const messages = [
               'Reality shivers. The lights... they respond to you now.',
               'Something tears open in the fabric of the office.',
-              '🌀 NEW LOCATION: The Portal'
+              'NEW LOCATION: The Portal'
             ];
 
             // Trigger screen shake effect
@@ -218,7 +218,7 @@ export default function Game() {
 
         return {
           ...result,
-          recentMessages: [`✨ Learned ${skill.name} (Level ${newLevel})!`, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
+          recentMessages: [`Learned ${skill.name} (Level ${newLevel})!`, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
         };
       }
 
@@ -307,7 +307,7 @@ export default function Game() {
       } else if (upgrade.effect === 'unlock') {
         if (upgrade.value === 'armory') {
           newState.unlockedLocations = [...new Set([...prev.unlockedLocations, 'armory'])];
-          newState.recentMessages = ['The bottom drawer opens. Impossibly deep. An arsenal awaits.', '🔓 NEW LOCATION: The Armory', ...prev.recentMessages].slice(0, prev.maxLogMessages || 15);
+          newState.recentMessages = ['The bottom drawer opens. Impossibly deep. An arsenal awaits.', 'NEW LOCATION: The Armory', ...prev.recentMessages].slice(0, prev.maxLogMessages || 15);
         }
       } else if (upgrade.effect === 'equipment') {
         // Equipment is unlocked via dimensional upgrades, message added
@@ -385,6 +385,39 @@ export default function Game() {
     }
     
     return effects.length > 0 ? effects.join(' • ') : 'Unknown effect';
+  };
+
+  // Calculate effective PP/s with all buffs applied (for display)
+  const getEffectivePPPerSecond = () => {
+    if (gameState.ppPerSecond <= 0) return 0;
+
+    let effectivePPS = gameState.ppPerSecond;
+
+    // 1. Apply skill multipliers
+    effectivePPS = applyPPMultiplier(effectivePPS, gameState);
+
+    // 2. Apply sanity tier multipliers + efficiency report buffs
+    effectivePPS = applySanityPPModifier(effectivePPS, gameState);
+
+    // 3. Apply void contract multipliers (ppPerSecondMult from contracts)
+    const activeBuffs = gameState.activeReportBuffs || [];
+    const now = Date.now();
+    const ppSecBuffs = activeBuffs.filter(b => b.expiresAt > now && b.ppPerSecondMult);
+
+    if (ppSecBuffs.length > 0) {
+      const maxMult = Math.max(...ppSecBuffs.map(b => b.ppPerSecondMult));
+      effectivePPS *= maxMult;
+    }
+
+    return effectivePPS;
+  };
+
+  // Calculate multiplier percentage for display
+  const getPPPerSecondMultiplier = () => {
+    if (gameState.ppPerSecond <= 0) return 0;
+    const base = gameState.ppPerSecond;
+    const effective = getEffectivePPPerSecond();
+    return ((effective / base - 1) * 100);
   };
 
   useEffect(() => {
@@ -911,7 +944,7 @@ export default function Game() {
                 opacity: 0.8
               }}
             >
-              ⚡ SKILLS
+              SKILLS
             </button>
             <button
               onClick={() => setShowAchievements(true)}
@@ -926,7 +959,7 @@ export default function Game() {
                 opacity: 0.8
               }}
             >
-              🏆 ACHIEVEMENTS
+              ACHIEVEMENTS
             </button>
             <button
               onClick={actions.openJournal}
@@ -941,7 +974,7 @@ export default function Game() {
                 opacity: 0.8
               }}
             >
-              📖 JOURNAL [J]
+              JOURNAL [J]
             </button>
             {gameState.printerUnlocked && (
               <button
@@ -957,7 +990,7 @@ export default function Game() {
                   opacity: 0.8
                 }}
               >
-                📂 FILE DRAWER {(gameState.storedDocuments?.length || 0) > 0 && `(${gameState.storedDocuments.length})`}
+                FILE DRAWER {(gameState.storedDocuments?.length || 0) > 0 && `(${gameState.storedDocuments.length})`}
               </button>
             )}
             <button
@@ -973,7 +1006,7 @@ export default function Game() {
                 opacity: 0.8
               }}
             >
-              💾 SAVE
+              SAVE
             </button>
             <button
               onClick={toggleHelpSystem}
@@ -988,7 +1021,7 @@ export default function Game() {
                 opacity: gameState.helpEnabled ? 0.8 : 0.4
               }}
             >
-              {gameState.helpEnabled ? '📖 HELP' : '📕 HELP'}
+              {gameState.helpEnabled ? 'HELP' : 'HELP'}
             </button>
             <button
               onClick={() => setShowDebugPanel(!showDebugPanel)}
@@ -1003,7 +1036,7 @@ export default function Game() {
                 opacity: 0.5
               }}
             >
-              🛠 DEBUG
+              DEBUG
             </button>
             <button
               onClick={() => setGameState(prev => ({ ...prev, pp: prev.pp + 100000 }))}
@@ -1234,7 +1267,7 @@ export default function Game() {
                         letterSpacing: '0.5px'
                       }}
                     >
-                      📄 {item.name}
+                      {item.name}
                     </button>
                   ))}
                 </div>
@@ -1372,7 +1405,12 @@ export default function Game() {
                     opacity: 0.7,
                     fontSize: '12px'
                   }}>
-                    +{gameState.ppPerSecond.toFixed(1)} PP/sec
+                    +{getEffectivePPPerSecond().toFixed(1)} PP/sec
+                    {getPPPerSecondMultiplier() > 0 && (
+                      <span style={{ marginLeft: '6px', fontSize: '10px', opacity: 0.6 }}>
+                        (+{getPPPerSecondMultiplier().toFixed(0)}%)
+                      </span>
+                    )}
                   </div>
                 )}
                 {gameState.paperPerSecond > 0 && (
@@ -1777,7 +1815,7 @@ export default function Game() {
                     fontWeight: '500'
                   }}
                 >
-                  💾 SAVE TO FILE
+                  SAVE TO FILE
                 </button>
 
                 <button
@@ -1793,7 +1831,7 @@ export default function Game() {
                     letterSpacing: '0.5px'
                   }}
                 >
-                  📁 LOAD FROM FILE
+                  LOAD FROM FILE
                 </button>
                 <input
                   id="file-input"
@@ -1816,7 +1854,7 @@ export default function Game() {
                     letterSpacing: '0.5px'
                   }}
                 >
-                  📋 COPY TO CLIPBOARD
+                  COPY TO CLIPBOARD
                 </button>
 
                 <button
@@ -1832,7 +1870,7 @@ export default function Game() {
                     letterSpacing: '0.5px'
                   }}
                 >
-                  📥 PASTE FROM CLIPBOARD
+                  PASTE FROM CLIPBOARD
                 </button>
 
                 <button

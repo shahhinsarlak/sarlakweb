@@ -27,14 +27,14 @@ export default function StoryMomentModal({ storyMoment, gameState, respondToColl
   // Response type styling
   const getResponseTypeStyle = (type) => {
     const styles = {
-      seeker: { borderColor: '#4a9eff', color: '#4a9eff', icon: '💙' },
-      rationalist: { borderColor: '#888', color: '#888', icon: '🧠' },
-      protector: { borderColor: '#ff4a4a', color: '#ff4a4a', icon: '⚔️' },
-      convert: { borderColor: '#9d4edd', color: '#9d4edd', icon: '🌀' },
-      rebel: { borderColor: '#ffd700', color: '#ffd700', icon: '🤔' },
-      neutral: { borderColor: '#888', color: '#888', icon: '💰' }
+      seeker: { borderColor: '#4a9eff', color: '#4a9eff' },
+      rationalist: { borderColor: '#888', color: '#888' },
+      protector: { borderColor: '#ff4a4a', color: '#ff4a4a' },
+      convert: { borderColor: '#9d4edd', color: '#9d4edd' },
+      rebel: { borderColor: '#ffd700', color: '#ffd700' },
+      neutral: { borderColor: '#888', color: '#888' }
     };
-    return styles[type] || { borderColor: 'var(--border-color)', color: 'var(--text-color)', icon: '💬' };
+    return styles[type] || { borderColor: 'var(--border-color)', color: 'var(--text-color)' };
   };
 
   return (

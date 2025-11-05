@@ -48,7 +48,7 @@ export default function JournalModal({ gameState, onClose, onSwitchTab }) {
     return (
       <div>
         <h3 style={{ marginTop: 0, marginBottom: '20px', fontSize: '16px' }}>
-          📍 DISCOVERED LOCATIONS ({gameState.discoveredLocations?.length || 0}/{allLocationIds.length})
+          DISCOVERED LOCATIONS ({gameState.discoveredLocations?.length || 0}/{allLocationIds.length})
         </h3>
 
         {allLocationIds.map(locationId => {
@@ -109,17 +109,89 @@ export default function JournalModal({ gameState, onClose, onSwitchTab }) {
 
   // Render colleagues tab
   const renderColleaguesTab = () => {
+    // Get path name from current player path
+    const getPathName = (pathKey) => {
+      const pathNames = {
+        seeker: 'Seeker of Truth',
+        rationalist: 'Rational Denier',
+        protector: 'Protector of Others',
+        convert: 'Convert to Madness',
+        rebel: 'Rebel Against System'
+      };
+      return pathNames[pathKey] || 'Undecided';
+    };
+
+    // Get clues from this colleague
+    const getColleagueClues = (colleagueId) => {
+      const investigation = gameState.investigation || { clues: [] };
+      const colleagueNames = {
+        spiral_philosopher: 'Spiral Philosopher',
+        productivity_zealot: 'Productivity Zealot',
+        void_clerk: 'Void Clerk',
+        temporal_trapped: 'Temporal Trapped',
+        light_herald: 'Light Herald'
+      };
+      const sourceName = colleagueNames[colleagueId];
+      return investigation.clues.filter(clue => clue.source === sourceName);
+    };
+
     return (
       <div>
         <h3 style={{ marginTop: 0, marginBottom: '20px', fontSize: '16px' }}>
-          👥 MET COLLEAGUES ({gameState.discoveredColleagues?.length || 0}/{allColleagueIds.length})
+          MET COLLEAGUES ({gameState.discoveredColleagues?.length || 0}/{allColleagueIds.length})
         </h3>
+
+        {/* Investigation Summary */}
+        {gameState.mysteryProgress > 0 && (
+          <div style={{
+            marginBottom: '24px',
+            padding: '15px',
+            border: '2px solid var(--accent-color)',
+            backgroundColor: 'rgba(255, 255, 255, 0.02)'
+          }}>
+            <div style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '12px' }}>
+              INVESTIGATION PROGRESS
+            </div>
+
+            <div style={{ marginBottom: '8px' }}>
+              <div style={{ fontSize: '12px', marginBottom: '4px' }}>
+                Mystery Uncovered: {gameState.mysteryProgress}%
+              </div>
+              <div style={{
+                height: '8px',
+                backgroundColor: 'rgba(0, 0, 0, 0.3)',
+                border: '1px solid var(--border-color)',
+                overflow: 'hidden'
+              }}>
+                <div style={{
+                  height: '100%',
+                  width: `${gameState.mysteryProgress}%`,
+                  backgroundColor: 'var(--accent-color)',
+                  transition: 'width 0.3s ease'
+                }} />
+              </div>
+            </div>
+
+            {gameState.playerPath && (
+              <div style={{ fontSize: '12px', marginTop: '8px' }}>
+                Current Path: <span style={{ fontWeight: 'bold' }}>{getPathName(gameState.playerPath)}</span>
+              </div>
+            )}
+
+            {gameState.investigation && gameState.investigation.clues.length > 0 && (
+              <div style={{ fontSize: '12px', marginTop: '8px' }}>
+                Clues Collected: {gameState.investigation.clues.length}
+              </div>
+            )}
+          </div>
+        )}
 
         {allColleagueIds.map(colleagueId => {
           const isDiscovered = (gameState.discoveredColleagues || []).includes(colleagueId);
           const entry = JOURNAL_ENTRIES.colleagues[colleagueId];
           const colleague = STRANGE_COLLEAGUE_DIALOGUES.find(c => c.id === colleagueId);
           const relationship = getColleagueRelationshipSummary(gameState, colleagueId);
+          const colleagueClues = getColleagueClues(colleagueId);
 
           if (!isDiscovered) {
             return (
@@ -168,7 +240,7 @@ export default function JournalModal({ gameState, onClose, onSwitchTab }) {
                   <div style={{ fontSize: '11px', opacity: 0.7 }}>
                     Trust: {relationship.trustLevel > 0 ? '+' : ''}{relationship.trustLevel}
                   </div>
-                  <div style={{ fontSize: '11px', opacity: 0.7 }}>
+                  <div style={{ fontSize: '11px', opacity: 0.7' }}>
                     Encounters: {relationship.encounters}
                   </div>
                 </div>
@@ -198,8 +270,34 @@ export default function JournalModal({ gameState, onClose, onSwitchTab }) {
                 <span style={{ fontWeight: 'bold' }}>Personality:</span> {entry?.personality}
               </div>
 
+              {/* Clues from this colleague */}
+              {colleagueClues.length > 0 && (
+                <div style={{
+                  fontSize: '11px',
+                  marginTop: '12px',
+                  padding: '10px',
+                  backgroundColor: 'rgba(255, 255, 255, 0.03)',
+                  border: '1px solid var(--border-color)',
+                  borderLeft: '3px solid var(--accent-color)'
+                }}>
+                  <div style={{ fontWeight: 'bold', marginBottom: '6px', fontSize: '12px' }}>
+                    Clues Revealed:
+                  </div>
+                  {colleagueClues.map((clue, index) => (
+                    <div key={index} style={{ marginBottom: '6px', lineHeight: '1.5' }}>
+                      <span style={{ opacity: 0.7 }}>"{clue.text}"</span>
+                      {clue.collectedOn && (
+                        <span style={{ opacity: 0.5, fontSize: '10px', marginLeft: '6px' }}>
+                          ({clue.collectedOn})
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
               {/* First encounter note */}
-              <div style={{ fontSize: '11px', fontStyle: 'italic', opacity: 0.7 }}>
+              <div style={{ fontSize: '11px', fontStyle: 'italic', opacity: 0.7, marginTop: '8px' }}>
                 {entry?.firstMet}
               </div>
             </div>
@@ -227,7 +325,7 @@ export default function JournalModal({ gameState, onClose, onSwitchTab }) {
     return (
       <div>
         <h3 style={{ marginTop: 0, marginBottom: '20px', fontSize: '16px' }}>
-          📚 LEARNED MECHANICS ({discoveredMechanics.length}/{allMechanicIds.length})
+          LEARNED MECHANICS ({discoveredMechanics.length}/{allMechanicIds.length})
         </h3>
 
         {Object.keys(categories).map(categoryName => (
@@ -401,7 +499,7 @@ export default function JournalModal({ gameState, onClose, onSwitchTab }) {
     return (
       <div>
         <h3 style={{ marginTop: 0, marginBottom: '15px', fontSize: '16px' }}>
-          ⚔️ DISCOVERED EQUIPMENT ({discoveredWeapons.length + discoveredArmor.length + discoveredAnomalies.length}/{allWeaponIds.length + allArmorIds.length + allAnomalyIds.length})
+          DISCOVERED EQUIPMENT ({discoveredWeapons.length + discoveredArmor.length + discoveredAnomalies.length}/{allWeaponIds.length + allArmorIds.length + allAnomalyIds.length})
         </h3>
 
         {/* Weapons */}
@@ -523,7 +621,7 @@ export default function JournalModal({ gameState, onClose, onSwitchTab }) {
           justifyContent: 'space-between',
           alignItems: 'center'
         }}>
-          <h2 style={{ margin: 0, fontSize: '18px' }}>📖 JOURNAL</h2>
+          <h2 style={{ margin: 0, fontSize: '18px' }}>JOURNAL</h2>
           <button
             onClick={onClose}
             style={{
@@ -547,10 +645,10 @@ export default function JournalModal({ gameState, onClose, onSwitchTab }) {
           backgroundColor: 'rgba(0, 0, 0, 0.2)'
         }}>
           {[
-            { id: 'locations', label: '📍 Locations' },
-            { id: 'colleagues', label: '👥 Colleagues' },
-            { id: 'equipment', label: '⚔️ Equipment' },
-            { id: 'mechanics', label: '📚 Mechanics' }
+            { id: 'locations', label: 'Locations' },
+            { id: 'colleagues', label: 'Colleagues' },
+            { id: 'equipment', label: 'Equipment' },
+            { id: 'mechanics', label: 'Mechanics' }
           ].map(tab => (
             <button
               key={tab.id}

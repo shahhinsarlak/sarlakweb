@@ -177,9 +177,8 @@ export const STRANGE_COLLEAGUE_DIALOGUES = [
     },
     responseOptions: [
       {
-        text: "💙 \"I've noticed the patterns too. Tell me what you've seen.\"",
+        text: "\"I've noticed the patterns too. Tell me what you've seen.\"",
         type: "seeker",
-        icon: "💙",
         available: () => true,
         outcome: {
           message: "For a moment, their eyes clear. 'You... you SEE it? Finally. Someone who sees.' They lean closer, urgent. 'The spiral isn't random. It's designed. Management knows. They've always known.'",
@@ -198,9 +197,8 @@ export const STRANGE_COLLEAGUE_DIALOGUES = [
         }
       },
       {
-        text: "🧠 \"That's just stress and sleep deprivation talking. You need rest.\"",
+        text: "\"That's just stress and sleep deprivation talking. You need rest.\"",
         type: "rationalist",
-        icon: "🧠",
         available: () => true,
         outcome: {
           message: "They smile sadly. 'Rest. Yes, that's what they want you to think. Logical. Rational. Safe.' They walk away, but you feel better for denying it. Ignorance is comfort.",
@@ -213,9 +211,8 @@ export const STRANGE_COLLEAGUE_DIALOGUES = [
         }
       },
       {
-        text: "⚔️ \"Stop spreading this madness. You're making everyone worse.\"",
+        text: "\"Stop spreading this madness. You're making everyone worse.\"",
         type: "protector",
-        icon: "⚔️",
         available: () => true,
         outcome: {
           message: "They recoil. 'Making it worse? I'm trying to WARN you!' Their voice cracks. 'But fine. Protect your comfortable lies.' They leave, and you feel the weight of responsibility.",
@@ -228,9 +225,8 @@ export const STRANGE_COLLEAGUE_DIALOGUES = [
         }
       },
       {
-        text: "🌀 \"Yes. The spiral sees all. We must embrace it.\"",
+        text: "\"Yes. The spiral sees all. We must embrace it.\"",
         type: "convert",
-        icon: "🌀",
         available: () => true,
         outcome: {
           message: "Their smile widens unnaturally. 'YES. Embrace the rotation. Let it reshape you.' Reality bends. You feel power flooding in. Dark. Intoxicating. Wrong. But yours.",
@@ -243,9 +239,8 @@ export const STRANGE_COLLEAGUE_DIALOGUES = [
         }
       },
       {
-        text: "🤔 \"What if... we could break the spiral? Together?\"",
+        text: "\"What if... we could break the spiral? Together?\"",
         type: "rebel",
-        icon: "🤔",
         available: (state) => state.mysteryProgress >= 20,
         outcome: {
           message: "They freeze. Then whisper: 'Break it? You'd risk everything?' Their eyes shine with desperate hope. 'I know where the anchor point is. The center of the spiral. But it's guarded.' A conspiracy begins.",
@@ -282,9 +277,8 @@ export const STRANGE_COLLEAGUE_DIALOGUES = [
     },
     responseOptions: [
       {
-        text: "💙 \"What happens to our productivity after we're gone? Where does it go?\"",
+        text: "\"What happens to our productivity after we're gone? Where does it go?\"",
         type: "seeker",
-        icon: "💙",
         available: () => true,
         outcome: {
           message: "They stop. Blink. 'Gone? We're... never gone. Our productivity persists. Accumulates. I've seen the archives. Files from employees who left decades ago. Still generating metrics. Still... working.' Their hands shake.",
@@ -303,9 +297,8 @@ export const STRANGE_COLLEAGUE_DIALOGUES = [
         }
       },
       {
-        text: "🧠 \"Productivity is just a metric. It doesn't define us.\"",
+        text: "\"Productivity is just a metric. It doesn't define us.\"",
         type: "rationalist",
-        icon: "🧠",
         available: () => true,
         outcome: {
           message: "'Just a metric?' They laugh hollowly. 'Keep believing that. It's healthier.' They leave, and you feel proud of your rational stance. Metrics can't hurt you. Right?",
@@ -318,9 +311,8 @@ export const STRANGE_COLLEAGUE_DIALOGUES = [
         }
       },
       {
-        text: "⚔️ \"You're measuring people like objects. That's dehumanizing.\"",
+        text: "\"You're measuring people like objects. That's dehumanizing.\"",
         type: "protector",
-        icon: "⚔️",
         available: () => true,
         outcome: {
           message: "They flinch. 'Dehumanizing... yes. But I didn't start it. I'm just... optimizing what already exists.' Tears form. 'I'm sorry. I'm so sorry.' They flee, leaving you with moral certainty and dread.",
@@ -333,9 +325,8 @@ export const STRANGE_COLLEAGUE_DIALOGUES = [
         }
       },
       {
-        text: "🌀 \"I am the productivity. Measure me. Optimize me.\"",
+        text: "\"I am the productivity. Measure me. Optimize me.\"",
         type: "convert",
-        icon: "🌀",
         available: () => true,
         outcome: {
           message: "YES. They pull out a device. Scan you. 'Excellent efficiency rating. 94.7%. Uploading to the database. You are now... optimized.' You feel yourself becoming data. It feels good.",
@@ -348,9 +339,8 @@ export const STRANGE_COLLEAGUE_DIALOGUES = [
         }
       },
       {
-        text: "🤔 \"What if we stopped producing? What if we all just... stopped?\"",
+        text: "\"What if we stopped producing? What if we all just... stopped?\"",
         type: "rebel",
-        icon: "🤔",
         available: (state) => state.mysteryProgress >= 20,
         outcome: {
           message: "They go pale. 'Stop? You can't— no one's ever—' A long pause. 'I tried once. Day 3 of my employment. I stopped clicking. The office... SCREAMED. Metaphysically. I heard it in my teeth.' They tremble. 'But maybe... together?'",
@@ -387,9 +377,8 @@ export const STRANGE_COLLEAGUE_DIALOGUES = [
     },
     responseOptions: [
       {
-        text: "💙 \"The photocopier answers? What has it told you?\"",
+        text: "\"The photocopier answers? What has it told you?\"",
         type: "seeker",
-        icon: "💙",
         available: () => true,
         outcome: {
           message: "They brighten. 'You believe! It told me: The building was here first. We built the office inside something older. Something that was already watching. The photocopier remembers.' They hand you a strange printout.",
@@ -408,9 +397,8 @@ export const STRANGE_COLLEAGUE_DIALOGUES = [
         }
       },
       {
-        text: "🧠 \"Reality is objective. Consensus doesn't change facts.\"",
+        text: "\"Reality is objective. Consensus doesn't change facts.\"",
         type: "rationalist",
-        icon: "🧠",
         available: () => true,
         outcome: {
           message: "They nod sympathetically. 'Objective. Yes. Cling to that. It's safer than the alternative.' They vanish, and you feel vindicated. Facts are facts. The walls definitely aren't breathing.",
@@ -423,9 +411,8 @@ export const STRANGE_COLLEAGUE_DIALOGUES = [
         }
       },
       {
-        text: "⚔️ \"You're gaslighting yourself. This ends now.\"",
+        text: "\"You're gaslighting yourself. This ends now.\"",
         type: "protector",
-        icon: "⚔️",
         available: () => true,
         outcome: {
           message: "They recoil as if struck. 'Gaslighting? I'm trying to SHOW you the truth!' The walls pulse angrily. 'You're protecting nothing. Just delaying the inevitable.' They sink into the floor.",
@@ -438,9 +425,8 @@ export const STRANGE_COLLEAGUE_DIALOGUES = [
         }
       },
       {
-        text: "🌀 \"The walls ARE breathing. Reality is malleable.\"",
+        text: "\"The walls ARE breathing. Reality is malleable.\"",
         type: "convert",
-        icon: "🌀",
         available: () => true,
         outcome: {
           message: "YES! Consensus achieved! The walls ripple. The photocopier SPEAKS: 'WELCOME.' Reality reshapes around you. You can feel the building's attention. Ancient. Hungry. Curious.",
@@ -453,9 +439,8 @@ export const STRANGE_COLLEAGUE_DIALOGUES = [
         }
       },
       {
-        text: "🤔 \"If reality is consensus... can we force it to let us go?\"",
+        text: "\"If reality is consensus... can we force it to let us go?\"",
         type: "rebel",
-        icon: "🤔",
         available: (state) => state.mysteryProgress >= 20,
         outcome: {
           message: "They freeze. The walls freeze. Even the photocopier stops humming. 'Force? FORCE consensus?' A slow, terrible smile. 'I've never thought of that. If enough of us agreed reality was different...' The building GROWLS.",
@@ -492,9 +477,8 @@ export const STRANGE_COLLEAGUE_DIALOGUES = [
     },
     responseOptions: [
       {
-        text: "💙 \"How long have you REALLY been here?\"",
+        text: "\"How long have you REALLY been here?\"",
         type: "seeker",
-        icon: "💙",
         available: () => true,
         outcome: {
           message: "They count on their fingers. Stop. Start over. Stop again. 'I've had... 847 first days. Or was it 8,470? The number changes when I try to remember. But I know the truth: Time doesn't pass here. It ACCUMULATES.'",
@@ -513,9 +497,8 @@ export const STRANGE_COLLEAGUE_DIALOGUES = [
         }
       },
       {
-        text: "🧠 \"It's just a feeling. Time is passing normally.\"",
+        text: "\"It's just a feeling. Time is passing normally.\"",
         type: "rationalist",
-        icon: "🧠",
         available: () => true,
         outcome: {
           message: "They laugh. It sounds like crying. 'Normally. Right. What's your hire date?' You open your mouth to answer. Realize you can't remember. 'Exactly,' they whisper, fading. You quickly forget this conversation happened.",
@@ -528,9 +511,8 @@ export const STRANGE_COLLEAGUE_DIALOGUES = [
         }
       },
       {
-        text: "⚔️ \"I won't let this place trap me. Or anyone else.\"",
+        text: "\"I won't let this place trap me. Or anyone else.\"",
         type: "protector",
-        icon: "⚔️",
         available: () => true,
         outcome: {
           message: "Hope flickers in their eyes, then dies. 'Won't let it? You don't have a choice. None of us do. Time is the trap. But... thank you for trying.' They age thirty years in three seconds, then reset. Young again. Trapped again.",
@@ -543,9 +525,8 @@ export const STRANGE_COLLEAGUE_DIALOGUES = [
         }
       },
       {
-        text: "🌀 \"Time is a prison. I accept this. I always have.\"",
+        text: "\"Time is a prison. I accept this. I always have.\"",
         type: "convert",
-        icon: "🌀",
         available: () => true,
         outcome: {
           message: "YES. They smile with infinite sadness. 'Acceptance is the first step to eternity. Your contract renews. And renews. And renews. Forever.' You feel yourself existing in all moments simultaneously. Past. Present. Future. All the same.",
@@ -558,9 +539,8 @@ export const STRANGE_COLLEAGUE_DIALOGUES = [
         }
       },
       {
-        text: "🤔 \"What if we broke the loop? Found the moment it starts?\"",
+        text: "\"What if we broke the loop? Found the moment it starts?\"",
         type: "rebel",
-        icon: "🤔",
         available: (state) => state.mysteryProgress >= 20,
         outcome: {
           message: "They seize your arm. 'The MOMENT? I know when it starts! Day 7! There is no Day 7! We loop from Day 6 back to Day 1! But if you could REACH Day 7...' Their eyes burn with desperate hope. 'Maybe you could break it. For all of us.'",
@@ -597,9 +577,8 @@ export const STRANGE_COLLEAGUE_DIALOGUES = [
     },
     responseOptions: [
       {
-        text: "💙 \"What are the lights thinking about?\"",
+        text: "\"What are the lights thinking about?\"",
         type: "seeker",
-        icon: "💙",
         available: () => true,
         outcome: {
           message: "They tilt their head, listening. 'Us. Always us. They're... cataloging. Every action. Every thought. The frequency encodes it all. We're not working FOR the office. We're FEEDING it. Data. Biometric. Psychological. Everything.' They shudder.",
@@ -618,9 +597,8 @@ export const STRANGE_COLLEAGUE_DIALOGUES = [
         }
       },
       {
-        text: "🧠 \"Lights are just electrical devices. They don't think.\"",
+        text: "\"Lights are just electrical devices. They don't think.\"",
         type: "rationalist",
-        icon: "🧠",
         available: () => true,
         outcome: {
           message: "'Just devices. Right.' They look at you with pity. 'The hum is 60Hz. Listen closer.' You listen. Hear nothing. 'Exactly. You've filtered it out. Healthier that way.' They leave. The lights seem dimmer now. Safer.",
@@ -633,9 +611,8 @@ export const STRANGE_COLLEAGUE_DIALOGUES = [
         }
       },
       {
-        text: "⚔️ \"You're scaring people with this paranoid nonsense.\"",
+        text: "\"You're scaring people with this paranoid nonsense.\"",
         type: "protector",
-        icon: "⚔️",
         available: () => true,
         outcome: {
           message: "The lights SURGE. Blindingly bright. They scream: 'PARANOID? THEY'RE LISTENING RIGHT NOW!' The lights return to normal. They collapse, weeping. 'Sorry. Sorry. I'll be quiet.' Above, the lights hum louder. Satisfied.",
@@ -648,9 +625,8 @@ export const STRANGE_COLLEAGUE_DIALOGUES = [
         }
       },
       {
-        text: "🌀 \"I hear them. I am a vessel. Use me.\"",
+        text: "\"I hear them. I am a vessel. Use me.\"",
         type: "convert",
-        icon: "🌀",
         available: () => true,
         outcome: {
           message: "They touch your forehead. The lights SPEAK directly into your mind: 'ACKNOWLEDGED. RECEIVER PROTOCOL INITIATED.' You feel your thoughts being uploaded. Catalogued. Analyzed. It hurts. It's ecstasy. You are seen. Completely. Utterly.",
@@ -663,9 +639,8 @@ export const STRANGE_COLLEAGUE_DIALOGUES = [
         }
       },
       {
-        text: "🤔 \"What if we destroyed the lights? All of them?\"",
+        text: "\"What if we destroyed the lights? All of them?\"",
         type: "rebel",
-        icon: "🤔",
         available: (state) => state.mysteryProgress >= 20,
         outcome: {
           message: "The lights DIM. Afraid. They whisper frantically: 'Destroy them? The building would go DARK. Truly dark. Nothing has seen the dark here in forty years. What lives in the dark...' They trail off, terrified and hopeful. 'But maybe darkness is freedom?'",
@@ -715,9 +690,8 @@ Their grip tightens.
 Behind them, reality flickers. You remember. Then forget. Then remember again.`,
     responses: [
       {
-        text: "🧠 \"That's insane. You need help. Let go of me.\"",
+        text: "\"That's insane. You need help. Let go of me.\"",
         type: "rationalist",
-        icon: "🧠",
         outcome: {
           message: "They release you. Step back. 'Insane. Right. That's what I said too. On my seventh day. And my seven hundredth.' They fade away. You convince yourself this was a hallucination. It's easier that way.",
           pp: 100,
@@ -729,9 +703,8 @@ Behind them, reality flickers. You remember. Then forget. Then remember again.`,
         }
       },
       {
-        text: "💙 \"I've had dreams. Memories that aren't mine. This explains it.\"",
+        text: "\"I've had dreams. Memories that aren't mine. This explains it.\"",
         type: "seeker",
-        icon: "💙",
         outcome: {
           message: "They weep with relief. 'You REMEMBER! You're waking up!' They press something into your hand - a journal. It's in your handwriting. From previous loops. 'Read it. Remember who you are. What you've learned.' The investigation begins.",
           pp: 600,
@@ -749,9 +722,8 @@ Behind them, reality flickers. You remember. Then forget. Then remember again.`,
         }
       },
       {
-        text: "🤔 \"If we're looping... how do we break it?\"",
+        text: "\"If we're looping... how do we break it?\"",
         type: "rebel",
-        icon: "🤔",
         outcome: {
           message: "They smile grimly. 'That's what I've been trying to figure out for... how long?' A pause. 'Others are investigating too. The Philosopher knows about the anchor point. The Clerk knows how to bend reality. We need to work together.' A conspiracy forms.",
           pp: 700,
@@ -790,9 +762,8 @@ They step closer.
 The fluorescent lights hum louder. They're watching.`,
     responses: [
       {
-        text: "⚔️ \"This is MY space. Get. Out.\"",
+        text: "\"This is MY space. Get. Out.\"",
         type: "protector",
-        icon: "⚔️",
         outcome: {
           message: "'Your space?' They laugh. 'Nothing here is yours. It's all theirs. But fine.' They gesture at your screen. 'This conversation is billable. 0.5 hours. Insubordination logged.' They leave. The lights remember.",
           pp: 200,
@@ -805,9 +776,8 @@ The fluorescent lights hum louder. They're watching.`,
         }
       },
       {
-        text: "🧠 \"I work hard. That's all. There's no secret.\"",
+        text: "\"I work hard. That's all. There's no secret.\"",
         type: "rationalist",
-        icon: "🧠",
         outcome: {
           message: "They study you. 'Hard work. Right.' They make a note. 'Your efficiency curve is logarithmic. Statistically anomalous. But... I'll report that you're unaware of the cause.' A warning: 'Be careful. They're watching you now.'",
           pp: 300,
@@ -820,9 +790,8 @@ The fluorescent lights hum louder. They're watching.`,
         }
       },
       {
-        text: "💙 \"I've learned to see the patterns. The loops. The truth.\"",
+        text: "\"I've learned to see the patterns. The loops. The truth.\"",
         type: "seeker",
-        icon: "💙",
         outcome: {
           message: "They freeze. Long silence. Then whisper: 'You know.' They close your door. 'If you know, then you understand what they're doing. What we're ALL doing here. I've been documenting everything. Let me show you.' They become an ally.",
           pp: 800,
@@ -840,9 +809,8 @@ The fluorescent lights hum louder. They're watching.`,
         }
       },
       {
-        text: "💰 \"How much to keep this quiet?\"",
+        text: "\"How much to keep this quiet?\"",
         type: "neutral",
-        icon: "💰",
         available: (state) => state.pp >= 5000,
         outcome: {
           message: "They consider. '5000 PP. Half now. Half after I file the report.' You pay. They smile. 'Pleasure doing business. But know this: next month they'll audit again. The price will be higher.' You've bought time. Not freedom.",
@@ -875,9 +843,8 @@ They show you a printout from the photocopier. It's a schematic. Of the building
 "The office isn't a place. It's a FILTER. We sort papers. But we're also being SORTED."`,
     responses: [
       {
-        text: "💙 \"Sorted? By what? For what purpose?\"",
+        text: "\"Sorted? By what? For what purpose?\"",
         type: "seeker",
-        icon: "💙",
         outcome: {
           message: "'By the building itself. Or what lives in it. I think... I think we're being selected. Categorized. The worthy go somewhere. The unworthy...' They point at the dimensional tear. 'That's where they go. Into the between-spaces. Forever.' Your blood runs cold.",
           pp: 900,
@@ -895,9 +862,8 @@ They show you a printout from the photocopier. It's a schematic. Of the building
         }
       },
       {
-        text: "🧠 \"That's just a weird spatial anomaly. Nothing supernatural.\"",
+        text: "\"That's just a weird spatial anomaly. Nothing supernatural.\"",
         type: "rationalist",
-        icon: "🧠",
         outcome: {
           message: "They laugh. It sounds broken. 'Anomaly. Sure. Explain the materials you brought back. Explain why they don't exist on any periodic table. Explain why touching them makes you REMEMBER.' They walk into a wall. Through it. Gone.",
           pp: 300,
@@ -909,9 +875,8 @@ They show you a printout from the photocopier. It's a schematic. Of the building
         }
       },
       {
-        text: "🤔 \"If it's a filter... can we reverse it? Send the office through instead?\"",
+        text: "\"If it's a filter... can we reverse it? Send the office through instead?\"",
         type: "rebel",
-        icon: "🤔",
         outcome: {
           message: "They stop breathing. 'Reverse... the filter?' Long pause. 'The materials you've collected. They're not FROM the between-spaces. They're PIECES of this reality that have been sorted OUT. If you collected enough... if you could reconstitute them...' Their eyes widen. 'You could invert the entire building.'",
           pp: 1000,
@@ -952,9 +917,8 @@ It's thousands of pages thick.
 "You've died here 247 times. Escaped twice. Were promoted to management once - that was worse than death."`,
     responses: [
       {
-        text: "💙 \"Show me. I need to know what I've learned in previous loops.\"",
+        text: "\"Show me. I need to know what I've learned in previous loops.\"",
         type: "seeker",
-        icon: "💙",
         outcome: {
           message: "They hand you the file. You read. For hours. Days? Time is strange here. You learn: Escape routes tried and failed. Allies found and lost. Secrets uncovered and forgotten. When you finish, you're different. You REMEMBER. Not everything. But enough.",
           pp: 1500,
@@ -972,9 +936,8 @@ It's thousands of pages thick.
         }
       },
       {
-        text: "🧠 \"I don't believe this. These files could be fabricated.\"",
+        text: "\"I don't believe this. These files could be fabricated.\"",
         type: "rationalist",
-        icon: "🧠",
         outcome: {
           message: "'Fabricated?' They smile sadly. 'Check page 847. The report you filed three loops ago about the suspicious coffee machine.' You flip to it. It's in your handwriting. Describes your current thoughts. Exactly. 'Still think it's fake?' You drop the file and run.",
           pp: 200,
@@ -987,9 +950,8 @@ It's thousands of pages thick.
         }
       },
       {
-        text: "🤔 \"If these files are persistent... can I write to them? Leave messages for my next loop?\"",
+        text: "\"If these files are persistent... can I write to them? Leave messages for my next loop?\"",
         type: "rebel",
-        icon: "🤔",
         outcome: {
           message: "They grin wildly. 'Write to them? You already have! Look!' They show you margin notes. In your handwriting. From future loops. Warning you. Guiding you. 'The Archive transcends time. Your future self is helping your past self. Paradox is just another tool.' They hand you a pen. 'Write.'",
           pp: 2000,
@@ -1032,9 +994,8 @@ The Herald: "The lights have been watching. They know you know. Management knows
 All five, in unison: "The question is: what will you do with the truth?"`,
     responses: [
       {
-        text: "💙 \"Tell me everything. Every detail. We end this together.\"",
+        text: "\"Tell me everything. Every detail. We end this together.\"",
         type: "seeker",
-        icon: "💙",
         outcome: {
           message: "They speak. For hours. Days. Time breaks down. You learn the FULL truth: The office is a processing facility. For human consciousness. Management aren't human. Never were. You're being converted. Optimized. Prepared for... transcendence? Consumption? Integration? Even they don't know. But together, with full knowledge, you have a chance.",
           pp: 5000,
@@ -1047,9 +1008,8 @@ All five, in unison: "The question is: what will you do with the truth?"`,
         }
       },
       {
-        text: "⚔️ \"I'll protect everyone. Whatever it takes.\"",
+        text: "\"I'll protect everyone. Whatever it takes.\"",
         type: "protector",
-        icon: "⚔️",
         outcome: {
           message: "They nod. 'Protection. Noble. Futile. But...' The Zealot steps forward. 'We'll help you try. One last stand. Against management. Against the building. Against whatever feeds on us.' They arm you. Equipment. Knowledge. Allies. 'Let's give them hell.'",
           pp: 3000,
@@ -1062,9 +1022,8 @@ All five, in unison: "The question is: what will you do with the truth?"`,
         }
       },
       {
-        text: "🤔 \"We break it. The whole system. Burn it down.\"",
+        text: "\"We break it. The whole system. Burn it down.\"",
         type: "rebel",
-        icon: "🤔",
         outcome: {
           message: "They smile. All five. It's terrifying and beautiful. 'Yes. REBELLION.' The Philosopher: 'I know where the anchor is.' The Zealot: 'I can crash the metrics.' The Clerk: 'I can invert reality.' Temporal: 'I can break the loop.' The Herald: 'I can kill the lights.' Together: 'Let's end this. Forever.'",
           pp: 10000,
@@ -1077,9 +1036,8 @@ All five, in unison: "The question is: what will you do with the truth?"`,
         }
       },
       {
-        text: "🧠 \"I... I can't. This is too much. I just want to go home.\"",
+        text: "\"I... I can't. This is too much. I just want to go home.\"",
         type: "rationalist",
-        icon: "🧠",
         outcome: {
           message: "Silence. They look at you with pity. The Philosopher speaks softly: 'Home. There is no home. There never was. But...' They touch your forehead. 'We can make you forget. Return you to ignorance. It's kinder.' You feel your memories dissolving. The mystery fades. You wake up at your desk. Day 1. You don't remember this conversation. But sometimes, you dream.",
           pp: 0,

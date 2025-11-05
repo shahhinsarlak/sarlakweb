@@ -468,12 +468,12 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
 
       // Add mystery progress notification if significant
       if (outcome.mysteryProgress && outcome.mysteryProgress >= 10) {
-        messages.push(`🔍 Mystery deepens... (${newState.mysteryProgress}% uncovered)`);
+        messages.push(`Mystery deepens... (${newState.mysteryProgress}% uncovered)`);
       }
 
       // Add clue notification
       if (outcome.clue) {
-        messages.push(`📋 New clue discovered: "${outcome.clue.text}"`);
+        messages.push(`New clue discovered: "${outcome.clue.text}"`);
       }
 
       // Add path notification if path changed
@@ -485,7 +485,7 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
           convert: 'Convert to Madness',
           rebel: 'Rebel Against the System'
         };
-        messages.push(`🎭 Your path crystallizes: ${pathNames[newState.playerPath]}`);
+        messages.push(`Your path crystallizes: ${pathNames[newState.playerPath]}`);
       }
 
       newState.recentMessages = [...messages, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15);
@@ -499,7 +499,7 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
         setTimeout(() => {
           setGameState(prevState => ({
             ...prevState,
-            recentMessages: ['Reality fractures. A door appears that was always there. THE ARCHIVE calls to you.', '🔓 NEW LOCATION: The Archive', ...prevState.recentMessages].slice(0, prevState.maxLogMessages || 15)
+            recentMessages: ['Reality fractures. A door appears that was always there. THE ARCHIVE calls to you.', 'NEW LOCATION: The Archive', ...prevState.recentMessages].slice(0, prevState.maxLogMessages || 15)
           }));
         }, 600);
       }
@@ -682,12 +682,12 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
         damage = Math.floor(damage * playerStats.critMultiplier);
         log.push({
           type: 'critical',
-          message: `💥 CRITICAL HIT! You strike for ${damage} damage!`
+          message: `CRITICAL HIT! You strike for ${damage} damage!`
         });
       } else {
         log.push({
           type: 'damage_enemy',
-          message: `⚔️ You attack for ${damage} damage.`
+          message: `You attack for ${damage} damage.`
         });
       }
 
@@ -697,7 +697,7 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       if (enemy.currentHP <= 0) {
         log.push({
           type: 'victory',
-          message: `🏆 Victory! ${enemy.displayName} has been defeated!`
+          message: `Victory! ${enemy.displayName} has been defeated!`
         });
         log.push({
           type: 'reward',
@@ -749,14 +749,14 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
 
       log.push({
         type: 'damage_player',
-        message: `💢 ${enemy.displayName} attacks for ${damage} damage!`
+        message: `[Attack] ${enemy.displayName} attacks for ${damage} damage!`
       });
 
       // Check if player defeated
       if (newPlayerHP <= 0) {
         log.push({
           type: 'defeat',
-          message: '☠️ You have been defeated. Your sanity shatters...'
+          message: 'You have been defeated. Your sanity shatters...'
         });
 
         return {
@@ -788,7 +788,7 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       if (escapeRoll < COMBAT_MECHANICS.escapeChance) {
         log.push({
           type: 'escape_success',
-          message: '🏃 You successfully escaped the battle!'
+          message: 'You successfully escaped the battle!'
         });
 
         return {
@@ -804,14 +804,14 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
 
         log.push({
           type: 'escape_fail',
-          message: `❌ Escape failed! You take ${damage} damage in the panic!`
+          message: `Escape failed! You take ${damage} damage in the panic!`
         });
 
         // Check if player died from escape damage
         if (newPlayerHP <= 0) {
           log.push({
             type: 'defeat',
-            message: '☠️ You collapse while trying to flee...'
+            message: 'You collapse while trying to flee...'
           });
 
           return {
@@ -882,10 +882,10 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
 
       // Quality indicator icons
       const qualityIcons = {
-        corrupted: '💀',
-        standard: '📄',
-        pristine: '✨',
-        perfect: '⭐'
+        corrupted: '[CORRUPTED]',
+        standard: '[STANDARD]',
+        pristine: '[PRISTINE]',
+        perfect: '[PERFECT]'
       };
 
       // Create document object to store
@@ -1018,7 +1018,7 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
         storedDocuments: prev.storedDocuments.filter(d => d.id !== docId),
         paper: prev.paper + paperReturn,
         recentMessages: [
-          `🗑️ Shredded ${doc.tierName} [${doc.quality.toUpperCase()}] → +${paperReturn} paper`,
+          `Shredded ${doc.tierName} [${doc.quality.toUpperCase()}] → +${paperReturn} paper`,
           ...prev.recentMessages
         ].slice(0, prev.maxLogMessages || 15)
       };
@@ -1059,7 +1059,7 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       }
       if (outcome.skillPoint) {
         newState.skillPoints = (prev.skillPoints || 0) + outcome.skillPoint;
-        messages.push(`⭐ +${outcome.skillPoint} Skill Point${outcome.skillPoint > 1 ? 's' : ''}!`);
+        messages.push(`+${outcome.skillPoint} Skill Point${outcome.skillPoint > 1 ? 's' : ''}!`);
       }
 
       // Handle materials
@@ -1096,7 +1096,7 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
         if (buff.materialMult) buffParts.push(`${buff.materialMult}x materials`);
 
         const duration = Math.floor(buff.duration / 60);
-        messages.push(`📈 BUFF: ${buffParts.join(', ')} for ${duration}min`);
+        messages.push(`BUFF: ${buffParts.join(', ')} for ${duration}min`);
       }
 
       // Handle debuffs
@@ -1119,13 +1119,13 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
         }
 
         const duration = Math.floor(debuff.duration / 60);
-        messages.push(`⚠️ DEBUFF: ${debuffParts.join(', ')} for ${duration}min`);
+        messages.push(`DEBUFF: ${debuffParts.join(', ')} for ${duration}min`);
       }
 
       // Handle permanent PP/sec increase
       if (outcome.permanentPPPerSec) {
         newState.ppPerSecond = (prev.ppPerSecond || 0) + outcome.permanentPPPerSec;
-        messages.push(`♾️ PERMANENT +${outcome.permanentPPPerSec} PP/sec`);
+        messages.push(`PERMANENT +${outcome.permanentPPPerSec} PP/sec`);
       }
 
       // Handle lore/prophecy
@@ -1134,27 +1134,27 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
           messages.push(outcome.desc);
         } else {
           const prophecyText = generateProphecy(prev);
-          messages.push('🔮 PROPHECY:', prophecyText);
+          messages.push('PROPHECY:', prophecyText);
         }
       }
 
       // Handle locks
       if (outcome.portalLock) {
         newState.portalCooldown = outcome.portalLock;
-        messages.push(`⏳ Portal locked for ${Math.floor(outcome.portalLock / 60)}min`);
+        messages.push(`Portal locked for ${Math.floor(outcome.portalLock / 60)}min`);
       }
       if (outcome.allLocks) {
         newState.portalCooldown = outcome.allLocks;
         newState.restCooldown = outcome.allLocks;
-        messages.push(`🔒 All actions locked for ${Math.floor(outcome.allLocks / 60)}min`);
+        messages.push(`All actions locked for ${Math.floor(outcome.allLocks / 60)}min`);
       }
 
       // Quality indicator icons
       const qualityIcons = {
-        corrupted: '💀',
-        standard: '📄',
-        pristine: '✨',
-        perfect: '⭐'
+        corrupted: '[CORRUPTED]',
+        standard: '[STANDARD]',
+        pristine: '[PRISTINE]',
+        perfect: '[PERFECT]'
       };
 
       // Main message with detailed effects
