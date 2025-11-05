@@ -285,7 +285,7 @@ export default function JournalModal({ gameState, onClose, onSwitchTab }) {
                   </div>
                   {colleagueClues.map((clue, index) => (
                     <div key={index} style={{ marginBottom: '6px', lineHeight: '1.5' }}>
-                      <span style={{ opacity: 0.7 }}>"{clue.text}"</span>
+                      <span style={{ opacity: 0.7 }}>{`"${clue.text}"`}</span>
                       {clue.collectedOn && (
                         <span style={{ opacity: 0.5, fontSize: '10px', marginLeft: '6px' }}>
                           ({clue.collectedOn})
