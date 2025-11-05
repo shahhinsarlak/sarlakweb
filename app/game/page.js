@@ -1399,8 +1399,8 @@ export default function Game() {
                 })()}
                 {gameState.ppPerSecond > 0 && (
                   <div style={{
-                    paddingTop: '16px',
-                    borderTop: '1px solid var(--border-color)',
+                    fontSize: '11px',
+                    marginBottom: '16px',
                     padding: '8px',
                     backgroundColor: 'var(--bg-color)',
                     border: '1px solid var(--border-color)',
