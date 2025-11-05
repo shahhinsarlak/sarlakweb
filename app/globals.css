@@ -375,3 +375,16 @@ body {
     transform: translateY(0);
   }
 }
+
+/* Colleague Notification System Animation (Added 2025-11-05) */
+/* Pulsing glow effect for break room button when colleague is waiting */
+@keyframes locationPulse {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(255, 107, 107, 0.8);
+    border-color: #ff6b6b;
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(255, 107, 107, 1);
+    border-color: #ff4a4a;
+  }
+}

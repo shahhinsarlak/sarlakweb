@@ -19,6 +19,7 @@ import FileDrawer from './FileDrawer';
 import HelpPopup from './HelpPopup';
 import AchievementsModal from './AchievementsModal';
 import JournalModal from './JournalModal';
+import NotificationBubble from './NotificationBubble';
 import { createGameActions } from './gameActions';
 import { getDistortionStyle, distortText, getClockTime, createLevelUpParticles, createSkillPurchaseParticles, createScreenShake } from './gameUtils';
 import { saveGame, loadGame, exportToClipboard, importFromClipboard } from './saveSystem';
@@ -39,7 +40,8 @@ import {
   DIMENSIONAL_UPGRADES,
   HELP_POPUPS,
   HELP_TRIGGERS,
-  STORY_MOMENTS
+  STORY_MOMENTS,
+  COLLEAGUE_ENCOUNTERS
 } from './constants';
 
 export default function Game() {
@@ -497,13 +499,24 @@ export default function Game() {
           newState.sanity = 20;
         }
 
-        // Colleague events only trigger in Break Room
-        const currentLoc = LOCATIONS[prev.location];
-        if (!prev.strangeColleagueEvent && !prev.pendingColleagueEncounter && !prev.debugMode && !prev.meditating &&
-            prev.day >= 3 && currentLoc?.allowColleagueEvents && Math.random() < 0.01) {
-          const randomDialogue = STRANGE_COLLEAGUE_DIALOGUES[Math.floor(Math.random() * STRANGE_COLLEAGUE_DIALOGUES.length)];
-          newState.pendingColleagueEncounter = randomDialogue; // Show briefing screen first
-          addMessage('You notice a colleague approaching...');
+        // Check for scheduled colleague encounters (Overhauled 2025-11-05)
+        // Replaces random encounters with scheduled, story-driven notifications
+        if (!prev.colleagueNotification && !prev.strangeColleagueEvent &&
+            !prev.pendingColleagueEncounter && !prev.debugMode && !prev.meditating &&
+            !prev.inCombat && !prev.pendingStoryMoment) {
+
+          // Check for any triggered encounters
+          for (const encounter of COLLEAGUE_ENCOUNTERS) {
+            if (encounter.trigger(prev)) {
+              // Set notification - player must visit break room to proceed
+              newState.colleagueNotification = {
+                message: encounter.notificationMessage,
+                colleagueId: encounter.colleagueId,
+                encounterId: encounter.id
+              };
+              break; // Only one notification at a time
+            }
+          }
         }
 
         if (Math.random() < 0.02) {
@@ -906,6 +919,14 @@ export default function Game() {
 
   return (
     <>
+      {/* Colleague Notification System (Added 2025-11-05) */}
+      {gameState.colleagueNotification && (
+        <NotificationBubble
+          notification={gameState.colleagueNotification}
+          onDismiss={actions.dismissNotification}
+        />
+      )}
+
       <div className="game-header-wrapper">
         <Header />
       </div>
@@ -1219,27 +1240,35 @@ export default function Game() {
                   gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(auto-fill, minmax(150px, 1fr))',
                   gap: '12px'
                 }}>
-                  {gameState.unlockedLocations.map(loc => (
-                    <button
-                      key={loc}
-                      onClick={() => actions.changeLocation(loc)}
-                      disabled={gameState.location === loc}
-                      style={{
-                        background: gameState.location === loc ? 'var(--accent-color)' : 'none',
-                        border: '1px solid var(--border-color)',
-                        color: gameState.location === loc ? 'var(--bg-color)' : 'var(--text-color)',
-                        padding: '14px',
-                        cursor: gameState.location === loc ? 'default' : 'pointer',
-                        fontSize: '11px',
-                        fontFamily: 'inherit',
-                        letterSpacing: '0.5px',
-                        transition: 'all 0.2s',
-                        textAlign: 'center'
-                      }}
-                    >
-                      {LOCATIONS[loc]?.name || 'Unknown Location'}
-                    </button>
-                  ))}
+                  {gameState.unlockedLocations.map(loc => {
+                    // Check if this is the break room with an active notification
+                    const hasNotification = loc === 'breakroom' && gameState.colleagueNotification;
+
+                    return (
+                      <button
+                        key={loc}
+                        onClick={() => actions.changeLocation(loc)}
+                        disabled={gameState.location === loc}
+                        style={{
+                          background: gameState.location === loc ? 'var(--accent-color)' : 'none',
+                          border: hasNotification ? '2px solid #ff6b6b' : '1px solid var(--border-color)',
+                          color: gameState.location === loc ? 'var(--bg-color)' : 'var(--text-color)',
+                          padding: '14px',
+                          cursor: gameState.location === loc ? 'default' : 'pointer',
+                          fontSize: '11px',
+                          fontFamily: 'inherit',
+                          letterSpacing: '0.5px',
+                          transition: 'all 0.2s',
+                          textAlign: 'center',
+                          boxShadow: hasNotification ? '0 0 20px rgba(255, 107, 107, 0.8)' : 'none',
+                          animation: hasNotification ? 'locationPulse 2s ease-in-out infinite' : 'none'
+                        }}
+                      >
+                        {LOCATIONS[loc]?.name || 'Unknown Location'}
+                        {hasNotification && ' [!]'}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}

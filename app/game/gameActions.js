@@ -355,6 +355,25 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       // Track location discovery for journal
       const discoveredLocations = discoverLocation(prev, loc);
 
+      // NEW: Check for colleague notification when entering break room (Added 2025-11-05)
+      if (loc === 'breakroom' && prev.colleagueNotification) {
+        // Find the colleague data
+        const colleague = STRANGE_COLLEAGUE_DIALOGUES.find(
+          c => c.id === prev.colleagueNotification.colleagueId
+        );
+
+        if (colleague) {
+          // Trigger encounter via briefing screen
+          return {
+            ...prev,
+            location: loc,
+            energy: Math.max(0, prev.energy - 5),
+            discoveredLocations,
+            pendingColleagueEncounter: colleague
+          };
+        }
+      }
+
       // Handle direct locations
       if (locationData.isDirect) {
         if (loc === 'portal') {
@@ -423,10 +442,10 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
         }
       };
 
-      // Grant XP
-      grantXP(outcome.xp);
+      // NO LONGER GRANT XP (Removed 2025-11-05 - colleague encounters are purely narrative)
+      // grantXP(outcome.xp);
 
-      // Process outcome for mystery/path system
+      // Process outcome for mystery/path system (PP/XP/sanity removed)
       const outcomeUpdates = processResponseOutcome(prev, outcome);
 
       // Check for endgame events based on new trust level
@@ -452,7 +471,12 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
         pendingStoryMoment: null,
         disagreementCount: prev.disagreementCount + (responseOption.type === 'hostile' || responseOption.type === 'protector' ? 1 : 0),
         colleagueResponseCount: (prev.colleagueResponseCount || 0) + 1, // Track all responses
-        discoveredColleagues
+        discoveredColleagues,
+        // Clear notification and mark encounter as completed (Added 2025-11-05)
+        colleagueNotification: null,
+        completedColleagueEncounters: prev.colleagueNotification
+          ? [...prev.completedColleagueEncounters, prev.colleagueNotification.encounterId]
+          : prev.completedColleagueEncounters
       };
 
       // Track completed story moment
@@ -490,8 +514,20 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
 
       newState.recentMessages = [...messages, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15);
 
-      // Archive unlock mechanic - triggers after 20 total colleague responses
-      if (newState.colleagueResponseCount >= 20 && !prev.unlockedLocations.includes('archive')) {
+      // Archive unlock mechanic - triggers after collecting 5 archive-revealing clues (Redesigned 2025-11-05)
+      // Player must piece together the mystery through colleague interactions
+      const ARCHIVE_CLUES = [
+        'eternal_productivity',     // Archives mentioned directly
+        'building_predates_office', // Building has hidden history
+        'productivity_documents',   // Secret documentation exists
+        'surveillance_system',      // Everything is cataloged
+        'sorting_purpose'           // Hidden sorting/filing system
+      ];
+
+      const collectedClues = newState.investigation?.clues?.map(c => c.id) || [];
+      const archiveCluesCollected = ARCHIVE_CLUES.filter(clueId => collectedClues.includes(clueId));
+
+      if (archiveCluesCollected.length >= 5 && !prev.unlockedLocations.includes('archive')) {
         newState.unlockedLocations = [...new Set([...prev.unlockedLocations, 'archive'])];
 
         triggerScreenEffect('shake');
@@ -499,7 +535,13 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
         setTimeout(() => {
           setGameState(prevState => ({
             ...prevState,
-            recentMessages: ['Reality fractures. A door appears that was always there. THE ARCHIVE calls to you.', 'NEW LOCATION: The Archive', ...prevState.recentMessages].slice(0, prevState.maxLogMessages || 15)
+            recentMessages: [
+              'The pieces fall into place. The clues converge.',
+              'Reality fractures. A door appears that was always there.',
+              'THE ARCHIVE calls to you.',
+              'NEW LOCATION: The Archive',
+              ...prevState.recentMessages
+            ].slice(0, prevState.maxLogMessages || 15)
           }));
         }, 600);
       }
@@ -1175,6 +1217,14 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
     });
   };
 
+  // Dismiss colleague notification (Added 2025-11-05)
+  const dismissNotification = () => {
+    setGameState(prev => ({
+      ...prev,
+      colleagueNotification: null
+    }));
+  };
+
   return {
     sortPapers,
     rest,
@@ -1189,6 +1239,7 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
     examineItem,
     closeExamine,
     respondToColleague,
+    dismissNotification,
     buyUpgrade,
     printPaper,
     buyPrinterUpgrade,
