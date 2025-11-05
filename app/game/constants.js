@@ -34,6 +34,9 @@ export const INITIAL_GAME_STATE = {
   pendingColleagueEncounter: null, // Briefing screen before colleague interaction
   disagreementCount: 0,
   colleagueResponseCount: 0, // Total responses to colleagues (for archive unlock)
+  // Colleague Notification System (Added 2025-11-05)
+  colleagueNotification: null, // { message, colleagueId, encounterId } or null when notification is active
+  completedColleagueEncounters: [], // Array of encounter IDs that have been completed
   achievements: [],
   examiningItem: null,
   sortCount: 0,
@@ -1052,6 +1055,137 @@ All five, in unison: "The question is: what will you do with the truth?"`,
     ]
   }
 ];
+
+/**
+ * Colleague Encounter Schedule (Added 2025-11-05)
+ *
+ * Defines when colleague encounters should trigger via notification system
+ * Encounters are story-driven and lead players toward discovering the archive
+ * No material rewards (PP/XP/sanity) - purely narrative progression
+ */
+export const COLLEAGUE_ENCOUNTERS = [
+  {
+    id: 'encounter_spiral_1',
+    colleagueId: 'spiral_philosopher',
+    encounterId: 1,
+    notificationMessage: "Someone is drawing spirals in the break room. They're waiting for you.",
+    trigger: (state) => {
+      // Triggers when break room is first unlocked
+      return state.unlockedLocations.includes('breakroom') &&
+             !state.completedColleagueEncounters.includes('encounter_spiral_1');
+    }
+  },
+  {
+    id: 'encounter_zealot_1',
+    colleagueId: 'productivity_zealot',
+    encounterId: 1,
+    notificationMessage: "A colleague wants to discuss your metrics. Break room. Now.",
+    trigger: (state) => {
+      // Triggers on day 3 or after first colleague encounter
+      return (state.day >= 3 || state.completedColleagueEncounters.length >= 1) &&
+             !state.completedColleagueEncounters.includes('encounter_zealot_1');
+    }
+  },
+  {
+    id: 'encounter_void_1',
+    colleagueId: 'void_clerk',
+    encounterId: 1,
+    notificationMessage: "The filing cabinet whispers your name. Someone is in the break room.",
+    trigger: (state) => {
+      // Triggers on day 5 or after collecting 2 clues
+      return ((state.day >= 5 || (state.investigation?.clues?.length || 0) >= 2) &&
+             !state.completedColleagueEncounters.includes('encounter_void_1'));
+    }
+  },
+  {
+    id: 'encounter_temporal_1',
+    colleagueId: 'temporal_trapped',
+    encounterId: 1,
+    notificationMessage: "You've received this notification before. Break room. Again.",
+    trigger: (state) => {
+      // Triggers on day 7 or after first debug challenge
+      return ((state.day >= 7 || state.achievements.includes('debugger')) &&
+             !state.completedColleagueEncounters.includes('encounter_temporal_1'));
+    }
+  },
+  {
+    id: 'encounter_light_1',
+    colleagueId: 'light_herald',
+    encounterId: 1,
+    notificationMessage: "The lights are brighter in the break room. Someone needs to tell you why.",
+    trigger: (state) => {
+      // Triggers after printing first document or day 9
+      return ((state.printCount >= 1 || state.day >= 9) &&
+             !state.completedColleagueEncounters.includes('encounter_light_1'));
+    }
+  },
+  // Second round - deeper conversations after mystery progress
+  {
+    id: 'encounter_spiral_2',
+    colleagueId: 'spiral_philosopher',
+    encounterId: 2,
+    notificationMessage: "Someone needs to show you the pattern. It's urgent.",
+    trigger: (state) => {
+      return state.mysteryProgress >= 15 &&
+             state.completedColleagueEncounters.includes('encounter_spiral_1') &&
+             !state.completedColleagueEncounters.includes('encounter_spiral_2');
+    }
+  },
+  {
+    id: 'encounter_zealot_2',
+    colleagueId: 'productivity_zealot',
+    encounterId: 2,
+    notificationMessage: "Productivity meeting scheduled. You don't remember scheduling it.",
+    trigger: (state) => {
+      return state.mysteryProgress >= 20 &&
+             state.completedColleagueEncounters.includes('encounter_zealot_1') &&
+             !state.completedColleagueEncounters.includes('encounter_zealot_2');
+    }
+  },
+  {
+    id: 'encounter_void_2',
+    colleagueId: 'void_clerk',
+    encounterId: 2,
+    notificationMessage: "A colleague has an important file for you. The break room is darker than usual.",
+    trigger: (state) => {
+      return state.mysteryProgress >= 25 &&
+             state.completedColleagueEncounters.includes('encounter_void_1') &&
+             !state.completedColleagueEncounters.includes('encounter_void_2');
+    }
+  }
+];
+
+/**
+ * Notification messages library for variety
+ * Used for randomizing notifications to keep them fresh
+ */
+export const COLLEAGUE_NOTIFICATION_MESSAGES = {
+  spiral_philosopher: [
+    "Someone is drawing spirals in the break room. They're waiting for you.",
+    "You hear circular logic from the break room. It's calling you.",
+    "A colleague keeps walking in circles near the break room. They want to talk.",
+  ],
+  productivity_zealot: [
+    "A colleague wants to discuss your metrics. Break room. Now.",
+    "Productivity meeting scheduled. You don't remember scheduling it.",
+    "Someone needs to review your performance. Break room. Immediately.",
+  ],
+  void_clerk: [
+    "The filing cabinet whispers your name. Someone is in the break room.",
+    "A colleague needs your signature. The break room is darker than usual.",
+    "Someone is filing documents about you. They're in the break room.",
+  ],
+  temporal_trapped: [
+    "You've received this notification before. Break room. Again.",
+    "Someone is waiting. They've been waiting. They will be waiting.",
+    "A colleague needs to tell you about yesterday. Tomorrow. Today.",
+  ],
+  light_herald: [
+    "The lights are brighter in the break room. Someone needs to tell you why.",
+    "A colleague has an illuminating message. The break room hums louder.",
+    "Someone wants to show you what the lights see. Break room.",
+  ]
+};
 
 export const DEBUG_CHALLENGES = [
   { 

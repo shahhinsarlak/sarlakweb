@@ -359,9 +359,8 @@ export const checkStoryMoments = (gameState, storyMoments) => {
 export const processResponseOutcome = (currentState, outcome) => {
   const updates = {};
 
-  // Basic stat updates
-  if (outcome.pp !== undefined) updates.pp = currentState.pp + outcome.pp;
-  if (outcome.sanity !== undefined) updates.sanity = Math.max(0, Math.min(100, currentState.sanity + outcome.sanity));
+  // REMOVED PP/XP/Sanity rewards (2025-11-05) - colleague encounters are purely narrative
+  // Colleague interactions no longer grant material rewards, only story progression
 
   // Mystery progress
   if (outcome.mysteryProgress) {
