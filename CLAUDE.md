@@ -94,6 +94,7 @@
 3. **Functional Programming**: Immutable state updates, pure functions where possible
 4. **Event-Driven Architecture**: No game loop - actions trigger updates
 5. **Modal-Based UI**: Complex interactions happen in dedicated modal components
+6. **No Emojis**: Never use emojis in the game UI or code. This is a text-based horror game with minimalist aesthetics - emojis break immersion and tone
 
 ---
 
@@ -134,6 +135,11 @@ if (isValid) {
     // Main logic buried here
   }
 }
+
+// ❌ NEVER: Use emojis in code or UI
+// This is a minimalist horror game - emojis break immersion
+const message = '⚠️ Warning';  // WRONG
+const message = 'Warning';     // CORRECT
 ```
 
 ### Code Formatting

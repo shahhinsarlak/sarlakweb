@@ -39,7 +39,7 @@ export default function ColleagueBriefingModal({ colleague, onApproach, onWalkAw
           borderBottom: '1px solid var(--border-color)',
           paddingBottom: '16px'
         }}>
-          ⚠️ Colleague Encounter
+          Colleague Encounter
         </div>
 
         {/* Colleague preview */}
@@ -99,7 +99,7 @@ export default function ColleagueBriefingModal({ colleague, onApproach, onWalkAw
               transition: 'all 0.2s'
             }}
           >
-            👁️ Approach and Engage
+            Approach and Engage
           </button>
 
           <button
@@ -118,7 +118,7 @@ export default function ColleagueBriefingModal({ colleague, onApproach, onWalkAw
               transition: 'all 0.2s'
             }}
           >
-            🚪 Turn and Walk Away
+            Turn and Walk Away
           </button>
         </div>
 

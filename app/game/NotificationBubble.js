@@ -41,7 +41,7 @@ export default function NotificationBubble({ notification, onDismiss }) {
             color: '#ff6b6b',
             fontWeight: '600'
           }}>
-            ⚠️ Notice
+            Notice
           </div>
           <button
             onClick={onDismiss}
