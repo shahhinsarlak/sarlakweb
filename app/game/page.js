@@ -1408,7 +1408,7 @@ export default function Game() {
                   }}>
                     <div style={{ opacity: 0.7, marginBottom: '2px' }}>PP per second:</div>
                     <div style={{ fontWeight: 'bold', fontSize: '13px' }}>
-                      +{getEffectivePPPerSecond().toFixed(1)} PP/sec
+                      +{getEffectivePPPerSecond().toFixed(1)} PP
                     </div>
                     <div style={{ fontSize: '9px', opacity: 0.6, marginTop: '4px' }}>
                       {(() => {
@@ -1417,13 +1417,7 @@ export default function Game() {
                         const skillBonus = effects.ppMultiplier > 0 ? `+${(effects.ppMultiplier * 100).toFixed(0)}%` : 'none';
                         const sanityBonus = tier.ppModifier !== 1 ? `${tier.ppModifier >= 1 ? '+' : ''}${((tier.ppModifier - 1) * 100).toFixed(0)}%` : '0%';
 
-                        // Check for void contract buffs
-                        const activeBuffs = gameState.activeReportBuffs || [];
-                        const now = Date.now();
-                        const ppSecBuffs = activeBuffs.filter(b => b.expiresAt > now && b.ppPerSecondMult);
-                        const buffBonus = ppSecBuffs.length > 0 ? `+${((Math.max(...ppSecBuffs.map(b => b.ppPerSecondMult)) - 1) * 100).toFixed(0)}%` : 'none';
-
-                        return `Base: ${gameState.ppPerSecond} • Skills: ${skillBonus} • Sanity: ${sanityBonus} • Buffs: ${buffBonus}`;
+                        return `Base: ${gameState.ppPerSecond} • Skills: ${skillBonus} • Sanity: ${sanityBonus}`;
                       })()}
                     </div>
                   </div>
