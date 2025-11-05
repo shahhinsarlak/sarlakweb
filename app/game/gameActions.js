@@ -13,7 +13,7 @@
  * - upgrades: Purchase permanent improvements
  * - printer: Paper generation system
  */
-import { LOCATIONS, UPGRADES, DEBUG_CHALLENGES, PRINTER_UPGRADES, DOCUMENT_TYPES } from './constants';
+import { LOCATIONS, UPGRADES, DEBUG_CHALLENGES, PRINTER_UPGRADES, DOCUMENT_TYPES, STRANGE_COLLEAGUE_DIALOGUES } from './constants';
 import {
   applyEnergyCostReduction,
   applyPPMultiplier
