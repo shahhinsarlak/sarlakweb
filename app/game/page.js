@@ -7,6 +7,7 @@ import DebugModal from './DebugModal';
 import DebugPanel from './DebugPanel';
 import ColleagueModal from './ColleagueModal';
 import ColleagueBriefingModal from './ColleagueBriefingModal';
+import StoryMomentModal from './StoryMomentModal';
 import ExamineModal from './ExamineModal';
 import DimensionalArea from './DimensionalArea';
 import DimensionalUpgradesDisplay from './DimensionalUpgradesDisplay';
@@ -26,6 +27,7 @@ import { SKILLS, LEVEL_SYSTEM, XP_REWARDS } from './skillTreeConstants';
 import { DIMENSIONAL_MATERIALS } from './dimensionalConstants';
 import { getPlayerCombatStats } from './combatConstants';
 import { getSanityTierDisplay, isSanityDrainPaused, calculatePaperQuality, applySanityPPModifier } from './sanityPaperHelpers';
+import { checkStoryMoments } from './colleagueHelpers';
 import {
   INITIAL_GAME_STATE,
   LOCATIONS,
@@ -36,7 +38,8 @@ import {
   PRINTER_UPGRADES,
   DIMENSIONAL_UPGRADES,
   HELP_POPUPS,
-  HELP_TRIGGERS
+  HELP_TRIGGERS,
+  STORY_MOMENTS
 } from './constants';
 
 export default function Game() {
@@ -682,6 +685,32 @@ export default function Game() {
     }
   }, [gameState.paper, gameState.printerUnlocked, gameState.helpEnabled, gameState.currentHelpPopup, gameState.shownHelpPopups]);
 
+  // Story Moments: Check for mandatory narrative beats
+  useEffect(() => {
+    // Don't check if already showing a story moment or colleague event
+    if (gameState.pendingStoryMoment || gameState.strangeColleagueEvent || gameState.pendingColleagueEncounter) return;
+
+    // Check if any story moment should trigger
+    const triggeredMoment = checkStoryMoments(gameState, STORY_MOMENTS);
+
+    if (triggeredMoment) {
+      setTimeout(() => {
+        setGameState(prev => {
+          // Double-check it hasn't been completed in the meantime
+          if (prev.completedStoryMoments.includes(triggeredMoment.id)) return prev;
+          if (prev.pendingStoryMoment) return prev; // Already set
+
+          return {
+            ...prev,
+            pendingStoryMoment: triggeredMoment,
+            strangeColleagueEvent: null, // Clear any pending colleague event
+            pendingColleagueEncounter: null
+          };
+        });
+      }, 100);
+    }
+  }, [gameState.day, gameState.playerLevel, gameState.portalUnlocked, gameState.unlockedLocations, gameState.mysteryProgress, gameState.completedStoryMoments, gameState.pendingStoryMoment, gameState.strangeColleagueEvent, gameState.pendingColleagueEncounter]);
+
   const dismissHelpPopup = () => {
     setGameState(prev => {
       if (!prev.currentHelpPopup) return prev;
@@ -807,6 +836,17 @@ export default function Game() {
         colleague={gameState.pendingColleagueEncounter}
         onApproach={handleApproachColleague}
         onWalkAway={handleWalkAway}
+      />
+    );
+  }
+
+  // Story Moment Modal - takes precedence over colleague events
+  if (gameState.pendingStoryMoment) {
+    return (
+      <StoryMomentModal
+        storyMoment={gameState.pendingStoryMoment}
+        gameState={gameState}
+        respondToColleague={actions.respondToColleague}
       />
     );
   }

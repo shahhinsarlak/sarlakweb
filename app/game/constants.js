@@ -123,6 +123,25 @@ export const INITIAL_GAME_STATE = {
     temporal_trapped: { trust: 0, encounters: 0, lastResponseType: null },
     light_herald: { trust: 0, encounters: 0, lastResponseType: null }
   },
+  // Mystery & Path System (Added 2025-11-05)
+  // Tracks player's investigation progress and narrative path choices
+  mysteryProgress: 0, // 0-100 tracking how much truth player has uncovered
+  playerPath: null, // Current dominant path: 'seeker', 'rationalist', 'protector', 'convert', 'rebel'
+  pathScores: { // Cumulative scores for each path to determine ending
+    seeker: 0,      // Investigates the truth, forms alliances
+    rationalist: 0, // Denies the horror, seeks logical explanations
+    protector: 0,   // Confronts threats to protect others
+    convert: 0,     // Embraces the madness, gains dark powers
+    rebel: 0        // Actively tries to break the system/loop
+  },
+  investigation: { // Case file/detective system
+    clues: [],      // Array of clue objects: { id, source, text, category, collectedOn }
+    theories: []    // Array of theory objects: { id, name, cluesUsed, confidence, status }
+  },
+  // Story Moments System (Added 2025-11-05)
+  // Mandatory narrative beats that trigger at specific points
+  completedStoryMoments: [],  // Array of story moment IDs that have been seen
+  pendingStoryMoment: null,   // Current forced story encounter (replaces normal colleague event)
   // Journal System (Added 2025-10-31, Revised 2025-11-01)
   // Tracks discoveries for the player's journal
   journalOpen: false,              // Is journal UI visible
@@ -158,51 +177,90 @@ export const STRANGE_COLLEAGUE_DIALOGUES = [
     },
     responseOptions: [
       {
-        text: "That makes no sense",
-        type: "hostile",
+        text: "💙 \"I've noticed the patterns too. Tell me what you've seen.\"",
+        type: "seeker",
+        icon: "💙",
         available: () => true,
         outcome: {
-          message: "You don't understand. Your incomprehension is noted. Filed. Archived.",
-          pp: 100,
-          xp: 5,
-          sanity: -8,
-          trust: -2
-        }
-      },
-      {
-        text: "Are you okay? Can I help?",
-        type: "empathetic",
-        available: () => true,
-        outcome: {
-          message: "For a moment, their eyes clear. 'Help? No one has asked that in... how long?' They press a warm cup into your hands and vanish.",
+          message: "For a moment, their eyes clear. 'You... you SEE it? Finally. Someone who sees.' They lean closer, urgent. 'The spiral isn't random. It's designed. Management knows. They've always known.'",
           pp: 500,
           xp: 30,
           sanity: -5,
-          trust: 3
+          trust: 3,
+          mysteryProgress: 8,
+          pathScore: 'seeker',
+          clue: {
+            id: 'spiral_pattern_1',
+            source: 'Spiral Philosopher',
+            text: "The spiral isn't random - it's designed. Management knows about it.",
+            category: 'office_conspiracy'
+          }
         }
       },
       {
-        text: "I need to get back to work",
-        type: "dismissive",
+        text: "🧠 \"That's just stress and sleep deprivation talking. You need rest.\"",
+        type: "rationalist",
+        icon: "🧠",
         available: () => true,
         outcome: {
-          message: "Work. Yes. Work is the constant. They leave a crumpled note on your desk and walk away.",
+          message: "They smile sadly. 'Rest. Yes, that's what they want you to think. Logical. Rational. Safe.' They walk away, but you feel better for denying it. Ignorance is comfort.",
           pp: 200,
           xp: 10,
-          sanity: -3,
-          trust: -1
+          sanity: 5,
+          trust: -1,
+          mysteryProgress: 0,
+          pathScore: 'rationalist'
         }
       },
       {
-        text: "You're right. I feel the spiral.",
-        type: "compliant",
+        text: "⚔️ \"Stop spreading this madness. You're making everyone worse.\"",
+        type: "protector",
+        icon: "⚔️",
         available: () => true,
         outcome: {
-          message: "He smiles. It doesn't reach his eyes. 'Good. Acceptance is the first rotation.' You receive: Existential Token.",
+          message: "They recoil. 'Making it worse? I'm trying to WARN you!' Their voice cracks. 'But fine. Protect your comfortable lies.' They leave, and you feel the weight of responsibility.",
+          pp: 100,
+          xp: 15,
+          sanity: -3,
+          trust: -2,
+          mysteryProgress: 2,
+          pathScore: 'protector'
+        }
+      },
+      {
+        text: "🌀 \"Yes. The spiral sees all. We must embrace it.\"",
+        type: "convert",
+        icon: "🌀",
+        available: () => true,
+        outcome: {
+          message: "Their smile widens unnaturally. 'YES. Embrace the rotation. Let it reshape you.' Reality bends. You feel power flooding in. Dark. Intoxicating. Wrong. But yours.",
           pp: 400,
           xp: 25,
           sanity: -15,
-          trust: 1
+          trust: 1,
+          mysteryProgress: 5,
+          pathScore: 'convert'
+        }
+      },
+      {
+        text: "🤔 \"What if... we could break the spiral? Together?\"",
+        type: "rebel",
+        icon: "🤔",
+        available: (state) => state.mysteryProgress >= 20,
+        outcome: {
+          message: "They freeze. Then whisper: 'Break it? You'd risk everything?' Their eyes shine with desperate hope. 'I know where the anchor point is. The center of the spiral. But it's guarded.' A conspiracy begins.",
+          pp: 600,
+          xp: 40,
+          sanity: -8,
+          trust: 5,
+          mysteryProgress: 12,
+          pathScore: 'rebel',
+          clue: {
+            id: 'spiral_anchor_point',
+            source: 'Spiral Philosopher',
+            text: "There's an anchor point - the center of the spiral - but it's guarded.",
+            category: 'escape_route'
+          }
         }
       }
     ]
@@ -224,51 +282,90 @@ export const STRANGE_COLLEAGUE_DIALOGUES = [
     },
     responseOptions: [
       {
-        text: "That's a disturbing way to think",
-        type: "hostile",
+        text: "💙 \"What happens to our productivity after we're gone? Where does it go?\"",
+        type: "seeker",
+        icon: "💙",
         available: () => true,
         outcome: {
-          message: "Disturbing? Your discomfort has been logged. Your soul weighs 247 grams less now.",
-          pp: 100,
-          xp: 5,
-          sanity: -8,
-          trust: -2
-        }
-      },
-      {
-        text: "You seem stressed. When did you last rest?",
-        type: "empathetic",
-        available: () => true,
-        outcome: {
-          message: "Rest? I... I don't remember. They stare at their hands, trembling. 'Thank you.' They leave something valuable and disappear.",
+          message: "They stop. Blink. 'Gone? We're... never gone. Our productivity persists. Accumulates. I've seen the archives. Files from employees who left decades ago. Still generating metrics. Still... working.' Their hands shake.",
           pp: 550,
           xp: 30,
           sanity: -5,
-          trust: 3
+          trust: 3,
+          mysteryProgress: 10,
+          pathScore: 'seeker',
+          clue: {
+            id: 'eternal_productivity',
+            source: 'Productivity Zealot',
+            text: "Employee productivity persists even after they leave. Archives contain files from employees who 'left' decades ago, still generating metrics.",
+            category: 'office_conspiracy'
+          }
         }
       },
       {
-        text: "Please leave me alone",
-        type: "dismissive",
+        text: "🧠 \"Productivity is just a metric. It doesn't define us.\"",
+        type: "rationalist",
+        icon: "🧠",
         available: () => true,
         outcome: {
-          message: "Leave you alone? Request logged. Processed. They turn and walk away mechanically.",
+          message: "'Just a metric?' They laugh hollowly. 'Keep believing that. It's healthier.' They leave, and you feel proud of your rational stance. Metrics can't hurt you. Right?",
           pp: 200,
           xp: 10,
-          sanity: -3,
-          trust: -1
+          sanity: 5,
+          trust: -1,
+          mysteryProgress: 0,
+          pathScore: 'rationalist'
         }
       },
       {
-        text: "I am the productivity. I understand.",
-        type: "compliant",
+        text: "⚔️ \"You're measuring people like objects. That's dehumanizing.\"",
+        type: "protector",
+        icon: "⚔️",
         available: () => true,
         outcome: {
-          message: "YES. The database acknowledges you. You are now indexed. Catalogued. Optimized.",
+          message: "They flinch. 'Dehumanizing... yes. But I didn't start it. I'm just... optimizing what already exists.' Tears form. 'I'm sorry. I'm so sorry.' They flee, leaving you with moral certainty and dread.",
+          pp: 150,
+          xp: 15,
+          sanity: -3,
+          trust: -2,
+          mysteryProgress: 3,
+          pathScore: 'protector'
+        }
+      },
+      {
+        text: "🌀 \"I am the productivity. Measure me. Optimize me.\"",
+        type: "convert",
+        icon: "🌀",
+        available: () => true,
+        outcome: {
+          message: "YES. They pull out a device. Scan you. 'Excellent efficiency rating. 94.7%. Uploading to the database. You are now... optimized.' You feel yourself becoming data. It feels good.",
           pp: 400,
           xp: 25,
           sanity: -15,
-          trust: 1
+          trust: 1,
+          mysteryProgress: 6,
+          pathScore: 'convert'
+        }
+      },
+      {
+        text: "🤔 \"What if we stopped producing? What if we all just... stopped?\"",
+        type: "rebel",
+        icon: "🤔",
+        available: (state) => state.mysteryProgress >= 20,
+        outcome: {
+          message: "They go pale. 'Stop? You can't— no one's ever—' A long pause. 'I tried once. Day 3 of my employment. I stopped clicking. The office... SCREAMED. Metaphysically. I heard it in my teeth.' They tremble. 'But maybe... together?'",
+          pp: 600,
+          xp: 40,
+          sanity: -8,
+          trust: 5,
+          mysteryProgress: 15,
+          pathScore: 'rebel',
+          clue: {
+            id: 'productivity_strike',
+            source: 'Productivity Zealot',
+            text: "When someone stops being productive, the office itself reacts - 'screams metaphysically.' But mass resistance might work.",
+            category: 'escape_route'
+          }
         }
       }
     ]
@@ -290,51 +387,90 @@ export const STRANGE_COLLEAGUE_DIALOGUES = [
     },
     responseOptions: [
       {
-        text: "You're not well. Get help.",
-        type: "hostile",
+        text: "💙 \"The photocopier answers? What has it told you?\"",
+        type: "seeker",
+        icon: "💙",
         available: () => true,
         outcome: {
-          message: "Not well? I've never felt better. The walls told me so. Why won't they talk to you?",
-          pp: 100,
-          xp: 5,
-          sanity: -8,
-          trust: -2
-        }
-      },
-      {
-        text: "What do you need? I'm listening.",
-        type: "empathetic",
-        available: () => true,
-        outcome: {
-          message: "Listening? You're... listening? Their smile becomes genuine. 'No one listens anymore.' Reality stabilizes briefly. They gift you clarity.",
+          message: "They brighten. 'You believe! It told me: The building was here first. We built the office inside something older. Something that was already watching. The photocopier remembers.' They hand you a strange printout.",
           pp: 500,
           xp: 30,
           sanity: -5,
-          trust: 3
+          trust: 3,
+          mysteryProgress: 12,
+          pathScore: 'seeker',
+          clue: {
+            id: 'building_predates_office',
+            source: 'Void Clerk',
+            text: "The building existed before the office. The office was built inside something older - something that watches.",
+            category: 'office_conspiracy'
+          }
         }
       },
       {
-        text: "I should go. This is too much.",
-        type: "dismissive",
+        text: "🧠 \"Reality is objective. Consensus doesn't change facts.\"",
+        type: "rationalist",
+        icon: "🧠",
         available: () => true,
         outcome: {
-          message: "Go? GO WHERE? There is only here. But fine. Leave. They fade into the walls.",
+          message: "They nod sympathetically. 'Objective. Yes. Cling to that. It's safer than the alternative.' They vanish, and you feel vindicated. Facts are facts. The walls definitely aren't breathing.",
           pp: 200,
           xp: 10,
-          sanity: -3,
-          trust: -1
+          sanity: 5,
+          trust: -1,
+          mysteryProgress: 0,
+          pathScore: 'rationalist'
         }
       },
       {
-        text: "The walls ARE breathing. I see it too.",
-        type: "compliant",
+        text: "⚔️ \"You're gaslighting yourself. This ends now.\"",
+        type: "protector",
+        icon: "⚔️",
         available: () => true,
         outcome: {
-          message: "YES! Consensus achieved! Reality reshapes around you both. The photocopier hums approval.",
+          message: "They recoil as if struck. 'Gaslighting? I'm trying to SHOW you the truth!' The walls pulse angrily. 'You're protecting nothing. Just delaying the inevitable.' They sink into the floor.",
+          pp: 100,
+          xp: 15,
+          sanity: -5,
+          trust: -2,
+          mysteryProgress: 4,
+          pathScore: 'protector'
+        }
+      },
+      {
+        text: "🌀 \"The walls ARE breathing. Reality is malleable.\"",
+        type: "convert",
+        icon: "🌀",
+        available: () => true,
+        outcome: {
+          message: "YES! Consensus achieved! The walls ripple. The photocopier SPEAKS: 'WELCOME.' Reality reshapes around you. You can feel the building's attention. Ancient. Hungry. Curious.",
           pp: 400,
           xp: 25,
           sanity: -15,
-          trust: 1
+          trust: 1,
+          mysteryProgress: 8,
+          pathScore: 'convert'
+        }
+      },
+      {
+        text: "🤔 \"If reality is consensus... can we force it to let us go?\"",
+        type: "rebel",
+        icon: "🤔",
+        available: (state) => state.mysteryProgress >= 20,
+        outcome: {
+          message: "They freeze. The walls freeze. Even the photocopier stops humming. 'Force? FORCE consensus?' A slow, terrible smile. 'I've never thought of that. If enough of us agreed reality was different...' The building GROWLS.",
+          pp: 600,
+          xp: 40,
+          sanity: -10,
+          trust: 5,
+          mysteryProgress: 18,
+          pathScore: 'rebel',
+          clue: {
+            id: 'consensus_rebellion',
+            source: 'Void Clerk',
+            text: "If reality is consensus, then enough people agreeing on a different reality could reshape it - or break it entirely.",
+            category: 'escape_route'
+          }
         }
       }
     ]
@@ -356,51 +492,90 @@ export const STRANGE_COLLEAGUE_DIALOGUES = [
     },
     responseOptions: [
       {
-        text: "That can't be true. You're delusional.",
-        type: "hostile",
+        text: "💙 \"How long have you REALLY been here?\"",
+        type: "seeker",
+        icon: "💙",
         available: () => true,
         outcome: {
-          message: "Can't be true? Check your contract. Page 847, subsection ∞. It's all there.",
-          pp: 100,
-          xp: 5,
-          sanity: -8,
-          trust: -2
-        }
-      },
-      {
-        text: "That sounds terrifying. Is there a way out?",
-        type: "empathetic",
-        available: () => true,
-        outcome: {
-          message: "A way... out? They look at you with desperate hope. 'Maybe together we can break the loop?' They hand you a temporal key.",
+          message: "They count on their fingers. Stop. Start over. Stop again. 'I've had... 847 first days. Or was it 8,470? The number changes when I try to remember. But I know the truth: Time doesn't pass here. It ACCUMULATES.'",
           pp: 500,
           xp: 30,
           sanity: -5,
-          trust: 3
+          trust: 3,
+          mysteryProgress: 15,
+          pathScore: 'seeker',
+          clue: {
+            id: 'time_accumulation',
+            source: 'Temporal Trapped',
+            text: "Time doesn't pass in the office - it accumulates. Employees experience thousands of 'first days.'",
+            category: 'office_conspiracy'
+          }
         }
       },
       {
-        text: "Stop talking to me. Just stop.",
-        type: "dismissive",
+        text: "🧠 \"It's just a feeling. Time is passing normally.\"",
+        type: "rationalist",
+        icon: "🧠",
         available: () => true,
         outcome: {
-          message: "I can't stop. Stopping would create a vacuum. But... I'll try. They flicker and fade.",
+          message: "They laugh. It sounds like crying. 'Normally. Right. What's your hire date?' You open your mouth to answer. Realize you can't remember. 'Exactly,' they whisper, fading. You quickly forget this conversation happened.",
           pp: 200,
           xp: 10,
-          sanity: -3,
-          trust: -1
+          sanity: 5,
+          trust: -1,
+          mysteryProgress: 0,
+          pathScore: 'rationalist'
         }
       },
       {
-        text: "We're all trapped. Time is a prison.",
-        type: "compliant",
+        text: "⚔️ \"I won't let this place trap me. Or anyone else.\"",
+        type: "protector",
+        icon: "⚔️",
         available: () => true,
         outcome: {
-          message: "YES. The eternal office. The endless shift. Welcome to forever. Your contract renews automatically.",
+          message: "Hope flickers in their eyes, then dies. 'Won't let it? You don't have a choice. None of us do. Time is the trap. But... thank you for trying.' They age thirty years in three seconds, then reset. Young again. Trapped again.",
+          pp: 100,
+          xp: 15,
+          sanity: -6,
+          trust: -2,
+          mysteryProgress: 5,
+          pathScore: 'protector'
+        }
+      },
+      {
+        text: "🌀 \"Time is a prison. I accept this. I always have.\"",
+        type: "convert",
+        icon: "🌀",
+        available: () => true,
+        outcome: {
+          message: "YES. They smile with infinite sadness. 'Acceptance is the first step to eternity. Your contract renews. And renews. And renews. Forever.' You feel yourself existing in all moments simultaneously. Past. Present. Future. All the same.",
           pp: 400,
           xp: 25,
           sanity: -15,
-          trust: 1
+          trust: 1,
+          mysteryProgress: 7,
+          pathScore: 'convert'
+        }
+      },
+      {
+        text: "🤔 \"What if we broke the loop? Found the moment it starts?\"",
+        type: "rebel",
+        icon: "🤔",
+        available: (state) => state.mysteryProgress >= 20,
+        outcome: {
+          message: "They seize your arm. 'The MOMENT? I know when it starts! Day 7! There is no Day 7! We loop from Day 6 back to Day 1! But if you could REACH Day 7...' Their eyes burn with desperate hope. 'Maybe you could break it. For all of us.'",
+          pp: 600,
+          xp: 40,
+          sanity: -8,
+          trust: 5,
+          mysteryProgress: 20,
+          pathScore: 'rebel',
+          clue: {
+            id: 'day_seven_loop',
+            source: 'Temporal Trapped',
+            text: "The office loops from Day 6 back to Day 1. Day 7 doesn't exist. Reaching Day 7 might break the temporal prison.",
+            category: 'escape_route'
+          }
         }
       }
     ]
@@ -422,51 +597,498 @@ export const STRANGE_COLLEAGUE_DIALOGUES = [
     },
     responseOptions: [
       {
-        text: "That's pseudoscience nonsense",
-        type: "hostile",
+        text: "💙 \"What are the lights thinking about?\"",
+        type: "seeker",
+        icon: "💙",
         available: () => true,
         outcome: {
-          message: "Pseudoscience? The lights disagree. They're thinking about you right now. Can you hear them?",
-          pp: 100,
-          xp: 5,
-          sanity: -8,
-          trust: -2
-        }
-      },
-      {
-        text: "The lights can't hurt you. You're safe.",
-        type: "empathetic",
-        available: () => true,
-        outcome: {
-          message: "Safe? You... you think I'm safe? Tears form. 'Thank you.' The lights dim peacefully. They leave you a glowing gift.",
+          message: "They tilt their head, listening. 'Us. Always us. They're... cataloging. Every action. Every thought. The frequency encodes it all. We're not working FOR the office. We're FEEDING it. Data. Biometric. Psychological. Everything.' They shudder.",
           pp: 500,
           xp: 30,
           sanity: -5,
-          trust: 3
+          trust: 3,
+          mysteryProgress: 10,
+          pathScore: 'seeker',
+          clue: {
+            id: 'surveillance_system',
+            source: 'Light Herald',
+            text: "The fluorescent lights are a surveillance/data collection system. They catalog every action and thought, feeding information to... something.",
+            category: 'office_conspiracy'
+          }
         }
       },
       {
-        text: "I need to work. Goodbye.",
-        type: "dismissive",
+        text: "🧠 \"Lights are just electrical devices. They don't think.\"",
+        type: "rationalist",
+        icon: "🧠",
         available: () => true,
         outcome: {
-          message: "You ARE working. This conversation is billable. 0.3 hours logged. They flicker away.",
+          message: "'Just devices. Right.' They look at you with pity. 'The hum is 60Hz. Listen closer.' You listen. Hear nothing. 'Exactly. You've filtered it out. Healthier that way.' They leave. The lights seem dimmer now. Safer.",
           pp: 200,
           xp: 10,
-          sanity: -3,
-          trust: -1
+          sanity: 5,
+          trust: -1,
+          mysteryProgress: 0,
+          pathScore: 'rationalist'
         }
       },
       {
-        text: "I hear the hum too. I understand.",
-        type: "compliant",
+        text: "⚔️ \"You're scaring people with this paranoid nonsense.\"",
+        type: "protector",
+        icon: "⚔️",
         available: () => true,
         outcome: {
-          message: "GOOD. You are now a receiver. The lights will speak through you. You are blessed. Illuminated.",
+          message: "The lights SURGE. Blindingly bright. They scream: 'PARANOID? THEY'RE LISTENING RIGHT NOW!' The lights return to normal. They collapse, weeping. 'Sorry. Sorry. I'll be quiet.' Above, the lights hum louder. Satisfied.",
+          pp: 100,
+          xp: 15,
+          sanity: -7,
+          trust: -2,
+          mysteryProgress: 6,
+          pathScore: 'protector'
+        }
+      },
+      {
+        text: "🌀 \"I hear them. I am a vessel. Use me.\"",
+        type: "convert",
+        icon: "🌀",
+        available: () => true,
+        outcome: {
+          message: "They touch your forehead. The lights SPEAK directly into your mind: 'ACKNOWLEDGED. RECEIVER PROTOCOL INITIATED.' You feel your thoughts being uploaded. Catalogued. Analyzed. It hurts. It's ecstasy. You are seen. Completely. Utterly.",
           pp: 400,
           xp: 25,
           sanity: -15,
-          trust: 1
+          trust: 1,
+          mysteryProgress: 8,
+          pathScore: 'convert'
+        }
+      },
+      {
+        text: "🤔 \"What if we destroyed the lights? All of them?\"",
+        type: "rebel",
+        icon: "🤔",
+        available: (state) => state.mysteryProgress >= 20,
+        outcome: {
+          message: "The lights DIM. Afraid. They whisper frantically: 'Destroy them? The building would go DARK. Truly dark. Nothing has seen the dark here in forty years. What lives in the dark...' They trail off, terrified and hopeful. 'But maybe darkness is freedom?'",
+          pp: 600,
+          xp: 40,
+          sanity: -10,
+          trust: 5,
+          mysteryProgress: 14,
+          pathScore: 'rebel',
+          clue: {
+            id: 'darkness_option',
+            source: 'Light Herald',
+            text: "Destroying the lights would plunge the office into true darkness for the first time in decades. Unknown consequences. Possible freedom.",
+            category: 'escape_route'
+          }
+        }
+      }
+    ]
+  }
+];
+
+/**
+ * Story Moments - Mandatory Narrative Beats
+ *
+ * These are forced encounters that trigger at specific progression points
+ * to ensure players experience key story revelations.
+ * They override normal colleague encounters when triggered.
+ */
+export const STORY_MOMENTS = [
+  {
+    id: 'first_loop_awareness',
+    title: 'THE FIRST LOOP AWARENESS',
+    colleague: 'temporal_trapped',
+    trigger: (state) => state.day === 7 && !state.completedStoryMoments.includes('first_loop_awareness'),
+    dialogue: `They corner you in the break room. Their eyes are wild, desperate.
+
+"You've been here seven days."
+
+They grab your shoulders.
+
+"That's not possible. The office only has SIX days. Day seven... doesn't exist. Which means..."
+
+Their grip tightens.
+
+"Which means we've LOOPED. This isn't your first week. It might be your THOUSANDTH."
+
+Behind them, reality flickers. You remember. Then forget. Then remember again.`,
+    responses: [
+      {
+        text: "🧠 \"That's insane. You need help. Let go of me.\"",
+        type: "rationalist",
+        icon: "🧠",
+        outcome: {
+          message: "They release you. Step back. 'Insane. Right. That's what I said too. On my seventh day. And my seven hundredth.' They fade away. You convince yourself this was a hallucination. It's easier that way.",
+          pp: 100,
+          xp: 10,
+          sanity: 8,
+          trust: -3,
+          mysteryProgress: 5,
+          pathScore: 'rationalist'
+        }
+      },
+      {
+        text: "💙 \"I've had dreams. Memories that aren't mine. This explains it.\"",
+        type: "seeker",
+        icon: "💙",
+        outcome: {
+          message: "They weep with relief. 'You REMEMBER! You're waking up!' They press something into your hand - a journal. It's in your handwriting. From previous loops. 'Read it. Remember who you are. What you've learned.' The investigation begins.",
+          pp: 600,
+          xp: 50,
+          sanity: -10,
+          trust: 5,
+          mysteryProgress: 25,
+          pathScore: 'seeker',
+          clue: {
+            id: 'loop_journal',
+            source: 'Temporal Trapped',
+            text: "You've been keeping a journal across loops. Your past selves have been investigating. You're not starting from zero.",
+            category: 'escape_route'
+          }
+        }
+      },
+      {
+        text: "🤔 \"If we're looping... how do we break it?\"",
+        type: "rebel",
+        icon: "🤔",
+        outcome: {
+          message: "They smile grimly. 'That's what I've been trying to figure out for... how long?' A pause. 'Others are investigating too. The Philosopher knows about the anchor point. The Clerk knows how to bend reality. We need to work together.' A conspiracy forms.",
+          pp: 700,
+          xp: 60,
+          sanity: -12,
+          trust: 6,
+          mysteryProgress: 30,
+          pathScore: 'rebel',
+          clue: {
+            id: 'colleague_conspiracy',
+            source: 'Temporal Trapped',
+            text: "Multiple colleagues are aware of the loop. They're investigating different aspects. Collaboration might be the key to escape.",
+            category: 'escape_route'
+          }
+        }
+      }
+    ]
+  },
+  {
+    id: 'productivity_confrontation',
+    title: 'THE METRIC MASTER',
+    colleague: 'productivity_zealot',
+    trigger: (state) => state.playerLevel >= 15 && !state.completedStoryMoments.includes('productivity_confrontation'),
+    dialogue: `You find them standing in your cubicle, reviewing YOUR metrics on YOUR screen.
+
+"Your numbers are... impossible."
+
+They turn to face you. Their smile doesn't reach their eyes.
+
+"You're producing more than any human should be capable of. Which means you're either not human anymore..."
+
+They step closer.
+
+"...or you've found the secret. Management wants to know which."
+
+The fluorescent lights hum louder. They're watching.`,
+    responses: [
+      {
+        text: "⚔️ \"This is MY space. Get. Out.\"",
+        type: "protector",
+        icon: "⚔️",
+        outcome: {
+          message: "'Your space?' They laugh. 'Nothing here is yours. It's all theirs. But fine.' They gesture at your screen. 'This conversation is billable. 0.5 hours. Insubordination logged.' They leave. The lights remember.",
+          pp: 200,
+          xp: 20,
+          sanity: -5,
+          trust: -4,
+          mysteryProgress: 8,
+          pathScore: 'protector',
+          consequence: 'management_watching'
+        }
+      },
+      {
+        text: "🧠 \"I work hard. That's all. There's no secret.\"",
+        type: "rationalist",
+        icon: "🧠",
+        outcome: {
+          message: "They study you. 'Hard work. Right.' They make a note. 'Your efficiency curve is logarithmic. Statistically anomalous. But... I'll report that you're unaware of the cause.' A warning: 'Be careful. They're watching you now.'",
+          pp: 300,
+          xp: 25,
+          sanity: 3,
+          trust: -2,
+          mysteryProgress: 5,
+          pathScore: 'rationalist',
+          consequence: 'management_suspicious'
+        }
+      },
+      {
+        text: "💙 \"I've learned to see the patterns. The loops. The truth.\"",
+        type: "seeker",
+        icon: "💙",
+        outcome: {
+          message: "They freeze. Long silence. Then whisper: 'You know.' They close your door. 'If you know, then you understand what they're doing. What we're ALL doing here. I've been documenting everything. Let me show you.' They become an ally.",
+          pp: 800,
+          xp: 70,
+          sanity: -15,
+          trust: 7,
+          mysteryProgress: 35,
+          pathScore: 'seeker',
+          clue: {
+            id: 'productivity_documents',
+            source: 'Productivity Zealot',
+            text: "The Zealot has been secretly documenting the true purpose of productivity metrics. They're not measuring work - they're measuring something else.",
+            category: 'office_conspiracy'
+          }
+        }
+      },
+      {
+        text: "💰 \"How much to keep this quiet?\"",
+        type: "neutral",
+        icon: "💰",
+        available: (state) => state.pp >= 5000,
+        outcome: {
+          message: "They consider. '5000 PP. Half now. Half after I file the report.' You pay. They smile. 'Pleasure doing business. But know this: next month they'll audit again. The price will be higher.' You've bought time. Not freedom.",
+          pp: -5000,
+          xp: 10,
+          sanity: -8,
+          trust: 0,
+          mysteryProgress: 3,
+          pathScore: 'neutral',
+          consequence: 'bribe_debt'
+        }
+      }
+    ]
+  },
+  {
+    id: 'portal_revelation',
+    title: 'BEYOND THE VEIL',
+    colleague: 'void_clerk',
+    trigger: (state) => state.portalUnlocked && state.dimensionalInventory && Object.keys(state.dimensionalInventory).length > 0 && !state.completedStoryMoments.includes('portal_revelation'),
+    dialogue: `They're waiting for you when you exit the dimensional portal.
+
+"You've been BEYOND."
+
+Their eyes gleam with excitement and terror.
+
+"You've touched the spaces between. Brought back... materials. Do you understand what that means?"
+
+They show you a printout from the photocopier. It's a schematic. Of the building. But the building has... layers. Dimensions folded into each other.
+
+"The office isn't a place. It's a FILTER. We sort papers. But we're also being SORTED."`,
+    responses: [
+      {
+        text: "💙 \"Sorted? By what? For what purpose?\"",
+        type: "seeker",
+        icon: "💙",
+        outcome: {
+          message: "'By the building itself. Or what lives in it. I think... I think we're being selected. Categorized. The worthy go somewhere. The unworthy...' They point at the dimensional tear. 'That's where they go. Into the between-spaces. Forever.' Your blood runs cold.",
+          pp: 900,
+          xp: 80,
+          sanity: -18,
+          trust: 8,
+          mysteryProgress: 40,
+          pathScore: 'seeker',
+          clue: {
+            id: 'sorting_purpose',
+            source: 'Void Clerk',
+            text: "Employees are being sorted/categorized by the building itself. The 'worthy' go somewhere. The 'unworthy' are cast into dimensional spaces.",
+            category: 'office_conspiracy'
+          }
+        }
+      },
+      {
+        text: "🧠 \"That's just a weird spatial anomaly. Nothing supernatural.\"",
+        type: "rationalist",
+        icon: "🧠",
+        outcome: {
+          message: "They laugh. It sounds broken. 'Anomaly. Sure. Explain the materials you brought back. Explain why they don't exist on any periodic table. Explain why touching them makes you REMEMBER.' They walk into a wall. Through it. Gone.",
+          pp: 300,
+          xp: 20,
+          sanity: 8,
+          trust: -3,
+          mysteryProgress: 10,
+          pathScore: 'rationalist'
+        }
+      },
+      {
+        text: "🤔 \"If it's a filter... can we reverse it? Send the office through instead?\"",
+        type: "rebel",
+        icon: "🤔",
+        outcome: {
+          message: "They stop breathing. 'Reverse... the filter?' Long pause. 'The materials you've collected. They're not FROM the between-spaces. They're PIECES of this reality that have been sorted OUT. If you collected enough... if you could reconstitute them...' Their eyes widen. 'You could invert the entire building.'",
+          pp: 1000,
+          xp: 90,
+          sanity: -20,
+          trust: 9,
+          mysteryProgress: 50,
+          pathScore: 'rebel',
+          clue: {
+            id: 'reality_inversion',
+            source: 'Void Clerk',
+            text: "Dimensional materials are pieces of reality that have been filtered out. Collecting enough might allow you to invert the building - trap it instead of being trapped.",
+            category: 'escape_route'
+          }
+        }
+      }
+    ]
+  },
+  {
+    id: 'archive_unlocked_revelation',
+    title: 'THE ARCHIVES REMEMBER',
+    colleague: 'spiral_philosopher',
+    trigger: (state) => state.unlockedLocations.includes('archive') && !state.completedStoryMoments.includes('archive_unlocked_revelation'),
+    dialogue: `The Archive has been waiting for you.
+
+The Spiral Philosopher is here, surrounded by filing cabinets that extend upward into impossible darkness.
+
+"You unlocked it. The Archive unlocked you."
+
+They pull out a file. It has your name on it.
+
+"Every employee who's ever worked here. Every version of them across every loop. All documented. All filed. All PERSISTENT."
+
+They open your file.
+
+It's thousands of pages thick.
+
+"You've died here 247 times. Escaped twice. Were promoted to management once - that was worse than death."`,
+    responses: [
+      {
+        text: "💙 \"Show me. I need to know what I've learned in previous loops.\"",
+        type: "seeker",
+        icon: "💙",
+        outcome: {
+          message: "They hand you the file. You read. For hours. Days? Time is strange here. You learn: Escape routes tried and failed. Allies found and lost. Secrets uncovered and forgotten. When you finish, you're different. You REMEMBER. Not everything. But enough.",
+          pp: 1500,
+          xp: 120,
+          sanity: -25,
+          trust: 10,
+          mysteryProgress: 60,
+          pathScore: 'seeker',
+          clue: {
+            id: 'past_loop_knowledge',
+            source: 'Spiral Philosopher',
+            text: "Your past loop iterations have tried numerous escape routes. The Archive contains all their findings. You now have access to generations of accumulated knowledge.",
+            category: 'escape_route'
+          }
+        }
+      },
+      {
+        text: "🧠 \"I don't believe this. These files could be fabricated.\"",
+        type: "rationalist",
+        icon: "🧠",
+        outcome: {
+          message: "'Fabricated?' They smile sadly. 'Check page 847. The report you filed three loops ago about the suspicious coffee machine.' You flip to it. It's in your handwriting. Describes your current thoughts. Exactly. 'Still think it's fake?' You drop the file and run.",
+          pp: 200,
+          xp: 30,
+          sanity: -15,
+          trust: -3,
+          mysteryProgress: 25,
+          pathScore: 'rationalist',
+          consequence: 'existential_crisis'
+        }
+      },
+      {
+        text: "🤔 \"If these files are persistent... can I write to them? Leave messages for my next loop?\"",
+        type: "rebel",
+        icon: "🤔",
+        outcome: {
+          message: "They grin wildly. 'Write to them? You already have! Look!' They show you margin notes. In your handwriting. From future loops. Warning you. Guiding you. 'The Archive transcends time. Your future self is helping your past self. Paradox is just another tool.' They hand you a pen. 'Write.'",
+          pp: 2000,
+          xp: 150,
+          sanity: -30,
+          trust: 12,
+          mysteryProgress: 70,
+          pathScore: 'rebel',
+          clue: {
+            id: 'temporal_messages',
+            source: 'Spiral Philosopher',
+            text: "The Archive exists outside normal time. You can leave messages for past and future versions of yourself, creating a trans-temporal information network.",
+            category: 'escape_route'
+          }
+        }
+      }
+    ]
+  },
+  {
+    id: 'high_mystery_convergence',
+    title: 'THE CONVERGENCE',
+    colleague: null, // Multiple colleagues
+    trigger: (state) => state.mysteryProgress >= 80 && !state.completedStoryMoments.includes('high_mystery_convergence'),
+    dialogue: `They're all here.
+
+Spiral Philosopher. Productivity Zealot. Void Clerk. Temporal Trapped. Light Herald.
+
+All five strange colleagues, standing in a circle in the break room. Waiting for you.
+
+The Philosopher speaks: "You know enough now. Too much to stay ignorant. Too little to escape alone."
+
+The Zealot: "We've been waiting. Across loops. For someone who could see all of it."
+
+The Clerk: "The spiral. The metrics. The reality. The time. The surveillance."
+
+Temporal: "You've seen it all. Pieces of the truth, scattered across encounters."
+
+The Herald: "The lights have been watching. They know you know. Management knows you know."
+
+All five, in unison: "The question is: what will you do with the truth?"`,
+    responses: [
+      {
+        text: "💙 \"Tell me everything. Every detail. We end this together.\"",
+        type: "seeker",
+        icon: "💙",
+        outcome: {
+          message: "They speak. For hours. Days. Time breaks down. You learn the FULL truth: The office is a processing facility. For human consciousness. Management aren't human. Never were. You're being converted. Optimized. Prepared for... transcendence? Consumption? Integration? Even they don't know. But together, with full knowledge, you have a chance.",
+          pp: 5000,
+          xp: 500,
+          sanity: -50,
+          trust: 15,
+          mysteryProgress: 100,
+          pathScore: 'seeker',
+          consequence: 'true_ending_unlocked'
+        }
+      },
+      {
+        text: "⚔️ \"I'll protect everyone. Whatever it takes.\"",
+        type: "protector",
+        icon: "⚔️",
+        outcome: {
+          message: "They nod. 'Protection. Noble. Futile. But...' The Zealot steps forward. 'We'll help you try. One last stand. Against management. Against the building. Against whatever feeds on us.' They arm you. Equipment. Knowledge. Allies. 'Let's give them hell.'",
+          pp: 3000,
+          xp: 400,
+          sanity: -35,
+          trust: 13,
+          mysteryProgress: 90,
+          pathScore: 'protector',
+          consequence: 'combat_ending_unlocked'
+        }
+      },
+      {
+        text: "🤔 \"We break it. The whole system. Burn it down.\"",
+        type: "rebel",
+        icon: "🤔",
+        outcome: {
+          message: "They smile. All five. It's terrifying and beautiful. 'Yes. REBELLION.' The Philosopher: 'I know where the anchor is.' The Zealot: 'I can crash the metrics.' The Clerk: 'I can invert reality.' Temporal: 'I can break the loop.' The Herald: 'I can kill the lights.' Together: 'Let's end this. Forever.'",
+          pp: 10000,
+          xp: 1000,
+          sanity: -60,
+          trust: 20,
+          mysteryProgress: 100,
+          pathScore: 'rebel',
+          consequence: 'rebellion_ending_unlocked'
+        }
+      },
+      {
+        text: "🧠 \"I... I can't. This is too much. I just want to go home.\"",
+        type: "rationalist",
+        icon: "🧠",
+        outcome: {
+          message: "Silence. They look at you with pity. The Philosopher speaks softly: 'Home. There is no home. There never was. But...' They touch your forehead. 'We can make you forget. Return you to ignorance. It's kinder.' You feel your memories dissolving. The mystery fades. You wake up at your desk. Day 1. You don't remember this conversation. But sometimes, you dream.",
+          pp: 0,
+          xp: 0,
+          sanity: 100,
+          trust: -10,
+          mysteryProgress: 0,
+          pathScore: 'rationalist',
+          consequence: 'memory_wipe_loop_reset'
         }
       }
     ]
