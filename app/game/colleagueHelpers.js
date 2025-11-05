@@ -263,3 +263,121 @@ export const getColleagueEndgameEvent = (colleagueId, eventType) => {
 
   return events[eventType] || null;
 };
+
+/**
+ * Update path scores based on response choice
+ * @param {Object} pathScores - Current path scores
+ * @param {string} pathType - Type of path (seeker, rationalist, protector, convert, rebel)
+ * @param {number} amount - Amount to add (default 1)
+ * @returns {Object} - Updated path scores
+ */
+export const updatePathScores = (pathScores, pathType, amount = 1) => {
+  if (!pathType || pathType === 'neutral') return pathScores;
+
+  return {
+    ...pathScores,
+    [pathType]: (pathScores[pathType] || 0) + amount
+  };
+};
+
+/**
+ * Get dominant player path based on scores
+ * @param {Object} pathScores - Path scores object
+ * @returns {string|null} - Dominant path name or null
+ */
+export const getDominantPath = (pathScores) => {
+  if (!pathScores) return null;
+
+  let maxPath = null;
+  let maxScore = 0;
+
+  Object.entries(pathScores).forEach(([path, score]) => {
+    if (score > maxScore) {
+      maxScore = score;
+      maxPath = path;
+    }
+  });
+
+  return maxScore >= 3 ? maxPath : null; // Need at least 3 points to establish a path
+};
+
+/**
+ * Add clue to investigation
+ * @param {Object} investigation - Current investigation object
+ * @param {Object} clue - Clue data { id, source, text, category }
+ * @param {number} day - Current game day
+ * @returns {Object} - Updated investigation object
+ */
+export const addClue = (investigation, clue, day) => {
+  if (!clue || !clue.id) return investigation;
+
+  // Check if clue already exists
+  const existingClue = investigation.clues.find(c => c.id === clue.id);
+  if (existingClue) return investigation;
+
+  const newClue = {
+    ...clue,
+    collectedOn: `Day ${day}`
+  };
+
+  return {
+    ...investigation,
+    clues: [...investigation.clues, newClue]
+  };
+};
+
+/**
+ * Check if any story moments should trigger
+ * @param {Object} gameState - Current game state
+ * @param {Array} storyMoments - Array of STORY_MOMENTS
+ * @returns {Object|null} - Story moment to trigger or null
+ */
+export const checkStoryMoments = (gameState, storyMoments) => {
+  if (!storyMoments || storyMoments.length === 0) return null;
+
+  for (const moment of storyMoments) {
+    // Check if already completed
+    if (gameState.completedStoryMoments.includes(moment.id)) {
+      continue;
+    }
+
+    // Check trigger condition
+    if (moment.trigger(gameState)) {
+      return moment;
+    }
+  }
+
+  return null;
+};
+
+/**
+ * Process response outcome and update game state properties
+ * @param {Object} currentState - Current game state
+ * @param {Object} outcome - Response outcome data
+ * @returns {Object} - State updates to apply
+ */
+export const processResponseOutcome = (currentState, outcome) => {
+  const updates = {};
+
+  // Basic stat updates
+  if (outcome.pp !== undefined) updates.pp = currentState.pp + outcome.pp;
+  if (outcome.sanity !== undefined) updates.sanity = Math.max(0, Math.min(100, currentState.sanity + outcome.sanity));
+
+  // Mystery progress
+  if (outcome.mysteryProgress) {
+    updates.mysteryProgress = Math.min(100, currentState.mysteryProgress + outcome.mysteryProgress);
+  }
+
+  // Path scores
+  if (outcome.pathScore) {
+    updates.pathScores = updatePathScores(currentState.pathScores, outcome.pathScore);
+    updates.playerPath = getDominantPath(updates.pathScores);
+  }
+
+  // Add clue if present
+  if (outcome.clue) {
+    updates.investigation = addClue(currentState.investigation, outcome.clue, currentState.day);
+  }
+
+  return updates;
+};

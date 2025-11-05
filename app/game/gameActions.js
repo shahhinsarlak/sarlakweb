@@ -37,6 +37,9 @@ import {
   discoverLocation,
   discoverColleague
 } from './journalHelpers';
+import {
+  processResponseOutcome
+} from './colleagueHelpers';
 
 
 export const createGameActions = (setGameState, addMessage, checkAchievements, grantXP) => {
@@ -399,11 +402,12 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
 
   const respondToColleague = (responseOption) => {
     setGameState(prev => {
-      if (!prev.strangeColleagueEvent) return prev;
+      if (!prev.strangeColleagueEvent && !prev.pendingStoryMoment) return prev;
 
-      const colleague = prev.strangeColleagueEvent;
+      const colleague = prev.strangeColleagueEvent || prev.pendingStoryMoment;
       const outcome = responseOption.outcome;
       const colleagueId = colleague.id;
+      const isStoryMoment = !!prev.pendingStoryMoment;
 
       // Track colleague discovery for journal
       const discoveredColleagues = discoverColleague(prev, colleagueId);
@@ -413,7 +417,7 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       const newRelationships = {
         ...prev.colleagueRelationships,
         [colleagueId]: {
-          trust: currentRelationship.trust + outcome.trust,
+          trust: currentRelationship.trust + (outcome.trust || 0),
           encounters: currentRelationship.encounters + 1,
           lastResponseType: responseOption.type
         }
@@ -421,6 +425,9 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
 
       // Grant XP
       grantXP(outcome.xp);
+
+      // Process outcome for mystery/path system
+      const outcomeUpdates = processResponseOutcome(prev, outcome);
 
       // Check for endgame events based on new trust level
       const newRelationship = newRelationships[colleagueId];
@@ -439,19 +446,46 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       // Build new state
       const newState = {
         ...prev,
-        pp: prev.pp + outcome.pp,
-        sanity: Math.max(0, prev.sanity + outcome.sanity),
+        ...outcomeUpdates, // Apply mystery/path updates
         colleagueRelationships: newRelationships,
         strangeColleagueEvent: null,
-        disagreementCount: prev.disagreementCount + (responseOption.type === 'hostile' ? 1 : 0),
+        pendingStoryMoment: null,
+        disagreementCount: prev.disagreementCount + (responseOption.type === 'hostile' || responseOption.type === 'protector' ? 1 : 0),
         colleagueResponseCount: (prev.colleagueResponseCount || 0) + 1, // Track all responses
         discoveredColleagues
       };
+
+      // Track completed story moment
+      if (isStoryMoment && prev.pendingStoryMoment) {
+        newState.completedStoryMoments = [...prev.completedStoryMoments, prev.pendingStoryMoment.id];
+      }
 
       // Build messages
       const messages = [outcome.message];
       if (endgameMessage) {
         messages.push(endgameMessage);
+      }
+
+      // Add mystery progress notification if significant
+      if (outcome.mysteryProgress && outcome.mysteryProgress >= 10) {
+        messages.push(`🔍 Mystery deepens... (${newState.mysteryProgress}% uncovered)`);
+      }
+
+      // Add clue notification
+      if (outcome.clue) {
+        messages.push(`📋 New clue discovered: "${outcome.clue.text}"`);
+      }
+
+      // Add path notification if path changed
+      if (newState.playerPath && newState.playerPath !== prev.playerPath) {
+        const pathNames = {
+          seeker: 'Seeker of Truth',
+          rationalist: 'Rational Denier',
+          protector: 'Protector of Others',
+          convert: 'Convert to Madness',
+          rebel: 'Rebel Against the System'
+        };
+        messages.push(`🎭 Your path crystallizes: ${pathNames[newState.playerPath]}`);
       }
 
       newState.recentMessages = [...messages, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15);
