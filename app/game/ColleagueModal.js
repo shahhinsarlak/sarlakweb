@@ -29,16 +29,16 @@ export default function ColleagueModal({ event, recentMessages, respondToColleag
   // Response type styling
   const getResponseTypeStyle = (type) => {
     const styles = {
-      empathetic: { borderColor: '#4a9eff', color: '#4a9eff', icon: '💙' },
-      dismissive: { borderColor: '#888', color: '#888', icon: '🚪' },
-      hostile: { borderColor: '#ff4a4a', color: '#ff4a4a', icon: '⚔️' },
-      compliant: { borderColor: '#9d4edd', color: '#9d4edd', icon: '🤝' },
-      dark_pact: { borderColor: '#6a0dad', color: '#6a0dad', icon: '👁️' },
-      esoteric: { borderColor: '#ffd700', color: '#ffd700', icon: '✨' },
-      prophetic: { borderColor: '#00ced1', color: '#00ced1', icon: '📜' },
-      void_touched: { borderColor: '#1a1a1a', color: '#1a1a1a', icon: '🌀' }
+      empathetic: { borderColor: '#4a9eff', color: '#4a9eff' },
+      dismissive: { borderColor: '#888', color: '#888' },
+      hostile: { borderColor: '#ff4a4a', color: '#ff4a4a' },
+      compliant: { borderColor: '#9d4edd', color: '#9d4edd' },
+      dark_pact: { borderColor: '#6a0dad', color: '#6a0dad' },
+      esoteric: { borderColor: '#ffd700', color: '#ffd700' },
+      prophetic: { borderColor: '#00ced1', color: '#00ced1' },
+      void_touched: { borderColor: '#1a1a1a', color: '#1a1a1a' }
     };
-    return styles[type] || { borderColor: 'var(--border-color)', color: 'var(--text-color)', icon: '💬' };
+    return styles[type] || { borderColor: 'var(--border-color)', color: 'var(--text-color)' };
   };
 
   // If player has a weapon, show combat option instead of dialogue
@@ -118,7 +118,7 @@ export default function ColleagueModal({ event, recentMessages, respondToColleag
                 transition: 'all 0.2s'
               }}
             >
-              ⚔️ ENGAGE IN COMBAT
+              ENGAGE IN COMBAT
             </button>
 
             <button
@@ -142,7 +142,7 @@ export default function ColleagueModal({ event, recentMessages, respondToColleag
                 opacity: 0.7
               }}
             >
-              🏳️ Try to reason with them
+              Try to reason with them
             </button>
           </div>
 
@@ -291,7 +291,6 @@ export default function ColleagueModal({ event, recentMessages, respondToColleag
                   boxShadow: isSpecial ? '0 0 8px rgba(255, 215, 0, 0.3)' : 'none'
                 }}
               >
-                <span style={{ marginRight: '8px' }}>{typeStyle.icon}</span>
                 {response.text}
                 {isSpecial && (
                   <span style={{
