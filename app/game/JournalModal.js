@@ -240,7 +240,7 @@ export default function JournalModal({ gameState, onClose, onSwitchTab }) {
                   <div style={{ fontSize: '11px', opacity: 0.7 }}>
                     Trust: {relationship.trustLevel > 0 ? '+' : ''}{relationship.trustLevel}
                   </div>
-                  <div style={{ fontSize: '11px', opacity: 0.7' }}>
+                  <div style={{ fontSize: '11px', opacity: 0.7 }}>
                     Encounters: {relationship.encounters}
                   </div>
                 </div>
