@@ -56,11 +56,14 @@ export default function StoryMomentModal({ storyMoment, gameState, respondToColl
       <div style={{
         maxWidth: '800px',
         width: '100%',
+        maxHeight: 'calc(100vh - 40px)',
         border: '3px solid var(--accent-color)',
         padding: '40px',
         backgroundColor: 'var(--bg-color)',
         color: 'var(--text-color)',
-        boxShadow: '0 0 50px rgba(255, 255, 255, 0.1)'
+        boxShadow: '0 0 50px rgba(255, 255, 255, 0.1)',
+        overflowY: 'auto',
+        margin: 'auto'
       }}>
 
         {/* Story Moment Title */}
