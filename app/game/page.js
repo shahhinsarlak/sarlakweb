@@ -27,7 +27,7 @@ import { addExperience, purchaseSkill, getActiveSkillEffects, getModifiedPortalC
 import { SKILLS, LEVEL_SYSTEM, XP_REWARDS } from './skillTreeConstants';
 import { DIMENSIONAL_MATERIALS } from './dimensionalConstants';
 import { getPlayerCombatStats } from './combatConstants';
-import { getSanityTierDisplay, isSanityDrainPaused, calculatePaperQuality, applySanityPPModifier } from './sanityPaperHelpers';
+import { getSanityTierDisplay, isSanityDrainPaused, calculatePaperQuality, applySanityPPModifier, getActiveBuffPPMultiplier, getActiveBuffXPMultiplier, getActiveBuffEnergyCostMultiplier, getActiveBuffPPPerSecondMultiplier } from './sanityPaperHelpers';
 import { checkStoryMoments } from './colleagueHelpers';
 import {
   INITIAL_GAME_STATE,
@@ -52,6 +52,7 @@ export default function Game() {
   const [hoveredUpgrade, setHoveredUpgrade] = useState(null);
   const [showAchievements, setShowAchievements] = useState(false);
   const [selectedUpgradeType, setSelectedUpgradeType] = useState('pp'); // 'pp', 'printer', 'dimensional'
+  const [buffTooltip, setBuffTooltip] = useState(null); // { buff, x, y }
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
   const addMessage = useCallback((msg) => {
@@ -1375,10 +1376,12 @@ export default function Game() {
                     {(() => {
                       const effects = getActiveSkillEffects(gameState);
                       const tier = getSanityTierDisplay(gameState);
+                      const buffMult = getActiveBuffPPMultiplier(gameState);
                       const skillBonus = effects.ppMultiplier > 0 ? `+${(effects.ppMultiplier * 100).toFixed(0)}%` : 'none';
                       const sanityBonus = tier.ppModifier !== 1 ? `${tier.ppModifier >= 1 ? '+' : ''}${((tier.ppModifier - 1) * 100).toFixed(0)}%` : '0%';
+                      const buffBonus = buffMult !== 1 ? `+${((buffMult - 1) * 100).toFixed(0)}%` : 'none';
 
-                      return `Base: ${gameState.ppPerClick} • Skills: ${skillBonus} • Sanity: ${sanityBonus}`;
+                      return `Base: ${gameState.ppPerClick} • Skills: ${skillBonus} • Sanity: ${sanityBonus} • Buffs: ${buffBonus}`;
                     })()}
                   </div>
                 </div>
@@ -1444,10 +1447,14 @@ export default function Game() {
                       {(() => {
                         const effects = getActiveSkillEffects(gameState);
                         const tier = getSanityTierDisplay(gameState);
+                        const ppMult = getActiveBuffPPMultiplier(gameState);
+                        const ppSecMult = getActiveBuffPPPerSecondMultiplier(gameState);
                         const skillBonus = effects.ppMultiplier > 0 ? `+${(effects.ppMultiplier * 100).toFixed(0)}%` : 'none';
                         const sanityBonus = tier.ppModifier !== 1 ? `${tier.ppModifier >= 1 ? '+' : ''}${((tier.ppModifier - 1) * 100).toFixed(0)}%` : '0%';
+                        const ppBuffBonus = ppMult !== 1 ? `+${((ppMult - 1) * 100).toFixed(0)}%` : 'none';
+                        const ppSecBuffBonus = ppSecMult !== 1 ? `+${((ppSecMult - 1) * 100).toFixed(0)}%` : 'none';
 
-                        return `Base: ${gameState.ppPerSecond} • Skills: ${skillBonus} • Sanity: ${sanityBonus}`;
+                        return `Base: ${gameState.ppPerSecond} • Skills: ${skillBonus} • Sanity: ${sanityBonus} • PP Buffs: ${ppBuffBonus} • Void Buffs: ${ppSecBuffBonus}`;
                       })()}
                     </div>
                   </div>
@@ -1475,17 +1482,40 @@ export default function Game() {
                     {gameState.activeReportBuffs.map((buff, idx) => {
                       const timeLeft = Math.max(0, Math.ceil((buff.expiresAt - Date.now()) / 1000));
                       if (timeLeft <= 0) return null;
+
+                      // Generate buff effect description
+                      const effects = [];
+                      if (buff.ppMult) effects.push(`PP: +${((buff.ppMult - 1) * 100).toFixed(0)}%`);
+                      if (buff.xpMult) effects.push(`XP: +${((buff.xpMult - 1) * 100).toFixed(0)}%`);
+                      if (buff.ppPerSecondMult) effects.push(`PP/sec: ${buff.ppPerSecondMult}x`);
+                      if (buff.energyCostMult && buff.energyCostMult < 1) effects.push(`Energy: -${((1 - buff.energyCostMult) * 100).toFixed(0)}%`);
+                      if (buff.energyCostMult && buff.energyCostMult > 1) effects.push(`Energy: +${((buff.energyCostMult - 1) * 100).toFixed(0)}%`);
+                      if (buff.materialMult) effects.push(`Materials: ${buff.materialMult}x`);
+                      if (buff.noSanityDrain) effects.push('No sanity drain');
+
                       return (
-                        <div key={idx} style={{
-                          fontSize: '10px',
-                          padding: '6px',
-                          backgroundColor: 'var(--bg-color)',
-                          border: '1px solid var(--accent-color)',
-                          borderRadius: '2px',
-                          marginBottom: '4px'
-                        }}>
+                        <div
+                          key={idx}
+                          style={{
+                            fontSize: '10px',
+                            padding: '6px',
+                            backgroundColor: 'var(--bg-color)',
+                            border: '1px solid var(--accent-color)',
+                            borderRadius: '2px',
+                            marginBottom: '4px',
+                            cursor: 'help',
+                            position: 'relative'
+                          }}
+                          onMouseEnter={(e) => setBuffTooltip({ buff, effects, x: e.clientX, y: e.clientY })}
+                          onMouseMove={(e) => setBuffTooltip(prev => prev ? { ...prev, x: e.clientX, y: e.clientY } : null)}
+                          onMouseLeave={() => setBuffTooltip(null)}
+                        >
                           <div style={{ fontWeight: 'bold' }}>{buff.name}</div>
                           <div style={{ opacity: 0.8 }}>{timeLeft}s remaining</div>
+                          <div style={{ opacity: 0.7, fontSize: '9px', marginTop: '2px' }}>
+                            {effects.slice(0, 2).join(' • ')}
+                            {effects.length > 2 && '...'}
+                          </div>
                         </div>
                       );
                     })}
@@ -1951,6 +1981,47 @@ export default function Game() {
         popup={gameState.currentHelpPopup}
         onDismiss={dismissHelpPopup}
       />
+
+      {/* Buff Tooltip that follows mouse */}
+      {buffTooltip && (
+        <div
+          style={{
+            position: 'fixed',
+            left: `${buffTooltip.x + 15}px`,
+            top: `${buffTooltip.y + 15}px`,
+            backgroundColor: 'var(--bg-color)',
+            border: '2px solid var(--accent-color)',
+            padding: '12px',
+            fontSize: '11px',
+            fontFamily: "'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace",
+            color: 'var(--text-color)',
+            zIndex: 10000,
+            maxWidth: '280px',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+            pointerEvents: 'none'
+          }}
+        >
+          <div style={{ fontWeight: 'bold', marginBottom: '8px', fontSize: '12px' }}>
+            {buffTooltip.buff.name}
+          </div>
+          <div style={{ opacity: 0.9, marginBottom: '8px', fontSize: '10px', fontStyle: 'italic' }}>
+            {buffTooltip.buff.desc}
+          </div>
+          <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '8px', marginTop: '8px' }}>
+            <div style={{ fontWeight: 'bold', fontSize: '10px', marginBottom: '4px', opacity: 0.7 }}>
+              EFFECTS:
+            </div>
+            {buffTooltip.effects.map((effect, i) => (
+              <div key={i} style={{ fontSize: '10px', opacity: 0.9, marginBottom: '2px' }}>
+                • {effect}
+              </div>
+            ))}
+          </div>
+          <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '6px', marginTop: '8px', opacity: 0.7, fontSize: '9px' }}>
+            {Math.max(0, Math.ceil((buffTooltip.buff.expiresAt - Date.now()) / 1000))}s remaining
+          </div>
+        </div>
+      )}
     </>
   );
 }

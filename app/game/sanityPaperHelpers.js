@@ -33,10 +33,13 @@ export const applySanityPPModifier = (basePP, gameState) => {
   const tier = getSanityTier(gameState.sanity);
   const sanityMod = tier.ppMultiplier;
 
-  // Check for active report buffs
+  // Check for active buffs with ppMult modifier
   const activeBuffs = gameState.activeReportBuffs || [];
-  const efficiencyBuff = activeBuffs.find(b => b.id === 'efficiency' && b.expiresAt > Date.now());
-  const buffMod = efficiencyBuff ? efficiencyBuff.ppMult : 1.0;
+  const now = Date.now();
+  const ppBuffs = activeBuffs.filter(b => b.expiresAt > now && b.ppMult);
+
+  // Apply the highest PP multiplier if multiple buffs exist
+  const buffMod = ppBuffs.length > 0 ? Math.max(...ppBuffs.map(b => b.ppMult)) : 1.0;
 
   return basePP * sanityMod * buffMod; // No floor - allow decimals
 };
@@ -49,7 +52,17 @@ export const applySanityPPModifier = (basePP, gameState) => {
  */
 export const applySanityXPModifier = (baseXP, gameState) => {
   const tier = getSanityTier(gameState.sanity);
-  return baseXP * tier.xpMultiplier; // No floor - allow decimals to accumulate
+  const sanityMod = tier.xpMultiplier;
+
+  // Check for active buffs with xpMult modifier
+  const activeBuffs = gameState.activeReportBuffs || [];
+  const now = Date.now();
+  const xpBuffs = activeBuffs.filter(b => b.expiresAt > now && b.xpMult);
+
+  // Apply the highest XP multiplier if multiple buffs exist
+  const buffMod = xpBuffs.length > 0 ? Math.max(...xpBuffs.map(b => b.xpMult)) : 1.0;
+
+  return baseXP * sanityMod * buffMod; // No floor - allow decimals to accumulate
 };
 
 /**
@@ -60,8 +73,11 @@ export const applySanityXPModifier = (baseXP, gameState) => {
  */
 export const applyEnergyCostModifier = (baseCost, gameState) => {
   const activeBuffs = gameState.activeReportBuffs || [];
-  const focusBuff = activeBuffs.find(b => b.id === 'focus' && b.expiresAt > Date.now());
-  const buffMod = focusBuff ? focusBuff.energyCostMult : 1.0;
+  const now = Date.now();
+  const energyBuffs = activeBuffs.filter(b => b.expiresAt > now && b.energyCostMult);
+
+  // Apply the lowest energy cost multiplier (best for player)
+  const buffMod = energyBuffs.length > 0 ? Math.min(...energyBuffs.map(b => b.energyCostMult)) : 1.0;
 
   return Math.ceil(baseCost * buffMod);
 };
@@ -213,8 +229,9 @@ export const getRandomDimensionalMaterial = () => {
  */
 export const isSanityDrainPaused = (gameState) => {
   const activeBuffs = gameState.activeReportBuffs || [];
-  const stabilityBuff = activeBuffs.find(b => b.id === 'stability' && b.expiresAt > Date.now());
-  return stabilityBuff ? stabilityBuff.noSanityDrain : false;
+  const now = Date.now();
+  // Check if any active buff has noSanityDrain property set to true
+  return activeBuffs.some(b => b.expiresAt > now && b.noSanityDrain === true);
 };
 
 /**
@@ -225,6 +242,54 @@ export const isSanityDrainPaused = (gameState) => {
 export const cleanExpiredBuffs = (gameState) => {
   const now = Date.now();
   return (gameState.activeReportBuffs || []).filter(buff => buff.expiresAt > now);
+};
+
+/**
+ * Get the current PP multiplier from active buffs
+ * @param {Object} gameState - Current game state
+ * @returns {number} The highest PP multiplier from active buffs (1.0 if none)
+ */
+export const getActiveBuffPPMultiplier = (gameState) => {
+  const activeBuffs = gameState.activeReportBuffs || [];
+  const now = Date.now();
+  const ppBuffs = activeBuffs.filter(b => b.expiresAt > now && b.ppMult);
+  return ppBuffs.length > 0 ? Math.max(...ppBuffs.map(b => b.ppMult)) : 1.0;
+};
+
+/**
+ * Get the current XP multiplier from active buffs
+ * @param {Object} gameState - Current game state
+ * @returns {number} The highest XP multiplier from active buffs (1.0 if none)
+ */
+export const getActiveBuffXPMultiplier = (gameState) => {
+  const activeBuffs = gameState.activeReportBuffs || [];
+  const now = Date.now();
+  const xpBuffs = activeBuffs.filter(b => b.expiresAt > now && b.xpMult);
+  return xpBuffs.length > 0 ? Math.max(...xpBuffs.map(b => b.xpMult)) : 1.0;
+};
+
+/**
+ * Get the current energy cost multiplier from active buffs
+ * @param {Object} gameState - Current game state
+ * @returns {number} The lowest energy cost multiplier from active buffs (1.0 if none)
+ */
+export const getActiveBuffEnergyCostMultiplier = (gameState) => {
+  const activeBuffs = gameState.activeReportBuffs || [];
+  const now = Date.now();
+  const energyBuffs = activeBuffs.filter(b => b.expiresAt > now && b.energyCostMult);
+  return energyBuffs.length > 0 ? Math.min(...energyBuffs.map(b => b.energyCostMult)) : 1.0;
+};
+
+/**
+ * Get the current PP per second multiplier from active buffs (void contracts)
+ * @param {Object} gameState - Current game state
+ * @returns {number} The highest PP per second multiplier from active buffs (1.0 if none)
+ */
+export const getActiveBuffPPPerSecondMultiplier = (gameState) => {
+  const activeBuffs = gameState.activeReportBuffs || [];
+  const now = Date.now();
+  const ppSecBuffs = activeBuffs.filter(b => b.expiresAt > now && b.ppPerSecondMult);
+  return ppSecBuffs.length > 0 ? Math.max(...ppSecBuffs.map(b => b.ppPerSecondMult)) : 1.0;
 };
 
 /**
