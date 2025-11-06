@@ -476,7 +476,9 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
         colleagueNotification: null,
         completedColleagueEncounters: prev.colleagueNotification
           ? [...prev.completedColleagueEncounters, prev.colleagueNotification.encounterId]
-          : prev.completedColleagueEncounters
+          : prev.completedColleagueEncounters,
+        // Return player to cubicle after encounter (Added 2025-11-05)
+        location: 'cubicle'
       };
 
       // Track completed story moment
