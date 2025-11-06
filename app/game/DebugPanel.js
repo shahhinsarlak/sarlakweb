@@ -762,7 +762,7 @@ export default function DebugPanel({ gameState, setGameState, addMessage, onClos
       </div>
 
       <button onClick={exportGameState} style={buttonStyle}>
-        📋 EXPORT STATE TO CLIPBOARD
+        EXPORT STATE TO CLIPBOARD
       </button>
     </div>
   );
@@ -1097,7 +1097,7 @@ export default function DebugPanel({ gameState, setGameState, addMessage, onClos
             color: '#00ff00',
             fontWeight: '500'
           }}>
-            🛠 DEBUG PANEL
+            DEBUG PANEL
           </div>
           <button
             onClick={onClose}
