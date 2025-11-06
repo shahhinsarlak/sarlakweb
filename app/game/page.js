@@ -273,6 +273,7 @@ export default function Game() {
     setGameState(prev => ({
       ...prev,
       pendingColleagueEncounter: null,
+      location: 'cubicle', // Return to cubicle when walking away (Added 2025-11-06)
       sanity: Math.max(0, prev.sanity - 2), // Small sanity cost for avoiding interaction
       recentMessages: ['You turn away. The colleague watches you leave.', ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
     }));
