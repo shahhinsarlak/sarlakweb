@@ -677,7 +677,7 @@ export const STORY_MOMENTS = [
     id: 'first_loop_awareness',
     title: 'THE FIRST LOOP AWARENESS',
     colleague: 'temporal_trapped',
-    trigger: (state) => state.day === 7 && !state.completedStoryMoments.includes('first_loop_awareness'),
+    trigger: (state) => state.unlockedLocations.includes('breakroom') && state.day === 7 && !state.completedStoryMoments.includes('first_loop_awareness'),
     dialogue: `They corner you in the break room. Their eyes are wild, desperate.
 
 "You've been here seven days."
@@ -977,7 +977,7 @@ It's thousands of pages thick.
     id: 'high_mystery_convergence',
     title: 'THE CONVERGENCE',
     colleague: null, // Multiple colleagues
-    trigger: (state) => state.mysteryProgress >= 80 && !state.completedStoryMoments.includes('high_mystery_convergence'),
+    trigger: (state) => state.unlockedLocations.includes('breakroom') && state.mysteryProgress >= 80 && !state.completedStoryMoments.includes('high_mystery_convergence'),
     dialogue: `They're all here.
 
 Spiral Philosopher. Productivity Zealot. Void Clerk. Temporal Trapped. Light Herald.
