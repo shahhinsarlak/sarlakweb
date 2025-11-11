@@ -1638,6 +1638,20 @@ export const ACHIEVEMENTS = [
  * Different types of paper with different uses and requirements
  */
 /**
+ * Tier Mastery Weights (Added 2025-11-11)
+ *
+ * Higher tier documents provide more mastery points toward unlocking future tiers.
+ * This prevents players from spamming Tier 1 documents to progress.
+ */
+export const TIER_MASTERY_WEIGHTS = {
+  1: 1,   // Tier 1: +1 mastery per print
+  2: 3,   // Tier 2: +3 mastery per print
+  3: 6,   // Tier 3: +6 mastery per print
+  4: 12,  // Tier 4: +12 mastery per print
+  5: 25   // Tier 5: +25 mastery per print
+};
+
+/**
  * Document Tier System (Revised 2025-11-01)
  *
  * Each document type has 5 tiers that unlock based on mastery (total prints):
