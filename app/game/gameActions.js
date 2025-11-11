@@ -13,7 +13,7 @@
  * - upgrades: Purchase permanent improvements
  * - printer: Paper generation system
  */
-import { LOCATIONS, UPGRADES, DEBUG_CHALLENGES, PRINTER_UPGRADES, DOCUMENT_TYPES, STRANGE_COLLEAGUE_DIALOGUES } from './constants';
+import { LOCATIONS, UPGRADES, DEBUG_CHALLENGES, PRINTER_UPGRADES, DOCUMENT_TYPES, STRANGE_COLLEAGUE_DIALOGUES, TIER_MASTERY_WEIGHTS } from './constants';
 import {
   applyEnergyCostReduction,
   applyPPMultiplier
@@ -945,6 +945,9 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       };
 
       // Deduct costs and store document
+      // Use weighted mastery gain based on tier (higher tiers = more mastery)
+      const masteryGain = TIER_MASTERY_WEIGHTS[tierNumber] || 1;
+
       const newState = {
         ...prev,
         paper: prev.paper - (tierData.cost.paper || 0),
@@ -952,7 +955,7 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
         sanity: Math.max(0, prev.sanity - (tierData.cost.sanity || 0)),
         documentMastery: {
           ...prev.documentMastery,
-          [`${docType}s`]: (prev.documentMastery?.[`${docType}s`] || 0) + 1
+          [`${docType}s`]: (prev.documentMastery?.[`${docType}s`] || 0) + masteryGain
         },
         storedDocuments: [...(prev.storedDocuments || []), document]
       };

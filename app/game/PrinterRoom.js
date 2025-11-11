@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { DOCUMENT_TYPES } from './constants';
+import { DOCUMENT_TYPES, TIER_MASTERY_WEIGHTS } from './constants';
 import {
   calculatePaperQuality,
   canPrintDocument,
@@ -587,6 +587,10 @@ ${printing ? '    │  ───────────────────
                                   Cost: {tier.cost.paper}p
                                   {tier.cost.energy && `, ${tier.cost.energy}e`}
                                   {tier.cost.sanity && `, ${tier.cost.sanity}s`}
+                                </div>
+                                <div style={{ fontSize: '8px', opacity: 0.7, marginTop: '2px', color: '#00ff88' }}>
+                                  +{TIER_MASTERY_WEIGHTS[tier.tier] || 1} Mastery
+                                  {tier.tier > 1 && ` (${TIER_MASTERY_WEIGHTS[tier.tier]}x faster than Tier 1)`}
                                 </div>
                                 <div style={{ fontSize: '7px', opacity: 0.5, marginTop: '2px', fontStyle: 'italic' }}>
                                   {tier.tier === 1 && 'Starter tier - Low risk, low reward'}
