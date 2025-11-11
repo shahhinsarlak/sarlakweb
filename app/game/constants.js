@@ -1130,7 +1130,8 @@ export const COLLEAGUE_ENCOUNTERS = [
     encounterId: 2,
     notificationMessage: "Someone needs to show you the pattern. It's urgent.",
     trigger: (state) => {
-      return state.mysteryProgress >= 15 &&
+      return state.unlockedLocations.includes('breakroom') &&
+             state.mysteryProgress >= 15 &&
              state.completedColleagueEncounters.includes('encounter_spiral_1') &&
              !state.completedColleagueEncounters.includes('encounter_spiral_2');
     }
@@ -1141,7 +1142,8 @@ export const COLLEAGUE_ENCOUNTERS = [
     encounterId: 2,
     notificationMessage: "Productivity meeting scheduled. You don't remember scheduling it.",
     trigger: (state) => {
-      return state.mysteryProgress >= 20 &&
+      return state.unlockedLocations.includes('breakroom') &&
+             state.mysteryProgress >= 20 &&
              state.completedColleagueEncounters.includes('encounter_zealot_1') &&
              !state.completedColleagueEncounters.includes('encounter_zealot_2');
     }
@@ -1152,7 +1154,8 @@ export const COLLEAGUE_ENCOUNTERS = [
     encounterId: 2,
     notificationMessage: "A colleague has an important file for you. The break room is darker than usual.",
     trigger: (state) => {
-      return state.mysteryProgress >= 25 &&
+      return state.unlockedLocations.includes('breakroom') &&
+             state.mysteryProgress >= 25 &&
              state.completedColleagueEncounters.includes('encounter_void_1') &&
              !state.completedColleagueEncounters.includes('encounter_void_2');
     }
