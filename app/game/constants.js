@@ -1081,8 +1081,9 @@ export const COLLEAGUE_ENCOUNTERS = [
     encounterId: 1,
     notificationMessage: "A colleague wants to discuss your metrics. Break room. Now.",
     trigger: (state) => {
-      // Triggers on day 3 or after first colleague encounter
-      return (state.day >= 3 || state.completedColleagueEncounters.length >= 1) &&
+      // Triggers on day 3 or after first colleague encounter (requires break room)
+      return state.unlockedLocations.includes('breakroom') &&
+             (state.day >= 3 || state.completedColleagueEncounters.length >= 1) &&
              !state.completedColleagueEncounters.includes('encounter_zealot_1');
     }
   },
@@ -1092,8 +1093,9 @@ export const COLLEAGUE_ENCOUNTERS = [
     encounterId: 1,
     notificationMessage: "The filing cabinet whispers your name. Someone is in the break room.",
     trigger: (state) => {
-      // Triggers on day 5 or after collecting 2 clues
-      return ((state.day >= 5 || (state.investigation?.clues?.length || 0) >= 2) &&
+      // Triggers on day 5 or after collecting 2 clues (requires break room)
+      return state.unlockedLocations.includes('breakroom') &&
+             ((state.day >= 5 || (state.investigation?.clues?.length || 0) >= 2) &&
              !state.completedColleagueEncounters.includes('encounter_void_1'));
     }
   },
@@ -1103,8 +1105,9 @@ export const COLLEAGUE_ENCOUNTERS = [
     encounterId: 1,
     notificationMessage: "You've received this notification before. Break room. Again.",
     trigger: (state) => {
-      // Triggers on day 7 or after first debug challenge
-      return ((state.day >= 7 || state.achievements.includes('debugger')) &&
+      // Triggers on day 7 or after first debug challenge (requires break room)
+      return state.unlockedLocations.includes('breakroom') &&
+             ((state.day >= 7 || state.achievements.includes('debugger')) &&
              !state.completedColleagueEncounters.includes('encounter_temporal_1'));
     }
   },
@@ -1114,8 +1117,9 @@ export const COLLEAGUE_ENCOUNTERS = [
     encounterId: 1,
     notificationMessage: "The lights are brighter in the break room. Someone needs to tell you why.",
     trigger: (state) => {
-      // Triggers after printing first document or day 9
-      return ((state.printCount >= 1 || state.day >= 9) &&
+      // Triggers after printing first document or day 9 (requires break room)
+      return state.unlockedLocations.includes('breakroom') &&
+             ((state.printCount >= 1 || state.day >= 9) &&
              !state.completedColleagueEncounters.includes('encounter_light_1'));
     }
   },
