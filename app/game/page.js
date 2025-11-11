@@ -1560,38 +1560,76 @@ export default function Game() {
 
             {/* Consolidated Upgrades Section */}
             <div style={{ marginBottom: '16px' }}>
+              <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6, marginBottom: '12px' }}>
+                UPGRADES
+              </div>
               <div style={{
                 display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: '12px'
+                gap: '4px',
+                marginBottom: '16px',
+                borderBottom: '1px solid var(--border-color)'
               }}>
-                <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6 }}>
-                  UPGRADES
-                </div>
-                <select
-                  value={selectedUpgradeType}
-                  onChange={(e) => setSelectedUpgradeType(e.target.value)}
+                <button
+                  onClick={() => setSelectedUpgradeType('pp')}
                   style={{
-                    background: 'var(--bg-color)',
-                    border: '1px solid var(--border-color)',
-                    color: 'var(--text-color)',
-                    padding: '4px 8px',
-                    fontSize: '10px',
-                    fontFamily: 'inherit',
+                    background: selectedUpgradeType === 'pp' ? 'var(--accent-color)' : 'none',
+                    border: 'none',
+                    borderBottom: selectedUpgradeType === 'pp' ? '2px solid var(--accent-color)' : '2px solid transparent',
+                    color: selectedUpgradeType === 'pp' ? 'var(--bg-color)' : 'var(--text-color)',
+                    padding: '8px 16px',
                     cursor: 'pointer',
+                    fontSize: '11px',
+                    fontFamily: 'inherit',
                     textTransform: 'uppercase',
-                    letterSpacing: '0.5px'
+                    letterSpacing: '0.5px',
+                    transition: 'all 0.2s',
+                    opacity: selectedUpgradeType === 'pp' ? 1 : 0.7
                   }}
                 >
-                  <option value="pp">PP Upgrades</option>
-                  {gameState.printerUnlocked && (
-                    <option value="printer">Printer Upgrades</option>
-                  )}
-                  {gameState.portalUnlocked && (
-                    <option value="dimensional">Dimensional Upgrades</option>
-                  )}
-                </select>
+                  PP
+                </button>
+                {gameState.printerUnlocked && (
+                  <button
+                    onClick={() => setSelectedUpgradeType('printer')}
+                    style={{
+                      background: selectedUpgradeType === 'printer' ? 'var(--accent-color)' : 'none',
+                      border: 'none',
+                      borderBottom: selectedUpgradeType === 'printer' ? '2px solid var(--accent-color)' : '2px solid transparent',
+                      color: selectedUpgradeType === 'printer' ? 'var(--bg-color)' : 'var(--text-color)',
+                      padding: '8px 16px',
+                      cursor: 'pointer',
+                      fontSize: '11px',
+                      fontFamily: 'inherit',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px',
+                      transition: 'all 0.2s',
+                      opacity: selectedUpgradeType === 'printer' ? 1 : 0.7
+                    }}
+                  >
+                    PRINTER
+                  </button>
+                )}
+                {gameState.portalUnlocked && (
+                  <button
+                    onClick={() => setSelectedUpgradeType('dimensional')}
+                    style={{
+                      background: selectedUpgradeType === 'dimensional' ? 'var(--accent-color)' : 'none',
+                      border: 'none',
+                      borderBottom: selectedUpgradeType === 'dimensional' ? '2px solid var(--accent-color)' : '2px solid transparent',
+                      color: selectedUpgradeType === 'dimensional' ? 'var(--bg-color)' : 'var(--text-color)',
+                      padding: '8px 16px',
+                      cursor: 'pointer',
+                      fontSize: '11px',
+                      fontFamily: 'inherit',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px',
+                      transition: 'all 0.2s',
+                      opacity: selectedUpgradeType === 'dimensional' ? 1 : 0.7
+                    }}
+                  >
+                    DIMENSIONAL
+                  </button>
+                )}
               </div>
 
               {/* PP Upgrades */}
