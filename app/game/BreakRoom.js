@@ -153,7 +153,7 @@ export default function BreakRoom({ gameState, onSearch, onClose }) {
             fontSize: '13px',
             textAlign: 'center'
           }}>
-            Today's Visitor: <strong>{scheduledColleague}</strong>
+            Today&apos;s Visitor: <strong>{scheduledColleague}</strong>
           </div>
         )}
 

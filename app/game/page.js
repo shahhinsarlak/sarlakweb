@@ -758,6 +758,7 @@ export default function Game() {
         });
       }, 100);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameState.day, gameState.playerLevel, gameState.portalUnlocked, gameState.unlockedLocations, gameState.mysteryProgress, gameState.completedStoryMoments, gameState.pendingStoryMoment, gameState.strangeColleagueEvent, gameState.pendingColleagueEncounter]);
 
   const dismissHelpPopup = () => {
