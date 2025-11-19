@@ -7,7 +7,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { BREAK_ROOM_SEARCHABLES, COLLEAGUE_SCHEDULE } from './constants';
+import { BREAK_ROOM_SEARCHABLES, COLLEAGUE_SCHEDULE } from './breakRoomConstants';
 
 export default function BreakRoom({ gameState, onSearch, onClose }) {
   const [cooldowns, setCooldowns] = useState({});
@@ -203,7 +203,7 @@ export default function BreakRoom({ gameState, onSearch, onClose }) {
                   color: 'var(--accent-color)'
                 }}>
                   {searchable.name}
-                  {isLocked && ' 🔒'}
+                  {isLocked && ' [LOCKED]'}
                 </div>
 
                 <div style={{
