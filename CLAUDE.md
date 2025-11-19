@@ -159,6 +159,18 @@ if (isValid) {
 // This is a minimalist horror game - emojis break immersion
 const message = '⚠️ Warning';  // WRONG
 const message = 'Warning';     // CORRECT
+
+// ✅ DO: Escape special characters in JSX text
+<div>Today&apos;s Visitor</div>  // CORRECT
+<div>Today's Visitor</div>       // WRONG - Build will fail!
+
+// ❌ DON'T: Use raw apostrophes/quotes in JSX
+// Common characters that MUST be escaped:
+// ' → &apos;
+// " → &quot;
+// & → &amp;
+// < → &lt;
+// > → &gt;
 ```
 
 ### Code Formatting
@@ -683,6 +695,13 @@ export default function ExampleModal({ gameState, onClose, onAction }) {
 3. **CSS Variables**: Use `var(--bg-color)`, `var(--text-color)`, etc.
 4. **Consistent font**: Always use the monospace font stack
 5. **Accessibility**: Include proper ARIA labels and keyboard handlers
+6. **CRITICAL - JSX Character Escaping**: Always escape special characters in JSX text content
+   - Use `&apos;` for apostrophes (don't → don&apos;t)
+   - Use `&quot;` for quotes
+   - Use `&amp;` for ampersands
+   - Example: `Today&apos;s Visitor` NOT `Today's Visitor`
+   - This prevents ESLint errors: `react/no-unescaped-entities`
+   - **Build will fail if unescaped characters are present**
 
 ---
 
