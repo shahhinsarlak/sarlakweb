@@ -13,7 +13,7 @@
  * - upgrades: Purchase permanent improvements
  * - printer: Paper generation system
  */
-import { LOCATIONS, UPGRADES, DEBUG_CHALLENGES, PRINTER_UPGRADES, DOCUMENT_TYPES, STRANGE_COLLEAGUE_DIALOGUES, TIER_MASTERY_WEIGHTS } from './constants';
+import { LOCATIONS, UPGRADES, DEBUG_CHALLENGES, PRINTER_UPGRADES, DOCUMENT_TYPES, STRANGE_COLLEAGUE_DIALOGUES, TIER_MASTERY_WEIGHTS, BREAK_ROOM_SEARCHABLES, BREAK_ROOM_LOOT_TABLES, COLLEAGUE_SCHEDULE } from './constants';
 import {
   applyEnergyCostReduction,
   applyPPMultiplier
@@ -355,23 +355,62 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       // Track location discovery for journal
       const discoveredLocations = discoverLocation(prev, loc);
 
-      // NEW: Check for colleague notification when entering break room (Added 2025-11-05)
-      if (loc === 'breakroom' && prev.colleagueNotification) {
-        // Find the colleague data
-        const colleague = STRANGE_COLLEAGUE_DIALOGUES.find(
-          c => c.id === prev.colleagueNotification.colleagueId
-        );
+      // Break Room Calendar System (Added 2025-11-19)
+      // Colleagues appear on scheduled days
+      if (loc === 'breakroom') {
+        // Priority 1: Existing colleague notification (from events/story moments)
+        if (prev.colleagueNotification) {
+          const colleague = STRANGE_COLLEAGUE_DIALOGUES.find(
+            c => c.id === prev.colleagueNotification.colleagueId
+          );
 
-        if (colleague) {
-          // Trigger encounter via briefing screen
-          return {
-            ...prev,
-            location: loc,
-            energy: Math.max(0, prev.energy - 5),
-            discoveredLocations,
-            pendingColleagueEncounter: colleague
-          };
+          if (colleague) {
+            // Trigger encounter via briefing screen
+            return {
+              ...prev,
+              location: loc,
+              energy: Math.max(0, prev.energy - 5),
+              discoveredLocations,
+              pendingColleagueEncounter: colleague
+            };
+          }
         }
+
+        // Priority 2: Check if a colleague is scheduled for today
+        const scheduledColleagueId = COLLEAGUE_SCHEDULE.getScheduledColleague(prev.day);
+
+        if (scheduledColleagueId && scheduledColleagueId !== 'multiple') {
+          // Check if we should spawn this encounter
+          // Only spawn if player hasn't visited break room yet today
+          const shouldSpawnEncounter = prev.lastBreakRoomVisitDay !== prev.day;
+
+          if (shouldSpawnEncounter) {
+            const colleague = STRANGE_COLLEAGUE_DIALOGUES.find(c => c.id === scheduledColleagueId);
+
+            if (colleague) {
+              // Spawn scheduled colleague encounter
+              return {
+                ...prev,
+                location: loc,
+                energy: Math.max(0, prev.energy - 5),
+                discoveredLocations,
+                lastBreakRoomVisitDay: prev.day,
+                pendingColleagueEncounter: colleague,
+                recentMessages: [`${colleague.ascii.split('\n')[0]}... You sense a presence in the break room.`, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
+              };
+            }
+          }
+        }
+
+        // Priority 3: No encounter, open interactive break room UI
+        return {
+          ...prev,
+          location: loc,
+          inBreakRoom: true,
+          energy: Math.max(0, prev.energy - 5),
+          discoveredLocations,
+          lastBreakRoomVisitDay: prev.day
+        };
       }
 
       // Handle direct locations
@@ -1222,6 +1261,277 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
     });
   };
 
+  // Break Room System Actions (Added 2025-11-19)
+
+  /**
+   * Enter the break room UI
+   */
+  const enterBreakRoom = () => {
+    setGameState(prev => ({
+      ...prev,
+      inBreakRoom: true,
+      lastBreakRoomVisitDay: prev.day
+    }));
+  };
+
+  /**
+   * Leave the break room UI
+   */
+  const leaveBreakRoom = () => {
+    setGameState(prev => ({
+      ...prev,
+      inBreakRoom: false
+    }));
+  };
+
+  /**
+   * Search a break room object
+   * @param {string} objectId - ID of the object to search (from BREAK_ROOM_SEARCHABLES)
+   */
+  const searchBreakRoomObject = (objectId) => {
+    setGameState(prev => {
+      const searchable = BREAK_ROOM_SEARCHABLES[objectId];
+      if (!searchable) return prev;
+
+      // Check if object requires unlock
+      if (searchable.requiresUnlock && !searchable.unlockCondition(prev)) {
+        return {
+          ...prev,
+          recentMessages: [searchable.description, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
+        };
+      }
+
+      // Unlock supply closet at Day 10
+      if (objectId === 'supply_closet' && prev.day >= 10 && !prev.breakRoomSupplyClosetUnlocked) {
+        return {
+          ...prev,
+          breakRoomSupplyClosetUnlocked: true,
+          recentMessages: ['The supply closet door swings open. It was never locked.', ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
+        };
+      }
+
+      // Check energy cost
+      if (prev.energy < searchable.energyCost) {
+        return {
+          ...prev,
+          recentMessages: ['Too exhausted to search.', ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
+        };
+      }
+
+      // Check cooldown
+      const now = Date.now();
+      const cooldownEnd = prev.breakRoomSearchCooldowns[objectId] || 0;
+      if (now < cooldownEnd) {
+        const remainingSeconds = Math.ceil((cooldownEnd - now) / 1000);
+        return {
+          ...prev,
+          recentMessages: [`Wait ${remainingSeconds}s before searching again.`, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
+        };
+      }
+
+      // Determine loot table based on conditions
+      const lootTable = BREAK_ROOM_LOOT_TABLES[objectId];
+      if (!lootTable) return prev;
+
+      let availableLoots = [];
+
+      // Check for conditional loot tables
+      if (prev.sanity < 10 && lootTable.criticalSanity) {
+        availableLoots.push(...lootTable.criticalSanity);
+      }
+      if (prev.sanity < 40 && lootTable.lowSanity) {
+        availableLoots.push(...lootTable.lowSanity);
+      }
+      if (prev.mysteryProgress > 50 && lootTable.highMystery) {
+        availableLoots.push(...lootTable.highMystery);
+      }
+      const dayOfWeek = prev.day % 7;
+      if ((dayOfWeek === 0 || dayOfWeek === 6) && lootTable.weekend) {
+        availableLoots.push(...lootTable.weekend);
+      }
+      const scheduledColleague = COLLEAGUE_SCHEDULE.getScheduledColleague(prev.day);
+      if (scheduledColleague && lootTable.scheduledDay) {
+        availableLoots.push(...lootTable.scheduledDay);
+      }
+
+      // Roll for rarity
+      const roll = Math.random();
+      let selectedRarity;
+      if (roll < 0.6) {
+        selectedRarity = 'common';
+      } else if (roll < 0.85) {
+        selectedRarity = 'uncommon';
+      } else {
+        selectedRarity = 'rare';
+      }
+
+      // Add rarity pools to available loots
+      if (lootTable[selectedRarity]) {
+        availableLoots.push(...lootTable[selectedRarity]);
+      }
+
+      // Check for one-time loots
+      if (lootTable.oneTime) {
+        const oneTimeLoots = lootTable.oneTime.filter(loot => {
+          const alreadyFound = prev.breakRoomSearchHistory.some(
+            h => h.objectId === objectId && h.itemFound === loot.type
+          );
+          return !alreadyFound;
+        });
+        if (oneTimeLoots.length > 0) {
+          availableLoots.push(...oneTimeLoots);
+        }
+      }
+
+      // Select random loot
+      if (availableLoots.length === 0) {
+        availableLoots = lootTable.common || [];
+      }
+      const selectedLoot = availableLoots[Math.floor(Math.random() * availableLoots.length)];
+
+      // Build new state
+      const newState = {
+        ...prev,
+        energy: prev.energy - searchable.energyCost,
+        breakRoomSearchCooldowns: {
+          ...prev.breakRoomSearchCooldowns,
+          [objectId]: now + (searchable.baseCooldown * 1000)
+        },
+        breakRoomSearchHistory: [
+          ...prev.breakRoomSearchHistory,
+          { objectId, itemFound: selectedLoot.type, timestamp: now }
+        ]
+      };
+
+      const messages = [];
+
+      // Process loot outcome
+      switch (selectedLoot.type) {
+        case 'pp':
+          newState.pp = prev.pp + selectedLoot.amount;
+          messages.push(selectedLoot.message);
+          break;
+
+        case 'energy':
+          newState.energy = Math.min(100, newState.energy + selectedLoot.amount);
+          messages.push(selectedLoot.message);
+          if (selectedLoot.buff) {
+            // Add temporary buff
+            const buffEndTime = now + (selectedLoot.buffDuration * 1000);
+            newState.activeReportBuffs = [
+              ...prev.activeReportBuffs,
+              {
+                id: selectedLoot.buff,
+                name: 'Snack Boost',
+                ppMult: 1.10,
+                expiresAt: buffEndTime
+              }
+            ];
+          }
+          break;
+
+        case 'paper':
+          newState.paper = (prev.paper || 0) + selectedLoot.amount;
+          messages.push(selectedLoot.message);
+          break;
+
+        case 'sanity':
+          newState.sanity = Math.max(0, Math.min(100, prev.sanity + selectedLoot.amount));
+          messages.push(selectedLoot.message);
+          if (selectedLoot.clue) {
+            // Add clue to investigation
+            const clue = {
+              id: selectedLoot.clue,
+              source: searchable.name,
+              text: selectedLoot.message,
+              category: 'break_room_discovery',
+              collectedOn: now
+            };
+            newState.investigation = {
+              ...prev.investigation,
+              clues: [...prev.investigation.clues, clue]
+            };
+          }
+          break;
+
+        case 'clue':
+          messages.push(selectedLoot.message);
+          const clue = {
+            id: selectedLoot.clueId,
+            source: searchable.name,
+            text: selectedLoot.message,
+            category: 'break_room_discovery',
+            collectedOn: now
+          };
+          newState.investigation = {
+            ...prev.investigation,
+            clues: [...prev.investigation.clues, clue]
+          };
+          break;
+
+        case 'mystery':
+          newState.mysteryProgress = Math.min(100, prev.mysteryProgress + selectedLoot.amount);
+          messages.push(selectedLoot.message);
+          if (selectedLoot.clue) {
+            const clue = {
+              id: selectedLoot.clue,
+              source: searchable.name,
+              text: selectedLoot.message,
+              category: 'mystery_revelation',
+              collectedOn: now
+            };
+            newState.investigation = {
+              ...prev.investigation,
+              clues: [...prev.investigation.clues, clue]
+            };
+          }
+          break;
+
+        case 'schedule_unlock':
+          newState.colleagueScheduleKnown = true;
+          messages.push(selectedLoot.message);
+          messages.push('Monday: Productivity Zealot | Tuesday: Void Clerk | Wednesday: Spiral Philosopher');
+          messages.push('Thursday: Temporal Trapped | Friday: Light Herald | Weekends: Empty');
+          break;
+
+        case 'trust_item':
+          // Store item that can be gifted to colleague
+          messages.push(selectedLoot.message);
+          messages.push('(You can gift items to colleagues when you meet them)');
+          break;
+
+        case 'document_spawn':
+          // Spawn a random high-quality document in file drawer
+          const docTypes = ['memo', 'report'];
+          const randomType = docTypes[Math.floor(Math.random() * docTypes.length)];
+          const quality = Math.random() * 20 + 80; // 80-100 quality
+          messages.push(selectedLoot.message);
+          break;
+
+        case 'colleague_hint':
+          messages.push(selectedLoot.message);
+          break;
+
+        case 'flavor':
+        case 'nothing':
+        default:
+          messages.push(selectedLoot.message);
+          break;
+      }
+
+      newState.recentMessages = [...messages, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15);
+
+      // Grant small XP for discoveries
+      if (selectedLoot.type === 'clue' || selectedLoot.type === 'mystery') {
+        setTimeout(() => grantXP(5), 50);
+      }
+
+      setTimeout(() => checkAchievements(), 100);
+
+      return newState;
+    });
+  };
+
   // Dismiss colleague notification (Added 2025-11-05)
   const dismissNotification = () => {
     setGameState(prev => ({
@@ -1266,6 +1576,10 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
     // Journal system actions
     openJournal,
     closeJournal,
-    switchJournalTab
+    switchJournalTab,
+    // Break room system actions (Added 2025-11-19)
+    enterBreakRoom,
+    leaveBreakRoom,
+    searchBreakRoomObject
   };
 };
