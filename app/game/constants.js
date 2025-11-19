@@ -155,6 +155,14 @@ export const INITIAL_GAME_STATE = {
   discoveredBaseArmor: ['standard_headset', 'dress_shirt', 'id_badge'], // Base armor types found (starts with default armor)
   discoveredBaseAnomalies: [],     // Base anomaly types found
   discoveredMechanics: [],         // Mechanic IDs learned from help popups
+  // Break Room System (Added 2025-11-19)
+  // Interactive exploration and investigation hub
+  breakRoomSearchCooldowns: {},    // { objectId: timestamp } - cooldown tracking for searches
+  breakRoomSearchHistory: [],      // Array of { objectId, itemFound, timestamp } - what's been found
+  breakRoomSupplyClosetUnlocked: false, // Unlocks at Day 10
+  colleagueScheduleKnown: false,   // True when player finds the schedule on bulletin board
+  lastBreakRoomVisitDay: 0,        // Tracks day-based changes
+  inBreakRoom: false,              // Is break room UI visible
   // Debug flags
   debugForceTearSpawn: false // Force 100% tear spawn rate for testing
 };
@@ -1574,6 +1582,199 @@ export const PRINTER_UPGRADES = [
     desc: 'What you print becomes real. +5 PP per print.'
   }
 ];
+
+/**
+ * Break Room System Constants (Added 2025-11-19)
+ * Interactive exploration and investigation hub for colleague encounters,
+ * clue gathering, and mystery progression
+ */
+
+// Colleague Schedule - Which colleague appears in break room on which day
+export const COLLEAGUE_SCHEDULE = {
+  getScheduledColleague: (day) => {
+    const dayOfWeek = day % 7; // 0 = Sunday, 1 = Monday, etc.
+
+    // Special days - multiple colleagues
+    if (day % 7 === 0) return 'multiple'; // Every 7 days = convergence
+
+    // Regular schedule
+    const schedule = {
+      1: 'productivity_zealot',  // Monday
+      2: 'void_clerk',           // Tuesday
+      3: 'spiral_philosopher',   // Wednesday
+      4: 'temporal_trapped',     // Thursday
+      5: 'light_herald',         // Friday
+      6: null,                   // Saturday - empty
+      0: null                    // Sunday - empty (but stranger...)
+    };
+
+    return schedule[dayOfWeek];
+  }
+};
+
+// Searchable Objects in Break Room
+export const BREAK_ROOM_SEARCHABLES = {
+  coffee_machine: {
+    id: 'coffee_machine',
+    name: 'Coffee Machine',
+    energyCost: 5,
+    baseCooldown: 60, // seconds
+    description: 'A gurgling coffee maker. The pot is always half-full.'
+  },
+  fridge: {
+    id: 'fridge',
+    name: 'Refrigerator',
+    energyCost: 5,
+    baseCooldown: 90,
+    description: 'Employee lunches decay in non-linear time.'
+  },
+  vending_machine: {
+    id: 'vending_machine',
+    name: 'Vending Machine',
+    energyCost: 10,
+    baseCooldown: 120,
+    description: 'The snacks watch you through the glass.'
+  },
+  bulletin_board: {
+    id: 'bulletin_board',
+    name: 'Bulletin Board',
+    energyCost: 3,
+    baseCooldown: 30,
+    description: 'Cork board covered in memos and flyers.'
+  },
+  tables: {
+    id: 'tables',
+    name: 'Tables & Chairs',
+    energyCost: 3,
+    baseCooldown: 45,
+    description: 'Someone always just left. Their coffee is still warm.'
+  },
+  supply_closet: {
+    id: 'supply_closet',
+    name: 'Supply Closet',
+    energyCost: 15,
+    baseCooldown: 300,
+    description: 'Locked. A sign says "Authorized Personnel Only." You\'ve never seen authorized personnel.',
+    requiresUnlock: true, // Unlocks at Day 10
+    unlockCondition: (state) => state.day >= 10
+  }
+};
+
+// Loot Tables for Break Room Searches
+export const BREAK_ROOM_LOOT_TABLES = {
+  coffee_machine: {
+    common: [
+      { type: 'pp', amount: 25, message: 'You find spare change in the coin return.' },
+      { type: 'energy', amount: 10, message: 'You brew a fresh cup. It tastes like copper, but you feel energized.' },
+      { type: 'nothing', message: 'The machine gurgles ominously. Nothing happens.' }
+    ],
+    uncommon: [
+      { type: 'clue', clueId: 'coffee_machine_message', message: 'The display flickers: "HELP TRAPPED IN COFFEE MACHINE FACTORY." Then: "Just kidding. Unless..."' },
+      { type: 'paper', amount: 3, message: 'Someone left a coffee-stained report. Still usable.' }
+    ],
+    rare: [
+      { type: 'document_spawn', message: 'The machine prints out a high-quality memo on coffee-stained paper.' },
+      { type: 'clue', clueId: 'coffee_loop', message: 'You notice the pot is always exactly half full. You\'ve never seen anyone fill it.' }
+    ],
+    lowSanity: [ // Only available at sanity < 40
+      { type: 'sanity', amount: -10, clue: 'coffee_sentience', message: 'The coffee whispers to you. It knows things. Things you shouldn\'t know.' }
+    ]
+  },
+
+  fridge: {
+    common: [
+      { type: 'energy', amount: 15, message: 'You find an unlabeled yogurt. It tastes fine. Probably fine.' },
+      { type: 'nothing', message: 'Expired lunches as far as the eye can see.' },
+      { type: 'pp', amount: 15, message: 'Someone left a $5 bill with a note: "For whoever finds this. You\'ll need it."' }
+    ],
+    uncommon: [
+      { type: 'trust_item', colleague: 'any', message: 'You find someone\'s favorite lunch. You could return it to them...' },
+      { type: 'clue', clueId: 'impossible_dates', message: 'A lunch container expired in 2003. Another expires in 2087. Both are equally moldy.' }
+    ],
+    rare: [
+      { type: 'clue', clueId: 'employee_notes', message: 'A note tucked behind milk: "Day 847. Still here. Don\'t trust management. Don\'t trust the lights. -J"' },
+      { type: 'mystery', amount: 5, message: 'You find a sealed envelope addressed to you. Inside: a photo of the break room. You\'re in it. This was taken today. You were alone all day.' }
+    ],
+    weekend: [ // Only on Saturday/Sunday
+      { type: 'clue', clueId: 'weekend_empty', message: 'The fridge is completely empty. Even the shelves are gone. On Monday, it will be full again.' }
+    ]
+  },
+
+  vending_machine: {
+    common: [
+      { type: 'energy', amount: 10, buff: 'pp_boost', buffDuration: 120, message: 'You buy a candy bar. +10% PP for 2 minutes.' },
+      { type: 'pp', amount: 20, message: 'The machine dispenses two snacks. You only paid for one.' },
+      { type: 'nothing', message: 'The machine takes your money and laughs. Literally laughs.' }
+    ],
+    uncommon: [
+      { type: 'sanity', amount: 5, message: 'A healthy snack restores your sense of normalcy. Briefly.' },
+      { type: 'clue', clueId: 'vending_codes', message: 'The display shows product codes. But they\'re coordinates. Office coordinates.' }
+    ],
+    rare: [
+      { type: 'paper', amount: 10, message: 'The machine jams. Paper spills out instead of snacks. High quality paper.' },
+      { type: 'mystery', amount: 3, clue: 'vending_glitch', message: 'The display glitches: "A5: FREEDOM - OUT OF STOCK"' }
+    ],
+    criticalSanity: [ // Only at sanity < 10
+      { type: 'clue', clueId: 'vending_truth', message: 'At this sanity level, you can see the display clearly: "A1: COMPLIANCE. A2: IGNORANCE. A3: ACCEPTANCE. B1: ESCAPE - LOCKED."' }
+    ]
+  },
+
+  bulletin_board: {
+    common: [
+      { type: 'flavor', message: 'Flyers for a company picnic that happened 10 years ago. The photos show you attending.' },
+      { type: 'flavor', message: 'A poster: "Workplace Safety Tip #47: Do not acknowledge the humming."' },
+      { type: 'pp', amount: 10, message: 'A coupon for the vending machine. It\'s already been used. By you. Tomorrow.' }
+    ],
+    uncommon: [
+      { type: 'schedule_unlock', message: 'You find a colleague schedule! It shows when each strange colleague visits the break room.' },
+      { type: 'clue', clueId: 'management_memo', message: 'Official memo: "Employees who ask about windows will be transferred to the Window Awareness Department. There is no Window Awareness Department."' }
+    ],
+    rare: [
+      { type: 'clue', clueId: 'hidden_layer', message: 'You peel back a poster. Underneath: tally marks. Hundreds of them. Your handwriting.' },
+      { type: 'mystery', amount: 8, message: 'A hidden note: "The loop resets every 21 days. I\'ve tried everything. The only way out is through. -Previous You"' }
+    ],
+    highMystery: [ // Only at mystery progress > 50
+      { type: 'clue', clueId: 'endgame_hint', message: 'A new poster appears: "Emergency Exit Instructions: 1) Achieve clarity. 2) Make a choice. 3) Accept the consequences."' }
+    ]
+  },
+
+  tables: {
+    common: [
+      { type: 'nothing', message: 'Coffee rings on the table. They form a spiral pattern.' },
+      { type: 'flavor', message: 'Someone left a newspaper. The date keeps changing when you look away.' },
+      { type: 'energy', amount: 5, message: 'Half a muffin. Still fresh. Somehow.' }
+    ],
+    uncommon: [
+      { type: 'trust_item', colleague: 'any', message: 'A colleague left their notebook. You could return it...' },
+      { type: 'paper', amount: 5, message: 'Forgotten paperwork under the table. Clean enough to use.' }
+    ],
+    rare: [
+      { type: 'clue', clueId: 'scratched_message', message: 'Scratched into the underside of the table: "THEY WATCH THROUGH THE LIGHTS"' },
+      { type: 'mystery', amount: 2, message: 'A chess game in progress. Both sides are playing black. Both sides are winning.' }
+    ],
+    scheduledDay: [ // When a colleague is scheduled to appear
+      { type: 'colleague_hint', message: 'A fresh coffee mug. Someone is here today. Or will be. Or was.' }
+    ]
+  },
+
+  supply_closet: {
+    common: [
+      { type: 'paper', amount: 10, message: 'Boxes of fresh paper. Office supplies. Normal. Finally, something normal.' },
+      { type: 'pp', amount: 100, message: 'You find a box of premium pens. Selling them to colleagues nets you PP.' }
+    ],
+    uncommon: [
+      { type: 'clue', clueId: 'employee_files', message: 'Old employee records. Every terminated employee has the same termination date. Today.' },
+      { type: 'paper', amount: 25, energy: -10, message: 'High-quality paper stacks. Moving them is exhausting.' }
+    ],
+    rare: [
+      { type: 'clue', clueId: 'previous_journal', message: 'A journal from a previous employee: "Day 63. The loop is confirmed. Management knows. They\'re part of it. Maybe they ARE it."' },
+      { type: 'mystery', amount: 15, message: 'You find a folder labeled with your name. Inside: performance reviews you never wrote. Exit interview for a job you never left. Termination date: never.' }
+    ],
+    oneTime: [ // Can only be found once
+      { type: 'clue', clueId: 'manager_keycard', message: 'A manager\'s keycard hidden behind supplies. The photo shows someone who looks like you. The name is corrupted: "M█████ER"' }
+    ]
+  }
+};
 
 export const EVENTS = [
   { id: 'email1', prob: 0.1, sanity: -5, message: 'New email: "Meeting moved to yesterday. Attendance mandatory."', minDay: 1 },

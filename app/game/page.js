@@ -20,6 +20,7 @@ import HelpPopup from './HelpPopup';
 import AchievementsModal from './AchievementsModal';
 import JournalModal from './JournalModal';
 import NotificationBubble from './NotificationBubble';
+import BreakRoom from './BreakRoom';
 import { createGameActions } from './gameActions';
 import { getDistortionStyle, distortText, getClockTime, createLevelUpParticles, createSkillPurchaseParticles, createScreenShake } from './gameUtils';
 import { saveGame, loadGame, exportToClipboard, importFromClipboard } from './saveSystem';
@@ -852,6 +853,10 @@ export default function Game() {
 
   if (gameState.fileDrawerOpen) {
     return <FileDrawer gameState={gameState} onClose={actions.closeFileDrawer} actions={actions} />;
+  }
+
+  if (gameState.inBreakRoom) {
+    return <BreakRoom gameState={gameState} onSearch={actions.searchBreakRoomObject} onClose={actions.leaveBreakRoom} />;
   }
 
   if (gameState.meditating) {
