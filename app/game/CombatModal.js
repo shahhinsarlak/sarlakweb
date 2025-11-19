@@ -32,14 +32,14 @@ export default function CombatModal({
       setShakeEnemy(true);
       setTimeout(() => setShakeEnemy(false), 300);
     }
-  }, [enemy.currentHP]);
+  }, [enemy.currentHP, enemy.maxHP]);
 
   useEffect(() => {
     if (playerStats.currentHP < playerStats.maxHP) {
       setShakePlayer(true);
       setTimeout(() => setShakePlayer(false), 300);
     }
-  }, [playerStats.currentHP]);
+  }, [playerStats.currentHP, playerStats.maxHP]);
 
   const handleAction = (action) => {
     setClickedButton(action);
