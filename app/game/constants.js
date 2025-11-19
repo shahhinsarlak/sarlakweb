@@ -163,6 +163,7 @@ export const INITIAL_GAME_STATE = {
   colleagueScheduleKnown: false,   // True when player finds the schedule on bulletin board
   lastBreakRoomVisitDay: 0,        // Tracks day-based changes
   inBreakRoom: false,              // Is break room UI visible
+  colleagueMaxTrustRewards: {},    // { colleagueId: boolean } - tracks unlocked max trust rewards
   // Debug flags
   debugForceTearSpawn: false // Force 100% tear spawn rate for testing
 };
@@ -1260,6 +1261,7 @@ export const LOCATIONS = {
       'The vending machine hums. It\'s staring at you.',
       'Someone left their lunch. It expired in 2003.'
     ],
+    isDirect: true, // Opens BreakRoom component for exploration
     allowColleagueEvents: true
   },
   archive: {

@@ -13,7 +13,8 @@
  * - upgrades: Purchase permanent improvements
  * - printer: Paper generation system
  */
-import { LOCATIONS, UPGRADES, DEBUG_CHALLENGES, PRINTER_UPGRADES, DOCUMENT_TYPES, STRANGE_COLLEAGUE_DIALOGUES, TIER_MASTERY_WEIGHTS, BREAK_ROOM_SEARCHABLES, BREAK_ROOM_LOOT_TABLES, COLLEAGUE_SCHEDULE } from './constants';
+import { LOCATIONS, UPGRADES, DEBUG_CHALLENGES, PRINTER_UPGRADES, DOCUMENT_TYPES, STRANGE_COLLEAGUE_DIALOGUES, TIER_MASTERY_WEIGHTS } from './constants';
+import { BREAK_ROOM_SEARCHABLES, generateBreakRoomLoot, MAX_TRUST_REWARDS, COLLEAGUE_SCHEDULE } from './breakRoomConstants';
 import {
   applyEnergyCostReduction,
   applyPPMultiplier
@@ -1293,20 +1294,20 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       const searchable = BREAK_ROOM_SEARCHABLES[objectId];
       if (!searchable) return prev;
 
-      // Check if object requires unlock
-      if (searchable.requiresUnlock && !searchable.unlockCondition(prev)) {
-        return {
-          ...prev,
-          recentMessages: [searchable.description, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
-        };
-      }
-
       // Unlock supply closet at Day 10
       if (objectId === 'supply_closet' && prev.day >= 10 && !prev.breakRoomSupplyClosetUnlocked) {
         return {
           ...prev,
           breakRoomSupplyClosetUnlocked: true,
           recentMessages: ['The supply closet door swings open. It was never locked.', ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
+        };
+      }
+
+      // Check if supply closet is locked
+      if (objectId === 'supply_closet' && !prev.breakRoomSupplyClosetUnlocked && prev.day < 10) {
+        return {
+          ...prev,
+          recentMessages: ['The supply closet is locked. Something tells you it will open soon.', ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
         };
       }
 
@@ -1329,65 +1330,8 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
         };
       }
 
-      // Determine loot table based on conditions
-      const lootTable = BREAK_ROOM_LOOT_TABLES[objectId];
-      if (!lootTable) return prev;
-
-      let availableLoots = [];
-
-      // Check for conditional loot tables
-      if (prev.sanity < 10 && lootTable.criticalSanity) {
-        availableLoots.push(...lootTable.criticalSanity);
-      }
-      if (prev.sanity < 40 && lootTable.lowSanity) {
-        availableLoots.push(...lootTable.lowSanity);
-      }
-      if (prev.mysteryProgress > 50 && lootTable.highMystery) {
-        availableLoots.push(...lootTable.highMystery);
-      }
-      const dayOfWeek = prev.day % 7;
-      if ((dayOfWeek === 0 || dayOfWeek === 6) && lootTable.weekend) {
-        availableLoots.push(...lootTable.weekend);
-      }
-      const scheduledColleague = COLLEAGUE_SCHEDULE.getScheduledColleague(prev.day);
-      if (scheduledColleague && lootTable.scheduledDay) {
-        availableLoots.push(...lootTable.scheduledDay);
-      }
-
-      // Roll for rarity
-      const roll = Math.random();
-      let selectedRarity;
-      if (roll < 0.6) {
-        selectedRarity = 'common';
-      } else if (roll < 0.85) {
-        selectedRarity = 'uncommon';
-      } else {
-        selectedRarity = 'rare';
-      }
-
-      // Add rarity pools to available loots
-      if (lootTable[selectedRarity]) {
-        availableLoots.push(...lootTable[selectedRarity]);
-      }
-
-      // Check for one-time loots
-      if (lootTable.oneTime) {
-        const oneTimeLoots = lootTable.oneTime.filter(loot => {
-          const alreadyFound = prev.breakRoomSearchHistory.some(
-            h => h.objectId === objectId && h.itemFound === loot.type
-          );
-          return !alreadyFound;
-        });
-        if (oneTimeLoots.length > 0) {
-          availableLoots.push(...oneTimeLoots);
-        }
-      }
-
-      // Select random loot
-      if (availableLoots.length === 0) {
-        availableLoots = lootTable.common || [];
-      }
-      const selectedLoot = availableLoots[Math.floor(Math.random() * availableLoots.length)];
+      // Generate loot using context-aware function
+      const loot = generateBreakRoomLoot(prev, objectId);
 
       // Build new state
       const newState = {
@@ -1399,132 +1343,77 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
         },
         breakRoomSearchHistory: [
           ...prev.breakRoomSearchHistory,
-          { objectId, itemFound: selectedLoot.type, timestamp: now }
+          { objectId, itemFound: loot.type, timestamp: now }
         ]
       };
 
       const messages = [];
 
       // Process loot outcome
-      switch (selectedLoot.type) {
-        case 'pp':
-          newState.pp = prev.pp + selectedLoot.amount;
-          messages.push(selectedLoot.message);
-          break;
-
-        case 'energy':
-          newState.energy = Math.min(100, newState.energy + selectedLoot.amount);
-          messages.push(selectedLoot.message);
-          if (selectedLoot.buff) {
-            // Add temporary buff
-            const buffEndTime = now + (selectedLoot.buffDuration * 1000);
-            newState.activeReportBuffs = [
-              ...prev.activeReportBuffs,
-              {
-                id: selectedLoot.buff,
-                name: 'Snack Boost',
-                ppMult: 1.10,
-                expiresAt: buffEndTime
-              }
-            ];
+      if (loot.type === 'pp') {
+        newState.pp = prev.pp + loot.amount;
+        messages.push(`+${loot.amount} PP: ${loot.desc}`);
+      } else if (loot.type === 'paper') {
+        newState.paper = (prev.paper || 0) + loot.amount;
+        messages.push(`+${loot.amount} Paper: ${loot.desc}`);
+      } else if (loot.type === 'energy') {
+        newState.energy = Math.min(100, newState.energy + loot.amount);
+        messages.push(`+${loot.amount} Energy: ${loot.desc}`);
+      } else if (loot.type === 'buff') {
+        const buffEndTime = now + (loot.duration * 1000);
+        newState.activeReportBuffs = [
+          ...prev.activeReportBuffs,
+          {
+            id: loot.buffId,
+            name: loot.name,
+            ppMult: loot.ppMult,
+            expiresAt: buffEndTime
           }
-          break;
-
-        case 'paper':
-          newState.paper = (prev.paper || 0) + selectedLoot.amount;
-          messages.push(selectedLoot.message);
-          break;
-
-        case 'sanity':
-          newState.sanity = Math.max(0, Math.min(100, prev.sanity + selectedLoot.amount));
-          messages.push(selectedLoot.message);
-          if (selectedLoot.clue) {
-            // Add clue to investigation
-            const clue = {
-              id: selectedLoot.clue,
-              source: searchable.name,
-              text: selectedLoot.message,
-              category: 'break_room_discovery',
-              collectedOn: now
-            };
-            newState.investigation = {
-              ...prev.investigation,
-              clues: [...prev.investigation.clues, clue]
-            };
-          }
-          break;
-
-        case 'clue':
-          messages.push(selectedLoot.message);
-          const clue = {
-            id: selectedLoot.clueId,
-            source: searchable.name,
-            text: selectedLoot.message,
-            category: 'break_room_discovery',
+        ];
+        messages.push(`Buff Gained: ${loot.name}`);
+        messages.push(loot.desc);
+      } else if (loot.type === 'clue') {
+        newState.investigation = {
+          ...prev.investigation,
+          clues: [...prev.investigation.clues, {
+            ...loot.clue,
             collectedOn: now
-          };
-          newState.investigation = {
-            ...prev.investigation,
-            clues: [...prev.investigation.clues, clue]
-          };
-          break;
-
-        case 'mystery':
-          newState.mysteryProgress = Math.min(100, prev.mysteryProgress + selectedLoot.amount);
-          messages.push(selectedLoot.message);
-          if (selectedLoot.clue) {
-            const clue = {
-              id: selectedLoot.clue,
-              source: searchable.name,
-              text: selectedLoot.message,
-              category: 'mystery_revelation',
-              collectedOn: now
-            };
-            newState.investigation = {
-              ...prev.investigation,
-              clues: [...prev.investigation.clues, clue]
-            };
-          }
-          break;
-
-        case 'schedule_unlock':
-          newState.colleagueScheduleKnown = true;
-          messages.push(selectedLoot.message);
-          messages.push('Monday: Productivity Zealot | Tuesday: Void Clerk | Wednesday: Spiral Philosopher');
-          messages.push('Thursday: Temporal Trapped | Friday: Light Herald | Weekends: Empty');
-          break;
-
-        case 'trust_item':
-          // Store item that can be gifted to colleague
-          messages.push(selectedLoot.message);
-          messages.push('(You can gift items to colleagues when you meet them)');
-          break;
-
-        case 'document_spawn':
-          // Spawn a random high-quality document in file drawer
-          const docTypes = ['memo', 'report'];
-          const randomType = docTypes[Math.floor(Math.random() * docTypes.length)];
-          const quality = Math.random() * 20 + 80; // 80-100 quality
-          messages.push(selectedLoot.message);
-          break;
-
-        case 'colleague_hint':
-          messages.push(selectedLoot.message);
-          break;
-
-        case 'flavor':
-        case 'nothing':
-        default:
-          messages.push(selectedLoot.message);
-          break;
+          }]
+        };
+        if (loot.mysteryProgress) {
+          newState.mysteryProgress = Math.min(100, prev.mysteryProgress + loot.mysteryProgress);
+        }
+        messages.push('Clue Found!');
+        messages.push(loot.clue.text);
+        setTimeout(() => grantXP(5), 50);
+      } else if (loot.type === 'trustItem') {
+        // Store trust item in inventory (not yet implemented, just show message)
+        messages.push(`Trust Item: ${loot.desc}`);
+        messages.push(`(Can be gifted to ${loot.colleagueId})`);
+      } else if (loot.type === 'special') {
+        if (loot.effect === 'sanity') {
+          newState.sanity = Math.max(0, Math.min(100, prev.sanity + loot.value));
+          messages.push(`+${loot.value} Sanity: ${loot.name}`);
+        } else if (loot.effect === 'xp') {
+          messages.push(`${loot.name} found!`);
+          setTimeout(() => grantXP(loot.value), 50);
+        } else if (loot.effect === 'mystery') {
+          newState.mysteryProgress = Math.min(100, prev.mysteryProgress + loot.value);
+          messages.push(`+${loot.value}% Mystery: ${loot.name}`);
+        }
+        messages.push(loot.desc);
+      } else if (loot.type === 'schedule') {
+        newState.colleagueScheduleKnown = true;
+        if (loot.mysteryProgress) {
+          newState.mysteryProgress = Math.min(100, prev.mysteryProgress + loot.mysteryProgress);
+        }
+        messages.push('Schedule Found!');
+        messages.push(loot.desc);
+        messages.push('Monday: Productivity Zealot | Tuesday: Void Clerk | Wednesday: Spiral Philosopher');
+        messages.push('Thursday: Temporal Trapped | Friday: Light Herald | Weekends: Empty');
       }
 
       newState.recentMessages = [...messages, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15);
-
-      // Grant small XP for discoveries
-      if (selectedLoot.type === 'clue' || selectedLoot.type === 'mystery') {
-        setTimeout(() => grantXP(5), 50);
-      }
 
       setTimeout(() => checkAchievements(), 100);
 
