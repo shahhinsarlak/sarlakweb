@@ -107,7 +107,13 @@ export default function JournalModal({ gameState, onClose, onSwitchTab }) {
     );
   };
 
-  // Render colleagues tab
+  // Render mechanics tab
+  const renderMechanicsTab = () => {
+    const discoveredMechanics = gameState.discoveredMechanics || [];
+    const allMechanicIds = Object.keys(MECHANICS_ENTRIES);
+
+    // Group by category
+    const categories = {};
     allMechanicIds.forEach(mechanicId => {
       const mechanic = MECHANICS_ENTRIES[mechanicId];
       if (!categories[mechanic.category]) {
