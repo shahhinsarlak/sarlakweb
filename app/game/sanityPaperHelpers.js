@@ -38,8 +38,10 @@ export const applySanityPPModifier = (basePP, gameState) => {
   const now = Date.now();
   const ppBuffs = activeBuffs.filter(b => b.expiresAt > now && b.ppMult);
 
-  // Apply the highest PP multiplier if multiple buffs exist
-  const buffMod = ppBuffs.length > 0 ? Math.max(...ppBuffs.map(b => b.ppMult)) : 1.0;
+  // Stack buffs additively: extract bonus portions (mult - 1) and sum them
+  // Example: 3 buffs of 2.5x each → (1.5 + 1.5 + 1.5) = 4.5 → final mult = 5.5x
+  const totalBonus = ppBuffs.reduce((sum, b) => sum + (b.ppMult - 1), 0);
+  const buffMod = 1 + totalBonus;
 
   return basePP * sanityMod * buffMod; // No floor - allow decimals
 };
@@ -59,8 +61,9 @@ export const applySanityXPModifier = (baseXP, gameState) => {
   const now = Date.now();
   const xpBuffs = activeBuffs.filter(b => b.expiresAt > now && b.xpMult);
 
-  // Apply the highest XP multiplier if multiple buffs exist
-  const buffMod = xpBuffs.length > 0 ? Math.max(...xpBuffs.map(b => b.xpMult)) : 1.0;
+  // Stack buffs additively: extract bonus portions (mult - 1) and sum them
+  const totalBonus = xpBuffs.reduce((sum, b) => sum + (b.xpMult - 1), 0);
+  const buffMod = 1 + totalBonus;
 
   return baseXP * sanityMod * buffMod; // No floor - allow decimals to accumulate
 };
@@ -76,8 +79,10 @@ export const applyEnergyCostModifier = (baseCost, gameState) => {
   const now = Date.now();
   const energyBuffs = activeBuffs.filter(b => b.expiresAt > now && b.energyCostMult);
 
-  // Apply the lowest energy cost multiplier (best for player)
-  const buffMod = energyBuffs.length > 0 ? Math.min(...energyBuffs.map(b => b.energyCostMult)) : 1.0;
+  // Stack cost reductions additively: extract reduction portions (1 - mult) and sum them
+  // Example: 2 buffs of 0.8x each → (0.2 + 0.2) = 0.4 → final mult = 0.6x (40% cost reduction)
+  const totalReduction = energyBuffs.reduce((sum, b) => sum + (1 - b.energyCostMult), 0);
+  const buffMod = 1 - totalReduction;
 
   return Math.ceil(baseCost * buffMod);
 };
@@ -269,49 +274,57 @@ export const canAddMoreBuffs = (gameState) => {
 /**
  * Get the current PP multiplier from active buffs
  * @param {Object} gameState - Current game state
- * @returns {number} The highest PP multiplier from active buffs (1.0 if none)
+ * @returns {number} Stacked PP multiplier from active buffs (1.0 if none)
  */
 export const getActiveBuffPPMultiplier = (gameState) => {
   const activeBuffs = gameState.activeReportBuffs || [];
   const now = Date.now();
   const ppBuffs = activeBuffs.filter(b => b.expiresAt > now && b.ppMult);
-  return ppBuffs.length > 0 ? Math.max(...ppBuffs.map(b => b.ppMult)) : 1.0;
+  // Stack buffs additively
+  const totalBonus = ppBuffs.reduce((sum, b) => sum + (b.ppMult - 1), 0);
+  return 1 + totalBonus;
 };
 
 /**
  * Get the current XP multiplier from active buffs
  * @param {Object} gameState - Current game state
- * @returns {number} The highest XP multiplier from active buffs (1.0 if none)
+ * @returns {number} Stacked XP multiplier from active buffs (1.0 if none)
  */
 export const getActiveBuffXPMultiplier = (gameState) => {
   const activeBuffs = gameState.activeReportBuffs || [];
   const now = Date.now();
   const xpBuffs = activeBuffs.filter(b => b.expiresAt > now && b.xpMult);
-  return xpBuffs.length > 0 ? Math.max(...xpBuffs.map(b => b.xpMult)) : 1.0;
+  // Stack buffs additively
+  const totalBonus = xpBuffs.reduce((sum, b) => sum + (b.xpMult - 1), 0);
+  return 1 + totalBonus;
 };
 
 /**
  * Get the current energy cost multiplier from active buffs
  * @param {Object} gameState - Current game state
- * @returns {number} The lowest energy cost multiplier from active buffs (1.0 if none)
+ * @returns {number} Stacked energy cost multiplier from active buffs (1.0 if none)
  */
 export const getActiveBuffEnergyCostMultiplier = (gameState) => {
   const activeBuffs = gameState.activeReportBuffs || [];
   const now = Date.now();
   const energyBuffs = activeBuffs.filter(b => b.expiresAt > now && b.energyCostMult);
-  return energyBuffs.length > 0 ? Math.min(...energyBuffs.map(b => b.energyCostMult)) : 1.0;
+  // Stack cost reductions additively
+  const totalReduction = energyBuffs.reduce((sum, b) => sum + (1 - b.energyCostMult), 0);
+  return 1 - totalReduction;
 };
 
 /**
  * Get the current PP per second multiplier from active buffs (void contracts)
  * @param {Object} gameState - Current game state
- * @returns {number} The highest PP per second multiplier from active buffs (1.0 if none)
+ * @returns {number} Stacked PP per second multiplier from active buffs (1.0 if none)
  */
 export const getActiveBuffPPPerSecondMultiplier = (gameState) => {
   const activeBuffs = gameState.activeReportBuffs || [];
   const now = Date.now();
   const ppSecBuffs = activeBuffs.filter(b => b.expiresAt > now && b.ppPerSecondMult);
-  return ppSecBuffs.length > 0 ? Math.max(...ppSecBuffs.map(b => b.ppPerSecondMult)) : 1.0;
+  // Stack buffs additively
+  const totalBonus = ppSecBuffs.reduce((sum, b) => sum + (b.ppPerSecondMult - 1), 0);
+  return 1 + totalBonus;
 };
 
 /**
