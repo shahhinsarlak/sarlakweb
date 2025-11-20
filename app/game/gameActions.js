@@ -872,6 +872,15 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
     });
   };
 
+  // Return all action handlers
+  return {
+    sortPapers,
+    rest,
+    startMeditation,
+    breatheAction,
+    cancelMeditation,
+    startDebugSession,
+    submitDebug,
     updateDebugCode,
     cancelDebug,
     changeLocation,
