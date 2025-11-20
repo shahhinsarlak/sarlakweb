@@ -10,20 +10,17 @@ import DimensionalArea from './DimensionalArea';
 import DimensionalUpgradesDisplay from './DimensionalUpgradesDisplay';
 import SkillTreeModal from './SkillTreeModal';
 import PrinterRoom from './PrinterRoom';
-import CombatModal from './CombatModal';
 import Armory from './Armory';
 import FileDrawer from './FileDrawer';
 import HelpPopup from './HelpPopup';
 import AchievementsModal from './AchievementsModal';
 import JournalModal from './JournalModal';
-import BreakRoom from './BreakRoom';
 import { createGameActions } from './gameActions';
 import { getDistortionStyle, distortText, getClockTime, createLevelUpParticles, createSkillPurchaseParticles, createScreenShake } from './gameUtils';
 import { saveGame, loadGame, exportToClipboard, importFromClipboard } from './saveSystem';
 import { addExperience, purchaseSkill, getActiveSkillEffects, getModifiedPortalCooldown, getModifiedCapacity, applyPPMultiplier } from './skillSystemHelpers';
 import { SKILLS, LEVEL_SYSTEM, XP_REWARDS } from './skillTreeConstants';
 import { DIMENSIONAL_MATERIALS } from './dimensionalConstants';
-import { getPlayerCombatStats } from './combatConstants';
 import { getSanityTierDisplay, isSanityDrainPaused, calculatePaperQuality, applySanityPPModifier, getActiveBuffPPMultiplier, getActiveBuffXPMultiplier, getActiveBuffEnergyCostMultiplier, getActiveBuffPPPerSecondMultiplier } from './sanityPaperHelpers';
 import {
   INITIAL_GAME_STATE,
@@ -354,8 +351,6 @@ export default function Game() {
       effects.push(`Meditation grants ×${upgrade.value} sanity`);
     } else if (upgrade.effect === 'minSanity') {
       effects.push(`Sanity cannot drop below ${upgrade.value}%`);
-    } else if (upgrade.effect === 'combat') {
-      effects.push(`Combat enhancement: ${upgrade.value}`);
     } else if (upgrade.effect === 'timeTravel') {
       effects.push(`Undo the last 5 minutes (once per day)`);
     } else if (upgrade.effect === 'portalScan') {
@@ -637,13 +632,6 @@ export default function Game() {
           return { ...prev, currentHelpPopup: HELP_POPUPS.archive };
         });
       }, 100);
-    } else if (!gameState.shownHelpPopups.includes('breakRoom') && gameState.unlockedLocations.includes('breakroom')) {
-      setTimeout(() => {
-        setGameState(prev => {
-          if (prev.currentHelpPopup || prev.shownHelpPopups.includes('breakRoom')) return prev;
-          return { ...prev, currentHelpPopup: HELP_POPUPS.breakRoom };
-        });
-      }, 100);
     } else if (!gameState.shownHelpPopups.includes('printerRoom') && gameState.printerUnlocked) {
       setTimeout(() => {
         setGameState(prev => {
@@ -660,20 +648,6 @@ export default function Game() {
       }, 100);
     }
   }, [gameState.unlockedLocations, gameState.printerUnlocked, gameState.portalUnlocked, gameState.helpEnabled, gameState.currentHelpPopup, gameState.shownHelpPopups]);
-
-  useEffect(() => {
-    if (!gameState.helpEnabled || gameState.currentHelpPopup) return;
-
-    // Check combat trigger
-    if (!gameState.shownHelpPopups.includes('combat') && gameState.inCombat) {
-      setTimeout(() => {
-        setGameState(prev => {
-          if (prev.currentHelpPopup || prev.shownHelpPopups.includes('combat')) return prev;
-          return { ...prev, currentHelpPopup: HELP_POPUPS.combat };
-        });
-      }, 100);
-    }
-  }, [gameState.inCombat, gameState.helpEnabled, gameState.currentHelpPopup, gameState.shownHelpPopups]);
 
   useEffect(() => {
     if (!gameState.helpEnabled || gameState.currentHelpPopup) return;
@@ -785,37 +759,12 @@ export default function Game() {
     return <FileDrawer gameState={gameState} onClose={actions.closeFileDrawer} actions={actions} />;
   }
 
-  if (gameState.inBreakRoom) {
-    return <BreakRoom gameState={gameState} onSearch={actions.searchBreakRoomObject} onClose={actions.leaveBreakRoom} />;
-  }
-
   if (gameState.meditating) {
     return <MeditationModal gameState={gameState} breatheAction={actions.breatheAction} cancelMeditation={actions.cancelMeditation} />;
   }
 
   if (gameState.examiningItem) {
     return <ExamineModal item={gameState.examiningItem} closeExamine={actions.closeExamine} />;
-  }
-
-  if (gameState.inCombat) {
-    const playerStats = getPlayerCombatStats(gameState);
-    return (
-      <CombatModal
-        enemy={gameState.currentEnemy}
-        playerStats={playerStats}
-        onAttack={actions.playerAttack}
-        onEscape={actions.escapeCombat}
-        onEndCombat={actions.endCombat}
-        combatLog={gameState.combatLog}
-        isPlayerTurn={gameState.isPlayerTurn}
-        combatEnded={gameState.combatEnded}
-      />
-    );
-  }
-
-
-  if (gameState.debugMode && gameState.currentBug) {
-    return <DebugModal gameState={gameState} submitDebug={actions.submitDebug} updateDebugCode={actions.updateDebugCode} cancelDebug={actions.cancelDebug} />;
   }
 
   return (

@@ -84,14 +84,6 @@ export const INITIAL_GAME_STATE = {
   shownHelpPopups: [], // Array of popup IDs that have been shown
   currentHelpPopup: null, // Current popup to display (object with id, title, content)
   meditationUnlocked: false, // Meditation button only appears after reaching 25% sanity
-  // Combat System
-  inCombat: false,
-  currentEnemy: null,
-  playerCombatHP: 100,
-  combatLog: [],
-  isPlayerTurn: true,
-  combatEnded: false,
-  combatVictories: 0,
   // Equipment System
   equippedWeapon: 'stapler_shiv', // Default starting weapon (legacy system)
   equippedArmor: {
@@ -135,13 +127,6 @@ export const INITIAL_GAME_STATE = {
   discoveredBaseArmor: ['standard_headset', 'dress_shirt', 'id_badge'], // Base armor types found (starts with default armor)
   discoveredBaseAnomalies: [],     // Base anomaly types found
   discoveredMechanics: [],         // Mechanic IDs learned from help popups
-  // Break Room System (Added 2025-11-19)
-  // Interactive exploration and investigation hub
-  breakRoomSearchCooldowns: {},    // { objectId: timestamp } - cooldown tracking for searches
-  breakRoomSearchHistory: [],      // Array of { objectId, itemFound, timestamp } - what's been found
-  breakRoomSupplyClosetUnlocked: false, // Unlocks at Day 10
-  lastBreakRoomVisitDay: 0,        // Tracks day-based changes
-  inBreakRoom: false,              // Is break room UI visible
   // Debug flags
   debugForceTearSpawn: false // Force 100% tear spawn rate for testing
 };
@@ -195,16 +180,6 @@ export const LOCATIONS = {
     name: 'CUBICLE 4B',
     description: 'Your desk. Four gray walls. The computer screen flickers.',
     atmosphere: ['The air tastes stale.', 'You hear typing from the next cubicle. There is no next cubicle.', 'Your coffee is cold. It was always cold.']
-  },
-  breakroom: {
-    name: 'BREAK ROOM',
-    description: 'Fluorescent lights buzz. The coffee machine gurgles. The room waits.',
-    atmosphere: [
-      'The microwave beeps. No one put anything in it.',
-      'The vending machine hums. It\'s staring at you.',
-      'Someone left their lunch. It expired in 2003.'
-    ],
-    isDirect: true // Opens BreakRoom component for exploration
   },
   archive: {
     name: 'THE ARCHIVE',
@@ -274,7 +249,6 @@ export const LOCATIONS = {
 export const UPGRADES = [
   { id: 'stapler', name: 'Premium Stapler', cost: 50, effect: 'ppPerClick', value: 2, desc: 'It never jams. Never.' },
   { id: 'coffee', name: 'Coffee Machine', cost: 150, effect: 'ppPerSecond', value: 1, desc: 'Automatic productivity. Tastes like copper.' },
-  { id: 'breakroom', name: 'Break Room Access', cost: 250, effect: 'unlock', value: 'breakroom', desc: 'Take a break. Search the room. Find secrets.' },
   { id: 'printerroom', name: 'Printer Room Access', cost: 200, effect: 'unlock', value: 'printer', desc: 'The printer hums. Something is wrong with its output.' },
   { id: 'keyboard', name: 'Mechanical Keyboard', cost: 300, effect: 'ppPerClick', value: 5, desc: 'The clicking soothes you. Click. Click. Click.' },
   { id: 'debugger', name: 'Debug Access', cost: 500, effect: 'unlock', value: 'debug', desc: 'Fix the code. Fix reality. Same thing.' },
@@ -362,8 +336,8 @@ export const DIMENSIONAL_UPGRADES = [
     value: 50, 
     desc: 'Harness the void itself. +50 PP/sec. Unlock The Void.' 
   },
-  
-  // Combat/Weapons - Now obtained through dimensional tears
+
+  // Weapons - Obtained through dimensional tears
   {
     id: 'drawer_key',
     name: 'Bottom Drawer Key',
@@ -525,168 +499,6 @@ export const PRINTER_UPGRADES = [
 ];
 
 /**
- * Break Room System Constants (Added 2025-11-19)
- * Interactive exploration and investigation hub for clue gathering and mystery progression
- */
-
-// Searchable Objects in Break Room
-export const BREAK_ROOM_SEARCHABLES = {
-  coffee_machine: {
-    id: 'coffee_machine',
-    name: 'Coffee Machine',
-    energyCost: 5,
-    baseCooldown: 60, // seconds
-    description: 'A gurgling coffee maker. The pot is always half-full.'
-  },
-  fridge: {
-    id: 'fridge',
-    name: 'Refrigerator',
-    energyCost: 5,
-    baseCooldown: 90,
-    description: 'Employee lunches decay in non-linear time.'
-  },
-  vending_machine: {
-    id: 'vending_machine',
-    name: 'Vending Machine',
-    energyCost: 10,
-    baseCooldown: 120,
-    description: 'The snacks watch you through the glass.'
-  },
-  bulletin_board: {
-    id: 'bulletin_board',
-    name: 'Bulletin Board',
-    energyCost: 3,
-    baseCooldown: 30,
-    description: 'Cork board covered in memos and flyers.'
-  },
-  tables: {
-    id: 'tables',
-    name: 'Tables & Chairs',
-    energyCost: 3,
-    baseCooldown: 45,
-    description: 'Someone always just left. Their coffee is still warm.'
-  },
-  supply_closet: {
-    id: 'supply_closet',
-    name: 'Supply Closet',
-    energyCost: 15,
-    baseCooldown: 300,
-    description: 'Locked. A sign says "Authorized Personnel Only." You\'ve never seen authorized personnel.',
-    requiresUnlock: true, // Unlocks at Day 10
-    unlockCondition: (state) => state.day >= 10
-  }
-};
-
-// Loot Tables for Break Room Searches
-export const BREAK_ROOM_LOOT_TABLES = {
-  coffee_machine: {
-    common: [
-      { type: 'pp', amount: 25, message: 'You find spare change in the coin return.' },
-      { type: 'energy', amount: 10, message: 'You brew a fresh cup. It tastes like copper, but you feel energized.' },
-      { type: 'nothing', message: 'The machine gurgles ominously. Nothing happens.' }
-    ],
-    uncommon: [
-      { type: 'clue', clueId: 'coffee_machine_message', message: 'The display flickers: "HELP TRAPPED IN COFFEE MACHINE FACTORY." Then: "Just kidding. Unless..."' },
-      { type: 'paper', amount: 3, message: 'Someone left a coffee-stained report. Still usable.' }
-    ],
-    rare: [
-      { type: 'document_spawn', message: 'The machine prints out a high-quality memo on coffee-stained paper.' },
-      { type: 'clue', clueId: 'coffee_loop', message: 'You notice the pot is always exactly half full. You\'ve never seen anyone fill it.' }
-    ],
-    lowSanity: [ // Only available at sanity < 40
-      { type: 'sanity', amount: -10, clue: 'coffee_sentience', message: 'The coffee whispers to you. It knows things. Things you shouldn\'t know.' }
-    ]
-  },
-
-  fridge: {
-    common: [
-      { type: 'energy', amount: 15, message: 'You find an unlabeled yogurt. It tastes fine. Probably fine.' },
-      { type: 'nothing', message: 'Expired lunches as far as the eye can see.' },
-      { type: 'pp', amount: 15, message: 'Someone left a $5 bill with a note: "For whoever finds this. You\'ll need it."' }
-    ],
-    uncommon: [
-      { type: 'clue', clueId: 'impossible_dates', message: 'A lunch container expired in 2003. Another expires in 2087. Both are equally moldy.' }
-    ],
-    rare: [
-      { type: 'clue', clueId: 'employee_notes', message: 'A note tucked behind milk: "Day 847. Still here. Don\'t trust management. Don\'t trust the lights. -J"' },
-      { type: 'mystery', amount: 5, message: 'You find a sealed envelope addressed to you. Inside: a photo of the break room. You\'re in it. This was taken today. You were alone all day.' }
-    ],
-    weekend: [ // Only on Saturday/Sunday
-      { type: 'clue', clueId: 'weekend_empty', message: 'The fridge is completely empty. Even the shelves are gone. On Monday, it will be full again.' }
-    ]
-  },
-
-  vending_machine: {
-    common: [
-      { type: 'energy', amount: 10, buff: 'pp_boost', buffDuration: 120, message: 'You buy a candy bar. +10% PP for 2 minutes.' },
-      { type: 'pp', amount: 20, message: 'The machine dispenses two snacks. You only paid for one.' },
-      { type: 'nothing', message: 'The machine takes your money and laughs. Literally laughs.' }
-    ],
-    uncommon: [
-      { type: 'sanity', amount: 5, message: 'A healthy snack restores your sense of normalcy. Briefly.' },
-      { type: 'clue', clueId: 'vending_codes', message: 'The display shows product codes. But they\'re coordinates. Office coordinates.' }
-    ],
-    rare: [
-      { type: 'paper', amount: 10, message: 'The machine jams. Paper spills out instead of snacks. High quality paper.' },
-      { type: 'mystery', amount: 3, clue: 'vending_glitch', message: 'The display glitches: "A5: FREEDOM - OUT OF STOCK"' }
-    ],
-    criticalSanity: [ // Only at sanity < 10
-      { type: 'clue', clueId: 'vending_truth', message: 'At this sanity level, you can see the display clearly: "A1: COMPLIANCE. A2: IGNORANCE. A3: ACCEPTANCE. B1: ESCAPE - LOCKED."' }
-    ]
-  },
-
-  bulletin_board: {
-    common: [
-      { type: 'flavor', message: 'Flyers for a company picnic that happened 10 years ago. The photos show you attending.' },
-      { type: 'flavor', message: 'A poster: "Workplace Safety Tip #47: Do not acknowledge the humming."' },
-      { type: 'pp', amount: 10, message: 'A coupon for the vending machine. It\'s already been used. By you. Tomorrow.' }
-    ],
-    uncommon: [
-      { type: 'clue', clueId: 'management_memo', message: 'Official memo: "Employees who ask about windows will be transferred to the Window Awareness Department. There is no Window Awareness Department."' }
-    ],
-    rare: [
-      { type: 'clue', clueId: 'hidden_layer', message: 'You peel back a poster. Underneath: tally marks. Hundreds of them. Your handwriting.' },
-      { type: 'mystery', amount: 8, message: 'A hidden note: "The loop resets every 21 days. I\'ve tried everything. The only way out is through. -Previous You"' }
-    ],
-    highMystery: [ // Only at mystery progress > 50
-      { type: 'clue', clueId: 'endgame_hint', message: 'A new poster appears: "Emergency Exit Instructions: 1) Achieve clarity. 2) Make a choice. 3) Accept the consequences."' }
-    ]
-  },
-
-  tables: {
-    common: [
-      { type: 'nothing', message: 'Coffee rings on the table. They form a spiral pattern.' },
-      { type: 'flavor', message: 'Someone left a newspaper. The date keeps changing when you look away.' },
-      { type: 'energy', amount: 5, message: 'Half a muffin. Still fresh. Somehow.' }
-    ],
-    uncommon: [
-      { type: 'paper', amount: 5, message: 'Forgotten paperwork under the table. Clean enough to use.' }
-    ],
-    rare: [
-      { type: 'clue', clueId: 'scratched_message', message: 'Scratched into the underside of the table: "THEY WATCH THROUGH THE LIGHTS"' },
-      { type: 'mystery', amount: 2, message: 'A chess game in progress. Both sides are playing black. Both sides are winning.' }
-    ]
-  },
-
-  supply_closet: {
-    common: [
-      { type: 'paper', amount: 10, message: 'Boxes of fresh paper. Office supplies. Normal. Finally, something normal.' },
-      { type: 'pp', amount: 100, message: 'You find a box of premium pens. Selling them to colleagues nets you PP.' }
-    ],
-    uncommon: [
-      { type: 'clue', clueId: 'employee_files', message: 'Old employee records. Every terminated employee has the same termination date. Today.' },
-      { type: 'paper', amount: 25, energy: -10, message: 'High-quality paper stacks. Moving them is exhausting.' }
-    ],
-    rare: [
-      { type: 'clue', clueId: 'previous_journal', message: 'A journal from a previous employee: "Day 63. The loop is confirmed. Management knows. They\'re part of it. Maybe they ARE it."' },
-      { type: 'mystery', amount: 15, message: 'You find a folder labeled with your name. Inside: performance reviews you never wrote. Exit interview for a job you never left. Termination date: never.' }
-    ],
-    oneTime: [ // Can only be found once
-      { type: 'clue', clueId: 'manager_keycard', message: 'A manager\'s keycard hidden behind supplies. The photo shows someone who looks like you. The name is corrupted: "M█████ER"' }
-    ]
-  }
-};
-
 export const EVENTS = [
   { id: 'email1', prob: 0.1, sanity: -5, message: 'New email: "Meeting moved to yesterday. Attendance mandatory."', minDay: 1 },
   { id: 'whisper', prob: 0.08, sanity: -3, message: 'You hear someone whisper your employee ID number.', minDay: 2 },
@@ -739,11 +551,6 @@ export const ACHIEVEMENTS = [
   { id: 'quality_control', name: 'Quality Control', desc: 'Reach 100% printer quality', check: (state) => state.printerQuality >= 100 },
   { id: 'print_master', name: 'Print Master', desc: 'Buy all printer upgrades', check: (state) => Object.keys(state.printerUpgrades || {}).length >= 13 },
   { id: 'reality_manifest', name: 'Reality Manifest', desc: 'Unlock the Reality Printer', check: (state) => state.printerUpgrades?.reality_printer },
-  // Combat Achievements
-  { id: 'first_blood', name: 'First Blood', desc: 'Win your first combat encounter', check: (state) => (state.combatVictories || 0) >= 1 },
-  { id: 'combatant', name: 'Combatant', desc: 'Win 10 combat encounters', check: (state) => (state.combatVictories || 0) >= 10 },
-  { id: 'warrior', name: 'Office Warrior', desc: 'Win 50 combat encounters', check: (state) => (state.combatVictories || 0) >= 50 },
-  { id: 'slayer', name: 'Combat Master', desc: 'Win 100 combat encounters', check: (state) => (state.combatVictories || 0) >= 100 },
   // Paper & Sanity System Achievements
   { id: 'embrace_madness', name: 'Embrace Madness', desc: 'Generate PP at critical sanity (<10%)', check: (state) => state.sortCount >= 1 && state.sanity < 10 },
   { id: 'bureaucrat', name: 'Master Bureaucrat', desc: 'File 50 reports', check: (state) => (state.documents?.reports || 0) >= 50 },
@@ -1092,8 +899,7 @@ export const SANITY_TIERS = {
     effects: [
       'Increased PP gain (+15%)',
       'Increased XP gain (+15%)',
-      'Text occasionally distorts',
-      'Colleagues may trigger combat'
+      'Text occasionally distorts'
     ]
   },
   low: {
@@ -1210,74 +1016,6 @@ It might be worthwhile reading some of the files in there.
 Each one reveals something... unsettling.`,
     category: 'exploration'
   },
-  breakRoom: {
-    id: 'breakRoom',
-    title: 'BREAK ROOM UNLOCKED',
-    content: `A place where colleagues gather.
-
-Your coworkers wander here, seeking connection.
-Their smiles don't quite reach their eyes.
-
-They will approach you. How you respond matters.
-• Be KIND to build trust
-• Be NEUTRAL to stay safe
-• Be HOSTILE to... see what happens
-
-Choose wisely. Some paths lead to revelation.
-Others lead to violence.`,
-    category: 'exploration'
-  },
-  printerRoom: {
-    id: 'printerRoom',
-    title: 'PRINTER ROOM UNLOCKED',
-    content: `The machines hum in unison.
-
-PRINT PAPERS generates paper currency, but quality depends on:
-• Printer upgrades (70%)
-• Your sanity (30%)
-
-Low sanity corrupts the output. The text bleeds.
-Paper is used for printer upgrades and documents.`,
-    category: 'mechanics'
-  },
-  documentSystem: {
-    id: 'documentSystem',
-    title: 'DOCUMENT SYSTEM',
-    content: `Paper can be transformed into documents:
-
-MEMOS: Quick sanity restoration
-REPORTS: Temporary buffs (efficiency, focus, stability)
-CONTRACTS: Reality-bending effects (costs sanity!)
-PROPHECIES: Only at critical sanity. Reveals secrets.
-
-Paper quality must meet requirements or documents fail.`,
-    category: 'mechanics'
-  },
-  portal: {
-    id: 'portal',
-    title: 'DIMENSIONAL BREACH',
-    content: `Reality has torn open.
-
-The Portal leads to a dimensional space where materials exist
-outside normal reality. These materials craft powerful upgrades.
-
-Cooldown: 60 seconds between entries.
-Some say the void stares back.`,
-    category: 'exploration'
-  },
-  combat: {
-    id: 'combat',
-    title: 'COMBAT ENCOUNTER',
-    content: `A hostile entity has appeared.
-
-COMBAT uses your equipped weapon and armor.
-Attack, or attempt to escape (60% success rate).
-
-Victory grants PP, XP, and sometimes dimensional tears.
-Defeat costs sanity.
-
-Prepare for battle.`,
-    category: 'mechanics'
   },
   paperQuality: {
     id: 'paperQuality',
@@ -1317,8 +1055,8 @@ These rare rifts contain powerful loot:
 • Armor pieces
 • Anomalies
 
-Combat victories can spawn tears.
-The void is generous to victors.`,
+Tears contain powerful equipment.
+The void is generous to explorers.`,
     category: 'mechanics'
   }
 };
@@ -1334,11 +1072,9 @@ export const HELP_TRIGGERS = {
   sanityTiers: (state, prevState) => state.sanity <= 39 && (!prevState || prevState.sanity > 39),
   skillTree: (state, prevState) => state.skillPoints > 0 && (!prevState || prevState.skillPoints === 0),
   archive: (state, prevState) => state.unlockedLocations.includes('archive') && (!prevState || !prevState.unlockedLocations.includes('archive')),
-  breakRoom: (state, prevState) => state.unlockedLocations.includes('breakroom') && (!prevState || !prevState.unlockedLocations.includes('breakroom')),
   printerRoom: (state, prevState) => state.printerUnlocked && (!prevState || !prevState.printerUnlocked),
   documentSystem: (state, prevState) => state.paper >= 5 && state.printerUnlocked && (!prevState || prevState.paper < 5),
   portal: (state, prevState) => state.portalUnlocked && (!prevState || !prevState.portalUnlocked),
-  combat: (state, prevState) => state.inCombat && (!prevState || !prevState.inCombat),
   paperQuality: (state, prevState) => {
     // Trigger when paper quality drops below 50 for first time
     const currentQuality = (state.paperQuality || 100);
@@ -1369,12 +1105,6 @@ export const JOURNAL_ENTRIES = {
       unlockHint: 'Your starting location',
       lore: 'Your desk. Four gray walls define your existence. The computer screen flickers with a rhythm that feels almost... intentional. This is where it all begins. Where it always begins. The fluorescent lights hum their eternal song.',
       notes: 'The coffee on your desk is cold. It was always cold.'
-    },
-    breakroom: {
-      name: 'Break Room',
-      unlockHint: 'Purchase Break Room Access upgrade',
-      lore: 'Fluorescent lights buzz in frequencies that shouldn\'t be audible. The coffee machine gurgles, producing a liquid that might be coffee. Might be something else. This is where colleagues gather. This is where they wait.',
-      notes: 'The vending machine hums. Sometimes it stares back.'
     },
     archive: {
       name: 'The Archive',
@@ -1630,23 +1360,6 @@ Materials craft powerful dimensional upgrades at the portal shop.
 
 Cooldown: 60 seconds (reducible with upgrades)`
   },
-  combat: {
-    id: 'combat',
-    title: 'Combat System',
-    category: 'Core Mechanics',
-    summary: 'Colleague confrontations.',
-    details: `Turn-based battles triggered by disagreeing with colleagues.
-
-Your stats depend on equipped weapon + armor + anomalies.
-
-ATTACK: Deal damage based on weapon power
-ESCAPE: 60% success rate, costs HP on failure
-
-Victory: Grants PP, XP, possible dimensional tear
-Defeat: Lose 20 sanity
-
-Tip: Agreeing with colleagues avoids combat entirely.`
-  },
   paperQuality: {
     id: 'paperQuality',
     title: 'Paper Quality Thresholds',
@@ -1679,7 +1392,7 @@ The bugs are features. The features are bugs.`
     title: 'Dimensional Tears & Loot',
     category: 'Advanced Mechanics',
     summary: 'Rifts containing powerful equipment.',
-    details: `Tears spawn after combat victories (chance-based).
+    details: `Tears spawn randomly during your work (chance-based).
 
 Clicking a tear generates RANDOMIZED LOOT:
 • Weapons
@@ -1695,24 +1408,6 @@ Higher rarities have:
 • Stronger bonuses
 
 Loot is stored in inventory and can be equipped in the Armory.`
-  },
-  breakRoom: {
-    id: 'breakRoom',
-    title: 'Break Room',
-    category: 'Exploration',
-    summary: 'Interactive exploration hub.',
-    details: `Search various objects to find items, clues, and resources.
-
-Searchable objects include:
-• Coffee Machine - Energy and mysterious messages
-• Refrigerator - Food and temporal anomalies
-• Vending Machine - Snacks and reality glitches
-• Bulletin Board - Memos and schedules
-• Tables - Forgotten items and scratched warnings
-• Supply Closet (unlocks Day 10) - High-value supplies
-
-Each search costs energy and has a cooldown.
-Rewards vary by object and your current sanity level.`
   },
   archive: {
     id: 'archive',
