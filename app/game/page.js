@@ -41,8 +41,7 @@ import {
   DIMENSIONAL_UPGRADES,
   HELP_POPUPS,
   HELP_TRIGGERS,
-  STORY_MOMENTS,
-  COLLEAGUE_ENCOUNTERS
+  STORY_MOMENTS
 } from './constants';
 
 export default function Game() {
@@ -500,26 +499,6 @@ export default function Game() {
         // Reality Anchor sets minimum sanity threshold
         if (prev.dimensionalUpgrades?.reality_anchor && newState.sanity < 20) {
           newState.sanity = 20;
-        }
-
-        // Check for scheduled colleague encounters (Overhauled 2025-11-05)
-        // Replaces random encounters with scheduled, story-driven notifications
-        if (!prev.colleagueNotification && !prev.strangeColleagueEvent &&
-            !prev.pendingColleagueEncounter && !prev.debugMode && !prev.meditating &&
-            !prev.inCombat && !prev.pendingStoryMoment) {
-
-          // Check for any triggered encounters
-          for (const encounter of COLLEAGUE_ENCOUNTERS) {
-            if (encounter.trigger(prev)) {
-              // Set notification - player must visit break room to proceed
-              newState.colleagueNotification = {
-                message: encounter.notificationMessage,
-                colleagueId: encounter.colleagueId,
-                encounterId: encounter.id
-              };
-              break; // Only one notification at a time
-            }
-          }
         }
 
         if (Math.random() < 0.02) {
