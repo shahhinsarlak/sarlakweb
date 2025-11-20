@@ -16,6 +16,7 @@ import HelpPopup from './HelpPopup';
 import AchievementsModal from './AchievementsModal';
 import JournalModal from './JournalModal';
 import BuffReplacementModal from './BuffReplacementModal';
+import NotificationPopup from './NotificationPopup';
 import { createGameActions } from './gameActions';
 import { getDistortionStyle, distortText, getClockTime, createLevelUpParticles, createSkillPurchaseParticles, createScreenShake } from './gameUtils';
 import { saveGame, loadGame, exportToClipboard, importFromClipboard } from './saveSystem';
@@ -55,6 +56,13 @@ export default function Game() {
         recentMessages: updatedMessages.slice(0, maxMessages)
       };
     });
+  }, []);
+
+  const dismissNotification = useCallback((notificationId) => {
+    setGameState(prev => ({
+      ...prev,
+      notifications: prev.notifications.filter(n => n.id !== notificationId)
+    }));
   }, []);
 
   const grantXP = useCallback((amount) => {
@@ -1906,6 +1914,12 @@ export default function Game() {
       <HelpPopup
         popup={gameState.currentHelpPopup}
         onDismiss={dismissHelpPopup}
+      />
+
+      {/* Notification Popup System */}
+      <NotificationPopup
+        notifications={gameState.notifications}
+        onDismiss={dismissNotification}
       />
 
       {/* Buff Tooltip that follows mouse */}

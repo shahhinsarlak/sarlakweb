@@ -614,9 +614,7 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
 
       // Visual effects based on quality
       setTimeout(() => {
-        if (qualityOutcome === 'perfect') {
-          triggerScreenEffect('flash');
-        } else if (qualityOutcome === 'corrupted') {
+        if (qualityOutcome === 'corrupted') {
           triggerScreenEffect('shake');
         }
       }, 100);
@@ -627,6 +625,14 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       const message = `${icon} ${tierData.name} [${qualityLabel}] created! Check File Drawer to consume.`;
 
       newState.recentMessages = [message, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15);
+
+      // Add notification popup
+      const notification = {
+        id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        message: message,
+        timestamp: Date.now()
+      };
+      newState.notifications = [...(prev.notifications || []), notification];
 
       setTimeout(() => checkAchievements(), 100);
 
