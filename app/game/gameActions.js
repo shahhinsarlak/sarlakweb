@@ -13,14 +13,12 @@
  * - upgrades: Purchase permanent improvements
  * - printer: Paper generation system
  */
-import { LOCATIONS, UPGRADES, DEBUG_CHALLENGES, PRINTER_UPGRADES, DOCUMENT_TYPES, STRANGE_COLLEAGUE_DIALOGUES, TIER_MASTERY_WEIGHTS } from './constants';
-import { BREAK_ROOM_SEARCHABLES, generateBreakRoomLoot, MAX_TRUST_REWARDS, COLLEAGUE_SCHEDULE } from './breakRoomConstants';
+import { LOCATIONS, UPGRADES, DEBUG_CHALLENGES, PRINTER_UPGRADES, DOCUMENT_TYPES, TIER_MASTERY_WEIGHTS } from './constants';
 import {
   applyEnergyCostReduction,
   applyPPMultiplier
 } from './skillSystemHelpers';
 import { XP_REWARDS } from './skillTreeConstants';
-import { generateEnemy, getPlayerCombatStats, COMBAT_MECHANICS } from './combatConstants';
 import {
   applySanityPPModifier,
   applySanityXPModifier,
@@ -35,12 +33,8 @@ import {
   rollQualityOutcome
 } from './sanityPaperHelpers';
 import {
-  discoverLocation,
-  discoverColleague
+  discoverLocation
 } from './journalHelpers';
-import {
-  processResponseOutcome
-} from './colleagueHelpers';
 
 
 export const createGameActions = (setGameState, addMessage, checkAchievements, grantXP) => {
@@ -356,54 +350,8 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       // Track location discovery for journal
       const discoveredLocations = discoverLocation(prev, loc);
 
-      // Break Room Calendar System (Added 2025-11-19)
-      // Colleagues appear on scheduled days
+      // Break Room - Interactive exploration hub
       if (loc === 'breakroom') {
-        // Priority 1: Existing colleague notification (from events/story moments)
-        if (prev.colleagueNotification) {
-          const colleague = STRANGE_COLLEAGUE_DIALOGUES.find(
-            c => c.id === prev.colleagueNotification.colleagueId
-          );
-
-          if (colleague) {
-            // Trigger encounter via briefing screen
-            return {
-              ...prev,
-              location: loc,
-              energy: Math.max(0, prev.energy - 5),
-              discoveredLocations,
-              pendingColleagueEncounter: colleague
-            };
-          }
-        }
-
-        // Priority 2: Check if a colleague is scheduled for today
-        const scheduledColleagueId = COLLEAGUE_SCHEDULE.getScheduledColleague(prev.day);
-
-        if (scheduledColleagueId && scheduledColleagueId !== 'multiple') {
-          // Check if we should spawn this encounter
-          // Only spawn if player hasn't visited break room yet today
-          const shouldSpawnEncounter = prev.lastBreakRoomVisitDay !== prev.day;
-
-          if (shouldSpawnEncounter) {
-            const colleague = STRANGE_COLLEAGUE_DIALOGUES.find(c => c.id === scheduledColleagueId);
-
-            if (colleague) {
-              // Spawn scheduled colleague encounter
-              return {
-                ...prev,
-                location: loc,
-                energy: Math.max(0, prev.energy - 5),
-                discoveredLocations,
-                lastBreakRoomVisitDay: prev.day,
-                pendingColleagueEncounter: colleague,
-                recentMessages: [`${colleague.ascii.split('\n')[0]}... You sense a presence in the break room.`, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
-              };
-            }
-          }
-        }
-
-        // Priority 3: No encounter, open interactive break room UI
         return {
           ...prev,
           location: loc,
@@ -459,139 +407,6 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
     }));
   };
 
-  const respondToColleague = (responseOption) => {
-    setGameState(prev => {
-      if (!prev.strangeColleagueEvent && !prev.pendingStoryMoment) return prev;
-
-      const colleague = prev.strangeColleagueEvent || prev.pendingStoryMoment;
-      const outcome = responseOption.outcome;
-      const colleagueId = colleague.id;
-      const isStoryMoment = !!prev.pendingStoryMoment;
-
-      // Track colleague discovery for journal
-      const discoveredColleagues = discoverColleague(prev, colleagueId);
-
-      // Update colleague relationship
-      const currentRelationship = prev.colleagueRelationships[colleagueId] || { trust: 0, encounters: 0, lastResponseType: null };
-      const newRelationships = {
-        ...prev.colleagueRelationships,
-        [colleagueId]: {
-          trust: currentRelationship.trust + (outcome.trust || 0),
-          encounters: currentRelationship.encounters + 1,
-          lastResponseType: responseOption.type
-        }
-      };
-
-      // NO LONGER GRANT XP (Removed 2025-11-05 - colleague encounters are purely narrative)
-      // grantXP(outcome.xp);
-
-      // Process outcome for mystery/path system (PP/XP/sanity removed)
-      const outcomeUpdates = processResponseOutcome(prev, outcome);
-
-      // Check for endgame events based on new trust level
-      const newRelationship = newRelationships[colleagueId];
-      let endgameMessage = null;
-
-      if (newRelationship.encounters >= 5) {
-        if (newRelationship.trust >= 10) {
-          // Ally path - they become helpful
-          endgameMessage = `Your kindness has transformed them. They are no longer lost. They offer to help you.`;
-        } else if (newRelationship.trust <= -8) {
-          // Hostility path - triggers combat
-          endgameMessage = `Your constant hostility has pushed them over the edge. Their eyes turn dark. Violence is inevitable.`;
-        }
-      }
-
-      // Build new state
-      const newState = {
-        ...prev,
-        ...outcomeUpdates, // Apply mystery/path updates
-        colleagueRelationships: newRelationships,
-        strangeColleagueEvent: null,
-        pendingStoryMoment: null,
-        disagreementCount: prev.disagreementCount + (responseOption.type === 'hostile' || responseOption.type === 'protector' ? 1 : 0),
-        colleagueResponseCount: (prev.colleagueResponseCount || 0) + 1, // Track all responses
-        discoveredColleagues,
-        // Clear notification and mark encounter as completed (Added 2025-11-05)
-        colleagueNotification: null,
-        completedColleagueEncounters: prev.colleagueNotification
-          ? [...prev.completedColleagueEncounters, prev.colleagueNotification.encounterId]
-          : prev.completedColleagueEncounters,
-        // Return player to cubicle after encounter (Added 2025-11-05)
-        location: 'cubicle'
-      };
-
-      // Track completed story moment
-      if (isStoryMoment && prev.pendingStoryMoment) {
-        newState.completedStoryMoments = [...prev.completedStoryMoments, prev.pendingStoryMoment.id];
-      }
-
-      // Build messages
-      const messages = [outcome.message];
-      if (endgameMessage) {
-        messages.push(endgameMessage);
-      }
-
-      // Add mystery progress notification if significant
-      if (outcome.mysteryProgress && outcome.mysteryProgress >= 10) {
-        messages.push(`Mystery deepens... (${newState.mysteryProgress}% uncovered)`);
-      }
-
-      // Add clue notification
-      if (outcome.clue) {
-        messages.push(`New clue discovered: "${outcome.clue.text}"`);
-      }
-
-      // Add path notification if path changed
-      if (newState.playerPath && newState.playerPath !== prev.playerPath) {
-        const pathNames = {
-          seeker: 'Seeker of Truth',
-          rationalist: 'Rational Denier',
-          protector: 'Protector of Others',
-          convert: 'Convert to Madness',
-          rebel: 'Rebel Against the System'
-        };
-        messages.push(`Your path crystallizes: ${pathNames[newState.playerPath]}`);
-      }
-
-      newState.recentMessages = [...messages, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15);
-
-      // Archive unlock mechanic - triggers after collecting 5 archive-revealing clues (Redesigned 2025-11-05)
-      // Player must piece together the mystery through colleague interactions
-      const ARCHIVE_CLUES = [
-        'eternal_productivity',     // Archives mentioned directly
-        'building_predates_office', // Building has hidden history
-        'productivity_documents',   // Secret documentation exists
-        'surveillance_system',      // Everything is cataloged
-        'sorting_purpose'           // Hidden sorting/filing system
-      ];
-
-      const collectedClues = newState.investigation?.clues?.map(c => c.id) || [];
-      const archiveCluesCollected = ARCHIVE_CLUES.filter(clueId => collectedClues.includes(clueId));
-
-      if (archiveCluesCollected.length >= 5 && !prev.unlockedLocations.includes('archive')) {
-        newState.unlockedLocations = [...new Set([...prev.unlockedLocations, 'archive'])];
-
-        triggerScreenEffect('shake');
-
-        setTimeout(() => {
-          setGameState(prevState => ({
-            ...prevState,
-            recentMessages: [
-              'The pieces fall into place. The clues converge.',
-              'Reality fractures. A door appears that was always there.',
-              'THE ARCHIVE calls to you.',
-              'NEW LOCATION: The Archive',
-              ...prevState.recentMessages
-            ].slice(0, prevState.maxLogMessages || 15)
-          }));
-        }, 600);
-      }
-
-      checkAchievements();
-      return newState;
-    });
-  };
 
   const buyUpgrade = (upgrade) => {
     setGameState(prev => {
@@ -728,211 +543,6 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
     setGameState(prev => ({
       ...prev,
       inPrinterRoom: true
-    }));
-  };
-
-  // Combat Actions
-  const startCombat = () => {
-    setGameState(prev => {
-      const enemy = generateEnemy(prev.playerLevel || 1);
-      const playerStats = getPlayerCombatStats(prev);
-
-      return {
-        ...prev,
-        inCombat: true,
-        currentEnemy: enemy,
-        playerCombatHP: playerStats.maxHP,
-        combatLog: [],
-        isPlayerTurn: true,
-        combatEnded: false,
-        strangeColleagueEvent: null // Clear colleague event
-      };
-    });
-  };
-
-  const playerAttack = () => {
-    setGameState(prev => {
-      if (!prev.isPlayerTurn || prev.combatEnded || !prev.currentEnemy) return prev;
-
-      const playerStats = getPlayerCombatStats(prev);
-      const enemy = { ...prev.currentEnemy };
-      const log = [...prev.combatLog];
-
-      // Calculate damage
-      const isCrit = Math.random() < playerStats.critChance;
-      let damage = playerStats.damage;
-
-      if (isCrit) {
-        damage = Math.floor(damage * playerStats.critMultiplier);
-        log.push({
-          type: 'critical',
-          message: `CRITICAL HIT! You strike for ${damage} damage!`
-        });
-      } else {
-        log.push({
-          type: 'damage_enemy',
-          message: `You attack for ${damage} damage.`
-        });
-      }
-
-      enemy.currentHP = Math.max(0, enemy.currentHP - damage);
-
-      // Check if enemy defeated
-      if (enemy.currentHP <= 0) {
-        log.push({
-          type: 'victory',
-          message: `Victory! ${enemy.displayName} has been defeated!`
-        });
-        log.push({
-          type: 'reward',
-          message: `Gained ${enemy.ppReward} PP and ${enemy.xpReward} XP!`
-        });
-
-        // Grant rewards
-        grantXP(enemy.xpReward);
-
-        setTimeout(() => checkAchievements(), 50);
-
-        return {
-          ...prev,
-          pp: prev.pp + enemy.ppReward,
-          currentEnemy: enemy,
-          combatLog: log,
-          combatEnded: true,
-          isPlayerTurn: false,
-          combatVictories: (prev.combatVictories || 0) + 1
-        };
-      }
-
-      // Enemy turn
-      const newState = {
-        ...prev,
-        currentEnemy: enemy,
-        combatLog: log,
-        isPlayerTurn: false
-      };
-
-      // Delay enemy attack
-      setTimeout(() => {
-        enemyAttack();
-      }, 1000);
-
-      return newState;
-    });
-  };
-
-  const enemyAttack = () => {
-    setGameState(prev => {
-      if (prev.isPlayerTurn || prev.combatEnded || !prev.currentEnemy) return prev;
-
-      const enemy = prev.currentEnemy;
-      const log = [...prev.combatLog];
-
-      const damage = enemy.damage;
-      const newPlayerHP = Math.max(0, prev.playerCombatHP - damage);
-
-      log.push({
-        type: 'damage_player',
-        message: `[Attack] ${enemy.displayName} attacks for ${damage} damage!`
-      });
-
-      // Check if player defeated
-      if (newPlayerHP <= 0) {
-        log.push({
-          type: 'defeat',
-          message: 'You have been defeated. Your sanity shatters...'
-        });
-
-        return {
-          ...prev,
-          playerCombatHP: newPlayerHP,
-          combatLog: log,
-          combatEnded: true,
-          isPlayerTurn: false,
-          sanity: Math.max(0, prev.sanity - 20) // Lose sanity on defeat
-        };
-      }
-
-      return {
-        ...prev,
-        playerCombatHP: newPlayerHP,
-        combatLog: log,
-        isPlayerTurn: true
-      };
-    });
-  };
-
-  const escapeCombat = () => {
-    setGameState(prev => {
-      if (!prev.isPlayerTurn || prev.combatEnded) return prev;
-
-      const escapeRoll = Math.random();
-      const log = [...prev.combatLog];
-
-      if (escapeRoll < COMBAT_MECHANICS.escapeChance) {
-        log.push({
-          type: 'escape_success',
-          message: 'You successfully escaped the battle!'
-        });
-
-        return {
-          ...prev,
-          inCombat: false,
-          currentEnemy: null,
-          combatLog: [],
-          combatEnded: false
-        };
-      } else {
-        const damage = Math.floor(prev.playerCombatHP * COMBAT_MECHANICS.escapeFailureDamage);
-        const newPlayerHP = Math.max(0, prev.playerCombatHP - damage);
-
-        log.push({
-          type: 'escape_fail',
-          message: `Escape failed! You take ${damage} damage in the panic!`
-        });
-
-        // Check if player died from escape damage
-        if (newPlayerHP <= 0) {
-          log.push({
-            type: 'defeat',
-            message: 'You collapse while trying to flee...'
-          });
-
-          return {
-            ...prev,
-            playerCombatHP: newPlayerHP,
-            combatLog: log,
-            combatEnded: true,
-            isPlayerTurn: false,
-            sanity: Math.max(0, prev.sanity - 20)
-          };
-        }
-
-        // Enemy gets a turn after failed escape
-        const newState = {
-          ...prev,
-          playerCombatHP: newPlayerHP,
-          combatLog: log,
-          isPlayerTurn: false
-        };
-
-        setTimeout(() => {
-          enemyAttack();
-        }, 1000);
-
-        return newState;
-      }
-    });
-  };
-
-  const endCombat = () => {
-    setGameState(prev => ({
-      ...prev,
-      inCombat: false,
-      currentEnemy: null,
-      combatLog: [],
-      combatEnded: false,
-      isPlayerTurn: true
     }));
   };
 
@@ -1262,197 +872,16 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
     });
   };
 
-  // Break Room System Actions (Added 2025-11-19)
-
-  /**
-   * Enter the break room UI
-   */
-  const enterBreakRoom = () => {
-    setGameState(prev => ({
-      ...prev,
-      inBreakRoom: true,
-      lastBreakRoomVisitDay: prev.day
-    }));
-  };
-
-  /**
-   * Leave the break room UI
-   */
-  const leaveBreakRoom = () => {
-    setGameState(prev => ({
-      ...prev,
-      inBreakRoom: false
-    }));
-  };
-
-  /**
-   * Search a break room object
-   * @param {string} objectId - ID of the object to search (from BREAK_ROOM_SEARCHABLES)
-   */
-  const searchBreakRoomObject = (objectId) => {
-    setGameState(prev => {
-      const searchable = BREAK_ROOM_SEARCHABLES[objectId];
-      if (!searchable) return prev;
-
-      // Unlock supply closet at Day 10
-      if (objectId === 'supply_closet' && prev.day >= 10 && !prev.breakRoomSupplyClosetUnlocked) {
-        return {
-          ...prev,
-          breakRoomSupplyClosetUnlocked: true,
-          recentMessages: ['The supply closet door swings open. It was never locked.', ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
-        };
-      }
-
-      // Check if supply closet is locked
-      if (objectId === 'supply_closet' && !prev.breakRoomSupplyClosetUnlocked && prev.day < 10) {
-        return {
-          ...prev,
-          recentMessages: ['The supply closet is locked. Something tells you it will open soon.', ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
-        };
-      }
-
-      // Check energy cost
-      if (prev.energy < searchable.energyCost) {
-        return {
-          ...prev,
-          recentMessages: ['Too exhausted to search.', ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
-        };
-      }
-
-      // Check cooldown
-      const now = Date.now();
-      const cooldownEnd = prev.breakRoomSearchCooldowns[objectId] || 0;
-      if (now < cooldownEnd) {
-        const remainingSeconds = Math.ceil((cooldownEnd - now) / 1000);
-        return {
-          ...prev,
-          recentMessages: [`Wait ${remainingSeconds}s before searching again.`, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
-        };
-      }
-
-      // Generate loot using context-aware function
-      const loot = generateBreakRoomLoot(prev, objectId);
-
-      // Build new state
-      const newState = {
-        ...prev,
-        energy: prev.energy - searchable.energyCost,
-        breakRoomSearchCooldowns: {
-          ...prev.breakRoomSearchCooldowns,
-          [objectId]: now + (searchable.baseCooldown * 1000)
-        },
-        breakRoomSearchHistory: [
-          ...prev.breakRoomSearchHistory,
-          { objectId, itemFound: loot.type, timestamp: now }
-        ]
-      };
-
-      const messages = [];
-
-      // Process loot outcome
-      if (loot.type === 'pp') {
-        newState.pp = prev.pp + loot.amount;
-        messages.push(`+${loot.amount} PP: ${loot.desc}`);
-      } else if (loot.type === 'paper') {
-        newState.paper = (prev.paper || 0) + loot.amount;
-        messages.push(`+${loot.amount} Paper: ${loot.desc}`);
-      } else if (loot.type === 'energy') {
-        newState.energy = Math.min(100, newState.energy + loot.amount);
-        messages.push(`+${loot.amount} Energy: ${loot.desc}`);
-      } else if (loot.type === 'buff') {
-        const buffEndTime = now + (loot.duration * 1000);
-        newState.activeReportBuffs = [
-          ...prev.activeReportBuffs,
-          {
-            id: loot.buffId,
-            name: loot.name,
-            ppMult: loot.ppMult,
-            expiresAt: buffEndTime
-          }
-        ];
-        messages.push(`Buff Gained: ${loot.name}`);
-        messages.push(loot.desc);
-      } else if (loot.type === 'clue') {
-        newState.investigation = {
-          ...prev.investigation,
-          clues: [...prev.investigation.clues, {
-            ...loot.clue,
-            collectedOn: now
-          }]
-        };
-        if (loot.mysteryProgress) {
-          newState.mysteryProgress = Math.min(100, prev.mysteryProgress + loot.mysteryProgress);
-        }
-        messages.push('Clue Found!');
-        messages.push(loot.clue.text);
-        setTimeout(() => grantXP(5), 50);
-      } else if (loot.type === 'trustItem') {
-        // Store trust item in inventory (not yet implemented, just show message)
-        messages.push(`Trust Item: ${loot.desc}`);
-        messages.push(`(Can be gifted to ${loot.colleagueId})`);
-      } else if (loot.type === 'special') {
-        if (loot.effect === 'sanity') {
-          newState.sanity = Math.max(0, Math.min(100, prev.sanity + loot.value));
-          messages.push(`+${loot.value} Sanity: ${loot.name}`);
-        } else if (loot.effect === 'xp') {
-          messages.push(`${loot.name} found!`);
-          setTimeout(() => grantXP(loot.value), 50);
-        } else if (loot.effect === 'mystery') {
-          newState.mysteryProgress = Math.min(100, prev.mysteryProgress + loot.value);
-          messages.push(`+${loot.value}% Mystery: ${loot.name}`);
-        }
-        messages.push(loot.desc);
-      } else if (loot.type === 'schedule') {
-        newState.colleagueScheduleKnown = true;
-        if (loot.mysteryProgress) {
-          newState.mysteryProgress = Math.min(100, prev.mysteryProgress + loot.mysteryProgress);
-        }
-        messages.push('Schedule Found!');
-        messages.push(loot.desc);
-        messages.push('Monday: Productivity Zealot | Tuesday: Void Clerk | Wednesday: Spiral Philosopher');
-        messages.push('Thursday: Temporal Trapped | Friday: Light Herald | Weekends: Empty');
-      }
-
-      newState.recentMessages = [...messages, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15);
-
-      setTimeout(() => checkAchievements(), 100);
-
-      return newState;
-    });
-  };
-
-  // Dismiss colleague notification (Added 2025-11-05)
-  const dismissNotification = () => {
-    setGameState(prev => ({
-      ...prev,
-      colleagueNotification: null
-    }));
-  };
-
-  return {
-    sortPapers,
-    rest,
-    startMeditation,
-    breatheAction,
-    cancelMeditation,
-    startDebugSession,
-    submitDebug,
     updateDebugCode,
     cancelDebug,
     changeLocation,
     examineItem,
     closeExamine,
-    respondToColleague,
-    dismissNotification,
     buyUpgrade,
     printPaper,
     buyPrinterUpgrade,
     enterPrinterRoom,
     triggerScreenEffect,
-    startCombat,
-    playerAttack,
-    escapeCombat,
-    endCombat,
     // Document system actions (Revised 2025-11-01, Redesigned 2025-11-04)
     printDocument,
     // File drawer system actions (Added 2025-11-04)
@@ -1465,10 +894,6 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
     // Journal system actions
     openJournal,
     closeJournal,
-    switchJournalTab,
-    // Break room system actions (Added 2025-11-19)
-    enterBreakRoom,
-    leaveBreakRoom,
-    searchBreakRoomObject
+    switchJournalTab
   };
 };

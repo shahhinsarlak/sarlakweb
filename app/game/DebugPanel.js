@@ -800,15 +800,6 @@ export default function DebugPanel({ gameState, setGameState, addMessage, onClos
         <button onClick={triggerRandomEvent} style={buttonStyle}>
           TRIGGER RANDOM EVENT
         </button>
-        <button onClick={() => {
-          setGameState(prev => ({
-            ...prev,
-            strangeColleagueEvent: null,
-            pendingColleagueEncounter: null
-          }));
-        }} style={buttonStyle}>
-          CLEAR COLLEAGUE EVENT
-        </button>
       </div>
 
       <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '12px' }}>

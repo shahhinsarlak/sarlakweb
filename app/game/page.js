@@ -5,43 +5,33 @@ import Footer from '../../components/Footer';
 import MeditationModal from './MeditationModal';
 import DebugModal from './DebugModal';
 import DebugPanel from './DebugPanel';
-import ColleagueModal from './ColleagueModal';
-import ColleagueBriefingModal from './ColleagueBriefingModal';
-import StoryMomentModal from './StoryMomentModal';
 import ExamineModal from './ExamineModal';
 import DimensionalArea from './DimensionalArea';
 import DimensionalUpgradesDisplay from './DimensionalUpgradesDisplay';
 import SkillTreeModal from './SkillTreeModal';
 import PrinterRoom from './PrinterRoom';
-import CombatModal from './CombatModal';
 import Armory from './Armory';
 import FileDrawer from './FileDrawer';
 import HelpPopup from './HelpPopup';
 import AchievementsModal from './AchievementsModal';
 import JournalModal from './JournalModal';
-import NotificationBubble from './NotificationBubble';
-import BreakRoom from './BreakRoom';
 import { createGameActions } from './gameActions';
 import { getDistortionStyle, distortText, getClockTime, createLevelUpParticles, createSkillPurchaseParticles, createScreenShake } from './gameUtils';
 import { saveGame, loadGame, exportToClipboard, importFromClipboard } from './saveSystem';
 import { addExperience, purchaseSkill, getActiveSkillEffects, getModifiedPortalCooldown, getModifiedCapacity, applyPPMultiplier } from './skillSystemHelpers';
 import { SKILLS, LEVEL_SYSTEM, XP_REWARDS } from './skillTreeConstants';
 import { DIMENSIONAL_MATERIALS } from './dimensionalConstants';
-import { getPlayerCombatStats } from './combatConstants';
 import { getSanityTierDisplay, isSanityDrainPaused, calculatePaperQuality, applySanityPPModifier, getActiveBuffPPMultiplier, getActiveBuffXPMultiplier, getActiveBuffEnergyCostMultiplier, getActiveBuffPPPerSecondMultiplier } from './sanityPaperHelpers';
-import { checkStoryMoments } from './colleagueHelpers';
 import {
   INITIAL_GAME_STATE,
   LOCATIONS,
   UPGRADES,
   ACHIEVEMENTS,
   EVENTS,
-  STRANGE_COLLEAGUE_DIALOGUES,
   PRINTER_UPGRADES,
   DIMENSIONAL_UPGRADES,
   HELP_POPUPS,
-  HELP_TRIGGERS,
-  STORY_MOMENTS
+  HELP_TRIGGERS
 } from './constants';
 
 export default function Game() {
@@ -262,23 +252,6 @@ export default function Game() {
     }
   };
 
-  const handleApproachColleague = () => {
-    setGameState(prev => ({
-      ...prev,
-      strangeColleagueEvent: prev.pendingColleagueEncounter,
-      pendingColleagueEncounter: null
-    }));
-  };
-
-  const handleWalkAway = () => {
-    setGameState(prev => ({
-      ...prev,
-      pendingColleagueEncounter: null,
-      location: 'cubicle', // Return to cubicle when walking away (Added 2025-11-06)
-      sanity: Math.max(0, prev.sanity - 2), // Small sanity cost for avoiding interaction
-      recentMessages: ['You turn away. The colleague watches you leave.', ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
-    }));
-  };
 
   const purchaseDimensionalUpgrade = (upgrade) => {
     setGameState(prev => {
@@ -378,8 +351,6 @@ export default function Game() {
       effects.push(`Meditation grants ×${upgrade.value} sanity`);
     } else if (upgrade.effect === 'minSanity') {
       effects.push(`Sanity cannot drop below ${upgrade.value}%`);
-    } else if (upgrade.effect === 'combat') {
-      effects.push(`Combat enhancement: ${upgrade.value}`);
     } else if (upgrade.effect === 'timeTravel') {
       effects.push(`Undo the last 5 minutes (once per day)`);
     } else if (upgrade.effect === 'portalScan') {
@@ -563,7 +534,7 @@ export default function Game() {
 
   useEffect(() => {
     checkAchievements();
-  }, [gameState.pp, gameState.day, gameState.sortCount, gameState.unlockedLocations.length, gameState.disagreementCount, gameState.examinedItems, gameState.sanity, checkAchievements]);
+  }, [gameState.pp, gameState.day, gameState.sortCount, gameState.unlockedLocations.length, gameState.examinedItems, gameState.sanity, checkAchievements]);
 
   // Meditation unlock: Only unlock when sanity drops to 25% or below
   useEffect(() => {
@@ -661,13 +632,6 @@ export default function Game() {
           return { ...prev, currentHelpPopup: HELP_POPUPS.archive };
         });
       }, 100);
-    } else if (!gameState.shownHelpPopups.includes('breakRoom') && gameState.unlockedLocations.includes('breakroom')) {
-      setTimeout(() => {
-        setGameState(prev => {
-          if (prev.currentHelpPopup || prev.shownHelpPopups.includes('breakRoom')) return prev;
-          return { ...prev, currentHelpPopup: HELP_POPUPS.breakRoom };
-        });
-      }, 100);
     } else if (!gameState.shownHelpPopups.includes('printerRoom') && gameState.printerUnlocked) {
       setTimeout(() => {
         setGameState(prev => {
@@ -688,20 +652,6 @@ export default function Game() {
   useEffect(() => {
     if (!gameState.helpEnabled || gameState.currentHelpPopup) return;
 
-    // Check combat trigger
-    if (!gameState.shownHelpPopups.includes('combat') && gameState.inCombat) {
-      setTimeout(() => {
-        setGameState(prev => {
-          if (prev.currentHelpPopup || prev.shownHelpPopups.includes('combat')) return prev;
-          return { ...prev, currentHelpPopup: HELP_POPUPS.combat };
-        });
-      }, 100);
-    }
-  }, [gameState.inCombat, gameState.helpEnabled, gameState.currentHelpPopup, gameState.shownHelpPopups]);
-
-  useEffect(() => {
-    if (!gameState.helpEnabled || gameState.currentHelpPopup) return;
-
     // Check documentSystem trigger
     if (!gameState.shownHelpPopups.includes('documentSystem') && gameState.paper >= 5 && gameState.printerUnlocked) {
       setTimeout(() => {
@@ -713,32 +663,6 @@ export default function Game() {
     }
   }, [gameState.paper, gameState.printerUnlocked, gameState.helpEnabled, gameState.currentHelpPopup, gameState.shownHelpPopups]);
 
-  // Story Moments: Check for mandatory narrative beats
-  useEffect(() => {
-    // Don't check if already showing a story moment or colleague event
-    if (gameState.pendingStoryMoment || gameState.strangeColleagueEvent || gameState.pendingColleagueEncounter) return;
-
-    // Check if any story moment should trigger
-    const triggeredMoment = checkStoryMoments(gameState, STORY_MOMENTS);
-
-    if (triggeredMoment) {
-      setTimeout(() => {
-        setGameState(prev => {
-          // Double-check it hasn't been completed in the meantime
-          if (prev.completedStoryMoments.includes(triggeredMoment.id)) return prev;
-          if (prev.pendingStoryMoment) return prev; // Already set
-
-          return {
-            ...prev,
-            pendingStoryMoment: triggeredMoment,
-            strangeColleagueEvent: null, // Clear any pending colleague event
-            pendingColleagueEncounter: null
-          };
-        });
-      }, 100);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gameState.day, gameState.playerLevel, gameState.portalUnlocked, gameState.unlockedLocations, gameState.mysteryProgress, gameState.completedStoryMoments, gameState.pendingStoryMoment, gameState.strangeColleagueEvent, gameState.pendingColleagueEncounter]);
 
   const dismissHelpPopup = () => {
     setGameState(prev => {
@@ -835,10 +759,6 @@ export default function Game() {
     return <FileDrawer gameState={gameState} onClose={actions.closeFileDrawer} actions={actions} />;
   }
 
-  if (gameState.inBreakRoom) {
-    return <BreakRoom gameState={gameState} onSearch={actions.searchBreakRoomObject} onClose={actions.leaveBreakRoom} />;
-  }
-
   if (gameState.meditating) {
     return <MeditationModal gameState={gameState} breatheAction={actions.breatheAction} cancelMeditation={actions.cancelMeditation} />;
   }
@@ -847,73 +767,8 @@ export default function Game() {
     return <ExamineModal item={gameState.examiningItem} closeExamine={actions.closeExamine} />;
   }
 
-  if (gameState.inCombat) {
-    const playerStats = getPlayerCombatStats(gameState);
-    return (
-      <CombatModal
-        enemy={gameState.currentEnemy}
-        playerStats={playerStats}
-        onAttack={actions.playerAttack}
-        onEscape={actions.escapeCombat}
-        onEndCombat={actions.endCombat}
-        combatLog={gameState.combatLog}
-        isPlayerTurn={gameState.isPlayerTurn}
-        combatEnded={gameState.combatEnded}
-      />
-    );
-  }
-
-  if (gameState.pendingColleagueEncounter) {
-    return (
-      <ColleagueBriefingModal
-        colleague={gameState.pendingColleagueEncounter}
-        onApproach={handleApproachColleague}
-        onWalkAway={handleWalkAway}
-      />
-    );
-  }
-
-  // Story Moment Modal - takes precedence over colleague events
-  if (gameState.pendingStoryMoment) {
-    return (
-      <StoryMomentModal
-        storyMoment={gameState.pendingStoryMoment}
-        gameState={gameState}
-        respondToColleague={actions.respondToColleague}
-      />
-    );
-  }
-
-  if (gameState.strangeColleagueEvent) {
-    // Player has weapon if they have any weapons in loot inventory or equipped weapon is not the starter
-    const hasLootWeapons = (gameState.lootInventory || []).some(item => item.type === 'weapon');
-    const hasWeapon = hasLootWeapons || (gameState.equippedWeapon && gameState.equippedWeapon !== 'stapler_shiv');
-    return (
-      <ColleagueModal
-        event={gameState.strangeColleagueEvent}
-        recentMessages={gameState.recentMessages}
-        respondToColleague={actions.respondToColleague}
-        hasWeapon={hasWeapon}
-        onStartCombat={actions.startCombat}
-        gameState={gameState}
-      />
-    );
-  }
-
-  if (gameState.debugMode && gameState.currentBug) {
-    return <DebugModal gameState={gameState} submitDebug={actions.submitDebug} updateDebugCode={actions.updateDebugCode} cancelDebug={actions.cancelDebug} />;
-  }
-
   return (
     <>
-      {/* Colleague Notification System (Added 2025-11-05) */}
-      {gameState.colleagueNotification && (
-        <NotificationBubble
-          notification={gameState.colleagueNotification}
-          onDismiss={actions.dismissNotification}
-        />
-      )}
-
       <div className="game-header-wrapper">
         <Header />
       </div>
@@ -1228,9 +1083,6 @@ export default function Game() {
                   gap: '12px'
                 }}>
                   {gameState.unlockedLocations.map(loc => {
-                    // Check if this is the break room with an active notification
-                    const hasNotification = loc === 'breakroom' && gameState.colleagueNotification;
-
                     return (
                       <button
                         key={loc}
@@ -1238,7 +1090,7 @@ export default function Game() {
                         disabled={gameState.location === loc}
                         style={{
                           background: gameState.location === loc ? 'var(--accent-color)' : 'none',
-                          border: hasNotification ? '2px solid #ff6b6b' : '1px solid var(--border-color)',
+                          border: '1px solid var(--border-color)',
                           color: gameState.location === loc ? 'var(--bg-color)' : 'var(--text-color)',
                           padding: '14px',
                           cursor: gameState.location === loc ? 'default' : 'pointer',
@@ -1246,13 +1098,10 @@ export default function Game() {
                           fontFamily: 'inherit',
                           letterSpacing: '0.5px',
                           transition: 'all 0.2s',
-                          textAlign: 'center',
-                          boxShadow: hasNotification ? '0 0 20px rgba(255, 107, 107, 0.8)' : 'none',
-                          animation: hasNotification ? 'locationPulse 2s ease-in-out infinite' : 'none'
+                          textAlign: 'center'
                         }}
                       >
                         {LOCATIONS[loc]?.name || 'Unknown Location'}
-                        {hasNotification && ' [!]'}
                       </button>
                     );
                   })}
