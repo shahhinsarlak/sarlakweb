@@ -498,7 +498,6 @@ export const PRINTER_UPGRADES = [
   }
 ];
 
-/**
 export const EVENTS = [
   { id: 'email1', prob: 0.1, sanity: -5, message: 'New email: "Meeting moved to yesterday. Attendance mandatory."', minDay: 1 },
   { id: 'whisper', prob: 0.08, sanity: -3, message: 'You hear someone whisper your employee ID number.', minDay: 2 },
