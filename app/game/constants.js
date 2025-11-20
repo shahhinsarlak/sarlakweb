@@ -131,6 +131,9 @@ export const INITIAL_GAME_STATE = {
   discoveredBaseArmor: ['standard_headset', 'dress_shirt', 'id_badge'], // Base armor types found (starts with default armor)
   discoveredBaseAnomalies: [],     // Base anomaly types found
   discoveredMechanics: [],         // Mechanic IDs learned from help popups
+  // Notification System (Added 2025-11-20)
+  // Displays temporary popups in top-left corner
+  notifications: [],  // Array of notification objects: { id, message, timestamp }
   // Debug flags
   debugForceTearSpawn: false // Force 100% tear spawn rate for testing
 };
