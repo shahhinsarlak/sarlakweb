@@ -13,9 +13,8 @@
 'use client';
 
 import { useEffect } from 'react';
-import { JOURNAL_ENTRIES, LOCATIONS, STRANGE_COLLEAGUE_DIALOGUES, MECHANICS_ENTRIES } from './constants';
+import { JOURNAL_ENTRIES, LOCATIONS, MECHANICS_ENTRIES } from './constants';
 import { WEAPONS, ARMOR, ANOMALIES } from './equipmentConstants';
-import { getColleagueRelationshipSummary } from './journalHelpers';
 
 export default function JournalModal({ gameState, onClose, onSwitchTab }) {
   const currentTab = gameState.journalTab || 'locations';
@@ -34,9 +33,6 @@ export default function JournalModal({ gameState, onClose, onSwitchTab }) {
 
   // Get all location IDs
   const allLocationIds = Object.keys(LOCATIONS);
-
-  // Get all colleague IDs
-  const allColleagueIds = STRANGE_COLLEAGUE_DIALOGUES.map(c => c.id);
 
   // Get all equipment IDs
   const allWeaponIds = Object.keys(WEAPONS);
