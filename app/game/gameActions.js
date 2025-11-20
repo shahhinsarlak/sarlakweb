@@ -13,8 +13,8 @@
  * - upgrades: Purchase permanent improvements
  * - printer: Paper generation system
  */
-import { LOCATIONS, UPGRADES, DEBUG_CHALLENGES, PRINTER_UPGRADES, DOCUMENT_TYPES, STRANGE_COLLEAGUE_DIALOGUES, TIER_MASTERY_WEIGHTS } from './constants';
-import { BREAK_ROOM_SEARCHABLES, generateBreakRoomLoot, MAX_TRUST_REWARDS, COLLEAGUE_SCHEDULE } from './breakRoomConstants';
+import { LOCATIONS, UPGRADES, DEBUG_CHALLENGES, PRINTER_UPGRADES, DOCUMENT_TYPES, TIER_MASTERY_WEIGHTS } from './constants';
+import { BREAK_ROOM_SEARCHABLES, generateBreakRoomLoot } from './breakRoomConstants';
 import {
   applyEnergyCostReduction,
   applyPPMultiplier
@@ -35,12 +35,8 @@ import {
   rollQualityOutcome
 } from './sanityPaperHelpers';
 import {
-  discoverLocation,
-  discoverColleague
+  discoverLocation
 } from './journalHelpers';
-import {
-  processResponseOutcome
-} from './colleagueHelpers';
 
 
 export const createGameActions = (setGameState, addMessage, checkAchievements, grantXP) => {
@@ -356,54 +352,8 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       // Track location discovery for journal
       const discoveredLocations = discoverLocation(prev, loc);
 
-      // Break Room Calendar System (Added 2025-11-19)
-      // Colleagues appear on scheduled days
+      // Break Room - Interactive exploration hub
       if (loc === 'breakroom') {
-        // Priority 1: Existing colleague notification (from events/story moments)
-        if (prev.colleagueNotification) {
-          const colleague = STRANGE_COLLEAGUE_DIALOGUES.find(
-            c => c.id === prev.colleagueNotification.colleagueId
-          );
-
-          if (colleague) {
-            // Trigger encounter via briefing screen
-            return {
-              ...prev,
-              location: loc,
-              energy: Math.max(0, prev.energy - 5),
-              discoveredLocations,
-              pendingColleagueEncounter: colleague
-            };
-          }
-        }
-
-        // Priority 2: Check if a colleague is scheduled for today
-        const scheduledColleagueId = COLLEAGUE_SCHEDULE.getScheduledColleague(prev.day);
-
-        if (scheduledColleagueId && scheduledColleagueId !== 'multiple') {
-          // Check if we should spawn this encounter
-          // Only spawn if player hasn't visited break room yet today
-          const shouldSpawnEncounter = prev.lastBreakRoomVisitDay !== prev.day;
-
-          if (shouldSpawnEncounter) {
-            const colleague = STRANGE_COLLEAGUE_DIALOGUES.find(c => c.id === scheduledColleagueId);
-
-            if (colleague) {
-              // Spawn scheduled colleague encounter
-              return {
-                ...prev,
-                location: loc,
-                energy: Math.max(0, prev.energy - 5),
-                discoveredLocations,
-                lastBreakRoomVisitDay: prev.day,
-                pendingColleagueEncounter: colleague,
-                recentMessages: [`${colleague.ascii.split('\n')[0]}... You sense a presence in the break room.`, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
-              };
-            }
-          }
-        }
-
-        // Priority 3: No encounter, open interactive break room UI
         return {
           ...prev,
           location: loc,
@@ -459,139 +409,6 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
     }));
   };
 
-  const respondToColleague = (responseOption) => {
-    setGameState(prev => {
-      if (!prev.strangeColleagueEvent && !prev.pendingStoryMoment) return prev;
-
-      const colleague = prev.strangeColleagueEvent || prev.pendingStoryMoment;
-      const outcome = responseOption.outcome;
-      const colleagueId = colleague.id;
-      const isStoryMoment = !!prev.pendingStoryMoment;
-
-      // Track colleague discovery for journal
-      const discoveredColleagues = discoverColleague(prev, colleagueId);
-
-      // Update colleague relationship
-      const currentRelationship = prev.colleagueRelationships[colleagueId] || { trust: 0, encounters: 0, lastResponseType: null };
-      const newRelationships = {
-        ...prev.colleagueRelationships,
-        [colleagueId]: {
-          trust: currentRelationship.trust + (outcome.trust || 0),
-          encounters: currentRelationship.encounters + 1,
-          lastResponseType: responseOption.type
-        }
-      };
-
-      // NO LONGER GRANT XP (Removed 2025-11-05 - colleague encounters are purely narrative)
-      // grantXP(outcome.xp);
-
-      // Process outcome for mystery/path system (PP/XP/sanity removed)
-      const outcomeUpdates = processResponseOutcome(prev, outcome);
-
-      // Check for endgame events based on new trust level
-      const newRelationship = newRelationships[colleagueId];
-      let endgameMessage = null;
-
-      if (newRelationship.encounters >= 5) {
-        if (newRelationship.trust >= 10) {
-          // Ally path - they become helpful
-          endgameMessage = `Your kindness has transformed them. They are no longer lost. They offer to help you.`;
-        } else if (newRelationship.trust <= -8) {
-          // Hostility path - triggers combat
-          endgameMessage = `Your constant hostility has pushed them over the edge. Their eyes turn dark. Violence is inevitable.`;
-        }
-      }
-
-      // Build new state
-      const newState = {
-        ...prev,
-        ...outcomeUpdates, // Apply mystery/path updates
-        colleagueRelationships: newRelationships,
-        strangeColleagueEvent: null,
-        pendingStoryMoment: null,
-        disagreementCount: prev.disagreementCount + (responseOption.type === 'hostile' || responseOption.type === 'protector' ? 1 : 0),
-        colleagueResponseCount: (prev.colleagueResponseCount || 0) + 1, // Track all responses
-        discoveredColleagues,
-        // Clear notification and mark encounter as completed (Added 2025-11-05)
-        colleagueNotification: null,
-        completedColleagueEncounters: prev.colleagueNotification
-          ? [...prev.completedColleagueEncounters, prev.colleagueNotification.encounterId]
-          : prev.completedColleagueEncounters,
-        // Return player to cubicle after encounter (Added 2025-11-05)
-        location: 'cubicle'
-      };
-
-      // Track completed story moment
-      if (isStoryMoment && prev.pendingStoryMoment) {
-        newState.completedStoryMoments = [...prev.completedStoryMoments, prev.pendingStoryMoment.id];
-      }
-
-      // Build messages
-      const messages = [outcome.message];
-      if (endgameMessage) {
-        messages.push(endgameMessage);
-      }
-
-      // Add mystery progress notification if significant
-      if (outcome.mysteryProgress && outcome.mysteryProgress >= 10) {
-        messages.push(`Mystery deepens... (${newState.mysteryProgress}% uncovered)`);
-      }
-
-      // Add clue notification
-      if (outcome.clue) {
-        messages.push(`New clue discovered: "${outcome.clue.text}"`);
-      }
-
-      // Add path notification if path changed
-      if (newState.playerPath && newState.playerPath !== prev.playerPath) {
-        const pathNames = {
-          seeker: 'Seeker of Truth',
-          rationalist: 'Rational Denier',
-          protector: 'Protector of Others',
-          convert: 'Convert to Madness',
-          rebel: 'Rebel Against the System'
-        };
-        messages.push(`Your path crystallizes: ${pathNames[newState.playerPath]}`);
-      }
-
-      newState.recentMessages = [...messages, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15);
-
-      // Archive unlock mechanic - triggers after collecting 5 archive-revealing clues (Redesigned 2025-11-05)
-      // Player must piece together the mystery through colleague interactions
-      const ARCHIVE_CLUES = [
-        'eternal_productivity',     // Archives mentioned directly
-        'building_predates_office', // Building has hidden history
-        'productivity_documents',   // Secret documentation exists
-        'surveillance_system',      // Everything is cataloged
-        'sorting_purpose'           // Hidden sorting/filing system
-      ];
-
-      const collectedClues = newState.investigation?.clues?.map(c => c.id) || [];
-      const archiveCluesCollected = ARCHIVE_CLUES.filter(clueId => collectedClues.includes(clueId));
-
-      if (archiveCluesCollected.length >= 5 && !prev.unlockedLocations.includes('archive')) {
-        newState.unlockedLocations = [...new Set([...prev.unlockedLocations, 'archive'])];
-
-        triggerScreenEffect('shake');
-
-        setTimeout(() => {
-          setGameState(prevState => ({
-            ...prevState,
-            recentMessages: [
-              'The pieces fall into place. The clues converge.',
-              'Reality fractures. A door appears that was always there.',
-              'THE ARCHIVE calls to you.',
-              'NEW LOCATION: The Archive',
-              ...prevState.recentMessages
-            ].slice(0, prevState.maxLogMessages || 15)
-          }));
-        }, 600);
-      }
-
-      checkAchievements();
-      return newState;
-    });
-  };
 
   const buyUpgrade = (upgrade) => {
     setGameState(prev => {
@@ -1422,28 +1239,11 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
   };
 
   // Dismiss colleague notification (Added 2025-11-05)
-  const dismissNotification = () => {
-    setGameState(prev => ({
-      ...prev,
-      colleagueNotification: null
-    }));
-  };
-
-  return {
-    sortPapers,
-    rest,
-    startMeditation,
-    breatheAction,
-    cancelMeditation,
-    startDebugSession,
-    submitDebug,
     updateDebugCode,
     cancelDebug,
     changeLocation,
     examineItem,
     closeExamine,
-    respondToColleague,
-    dismissNotification,
     buyUpgrade,
     printPaper,
     buyPrinterUpgrade,
