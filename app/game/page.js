@@ -15,6 +15,7 @@ import FileDrawer from './FileDrawer';
 import HelpPopup from './HelpPopup';
 import AchievementsModal from './AchievementsModal';
 import JournalModal from './JournalModal';
+import BuffReplacementModal from './BuffReplacementModal';
 import { createGameActions } from './gameActions';
 import { getDistortionStyle, distortText, getClockTime, createLevelUpParticles, createSkillPurchaseParticles, createScreenShake } from './gameUtils';
 import { saveGame, loadGame, exportToClipboard, importFromClipboard } from './saveSystem';
@@ -743,6 +744,17 @@ export default function Game() {
     return <JournalModal gameState={gameState} onClose={actions.closeJournal} onSwitchTab={actions.switchJournalTab} />;
   }
 
+  if (gameState.pendingBuff) {
+    return (
+      <BuffReplacementModal
+        gameState={gameState}
+        pendingBuff={gameState.pendingBuff}
+        onReplace={actions.replaceBuff}
+        onCancel={actions.cancelBuffReplacement}
+      />
+    );
+  }
+
   if (gameState.inDimensionalArea) {
     return <DimensionalArea gameState={gameState} setGameState={setGameState} onExit={exitDimensionalArea} grantXP={grantXP} />;
   }
@@ -1310,8 +1322,20 @@ export default function Game() {
                     borderTop: '1px solid var(--border-color)',
                     marginTop: '16px'
                   }}>
-                    <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6, marginBottom: '8px' }}>
-                      ACTIVE BUFFS
+                    <div style={{
+                      fontSize: '10px',
+                      textTransform: 'uppercase',
+                      letterSpacing: '1px',
+                      opacity: 0.6,
+                      marginBottom: '8px',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}>
+                      <span>ACTIVE BUFFS</span>
+                      <span>
+                        {gameState.activeReportBuffs.filter(b => b.expiresAt > Date.now()).length}/{gameState.maxActiveBuffs || 3}
+                      </span>
                     </div>
                     {gameState.activeReportBuffs.map((buff, idx) => {
                       const timeLeft = Math.max(0, Math.ceil((buff.expiresAt - Date.now()) / 1000));
@@ -1329,7 +1353,7 @@ export default function Game() {
 
                       return (
                         <div
-                          key={idx}
+                          key={buff.id || idx}
                           style={{
                             fontSize: '10px',
                             padding: '6px',
@@ -1344,12 +1368,42 @@ export default function Game() {
                           onMouseMove={(e) => setBuffTooltip(prev => prev ? { ...prev, x: e.clientX, y: e.clientY } : null)}
                           onMouseLeave={() => setBuffTooltip(null)}
                         >
-                          <div style={{ fontWeight: 'bold' }}>{buff.name}</div>
+                          <div style={{ fontWeight: 'bold', paddingRight: '24px' }}>{buff.name}</div>
                           <div style={{ opacity: 0.8 }}>{timeLeft}s remaining</div>
                           <div style={{ opacity: 0.7, fontSize: '9px', marginTop: '2px' }}>
                             {effects.slice(0, 2).join(' • ')}
                             {effects.length > 2 && '...'}
                           </div>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setBuffTooltip(null);
+                              actions.removeActiveBuff(buff.id || `${idx}`);
+                            }}
+                            style={{
+                              position: 'absolute',
+                              top: '4px',
+                              right: '4px',
+                              backgroundColor: 'transparent',
+                              border: 'none',
+                              color: 'var(--text-color)',
+                              cursor: 'pointer',
+                              fontSize: '12px',
+                              padding: '2px 4px',
+                              opacity: 0.5,
+                              fontFamily: "'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace",
+                              transition: 'opacity 0.2s'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.opacity = '1';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.opacity = '0.5';
+                            }}
+                            title="Remove buff"
+                          >
+                            ×
+                          </button>
                         </div>
                       );
                     })}

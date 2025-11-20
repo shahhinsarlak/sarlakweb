@@ -30,7 +30,9 @@ import {
   cleanExpiredBuffs,
   getTierData,
   canPrintDocumentTier,
-  rollQualityOutcome
+  rollQualityOutcome,
+  canAddMoreBuffs,
+  countActiveBuffs
 } from './sanityPaperHelpers';
 import {
   discoverLocation
@@ -823,23 +825,38 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
           id: `${doc.type}_${doc.tier}_${doc.quality}_${Date.now()}`,
           name: doc.tierName,
           desc: outcome.desc,
+          duration: outcome.buff.duration,  // Store duration for later calculations
           expiresAt: Date.now() + (outcome.buff.duration * 1000),
           ...outcome.buff
         };
-        newState.activeReportBuffs = [...(prev.activeReportBuffs || []), buff];
 
-        const buffParts = [];
-        if (buff.ppMult) buffParts.push(`${((buff.ppMult - 1) * 100).toFixed(0)}% more PP`);
-        if (buff.xpMult) buffParts.push(`${((buff.xpMult - 1) * 100).toFixed(0)}% more XP`);
-        if (buff.energyCostMult) {
-          const reduction = ((1 - buff.energyCostMult) * 100).toFixed(0);
-          buffParts.push(`${reduction}% less energy cost`);
+        // Check if player has room for more buffs
+        if (canAddMoreBuffs(prev)) {
+          // Add buff normally
+          newState.activeReportBuffs = [...(prev.activeReportBuffs || []), buff];
+
+          const buffParts = [];
+          if (buff.ppMult) buffParts.push(`${((buff.ppMult - 1) * 100).toFixed(0)}% more PP`);
+          if (buff.xpMult) buffParts.push(`${((buff.xpMult - 1) * 100).toFixed(0)}% more XP`);
+          if (buff.energyCostMult) {
+            const reduction = ((1 - buff.energyCostMult) * 100).toFixed(0);
+            buffParts.push(`${reduction}% less energy cost`);
+          }
+          if (buff.noSanityDrain) buffParts.push('sanity drain paused');
+          if (buff.materialMult) buffParts.push(`${buff.materialMult}x materials`);
+
+          const duration = Math.floor(buff.duration / 60);
+          messages.push(`BUFF: ${buffParts.join(', ')} for ${duration}min`);
+        } else {
+          // At max capacity - trigger replacement modal
+          newState.pendingBuff = buff;
+          newState.pendingBuffDocument = doc;
+          messages.push('Buff limit reached. Choose a buff to replace.');
+
+          // Don't remove the document yet - it will be removed when replacement happens
+          // So we need to add it back to stored documents
+          newState.storedDocuments = [...prev.storedDocuments, doc];
         }
-        if (buff.noSanityDrain) buffParts.push('sanity drain paused');
-        if (buff.materialMult) buffParts.push(`${buff.materialMult}x materials`);
-
-        const duration = Math.floor(buff.duration / 60);
-        messages.push(`BUFF: ${buffParts.join(', ')} for ${duration}min`);
       }
 
       // Handle debuffs
@@ -848,21 +865,36 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
           id: `debuff_${doc.type}_${doc.tier}_${Date.now()}`,
           name: `${doc.tierName} (CORRUPTED)`,
           desc: outcome.desc,
+          duration: outcome.debuff.duration,  // Store duration for later calculations
           expiresAt: Date.now() + (outcome.debuff.duration * 1000),
           ...outcome.debuff
         };
-        newState.activeReportBuffs = [...(prev.activeReportBuffs || []), debuff];
 
-        const debuffParts = [];
-        if (debuff.ppMult && debuff.ppMult < 1) {
-          debuffParts.push(`${((1 - debuff.ppMult) * 100).toFixed(0)}% LESS PP`);
-        }
-        if (debuff.energyCostMult && debuff.energyCostMult > 1) {
-          debuffParts.push(`${((debuff.energyCostMult - 1) * 100).toFixed(0)}% MORE energy cost`);
-        }
+        // Check if player has room for more buffs (debuffs count against limit too)
+        if (canAddMoreBuffs(prev)) {
+          // Add debuff normally
+          newState.activeReportBuffs = [...(prev.activeReportBuffs || []), debuff];
 
-        const duration = Math.floor(debuff.duration / 60);
-        messages.push(`DEBUFF: ${debuffParts.join(', ')} for ${duration}min`);
+          const debuffParts = [];
+          if (debuff.ppMult && debuff.ppMult < 1) {
+            debuffParts.push(`${((1 - debuff.ppMult) * 100).toFixed(0)}% LESS PP`);
+          }
+          if (debuff.energyCostMult && debuff.energyCostMult > 1) {
+            debuffParts.push(`${((debuff.energyCostMult - 1) * 100).toFixed(0)}% MORE energy cost`);
+          }
+
+          const duration = Math.floor(debuff.duration / 60);
+          messages.push(`DEBUFF: ${debuffParts.join(', ')} for ${duration}min`);
+        } else {
+          // At max capacity - trigger replacement modal
+          newState.pendingBuff = debuff;
+          newState.pendingBuffDocument = doc;
+          messages.push('Buff limit reached. Choose a buff to replace.');
+
+          // Don't remove the document yet - it will be removed when replacement happens
+          // So we need to add it back to stored documents
+          newState.storedDocuments = [...prev.storedDocuments, doc];
+        }
       }
 
       // Handle permanent PP/sec increase
@@ -918,6 +950,96 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
     });
   };
 
+  /**
+   * Remove an active buff manually
+   * @param {string} buffId - ID of buff to remove
+   */
+  const removeActiveBuff = (buffId) => {
+    setGameState(prev => {
+      const filteredBuffs = (prev.activeReportBuffs || []).filter(buff => buff.id !== buffId);
+
+      return {
+        ...prev,
+        activeReportBuffs: filteredBuffs,
+        recentMessages: ['Buff removed.', ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
+      };
+    });
+  };
+
+  /**
+   * Replace an existing buff with the pending buff
+   * @param {string} buffIdToReplace - ID of buff to replace
+   */
+  const replaceBuff = (buffIdToReplace) => {
+    setGameState(prev => {
+      if (!prev.pendingBuff) return prev;
+
+      // Remove the buff being replaced
+      const filteredBuffs = (prev.activeReportBuffs || []).filter(
+        buff => buff.id !== buffIdToReplace
+      );
+
+      // Add the new buff with fresh expiresAt timestamp
+      const newBuff = {
+        ...prev.pendingBuff,
+        expiresAt: Date.now() + (prev.pendingBuff.duration * 1000)
+      };
+
+      const messages = [];
+
+      // Remove the pending document from storage (it's being consumed now)
+      const updatedDocs = prev.storedDocuments.filter(d => d.id !== prev.pendingBuffDocument?.id);
+
+      // Generate buff message
+      const buffParts = [];
+      if (newBuff.ppMult && newBuff.ppMult >= 1) {
+        buffParts.push(`${((newBuff.ppMult - 1) * 100).toFixed(0)}% more PP`);
+      }
+      if (newBuff.xpMult && newBuff.xpMult >= 1) {
+        buffParts.push(`${((newBuff.xpMult - 1) * 100).toFixed(0)}% more XP`);
+      }
+      if (newBuff.energyCostMult && newBuff.energyCostMult < 1) {
+        const reduction = ((1 - newBuff.energyCostMult) * 100).toFixed(0);
+        buffParts.push(`${reduction}% less energy cost`);
+      }
+      if (newBuff.noSanityDrain) buffParts.push('sanity drain paused');
+      if (newBuff.materialMult) buffParts.push(`${newBuff.materialMult}x materials`);
+      if (newBuff.ppPerSecondMult) buffParts.push(`PP/sec: ${newBuff.ppPerSecondMult}x`);
+
+      // Check if it's a debuff (negative effects)
+      const isDebuff = (newBuff.ppMult && newBuff.ppMult < 1) ||
+                       (newBuff.energyCostMult && newBuff.energyCostMult > 1);
+
+      const duration = Math.floor(newBuff.duration / 60);
+      if (isDebuff) {
+        messages.push(`DEBUFF replaced: ${buffParts.join(', ')} for ${duration}min`);
+      } else {
+        messages.push(`BUFF replaced: ${buffParts.join(', ')} for ${duration}min`);
+      }
+
+      return {
+        ...prev,
+        activeReportBuffs: [...filteredBuffs, newBuff],
+        pendingBuff: null,
+        pendingBuffDocument: null,
+        storedDocuments: updatedDocs,
+        recentMessages: [...messages, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
+      };
+    });
+  };
+
+  /**
+   * Cancel buff replacement and keep current buffs
+   */
+  const cancelBuffReplacement = () => {
+    setGameState(prev => ({
+      ...prev,
+      pendingBuff: null,
+      pendingBuffDocument: null,
+      recentMessages: ['Buff replacement cancelled.', ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
+    }));
+  };
+
   // Return all action handlers
   return {
     sortPapers,
@@ -947,6 +1069,10 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
     shredAllNonStarred,
     toggleDocumentImportant,
     sortDocuments,
+    // Buff management actions (Added 2025-11-20)
+    removeActiveBuff,
+    replaceBuff,
+    cancelBuffReplacement,
     // Journal system actions
     openJournal,
     closeJournal,

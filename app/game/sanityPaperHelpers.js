@@ -245,6 +245,28 @@ export const cleanExpiredBuffs = (gameState) => {
 };
 
 /**
+ * Count the number of active (non-expired) buffs
+ * @param {Object} gameState - Current game state
+ * @returns {number} Number of active buffs
+ */
+export const countActiveBuffs = (gameState) => {
+  const now = Date.now();
+  const activeBuffs = (gameState.activeReportBuffs || []).filter(buff => buff.expiresAt > now);
+  return activeBuffs.length;
+};
+
+/**
+ * Check if player can add more buffs without replacement
+ * @param {Object} gameState - Current game state
+ * @returns {boolean} True if player can add more buffs
+ */
+export const canAddMoreBuffs = (gameState) => {
+  const activeCount = countActiveBuffs(gameState);
+  const maxBuffs = gameState.maxActiveBuffs || 3;
+  return activeCount < maxBuffs;
+};
+
+/**
  * Get the current PP multiplier from active buffs
  * @param {Object} gameState - Current game state
  * @returns {number} The highest PP multiplier from active buffs (1.0 if none)
