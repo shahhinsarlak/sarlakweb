@@ -76,6 +76,10 @@ export const INITIAL_GAME_STATE = {
   documentSortBy: 'newest',  // Sort order: 'newest', 'oldest', 'quality', 'type'
   // Active buffs from consumed documents
   activeReportBuffs: [],
+  // Buff Limit System (Added 2025-11-20)
+  maxActiveBuffs: 3,  // Maximum number of buffs that can be active simultaneously
+  pendingBuff: null,  // Buff waiting to be added (when at capacity, triggers replacement modal)
+  pendingBuffDocument: null,  // Document that created the pending buff (for context)
   // Paper trail for tracking patterns (for secrets/achievements)
   paperTrail: [],
   // Help System (Added 2025-10-26)
