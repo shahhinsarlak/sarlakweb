@@ -1016,7 +1016,6 @@ It might be worthwhile reading some of the files in there.
 Each one reveals something... unsettling.`,
     category: 'exploration'
   },
-  },
   paperQuality: {
     id: 'paperQuality',
     title: 'PAPER QUALITY WARNING',
