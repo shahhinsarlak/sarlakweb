@@ -15,7 +15,7 @@ export default function NotificationPopup({ notifications, onDismiss }) {
       position: 'fixed',
       top: '20px',
       left: '20px',
-      zIndex: 2000,
+      zIndex: 10001,
       display: 'flex',
       flexDirection: 'column-reverse', // Newest on top
       gap: '10px',
