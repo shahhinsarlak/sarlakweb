@@ -722,6 +722,52 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
     });
   };
 
+  const shredAllNonStarred = () => {
+    setGameState(prev => {
+      // Filter out non-important documents
+      const docsToShred = prev.storedDocuments.filter(d => !d.important);
+
+      if (docsToShred.length === 0) {
+        return {
+          ...prev,
+          recentMessages: [
+            'No non-starred documents to shred.',
+            ...prev.recentMessages
+          ].slice(0, prev.maxLogMessages || 15)
+        };
+      }
+
+      // Calculate total paper return
+      const qualityMultipliers = {
+        corrupted: 0.1,
+        standard: 0.3,
+        pristine: 0.5,
+        perfect: 0.7
+      };
+
+      const tierCosts = [0, 5, 10, 20, 35, 50];
+
+      const totalPaperReturn = docsToShred.reduce((sum, doc) => {
+        const basePaperCost = tierCosts[doc.tier] || 5;
+        const paperReturn = Math.floor(basePaperCost * qualityMultipliers[doc.quality]);
+        return sum + paperReturn;
+      }, 0);
+
+      // Keep only important documents
+      const remainingDocuments = prev.storedDocuments.filter(d => d.important);
+
+      return {
+        ...prev,
+        storedDocuments: remainingDocuments,
+        paper: prev.paper + totalPaperReturn,
+        recentMessages: [
+          `Shredded ${docsToShred.length} document${docsToShred.length !== 1 ? 's' : ''} → +${totalPaperReturn} paper`,
+          ...prev.recentMessages
+        ].slice(0, prev.maxLogMessages || 15)
+      };
+    });
+  };
+
   const consumeDocument = (docId) => {
     setGameState(prev => {
       const doc = prev.storedDocuments.find(d => d.id === docId);
@@ -898,6 +944,7 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
     closeFileDrawer,
     consumeDocument,
     shredDocument,
+    shredAllNonStarred,
     toggleDocumentImportant,
     sortDocuments,
     // Journal system actions

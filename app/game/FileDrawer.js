@@ -142,7 +142,8 @@ export default function FileDrawer({ gameState, onClose, actions }) {
           backgroundColor: 'var(--hover-color)',
           display: 'flex',
           gap: '12px',
-          alignItems: 'center'
+          alignItems: 'center',
+          flexWrap: 'wrap'
         }}>
           <span style={{ fontSize: '10px', opacity: 0.7 }}>SORT BY:</span>
           {['newest', 'oldest', 'quality', 'type'].map(sort => (
@@ -164,6 +165,27 @@ export default function FileDrawer({ gameState, onClose, actions }) {
               {sort}
             </button>
           ))}
+          <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <span style={{ fontSize: '10px', opacity: 0.7 }}>BULK:</span>
+            <button
+              onClick={() => actions.shredAllNonStarred()}
+              style={{
+                background: 'none',
+                border: '1px solid #ff6b6b',
+                color: '#ff6b6b',
+                padding: '4px 12px',
+                cursor: 'pointer',
+                fontSize: '9px',
+                fontFamily: 'inherit',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px',
+                fontWeight: 'bold'
+              }}
+              title="Shred all documents that are not marked as important"
+            >
+              SHRED ALL NON-STARRED
+            </button>
+          </div>
         </div>
 
         {/* Document List */}
@@ -302,7 +324,7 @@ export default function FileDrawer({ gameState, onClose, actions }) {
           lineHeight: '1.5'
         }}>
           💡 CONSUME documents to apply their effects. SHRED to recover paper based on quality.
-          Mark important to prevent auto-shredding (future feature).
+          Star important documents to protect them from bulk shredding.
         </div>
       </div>
     </div>
