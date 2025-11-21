@@ -98,10 +98,8 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       energyCost = Math.max(energyCost, baseEnergyCost * 0.1);
 
       if (prev.energy < energyCost) {
-        return {
-          ...prev,
-          recentMessages: ['Too exhausted. Your hands won\'t move.', ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
-        };
+        addMessage('Too exhausted. Your hands won\'t move.');
+        return prev;
       }
 
       // Apply skill effects to PP gain, then sanity-based modifier
@@ -135,24 +133,23 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
   const rest = () => {
     setGameState(prev => {
       if (prev.restCooldown > 0) {
-        return {
-          ...prev,
-          recentMessages: ['Still recovering. Your body refuses to relax yet.', ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
-        };
+        addMessage('Still recovering. Your body refuses to relax yet.');
+        return prev;
       }
       const maxEnergy = 100 + (prev.upgrades.energydrink ? 20 : 0);
+      addMessage('You close your eyes. The fluorescent lights burn through your eyelids.');
       checkAchievements();
       return {
         ...prev,
         energy: maxEnergy,
-        restCooldown: 30,
-        recentMessages: ['You close your eyes. The fluorescent lights burn through your eyelids.', ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
+        restCooldown: 30
       };
     });
   };
 
   const startMeditation = () => {
     const targetTime = 1500 + Math.random() * 1000; // Reduced from 3000-5000
+    addMessage('Close your eyes. Focus on your breathing.');
     setGameState(prev => ({
       ...prev,
       meditating: true,
@@ -161,8 +158,7 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       meditationStartTime: Date.now(),
       meditationTargetTime: targetTime,
       meditationScore: 0,
-      meditationPerfectWindow: 200, // Reduced from 300
-      recentMessages: ['Close your eyes. Focus on your breathing.', ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
+      meditationPerfectWindow: 200 // Reduced from 300
     }));
   };
 
@@ -177,10 +173,10 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       
       const isCorrectAction = prev.meditationPhase === action;
       if (!isCorrectAction) {
+        addMessage('Wrong action! Focus on the rhythm...');
         return {
           ...prev,
-          meditationScore: prev.meditationScore - 20,
-          recentMessages: ['Wrong action! Focus on the rhythm...', ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
+          meditationScore: prev.meditationScore - 20
         };
       }
       
@@ -212,7 +208,7 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
         const avgScore = newScore / 6;
         let sanityGain = 0;
         let message = '';
-        
+
         if (avgScore >= 85) {
           sanityGain = 40;
           message = 'Perfect rhythm achieved. Your mind is completely clear.';
@@ -229,7 +225,8 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
           sanityGain = 5;
           message = 'Your rhythm is chaotic. The fluorescent hum grows louder.';
         }
-        
+
+        addMessage(message);
         return {
           ...prev,
           meditating: false,
@@ -239,8 +236,7 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
           meditationPhase: null,
           meditationStartTime: null,
           meditationTargetTime: null,
-          meditationScore: 0,
-          recentMessages: [message, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
+          meditationScore: 0
         };
       }
       
@@ -267,6 +263,7 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
   };
 
   const cancelMeditation = () => {
+    addMessage('You open your eyes. The fluorescent lights are still humming.');
     setGameState(prev => ({
       ...prev,
       meditating: false,
@@ -274,30 +271,30 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       meditationPhase: null,
       meditationStartTime: null,
       meditationTargetTime: null,
-      meditationScore: 0,
-      recentMessages: ['You open your eyes. The fluorescent lights are still humming.', ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
+      meditationScore: 0
     }));
   };
 
   const startDebugSession = () => {
     const randomBug = DEBUG_CHALLENGES[Math.floor(Math.random() * DEBUG_CHALLENGES.length)];
+    addMessage('Debug console initialized. Fix the errors.');
     setGameState(prev => ({
       ...prev,
       debugMode: true,
       currentBug: { ...randomBug, userCode: randomBug.code },
-      energy: Math.max(0, prev.energy - 10),
-      recentMessages: ['Debug console initialized. Fix the errors.', ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
+      energy: Math.max(0, prev.energy - 10)
     }));
   };
 
   const submitDebug = () => {
     setGameState(prev => {
       if (!prev.currentBug) return prev;
-      
+
       const isCorrect = prev.currentBug.userCode.trim() === prev.currentBug.correct.trim();
-      
+
       if (isCorrect) {
         const reward = Math.floor(200 + Math.random() * 300);
+        addMessage(`DEBUG SUCCESS: +${reward} PP. The code compiles. Reality stabilizes.`);
         grantXP(15); // XP_REWARDS.completeDebug
         return {
           ...prev,
@@ -305,25 +302,24 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
           debugMode: false,
           currentBug: null,
           debugAttempts: 0,
-          sanity: Math.min(100, prev.sanity + 5),
-          recentMessages: [`DEBUG SUCCESS: +${reward} PP. The code compiles. Reality stabilizes.`, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
+          sanity: Math.min(100, prev.sanity + 5)
         };
       } else {
         const newAttempts = prev.debugAttempts + 1;
         if (newAttempts >= 3) {
+          addMessage('DEBUG FAILED: Maximum attempts exceeded. The bugs remain.');
           return {
             ...prev,
             debugMode: false,
             currentBug: null,
             debugAttempts: 0,
-            sanity: Math.max(0, prev.sanity - 10),
-            recentMessages: ['DEBUG FAILED: Maximum attempts exceeded. The bugs remain.', ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
+            sanity: Math.max(0, prev.sanity - 10)
           };
         }
+        addMessage(`ERROR: Compilation failed. ${3 - newAttempts} attempts remaining.`);
         return {
           ...prev,
-          debugAttempts: newAttempts,
-          recentMessages: [`ERROR: Compilation failed. ${3 - newAttempts} attempts remaining.`, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
+          debugAttempts: newAttempts
         };
       }
     });
@@ -337,12 +333,12 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
   };
 
   const cancelDebug = () => {
+    addMessage('Debug session terminated. The errors persist.');
     setGameState(prev => ({
       ...prev,
       debugMode: false,
       currentBug: null,
-      debugAttempts: 0,
-      recentMessages: ['Debug session terminated. The errors persist.', ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
+      debugAttempts: 0
     }));
   };
 
@@ -383,12 +379,12 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
         locationData.atmosphere[Math.floor(Math.random() * locationData.atmosphere.length)] :
         locationData.description;
 
+      addMessage(randomAtmo);
       return {
         ...prev,
         location: loc,
         energy: Math.max(0, prev.energy - 5),
-        discoveredLocations,
-        recentMessages: [randomAtmo, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
+        discoveredLocations
       };
     });
   };
@@ -442,7 +438,9 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       }
 
       messages.push(`Acquired: ${upgrade.name}`);
-      newState.recentMessages = [...messages.reverse(), ...prev.recentMessages].slice(0, prev.maxLogMessages || 15);
+
+      // Add all messages to notifications (in reverse order so main message shows first)
+      messages.reverse().forEach(msg => addMessage(msg));
 
       grantXP(10); // XP_REWARDS.purchaseUpgrade
       checkAchievements();
@@ -453,18 +451,14 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
   const printPaper = () => {
     setGameState(prev => {
       if (!prev.printerUnlocked) {
-        return {
-          ...prev,
-          recentMessages: ['The printer room is locked. You need access first.', ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
-        };
+        addMessage('The printer room is locked. You need access first.');
+        return prev;
       }
 
       const energyCost = 3;
       if (prev.energy < energyCost) {
-        return {
-          ...prev,
-          recentMessages: ['Too exhausted to operate the printer.', ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
-        };
+        addMessage('Too exhausted to operate the printer.');
+        return prev;
       }
 
       // Calculate paper quality based on sanity + printer upgrades
@@ -492,13 +486,13 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
         message = 'Perfect output. Sanity and precision in harmony. Forever.';
       }
 
+      addMessage(message);
       const newState = {
         ...prev,
         paper: prev.paper + basePaperGain,
         energy: Math.max(0, prev.energy - energyCost),
         printCount: (prev.printCount || 0) + 1,
-        paperQuality: paperQuality, // Update paper quality in state
-        recentMessages: [message, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
+        paperQuality: paperQuality // Update paper quality in state
       };
 
       grantXP(XP_REWARDS.sortPapers); // Same XP as sorting papers
@@ -565,10 +559,8 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       // Check if tier can be printed
       const checkResult = canPrintDocumentTier(docType, tierNumber, prev);
       if (!checkResult.canPrint) {
-        return {
-          ...prev,
-          recentMessages: [checkResult.reason, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
-        };
+        addMessage(checkResult.reason);
+        return prev;
       }
 
       const tierData = getTierData(docType, tierNumber);
@@ -627,9 +619,7 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       const qualityLabel = qualityOutcome.toUpperCase();
       const message = `${icon} ${tierData.name} [${qualityLabel}] created! Check File Drawer to consume.`;
 
-      newState.recentMessages = [message, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15);
-
-      // Note: Notification popup is automatically created by addMessage function
+      addMessage(message);
 
       setTimeout(() => checkAchievements(), 100);
 
@@ -715,14 +705,11 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       const basePaperCost = tierCosts[doc.tier] || 5;
       const paperReturn = Math.floor(basePaperCost * qualityMultipliers[doc.quality]);
 
+      addMessage(`Shredded ${doc.tierName} [${doc.quality.toUpperCase()}] → +${paperReturn} paper`);
       return {
         ...prev,
         storedDocuments: prev.storedDocuments.filter(d => d.id !== docId),
-        paper: prev.paper + paperReturn,
-        recentMessages: [
-          `Shredded ${doc.tierName} [${doc.quality.toUpperCase()}] → +${paperReturn} paper`,
-          ...prev.recentMessages
-        ].slice(0, prev.maxLogMessages || 15)
+        paper: prev.paper + paperReturn
       };
     });
   };
@@ -733,13 +720,8 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       const docsToShred = prev.storedDocuments.filter(d => !d.important);
 
       if (docsToShred.length === 0) {
-        return {
-          ...prev,
-          recentMessages: [
-            'No non-starred documents to shred.',
-            ...prev.recentMessages
-          ].slice(0, prev.maxLogMessages || 15)
-        };
+        addMessage('No non-starred documents to shred.');
+        return prev;
       }
 
       // Calculate total paper return
@@ -761,14 +743,11 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       // Keep only important documents
       const remainingDocuments = prev.storedDocuments.filter(d => d.important);
 
+      addMessage(`Shredded ${docsToShred.length} document${docsToShred.length !== 1 ? 's' : ''} → +${totalPaperReturn} paper`);
       return {
         ...prev,
         storedDocuments: remainingDocuments,
-        paper: prev.paper + totalPaperReturn,
-        recentMessages: [
-          `Shredded ${docsToShred.length} document${docsToShred.length !== 1 ? 's' : ''} → +${totalPaperReturn} paper`,
-          ...prev.recentMessages
-        ].slice(0, prev.maxLogMessages || 15)
+        paper: prev.paper + totalPaperReturn
       };
     });
   };
@@ -941,7 +920,8 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       const effectSummary = effectDetails.length > 0 ? ` [${effectDetails.join(', ')}]` : '';
       messages.unshift(`${icon} ${doc.tierName} [${qualityLabel}]: ${outcome.desc}${effectSummary}`);
 
-      newState.recentMessages = [...messages, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15);
+      // Add all messages to notifications
+      messages.forEach(msg => addMessage(msg));
 
       // Grant XP
       if (xpGain > 0) {
@@ -961,10 +941,10 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
     setGameState(prev => {
       const filteredBuffs = (prev.activeReportBuffs || []).filter(buff => buff.id !== buffId);
 
+      addMessage('Buff removed.');
       return {
         ...prev,
-        activeReportBuffs: filteredBuffs,
-        recentMessages: ['Buff removed.', ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
+        activeReportBuffs: filteredBuffs
       };
     });
   };
@@ -1020,13 +1000,15 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
         messages.push(`BUFF replaced: ${buffParts.join(', ')} for ${duration}min`);
       }
 
+      // Add all messages to notifications
+      messages.forEach(msg => addMessage(msg));
+
       return {
         ...prev,
         activeReportBuffs: [...filteredBuffs, newBuff],
         pendingBuff: null,
         pendingBuffDocument: null,
-        storedDocuments: updatedDocs,
-        recentMessages: [...messages, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
+        storedDocuments: updatedDocs
       };
     });
   };
@@ -1040,12 +1022,12 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       // Remove the document from storage (it's being consumed for immediate rewards, just without the buff)
       const updatedDocs = prev.storedDocuments.filter(d => d.id !== prev.pendingBuffDocument?.id);
 
+      addMessage('Document consumed. Buff ignored.');
       return {
         ...prev,
         pendingBuff: null,
         pendingBuffDocument: null,
-        storedDocuments: updatedDocs,
-        recentMessages: ['Document consumed. Buff ignored.', ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
+        storedDocuments: updatedDocs
       };
     });
   };
