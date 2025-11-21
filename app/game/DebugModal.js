@@ -1,19 +1,25 @@
-import Header from '../../components/Header';
-import Footer from '../../components/Footer';
-import EventLog from './EventLog';
-
 export default function DebugModal({ gameState, submitDebug, updateDebugCode, cancelDebug }) {
   if (!gameState.currentBug) return null;
 
   return (
-    <>
-      <EventLog messages={gameState.recentMessages} />
-      <Header />
+    <div style={{
+      fontFamily: "'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace",
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'var(--bg-color)',
+      color: 'var(--text-color)',
+      zIndex: 1000,
+      overflowY: 'auto'
+    }}>
       <div style={{
-        fontFamily: "'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace",
         width: '100%',
+        maxWidth: '1200px',
+        margin: '0 auto',
         padding: '40px 60px',
-        minHeight: 'calc(100vh - 200px)',
+        minHeight: '100vh',
         fontSize: '13px',
         lineHeight: '1.6'
       }}>
@@ -192,7 +198,6 @@ export default function DebugModal({ gameState, submitDebug, updateDebugCode, ca
           <span>REWARD: 200-500 PP</span>
         </div>
       </div>
-      <Footer />
-    </>
+    </div>
   );
 }
