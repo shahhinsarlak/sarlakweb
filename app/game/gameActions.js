@@ -94,6 +94,9 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       let energyCost = applyEnergyCostReduction(baseEnergyCost, prev);
       energyCost = applyEnergyCostModifier(energyCost, prev);
 
+      // Cap minimum energy cost at 10% of base (prevent gaining energy with buffs)
+      energyCost = Math.max(energyCost, baseEnergyCost * 0.1);
+
       if (prev.energy < energyCost) {
         return {
           ...prev,
@@ -626,13 +629,7 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
 
       newState.recentMessages = [message, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15);
 
-      // Add notification popup
-      const notification = {
-        id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        message: message,
-        timestamp: Date.now()
-      };
-      newState.notifications = [...(prev.notifications || []), notification];
+      // Note: Notification popup is automatically created by addMessage function
 
       setTimeout(() => checkAchievements(), 100);
 

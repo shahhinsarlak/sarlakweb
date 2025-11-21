@@ -70,9 +70,9 @@ export const applySanityXPModifier = (baseXP, gameState) => {
 
 /**
  * Apply energy cost modifier from report buffs
- * @param {number} baseCost - Base energy cost
+ * @param {number} baseCost - Base energy cost (can be decimal after skill reductions)
  * @param {Object} gameState - Current game state
- * @returns {number} Modified energy cost
+ * @returns {number} Modified energy cost (decimal value, minimum enforced by caller)
  */
 export const applyEnergyCostModifier = (baseCost, gameState) => {
   const activeBuffs = gameState.activeReportBuffs || [];
@@ -84,7 +84,7 @@ export const applyEnergyCostModifier = (baseCost, gameState) => {
   const totalReduction = energyBuffs.reduce((sum, b) => sum + (1 - b.energyCostMult), 0);
   const buffMod = 1 - totalReduction;
 
-  return Math.ceil(baseCost * buffMod);
+  return baseCost * buffMod;
 };
 
 /**
