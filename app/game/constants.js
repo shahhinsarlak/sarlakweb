@@ -499,9 +499,9 @@ export const PRINTER_UPGRADES = [
     id: 'reality_printer',
     name: 'Reality Printer',
     costs: { pp: 8000, paper: 800 }, // Reduced from 10000/1000 for better balance
-    effect: 'ppPerPrint',
-    value: 5,
-    desc: 'What you print becomes real. +5 PP per print.'
+    effect: 'paperPerPrint',
+    value: 3,
+    desc: 'What you print becomes real. +3 paper per print, +1 paper/sec.'
   }
 ];
 

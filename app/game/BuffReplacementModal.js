@@ -211,7 +211,7 @@ export default function BuffReplacementModal({ gameState, pendingBuff, onReplace
             e.currentTarget.style.borderColor = 'var(--border-color)';
           }}
         >
-          Cancel - Keep Current Buffs
+          Consume Without Buff - Keep Current Buffs
         </button>
       </div>
     </div>
