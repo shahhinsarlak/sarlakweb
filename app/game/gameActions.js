@@ -469,7 +469,6 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
 
       // Calculate paper gain based on upgrades
       const basePaperGain = prev.paperPerPrint || 1;
-      const ppGain = prev.printerUpgrades?.reality_printer ? 5 : 0;
 
       // Generate distorted message based on paper quality (not just printer quality)
       let message;
@@ -493,7 +492,6 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       const newState = {
         ...prev,
         paper: prev.paper + basePaperGain,
-        pp: prev.pp + ppGain,
         energy: Math.max(0, prev.energy - energyCost),
         printCount: (prev.printCount || 0) + 1,
         paperQuality: paperQuality, // Update paper quality in state
@@ -527,10 +525,12 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
         newState.printerQuality = Math.min(100, (prev.printerQuality || 0) + upgrade.value);
       } else if (upgrade.effect === 'paperPerPrint') {
         newState.paperPerPrint = (prev.paperPerPrint || 1) + upgrade.value;
+        // Reality Printer also adds paperPerSecond
+        if (upgrade.id === 'reality_printer') {
+          newState.paperPerSecond = (prev.paperPerSecond || 0) + 1;
+        }
       } else if (upgrade.effect === 'paperPerSecond') {
         newState.paperPerSecond = (prev.paperPerSecond || 0) + upgrade.value;
-      } else if (upgrade.effect === 'ppPerPrint') {
-        // This is handled in printPaper action
       }
 
       newState.recentMessages = [`Installed: ${upgrade.name}`, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15);
@@ -1036,14 +1036,21 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
 
   /**
    * Cancel buff replacement and keep current buffs
+   * Consumes the document for immediate rewards but ignores the buff
    */
   const cancelBuffReplacement = () => {
-    setGameState(prev => ({
-      ...prev,
-      pendingBuff: null,
-      pendingBuffDocument: null,
-      recentMessages: ['Buff replacement cancelled.', ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
-    }));
+    setGameState(prev => {
+      // Remove the document from storage (it's being consumed for immediate rewards, just without the buff)
+      const updatedDocs = prev.storedDocuments.filter(d => d.id !== prev.pendingBuffDocument?.id);
+
+      return {
+        ...prev,
+        pendingBuff: null,
+        pendingBuffDocument: null,
+        storedDocuments: updatedDocs,
+        recentMessages: ['Document consumed. Buff ignored.', ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
+      };
+    });
   };
 
   // Return all action handlers

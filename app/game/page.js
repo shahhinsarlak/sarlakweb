@@ -853,6 +853,18 @@ export default function Game() {
     );
   }
 
+  if (gameState.debugMode && gameState.currentBug) {
+    return (
+      <>
+        <DebugModal gameState={gameState} submitDebug={actions.submitDebug} updateDebugCode={actions.updateDebugCode} cancelDebug={actions.cancelDebug} />
+        <NotificationPopup
+          notifications={gameState.notifications}
+          onDismiss={dismissNotification}
+        />
+      </>
+    );
+  }
+
   if (gameState.examiningItem) {
     return (
       <>
