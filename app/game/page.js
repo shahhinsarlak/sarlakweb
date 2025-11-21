@@ -51,9 +51,18 @@ export default function Game() {
     setGameState(prev => {
       const maxMessages = prev.maxLogMessages || 15;
       const updatedMessages = [msg, ...prev.recentMessages];
+
+      // Create notification popup for the message
+      const notification = {
+        id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        message: msg,
+        timestamp: Date.now()
+      };
+
       return {
         ...prev,
-        recentMessages: updatedMessages.slice(0, maxMessages)
+        recentMessages: updatedMessages.slice(0, maxMessages),
+        notifications: [...(prev.notifications || []), notification]
       };
     });
   }, []);
@@ -1337,7 +1346,7 @@ export default function Game() {
                 )}
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
                   <span>ENERGY</span>
-                  <strong style={{ fontSize: '18px' }}>{gameState.energy.toFixed(1)}%</strong>
+                  <strong style={{ fontSize: '18px' }}>{gameState.energy.toFixed(2)}%</strong>
                 </div>
                 <div style={{
                   display: 'flex',

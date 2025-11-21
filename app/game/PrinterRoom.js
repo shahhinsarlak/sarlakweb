@@ -396,7 +396,7 @@ ${printing ? '    │  ───────────────────
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
                 <span>ENERGY</span>
-                <strong style={{ fontSize: '18px' }}>{gameState.energy.toFixed(1)}%</strong>
+                <strong style={{ fontSize: '18px' }}>{gameState.energy.toFixed(2)}%</strong>
               </div>
             </div>
           </div>
@@ -450,10 +450,10 @@ ${printing ? '    │  ───────────────────
             </div>
           </div>
 
-          {/* Document System - Condensed 2-Dropdown Design */}
+          {/* Document System - Tabbed Design with Tier Buttons */}
           <div style={{
             border: '1px solid var(--border-color)',
-            padding: '24px',
+            padding: '20px',
             marginBottom: '30px',
             backgroundColor: 'var(--hover-color)'
           }}>
@@ -462,7 +462,7 @@ ${printing ? '    │  ───────────────────
             </div>
 
             {/* Paper Quality Display */}
-            <div style={{ fontSize: '10px', marginBottom: '16px', padding: '12px', backgroundColor: 'var(--bg-color)', border: '1px solid var(--border-color)' }}>
+            <div style={{ fontSize: '10px', marginBottom: '16px', padding: '10px', backgroundColor: 'var(--bg-color)', border: '1px solid var(--border-color)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
                 <span>Paper Quality:</span>
                 <span style={{ fontWeight: 'bold' }}>{calculatePaperQuality(gameState)}%</span>
@@ -484,100 +484,133 @@ ${printing ? '    │  ───────────────────
               </div>
             </div>
 
-            {/* Dropdown 1: Document Type */}
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ fontSize: '9px', opacity: 0.7, display: 'block', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                Document Type
-              </label>
-              <select
-                value={selectedDocType}
-                onChange={(e) => {
-                  setSelectedDocType(e.target.value);
-                  setSelectedTier(1); // Reset to tier 1 when changing doc type
-                }}
-                style={{
-                  width: '100%',
-                  background: 'var(--bg-color)',
-                  border: '1px solid var(--border-color)',
-                  color: 'var(--text-color)',
-                  padding: '10px',
-                  fontSize: '11px',
-                  fontFamily: 'inherit',
-                  cursor: 'pointer'
-                }}
-              >
-                {Object.entries(DOCUMENT_TYPES).map(([id, data]) => {
-                  const progress = getTierProgress(id, gameState);
-                  return (
-                    <option key={id} value={id}>
-                      {data.name} ({progress.current} printed)
-                    </option>
-                  );
-                })}
-              </select>
+            {/* Document Type Tabs */}
+            <div style={{
+              display: 'flex',
+              gap: '4px',
+              marginBottom: '12px',
+              borderBottom: '1px solid var(--border-color)',
+              flexWrap: 'wrap'
+            }}>
+              {Object.entries(DOCUMENT_TYPES).map(([id, data]) => {
+                const progress = getTierProgress(id, gameState);
+                const isSelected = selectedDocType === id;
+                return (
+                  <button
+                    key={id}
+                    onClick={() => {
+                      setSelectedDocType(id);
+                      setSelectedTier(1); // Reset to tier 1 when changing doc type
+                    }}
+                    style={{
+                      flex: '1 1 auto',
+                      minWidth: '60px',
+                      background: isSelected ? 'var(--accent-color)' : 'none',
+                      border: 'none',
+                      borderBottom: isSelected ? '2px solid var(--accent-color)' : '2px solid transparent',
+                      color: isSelected ? 'var(--bg-color)' : 'var(--text-color)',
+                      padding: '8px 6px',
+                      cursor: 'pointer',
+                      fontSize: '9px',
+                      fontFamily: 'inherit',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px',
+                      transition: 'all 0.2s',
+                      opacity: isSelected ? 1 : 0.7
+                    }}
+                  >
+                    <div>{data.name}</div>
+                    <div style={{ fontSize: '8px', opacity: 0.8, marginTop: '2px' }}>({progress.current})</div>
+                  </button>
+                );
+              })}
             </div>
 
-            {/* Dropdown 2: Tier Selection */}
+            {/* Tier Buttons */}
             {(() => {
               const docData = DOCUMENT_TYPES[selectedDocType];
               const unlockedTiers = getUnlockedTiers(selectedDocType, gameState);
+              const progress = getTierProgress(selectedDocType, gameState);
 
               return (
                 <>
-                  <div style={{ marginBottom: '16px' }}>
-                    <label style={{ fontSize: '9px', opacity: 0.7, display: 'block', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                      Tier Level
-                    </label>
-                    <select
-                      value={selectedTier}
-                      onChange={(e) => setSelectedTier(Number(e.target.value))}
-                      style={{
-                        width: '100%',
-                        background: 'var(--bg-color)',
-                        border: '1px solid var(--border-color)',
-                        color: 'var(--text-color)',
-                        padding: '10px',
-                        fontSize: '11px',
-                        fontFamily: 'inherit',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      {docData.tiers.map(tier => {
-                        const isUnlocked = unlockedTiers.some(t => t.tier === tier.tier);
-                        if (!isUnlocked) return null;
-                        return (
-                          <option key={tier.tier} value={tier.tier}>
-                            Tier {tier.tier} - {tier.name}
-                          </option>
-                        );
-                      })}
-                    </select>
+                  {/* Mastery Progress Bar */}
+                  <div style={{ marginBottom: '12px', padding: '8px', backgroundColor: 'var(--bg-color)', border: '1px solid var(--border-color)' }}>
+                    <div style={{ fontSize: '9px', fontWeight: 'bold', marginBottom: '4px' }}>
+                      {docData.name} Mastery: Tier {unlockedTiers.length}/5
+                    </div>
+                    <div style={{ fontSize: '8px', opacity: 0.7, marginBottom: '4px' }}>
+                      {progress.current} printed • {progress.nextTier ? `${progress.next - progress.current} more for Tier ${progress.nextTier}` : 'All tiers unlocked!'}
+                    </div>
+                    <div style={{ height: '4px', backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: '2px', overflow: 'hidden' }}>
+                      <div style={{
+                        height: '100%',
+                        width: `${progress.nextTier ? (progress.current / progress.next * 100) : 100}%`,
+                        backgroundColor: 'var(--accent-color)',
+                        transition: 'width 0.3s ease'
+                      }} />
+                    </div>
                   </div>
 
-                  {/* Mastery Progress */}
-                  {(() => {
-                    const progress = getTierProgress(selectedDocType, gameState);
-                    return (
-                      <div style={{ marginBottom: '16px', padding: '10px', backgroundColor: 'var(--bg-color)', border: '1px solid var(--border-color)' }}>
-                        <div style={{ fontSize: '10px', fontWeight: 'bold', marginBottom: '6px' }}>
-                          {docData.name} Mastery: Tier {unlockedTiers.length}/5
-                        </div>
-                        <div style={{ fontSize: '9px', opacity: 0.7, marginBottom: '6px' }}>
-                          {progress.current} printed • {progress.nextTier ? `${progress.next - progress.current} more for Tier ${progress.nextTier}` : 'All tiers unlocked!'}
-                        </div>
-                        <div style={{ height: '6px', backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: '3px', overflow: 'hidden' }}>
-                          <div style={{
-                            height: '100%',
-                            width: `${progress.nextTier ? (progress.current / progress.next * 100) : 100}%`,
-                            backgroundColor: 'var(--accent-color)',
-                            transition: 'width 0.3s ease'
-                          }} />
-                        </div>
-                      </div>
-                    );
-                  })()}
+                  {/* Tier Selection Buttons */}
+                  <div style={{ marginBottom: '12px' }}>
+                    <div style={{ fontSize: '9px', opacity: 0.7, marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                      Select Tier:
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '4px' }}>
+                      {docData.tiers.map(tier => {
+                        const isUnlocked = unlockedTiers.some(t => t.tier === tier.tier);
+                        const isSelected = selectedTier === tier.tier;
 
-                  {/* Cost & Print Button */}
+                        if (!isUnlocked) {
+                          return (
+                            <button
+                              key={tier.tier}
+                              disabled
+                              style={{
+                                background: 'var(--bg-color)',
+                                border: '1px solid var(--border-color)',
+                                color: 'var(--text-color)',
+                                padding: '6px 4px',
+                                fontSize: '8px',
+                                fontFamily: 'inherit',
+                                cursor: 'not-allowed',
+                                opacity: 0.3,
+                                textAlign: 'center'
+                              }}
+                            >
+                              <div style={{ fontWeight: 'bold' }}>T{tier.tier}</div>
+                              <div style={{ fontSize: '7px', marginTop: '2px' }}>LOCKED</div>
+                            </button>
+                          );
+                        }
+
+                        return (
+                          <button
+                            key={tier.tier}
+                            onClick={() => setSelectedTier(tier.tier)}
+                            style={{
+                              background: isSelected ? 'var(--accent-color)' : 'var(--bg-color)',
+                              border: `1px solid ${isSelected ? 'var(--accent-color)' : 'var(--border-color)'}`,
+                              color: isSelected ? 'var(--bg-color)' : 'var(--text-color)',
+                              padding: '6px 4px',
+                              fontSize: '8px',
+                              fontFamily: 'inherit',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s',
+                              textAlign: 'center',
+                              fontWeight: isSelected ? 'bold' : 'normal'
+                            }}
+                          >
+                            <div style={{ fontWeight: 'bold' }}>T{tier.tier}</div>
+                            <div style={{ fontSize: '7px', marginTop: '2px', opacity: 0.8 }}>{tier.cost.paper}p</div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Selected Tier Details & Print Button */}
                   {(() => {
                     const selectedTierData = docData.tiers.find(t => t.tier === selectedTier);
                     const check = canPrintDocumentTier(selectedDocType, selectedTier, gameState);
@@ -586,15 +619,17 @@ ${printing ? '    │  ───────────────────
 
                     return (
                       <>
-                        {/* Cost Display */}
-                        <div style={{ marginBottom: '12px', padding: '10px', backgroundColor: 'var(--bg-color)', border: '1px solid var(--border-color)' }}>
-                          <div style={{ fontSize: '9px', opacity: 0.7, marginBottom: '6px' }}>Cost:</div>
-                          <div style={{ fontSize: '11px', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                            <span>{selectedTierData.cost.paper} Paper</span>
-                            {selectedTierData.cost.energy && <span>{selectedTierData.cost.energy} Energy</span>}
-                            {selectedTierData.cost.sanity && <span>{selectedTierData.cost.sanity} Sanity</span>}
+                        {/* Selected Tier Info */}
+                        <div style={{ marginBottom: '10px', padding: '10px', backgroundColor: 'var(--bg-color)', border: '1px solid var(--border-color)' }}>
+                          <div style={{ fontSize: '10px', fontWeight: 'bold', marginBottom: '4px' }}>
+                            Tier {selectedTier}: {selectedTierData.name}
                           </div>
-                          <div style={{ fontSize: '8px', opacity: 0.6, marginTop: '6px' }}>
+                          <div style={{ fontSize: '9px', opacity: 0.7, display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                            <span>Cost: {selectedTierData.cost.paper} Paper</span>
+                            {selectedTierData.cost.energy && <span>• {selectedTierData.cost.energy} Energy</span>}
+                            {selectedTierData.cost.sanity && <span>• {selectedTierData.cost.sanity} Sanity</span>}
+                          </div>
+                          <div style={{ fontSize: '8px', opacity: 0.6, marginTop: '4px' }}>
                             +{TIER_MASTERY_WEIGHTS[selectedTier] || 1} Mastery Progress
                           </div>
                         </div>
@@ -608,9 +643,9 @@ ${printing ? '    │  ───────────────────
                             background: check.canPrint ? 'var(--accent-color)' : 'none',
                             border: '1px solid var(--border-color)',
                             color: check.canPrint ? 'var(--bg-color)' : 'var(--text-color)',
-                            padding: '14px',
+                            padding: '12px',
                             cursor: check.canPrint ? 'pointer' : 'not-allowed',
-                            fontSize: '11px',
+                            fontSize: '10px',
                             fontFamily: 'inherit',
                             fontWeight: 'bold',
                             letterSpacing: '0.5px',
@@ -622,7 +657,7 @@ ${printing ? '    │  ───────────────────
                         </button>
 
                         {!check.canPrint && check.reason && (
-                          <div style={{ fontSize: '9px', opacity: 0.6, marginTop: '8px', textAlign: 'center', fontStyle: 'italic' }}>
+                          <div style={{ fontSize: '8px', opacity: 0.6, marginTop: '6px', textAlign: 'center', fontStyle: 'italic' }}>
                             {check.reason}
                           </div>
                         )}

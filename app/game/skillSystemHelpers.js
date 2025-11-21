@@ -206,14 +206,17 @@ export const applyPPMultiplier = (basePP, gameState) => {
 
 /**
  * Reduces energy costs based on efficiency skills
+ * IMPORTANT: Caps at -90% reduction (minimum 10% of base cost)
  *
  * @param {number} baseCost - Base energy cost
  * @param {Object} gameState - Current game state
- * @returns {number} Reduced energy cost (rounded up to integer)
+ * @returns {number} Reduced energy cost (returns decimal value, minimum 10% of base)
  */
 export const applyEnergyCostReduction = (baseCost, gameState) => {
   const effects = getActiveSkillEffects(gameState);
-  return Math.ceil(baseCost * (1 - effects.energyEfficiency));
+  // Cap energy efficiency at 0.9 (90% reduction max) to prevent gaining energy
+  const cappedEfficiency = Math.min(effects.energyEfficiency, 0.9);
+  return baseCost * (1 - cappedEfficiency);
 };
 
 /**
