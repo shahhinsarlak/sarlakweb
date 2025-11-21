@@ -1,7 +1,8 @@
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
+import NotificationPopup from './NotificationPopup';
 
-export default function ExamineModal({ item, closeExamine }) {
+export default function ExamineModal({ item, closeExamine, notifications, onDismissNotification }) {
   return (
     <>
       <Header />
@@ -53,6 +54,12 @@ export default function ExamineModal({ item, closeExamine }) {
         </div>
       </div>
       <Footer />
+
+      {/* Notification Popup System */}
+      <NotificationPopup
+        notifications={notifications}
+        onDismiss={onDismissNotification}
+      />
     </>
   );
 }

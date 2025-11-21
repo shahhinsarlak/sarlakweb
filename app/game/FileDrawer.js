@@ -8,8 +8,9 @@
  */
 
 'use client';
+import NotificationPopup from './NotificationPopup';
 
-export default function FileDrawer({ gameState, onClose, actions }) {
+export default function FileDrawer({ gameState, onClose, actions, notifications, onDismissNotification }) {
   // Get and sort documents
   const getSortedDocuments = () => {
     const docs = gameState.storedDocuments || [];
@@ -77,6 +78,7 @@ export default function FileDrawer({ gameState, onClose, actions }) {
   };
 
   return (
+    <>
     <div style={{
       fontFamily: "'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace",
       position: 'fixed',
@@ -328,5 +330,12 @@ export default function FileDrawer({ gameState, onClose, actions }) {
         </div>
       </div>
     </div>
+
+    {/* Notification Popup System */}
+    <NotificationPopup
+      notifications={notifications}
+      onDismiss={onDismissNotification}
+    />
+    </>
   );
 }

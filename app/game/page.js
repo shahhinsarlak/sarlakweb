@@ -751,138 +751,137 @@ export default function Game() {
 
   if (gameState.showSkillTree) {
     return (
-      <>
-        <SkillTreeModal gameState={gameState} onClose={() => setGameState(prev => ({ ...prev, showSkillTree: false }))} onPurchaseSkill={handlePurchaseSkill} />
-        <NotificationPopup
-          notifications={gameState.notifications}
-          onDismiss={dismissNotification}
-        />
-      </>
+      <SkillTreeModal
+        gameState={gameState}
+        onClose={() => setGameState(prev => ({ ...prev, showSkillTree: false }))}
+        onPurchaseSkill={handlePurchaseSkill}
+        notifications={gameState.notifications}
+        onDismissNotification={dismissNotification}
+      />
     );
   }
 
   if (showAchievements) {
     return (
-      <>
-        <AchievementsModal gameState={gameState} achievements={ACHIEVEMENTS} onClose={() => setShowAchievements(false)} />
-        <NotificationPopup
-          notifications={gameState.notifications}
-          onDismiss={dismissNotification}
-        />
-      </>
+      <AchievementsModal
+        gameState={gameState}
+        achievements={ACHIEVEMENTS}
+        onClose={() => setShowAchievements(false)}
+        notifications={gameState.notifications}
+        onDismissNotification={dismissNotification}
+      />
     );
   }
 
   if (gameState.journalOpen) {
     return (
-      <>
-        <JournalModal gameState={gameState} onClose={actions.closeJournal} onSwitchTab={actions.switchJournalTab} />
-        <NotificationPopup
-          notifications={gameState.notifications}
-          onDismiss={dismissNotification}
-        />
-      </>
+      <JournalModal
+        gameState={gameState}
+        onClose={actions.closeJournal}
+        onSwitchTab={actions.switchJournalTab}
+        notifications={gameState.notifications}
+        onDismissNotification={dismissNotification}
+      />
     );
   }
 
   if (gameState.pendingBuff) {
     return (
-      <>
-        <BuffReplacementModal
-          gameState={gameState}
-          pendingBuff={gameState.pendingBuff}
-          onReplace={actions.replaceBuff}
-          onCancel={actions.cancelBuffReplacement}
-        />
-        <NotificationPopup
-          notifications={gameState.notifications}
-          onDismiss={dismissNotification}
-        />
-      </>
+      <BuffReplacementModal
+        gameState={gameState}
+        pendingBuff={gameState.pendingBuff}
+        onReplace={actions.replaceBuff}
+        onCancel={actions.cancelBuffReplacement}
+        notifications={gameState.notifications}
+        onDismissNotification={dismissNotification}
+      />
     );
   }
 
   if (gameState.inDimensionalArea) {
     return (
-      <>
-        <DimensionalArea gameState={gameState} setGameState={setGameState} onExit={exitDimensionalArea} grantXP={grantXP} />
-        <NotificationPopup
-          notifications={gameState.notifications}
-          onDismiss={dismissNotification}
-        />
-      </>
+      <DimensionalArea
+        gameState={gameState}
+        setGameState={setGameState}
+        onExit={exitDimensionalArea}
+        grantXP={grantXP}
+        notifications={gameState.notifications}
+        onDismissNotification={dismissNotification}
+      />
     );
   }
 
   if (gameState.inPrinterRoom) {
     return (
-      <>
-        <PrinterRoom gameState={gameState} setGameState={setGameState} onExit={() => setGameState(prev => ({ ...prev, inPrinterRoom: false }))} grantXP={grantXP} actions={actions} />
-        <NotificationPopup
-          notifications={gameState.notifications}
-          onDismiss={dismissNotification}
-        />
-      </>
+      <PrinterRoom
+        gameState={gameState}
+        setGameState={setGameState}
+        onExit={() => setGameState(prev => ({ ...prev, inPrinterRoom: false }))}
+        grantXP={grantXP}
+        actions={actions}
+        notifications={gameState.notifications}
+        onDismissNotification={dismissNotification}
+      />
     );
   }
 
   if (gameState.inArmory) {
     return (
-      <>
-        <Armory gameState={gameState} setGameState={setGameState} onExit={() => setGameState(prev => ({ ...prev, inArmory: false }))} />
-        <NotificationPopup
-          notifications={gameState.notifications}
-          onDismiss={dismissNotification}
-        />
-      </>
+      <Armory
+        gameState={gameState}
+        setGameState={setGameState}
+        onExit={() => setGameState(prev => ({ ...prev, inArmory: false }))}
+        notifications={gameState.notifications}
+        onDismissNotification={dismissNotification}
+      />
     );
   }
 
   if (gameState.fileDrawerOpen) {
     return (
-      <>
-        <FileDrawer gameState={gameState} onClose={actions.closeFileDrawer} actions={actions} />
-        <NotificationPopup
-          notifications={gameState.notifications}
-          onDismiss={dismissNotification}
-        />
-      </>
+      <FileDrawer
+        gameState={gameState}
+        onClose={actions.closeFileDrawer}
+        actions={actions}
+        notifications={gameState.notifications}
+        onDismissNotification={dismissNotification}
+      />
     );
   }
 
   if (gameState.meditating) {
     return (
-      <>
-        <MeditationModal gameState={gameState} breatheAction={actions.breatheAction} cancelMeditation={actions.cancelMeditation} />
-        <NotificationPopup
-          notifications={gameState.notifications}
-          onDismiss={dismissNotification}
-        />
-      </>
+      <MeditationModal
+        gameState={gameState}
+        breatheAction={actions.breatheAction}
+        cancelMeditation={actions.cancelMeditation}
+        notifications={gameState.notifications}
+        onDismissNotification={dismissNotification}
+      />
     );
   }
 
   if (gameState.debugMode && gameState.currentBug) {
     return (
-      <>
-        <DebugModal gameState={gameState} submitDebug={actions.submitDebug} updateDebugCode={actions.updateDebugCode} cancelDebug={actions.cancelDebug} />
-        <NotificationPopup
-          notifications={gameState.notifications}
-          onDismiss={dismissNotification}
-        />
-      </>
+      <DebugModal
+        gameState={gameState}
+        submitDebug={actions.submitDebug}
+        updateDebugCode={actions.updateDebugCode}
+        cancelDebug={actions.cancelDebug}
+        notifications={gameState.notifications}
+        onDismissNotification={dismissNotification}
+      />
     );
   }
 
   if (gameState.examiningItem) {
     return (
-      <>
-        <ExamineModal item={gameState.examiningItem} closeExamine={actions.closeExamine} />
-        <NotificationPopup
-          notifications={gameState.notifications}
-          onDismiss={dismissNotification}
-        />
-      </>
+      <ExamineModal
+        item={gameState.examiningItem}
+        closeExamine={actions.closeExamine}
+        notifications={gameState.notifications}
+        onDismissNotification={dismissNotification}
+      />
     );
   }
 

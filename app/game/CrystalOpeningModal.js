@@ -10,8 +10,9 @@
 
 import { useState } from 'react';
 import { formatImbuements } from './lootGenerationHelpers';
+import NotificationPopup from './NotificationPopup';
 
-export default function CrystalOpeningModal({ lootItem, onComplete, onClose }) {
+export default function CrystalOpeningModal({ lootItem, onComplete, onClose, notifications, onDismissNotification }) {
   const [tapCount, setTapCount] = useState(0);
   const [isRevealing, setIsRevealing] = useState(false);
 
@@ -95,6 +96,7 @@ export default function CrystalOpeningModal({ lootItem, onComplete, onClose }) {
 
   if (!isRevealing) {
     return (
+      <>
       <div
         onClick={handleTap}
         style={{
@@ -179,11 +181,19 @@ export default function CrystalOpeningModal({ lootItem, onComplete, onClose }) {
           }
         `}</style>
       </div>
+
+      {/* Notification Popup System */}
+      <NotificationPopup
+        notifications={notifications}
+        onDismiss={onDismissNotification}
+      />
+      </>
     );
   }
 
   // Reveal screen
   return (
+    <>
     <div style={{
       fontFamily: "'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace",
       position: 'fixed',
@@ -421,5 +431,12 @@ export default function CrystalOpeningModal({ lootItem, onComplete, onClose }) {
         }
       `}</style>
     </div>
+
+    {/* Notification Popup System */}
+    <NotificationPopup
+      notifications={notifications}
+      onDismiss={onDismissNotification}
+    />
+    </>
   );
 }

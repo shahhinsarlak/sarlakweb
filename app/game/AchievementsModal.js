@@ -5,10 +5,13 @@
  * Shows achievement name, description, and unlock status
  */
 
-export default function AchievementsModal({ gameState, achievements, onClose }) {
+import NotificationPopup from './NotificationPopup';
+
+export default function AchievementsModal({ gameState, achievements, onClose, notifications, onDismissNotification }) {
   const unlockedAchievements = gameState.achievements || [];
 
   return (
+    <>
     <div style={{
       fontFamily: "'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace",
       position: 'fixed',
@@ -135,5 +138,12 @@ export default function AchievementsModal({ gameState, achievements, onClose }) 
         </div>
       </div>
     </div>
+
+    {/* Notification Popup System */}
+    <NotificationPopup
+      notifications={notifications}
+      onDismiss={onDismissNotification}
+    />
+    </>
   );
 }
