@@ -1346,7 +1346,7 @@ export default function Game() {
                 )}
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
                   <span>ENERGY</span>
-                  <strong style={{ fontSize: '18px' }}>{gameState.energy.toFixed(2)}%</strong>
+                  <strong style={{ fontSize: '18px' }}>{gameState.energy.toFixed(1)}%</strong>
                 </div>
                 <div style={{
                   display: 'flex',
