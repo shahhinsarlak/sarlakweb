@@ -1,3 +1,5 @@
+import { useState, useEffect } from 'react';
+
 /**
  * Notification Popup Component
  *
@@ -37,22 +39,28 @@ export default function NotificationPopup({ notifications, onDismiss }) {
  * Individual notification item with fade animation
  */
 function NotificationItem({ notification, index, onDismiss }) {
-  const age = Date.now() - notification.timestamp;
+  const [opacity, setOpacity] = useState(1);
   const fadeOutStart = 3000; // Start fading after 3 seconds
   const fadeOutDuration = 500; // Fade out over 0.5 seconds
   const totalDuration = fadeOutStart + fadeOutDuration;
 
-  // Calculate opacity based on age
-  let opacity = 1;
-  if (age > fadeOutStart) {
-    const fadeProgress = (age - fadeOutStart) / fadeOutDuration;
-    opacity = Math.max(0, 1 - fadeProgress);
-  }
+  useEffect(() => {
+    // Start fade out animation after fadeOutStart ms
+    const fadeTimer = setTimeout(() => {
+      setOpacity(0);
+    }, fadeOutStart);
 
-  // Auto-dismiss after total duration
-  if (age > totalDuration) {
-    setTimeout(() => onDismiss(notification.id), 0);
-  }
+    // Auto-dismiss after total duration
+    const dismissTimer = setTimeout(() => {
+      onDismiss(notification.id);
+    }, totalDuration);
+
+    // Cleanup timers on unmount
+    return () => {
+      clearTimeout(fadeTimer);
+      clearTimeout(dismissTimer);
+    };
+  }, [notification.id, onDismiss, fadeOutStart, totalDuration]);
 
   return (
     <div style={{
@@ -66,7 +74,7 @@ function NotificationItem({ notification, index, onDismiss }) {
       boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
       maxWidth: '350px',
       opacity: opacity,
-      transition: age < fadeOutStart ? 'opacity 0.2s ease-in' : 'none',
+      transition: `opacity ${fadeOutDuration}ms ease-in`,
       pointerEvents: 'auto',
       animation: 'slideInLeft 0.3s ease-out',
       whiteSpace: 'pre-wrap',
