@@ -721,7 +721,8 @@ export default function Game() {
   const currentLocation = LOCATIONS[gameState.location];
   const availableUpgrades = UPGRADES.filter(u =>
     !gameState.upgrades[u.id] &&
-    (u.effect !== 'unlock' || gameState.pp >= u.cost * 0.5)
+    (u.effect !== 'unlock' || gameState.pp >= u.cost * 0.5) &&
+    (!u.dayRequirement || gameState.day >= u.dayRequirement)
   );
 
   const enterDimensionalArea = () => {
