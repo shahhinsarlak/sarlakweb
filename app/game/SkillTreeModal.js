@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { SKILLS, LEVEL_SYSTEM } from './skillTreeConstants';
 import EventLog from './EventLog';
+import NotificationPopup from './NotificationPopup';
 
-export default function SkillTreeModal({ gameState, onClose, onPurchaseSkill }) {
+export default function SkillTreeModal({ gameState, onClose, onPurchaseSkill, notifications, onDismissNotification }) {
   const [hoveredSkill, setHoveredSkill] = useState(null);
   
   const playerLevel = gameState.playerLevel || 1;
@@ -239,6 +240,12 @@ export default function SkillTreeModal({ gameState, onClose, onPurchaseSkill }) 
           </div>
         </div>
       </div>
+
+      {/* Notification Popup System */}
+      <NotificationPopup
+        notifications={notifications}
+        onDismiss={onDismissNotification}
+      />
     </>
   );
 }

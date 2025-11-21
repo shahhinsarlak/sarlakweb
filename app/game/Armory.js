@@ -14,8 +14,9 @@ import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import EventLog from './EventLog';
 import { compareItems } from './lootGenerationHelpers';
+import NotificationPopup from './NotificationPopup';
 
-export default function Armory({ gameState, setGameState, onExit }) {
+export default function Armory({ gameState, setGameState, onExit, notifications, onDismissNotification }) {
   const [activeTab, setActiveTab] = useState('weapons');
   const [hoveredItem, setHoveredItem] = useState(null);
 
@@ -690,6 +691,12 @@ export default function Armory({ gameState, setGameState, onExit }) {
         {activeTab === 'anomalies' && renderAnomaliesTab()}
       </div>
       <Footer />
+
+      {/* Notification Popup System */}
+      <NotificationPopup
+        notifications={notifications}
+        onDismiss={onDismissNotification}
+      />
     </>
   );
 }

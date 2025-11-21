@@ -10,7 +10,9 @@
  * @param {Function} onReplace - Callback when player chooses to replace a buff (buffId)
  * @param {Function} onCancel - Callback when player cancels the operation
  */
-export default function BuffReplacementModal({ gameState, pendingBuff, onReplace, onCancel }) {
+import NotificationPopup from './NotificationPopup';
+
+export default function BuffReplacementModal({ gameState, pendingBuff, onReplace, onCancel, notifications, onDismissNotification }) {
   if (!pendingBuff) return null;
 
   // Get active buffs (filter expired)
@@ -39,6 +41,7 @@ export default function BuffReplacementModal({ gameState, pendingBuff, onReplace
   const pendingDuration = Math.ceil(pendingBuff.duration || 300); // Default 5 min if not set
 
   return (
+    <>
     <div style={{
       fontFamily: "'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace",
       position: 'fixed',
@@ -215,5 +218,12 @@ export default function BuffReplacementModal({ gameState, pendingBuff, onReplace
         </button>
       </div>
     </div>
+
+    {/* Notification Popup System */}
+    <NotificationPopup
+      notifications={notifications}
+      onDismiss={onDismissNotification}
+    />
+    </>
   );
 }

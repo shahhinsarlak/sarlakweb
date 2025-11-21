@@ -10,8 +10,9 @@ import {
   canPrintDocumentTier,
   getTierData
 } from './sanityPaperHelpers';
+import NotificationPopup from './NotificationPopup';
 
-export default function PrinterRoom({ gameState, setGameState, onExit, grantXP, actions }) {
+export default function PrinterRoom({ gameState, setGameState, onExit, grantXP, actions, notifications, onDismissNotification }) {
   const [printing, setPrinting] = useState(false);
   const [printedPapers, setPrintedPapers] = useState([]);
   const [animationFrame, setAnimationFrame] = useState(0);
@@ -182,6 +183,7 @@ ${printing ? '    │  ───────────────────
   };
 
   return (
+    <>
     <div style={{
       fontFamily: "'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace",
       padding: '40px 60px',
@@ -688,5 +690,12 @@ ${printing ? '    │  ───────────────────
         </div>
       </div>
     </div>
+
+    {/* Notification Popup System */}
+    <NotificationPopup
+      notifications={notifications}
+      onDismiss={onDismissNotification}
+    />
+    </>
   );
 }

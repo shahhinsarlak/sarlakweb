@@ -11,9 +11,10 @@ import { TEAR_CONFIG } from './lootConstants';
 import { generateLootItem } from './lootGenerationHelpers';
 import CrystalOpeningModal from './CrystalOpeningModal';
 import { discoverEquipmentFromLoot } from './journalHelpers';
+import NotificationPopup from './NotificationPopup';
 
 
-export default function DimensionalArea({ gameState, setGameState, onExit, grantXP }) {
+export default function DimensionalArea({ gameState, setGameState, onExit, grantXP, notifications, onDismissNotification }) {
   const [collectedNodes, setCollectedNodes] = useState([]);
   const [currentInventory, setCurrentInventory] = useState({});
   const [hoveredNode, setHoveredNode] = useState(null);
@@ -437,8 +438,16 @@ export default function DimensionalArea({ gameState, setGameState, onExit, grant
         lootItem={currentLootItem}
         onComplete={handleLootClaim}
         onClose={() => setShowCrystalModal(false)}
+        notifications={notifications}
+        onDismissNotification={onDismissNotification}
       />
     )}
+
+    {/* Notification Popup System */}
+    <NotificationPopup
+      notifications={notifications}
+      onDismiss={onDismissNotification}
+    />
     </>
   );
 }

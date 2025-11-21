@@ -1,8 +1,9 @@
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import EventLog from './EventLog';
+import NotificationPopup from './NotificationPopup';
 
-export default function MeditationModal({ gameState, breatheAction, cancelMeditation }) {
+export default function MeditationModal({ gameState, breatheAction, cancelMeditation, notifications, onDismissNotification }) {
   const elapsed = gameState.meditationStartTime ? Date.now() - gameState.meditationStartTime : 0;
   const target = gameState.meditationTargetTime || 3000;
   const progress = Math.min(100, (elapsed / target) * 100);
@@ -199,6 +200,12 @@ export default function MeditationModal({ gameState, breatheAction, cancelMedita
         </div>
       </div>
       <Footer />
+
+      {/* Notification Popup System */}
+      <NotificationPopup
+        notifications={notifications}
+        onDismiss={onDismissNotification}
+      />
     </>
   );
 }

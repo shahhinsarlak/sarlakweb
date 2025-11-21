@@ -15,8 +15,9 @@
 import { useEffect } from 'react';
 import { JOURNAL_ENTRIES, LOCATIONS, MECHANICS_ENTRIES } from './constants';
 import { WEAPONS, ARMOR, ANOMALIES } from './equipmentConstants';
+import NotificationPopup from './NotificationPopup';
 
-export default function JournalModal({ gameState, onClose, onSwitchTab }) {
+export default function JournalModal({ gameState, onClose, onSwitchTab, notifications, onDismissNotification }) {
   const currentTab = gameState.journalTab || 'locations';
 
   // Handle ESC key to close
@@ -378,6 +379,7 @@ export default function JournalModal({ gameState, onClose, onSwitchTab }) {
   };
 
   return (
+    <>
     <div
       style={{
         fontFamily: "'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace",
@@ -479,5 +481,12 @@ export default function JournalModal({ gameState, onClose, onSwitchTab }) {
         </div>
       </div>
     </div>
+
+    {/* Notification Popup System */}
+    <NotificationPopup
+      notifications={notifications}
+      onDismiss={onDismissNotification}
+    />
+    </>
   );
 }

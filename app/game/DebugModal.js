@@ -1,7 +1,10 @@
-export default function DebugModal({ gameState, submitDebug, updateDebugCode, cancelDebug }) {
+import NotificationPopup from './NotificationPopup';
+
+export default function DebugModal({ gameState, submitDebug, updateDebugCode, cancelDebug, notifications, onDismissNotification }) {
   if (!gameState.currentBug) return null;
 
   return (
+    <>
     <div style={{
       fontFamily: "'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace",
       position: 'fixed',
@@ -199,5 +202,12 @@ export default function DebugModal({ gameState, submitDebug, updateDebugCode, ca
         </div>
       </div>
     </div>
+
+    {/* Notification Popup System */}
+    <NotificationPopup
+      notifications={notifications}
+      onDismiss={onDismissNotification}
+    />
+    </>
   );
 }
