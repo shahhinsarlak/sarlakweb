@@ -258,6 +258,7 @@ export const UPGRADES = [
   { id: 'coffee', name: 'Coffee Machine', cost: 150, effect: 'ppPerSecond', value: 1, desc: 'Automatic productivity. Tastes like copper.' },
   { id: 'printerroom', name: 'Printer Room Access', cost: 200, effect: 'unlock', value: 'printer', desc: 'The printer hums. Something is wrong with its output.' },
   { id: 'keyboard', name: 'Mechanical Keyboard', cost: 300, effect: 'ppPerClick', value: 5, desc: 'The clicking soothes you. Click. Click. Click.' },
+  { id: 'archive_access', name: 'Filing Cabinet Key', cost: 400, effect: 'unlock', value: 'archive', desc: 'You found it in your desk. It opens a door that should not exist. (Requires Day 5+)', dayRequirement: 5 },
   { id: 'debugger', name: 'Debug Access', cost: 500, effect: 'unlock', value: 'debug', desc: 'Fix the code. Fix reality. Same thing.' },
   { id: 'energydrink', name: 'Energy Drink Pack', cost: 800, effect: 'maxEnergy', value: 20, desc: '5000% daily value of everything.' },
   { id: 'monitor', name: 'Second Monitor', cost: 1200, effect: 'ppPerSecond', value: 3, desc: 'Twice the work. Twice the witnessing.' },
@@ -1113,7 +1114,7 @@ export const JOURNAL_ENTRIES = {
     },
     archive: {
       name: 'The Archive',
-      unlockHint: 'Work enough days to discover it exists',
+      unlockHint: 'Purchase the Filing Cabinet Key upgrade on Day 5+',
       lore: 'A place that shouldn\'t exist according to the office layout. Files from employees who never were. Documents dated from impossible years. Every file is labeled with your name. Time moves differently here. The silence is absolute.',
       notes: 'You found your resignation letter. It\'s dated three years from now.'
     },

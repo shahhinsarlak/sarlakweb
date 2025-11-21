@@ -431,6 +431,9 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
           newState.printerUnlocked = true;
           newState.unlockedLocations = [...new Set([...prev.unlockedLocations, 'printerroom'])];
           messages.push('Printer Room unlocked. The machines await your command.');
+        } else if (upgrade.value === 'archive') {
+          newState.unlockedLocations = [...new Set([...prev.unlockedLocations, 'archive'])];
+          messages.push('The Archive opens. Files from impossible years await.');
         } else if (upgrade.value === 'breakroom') {
           newState.unlockedLocations = [...new Set([...prev.unlockedLocations, 'breakroom'])];
           messages.push('Break Room unlocked. Time to meet your colleagues.');
