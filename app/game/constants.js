@@ -1000,14 +1000,17 @@ This affects your ability to create documents.`,
   },
   skillTree: {
     id: 'skillTree',
-    title: 'SKILL TREE UNLOCKED',
+    title: 'PERSONNEL FILE SYSTEM UNLOCKED',
     content: `You've gained a skill point!
 
-Skills provide permanent bonuses across three branches:
-• EFFICIENCY: Increase PP generation
-• FOCUS: Reduce energy costs
-• RESILIENCE: Improve sanity management
+Access the filing cabinet to view five skill branches:
+• EFFICIENCY: Productivity and PP generation
+• ADMIN: Paperwork quality and document management
+• SURVIVAL: Energy and sanity management
+• OCCULT: Dimensional powers (requires portal)
+• [REDACTED]: Access denied (Level 20+ clearance)
 
+Each branch contains tiered skills. Higher tiers require prerequisites.
 Invest wisely. Reality remembers your choices.`,
     category: 'progression'
   },
@@ -1301,16 +1304,22 @@ Lower sanity also degrades paper quality, affecting document creation.`
   },
   skillTree: {
     id: 'skillTree',
-    title: 'Skill Tree',
+    title: 'Personnel File System',
     category: 'Progression',
-    summary: 'Permanent character advancement.',
-    details: `Gain skill points by leveling up. Three branches available:
+    summary: 'Permanent character advancement via filing cabinet.',
+    details: `Gain skill points by leveling up (1 per level, 3 at level 10/20/30...).
 
-⚡ EFFICIENCY: Boost PP generation
-🎯 FOCUS: Reduce energy costs & improve meditation
-🛡️ RESILIENCE: Sanity management & paper quality
+FILING CABINET BRANCHES:
+📊 EFFICIENCY: PP generation bonuses (always unlocked)
+📁 ADMIN: Paper quality, document effects (Level 5+)
+🛡️ SURVIVAL: Energy costs, sanity management (Level 5+)
+🌀 OCCULT: Dimensional materials, portal improvements (portal required)
+⬛ [REDACTED]: Forbidden knowledge (Level 20+)
 
-Skills are permanent. Choose wisely.`
+Each branch has 3-5 tiers. Higher tiers require prerequisites.
+Skills stack multiplicatively. Max 5 levels per skill.
+
+Skills are permanent. Reality remembers your choices.`
   },
   printerRoom: {
     id: 'printerRoom',
