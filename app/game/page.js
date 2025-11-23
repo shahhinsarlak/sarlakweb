@@ -1171,7 +1171,7 @@ export default function Game() {
             {/* Locations Section */}
             {gameState.unlockedLocations.length > 1 && (
               <div style={{ marginBottom: '32px' }}>
-                <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6', marginBottom: '16px' }}>
+                <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6, marginBottom: '16px' }}>
                   LOCATIONS
                 </div>
                 <div style={{
