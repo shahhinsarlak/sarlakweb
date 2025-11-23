@@ -1,4 +1,4 @@
-# CLAUDE.md - Development Ruleset for SarlakWeb Game
+# GEMINI.md - Development Ruleset for SarlakWeb Game
 
 **Project:** Office Horror Incremental Game
 **Framework:** Next.js 15.5.6 with React 19.1.0
@@ -1703,4 +1703,4 @@ For questions about these standards or suggestions for improvements:
 
 ---
 
-**END OF CLAUDE.MD**
+**END OF GEMINI.MD**
