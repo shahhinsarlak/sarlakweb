@@ -135,15 +135,12 @@ export const INITIAL_GAME_STATE = {
   // Displays temporary popups in top-left corner
   notifications: [],  // Array of notification objects: { id, message, timestamp }
   // Debug flags
-  debugForceTearSpawn: false, // Force 100% tear spawn rate for testing
-  // Archive Search Secret (Added 2025-11-24)
-  archiveSearchUnlocked: true, // Enables archive search input
-  employee0Found: false // Has player discovered Employee 0 file
+  debugForceTearSpawn: false // Force 100% tear spawn rate for testing
 };
 
 
 export const DEBUG_CHALLENGES = [
-  {
+  { 
     code: 'functoin calculateTotal(a, b) {\n  return a + b;\n}',
     correct: 'function calculateTotal(a, b) {\n  return a + b;\n}',
     hint: 'Check the function declaration...'
@@ -195,42 +192,42 @@ export const LOCATIONS = {
     name: 'THE ARCHIVE',
     description: 'A place that shouldn\'t exist. Files from employees who never were.',
     atmosphere: ['The silence is deafening.', 'Every file is labeled with your name.', 'Time moves differently here.'],
-
+    
     items: [
-      {
-        id: 'resignation',
-        name: 'Resignation Letter',
-        story: 'Dated 3 years from now. Signed by you. "I quit because I never started." The ink is still wet.'
+      { 
+        id: 'resignation', 
+        name: 'Resignation Letter', 
+        story: 'Dated 3 years from now. Signed by you. "I quit because I never started." The ink is still wet.' 
       },
-      {
-        id: 'firstday',
-        name: 'First Day Photo',
-        story: 'Employee orientation, 1987. You\'re in the photo. You weren\'t born until 1995. Everyone is smiling. No one has eyes.'
+      { 
+        id: 'firstday', 
+        name: 'First Day Photo', 
+        story: 'Employee orientation, 1987. You\'re in the photo. You weren\'t born until 1995. Everyone is smiling. No one has eyes.' 
       },
-      {
-        id: 'contract',
-        name: 'Original Contract',
-        story: 'Section 7.3: "Employee agrees to exist retroactively." You don\'t remember signing this. The signature matches yours perfectly.'
+      { 
+        id: 'contract', 
+        name: 'Original Contract', 
+        story: 'Section 7.3: "Employee agrees to exist retroactively." You don\'t remember signing this. The signature matches yours perfectly.' 
       },
-      {
-        id: 'performance',
-        name: 'Performance Reviews',
-        story: '847 annual reviews. All rated "Satisfactory." All dated today. All written in your handwriting.'
+      { 
+        id: 'performance', 
+        name: 'Performance Reviews', 
+        story: '847 annual reviews. All rated "Satisfactory." All dated today. All written in your handwriting.' 
       },
-      {
-        id: 'memo',
-        name: 'Interdepartmental Memo',
-        story: 'TO: You. FROM: You. RE: You. "The fluorescent lights have always been watching. They are proud of your progress."'
+      { 
+        id: 'memo', 
+        name: 'Interdepartmental Memo', 
+        story: 'TO: You. FROM: You. RE: You. "The fluorescent lights have always been watching. They are proud of your progress."' 
       },
-      {
-        id: 'manual',
-        name: 'Employee Handbook',
-        story: 'Chapter 19: How to Leave. All pages are blank except one: "You can\'t."'
+      { 
+        id: 'manual', 
+        name: 'Employee Handbook', 
+        story: 'Chapter 19: How to Leave. All pages are blank except one: "You can\'t."' 
       },
-      {
-        id: 'glitched',
-        name: '█████ WARNING ████',
-        story: 'The document flickers. Text phases in and out. "DON\'T SWITCH THE L̵I̴G̷H̸T̶S̷ – tried twenty times – the walls started bre█████ – something came through – it SAW me – if you\'re reading this STOP at 19 – the dimensional t█████ – they call it progress but it\'s a DOOR – Day 7 minimum or it won\'t –" The rest dissolves into static.'
+      { 
+        id: 'glitched', 
+        name: '█████ WARNING ████', 
+        story: 'The document flickers. Text phases in and out. "DON\'T SWITCH THE L̵I̴G̷H̸T̶S̷ – tried twenty times – the walls started bre█████ – something came through – it SAW me – if you\'re reading this STOP at 19 – the dimensional t█████ – they call it progress but it\'s a DOOR – Day 7 minimum or it won\'t –" The rest dissolves into static.' 
       }
     ]
   },
@@ -271,31 +268,31 @@ export const UPGRADES = [
 
 export const DIMENSIONAL_UPGRADES = [
   // Portal Enhancements
-  {
-    id: 'dimensional_anchor',
-    name: 'Dimensional Anchor',
-    materials: { void_fragment: 5, static_crystal: 3 },
-    effect: 'portalCooldown',
-    value: 30,
-    desc: 'Stabilize the breach. Cooldown reduced to 30s.'
+  { 
+    id: 'dimensional_anchor', 
+    name: 'Dimensional Anchor', 
+    materials: { void_fragment: 5, static_crystal: 3 }, 
+    effect: 'portalCooldown', 
+    value: 30, 
+    desc: 'Stabilize the breach. Cooldown reduced to 30s.' 
   },
-  {
-    id: 'reality_stabilizer',
-    name: 'Reality Stabilizer',
-    materials: { glitch_shard: 10, reality_dust: 5 },
-    effect: 'capacity',
-    value: 40,
-    desc: 'Expand dimensional capacity to 40 items.'
+  { 
+    id: 'reality_stabilizer', 
+    name: 'Reality Stabilizer', 
+    materials: { glitch_shard: 10, reality_dust: 5 }, 
+    effect: 'capacity', 
+    value: 40, 
+    desc: 'Expand dimensional capacity to 40 items.' 
   },
-  {
-    id: 'temporal_accelerator',
-    name: 'Temporal Accelerator',
-    materials: { temporal_core: 3 },
-    effect: 'portalRespawn',
-    value: true,
-    desc: 'Portal cooldown reduced by additional 10s. Stacks with anchor.'
+  { 
+    id: 'temporal_accelerator', 
+    name: 'Temporal Accelerator', 
+    materials: { temporal_core: 3 }, 
+    effect: 'portalRespawn', 
+    value: true, 
+    desc: 'Portal cooldown reduced by additional 10s. Stacks with anchor.' 
   },
-
+  
   // Sanity Management
   {
     id: 'void_shield',
@@ -305,47 +302,47 @@ export const DIMENSIONAL_UPGRADES = [
     value: 0.5,
     desc: 'Sanity drains 50% slower. The void protects you.'
   },
-  {
-    id: 'crystal_meditation',
-    name: 'Crystal Meditation',
-    materials: { static_crystal: 15 },
-    effect: 'meditationBonus',
-    value: 2,
-    desc: 'Meditation grants 2x sanity.'
+  { 
+    id: 'crystal_meditation', 
+    name: 'Crystal Meditation', 
+    materials: { static_crystal: 15 }, 
+    effect: 'meditationBonus', 
+    value: 2, 
+    desc: 'Meditation grants 2x sanity.' 
   },
-  {
-    id: 'reality_anchor',
-    name: 'Reality Anchor',
-    materials: { reality_dust: 8, dimensional_essence: 2 },
-    effect: 'minSanity',
-    value: 20,
-    desc: 'Your sanity cannot drop below 20%.'
+  { 
+    id: 'reality_anchor', 
+    name: 'Reality Anchor', 
+    materials: { reality_dust: 8, dimensional_essence: 2 }, 
+    effect: 'minSanity', 
+    value: 20, 
+    desc: 'Your sanity cannot drop below 20%.' 
   },
-
+  
   // Production
-  {
-    id: 'glitch_compiler',
-    name: 'Glitch Compiler',
-    materials: { glitch_shard: 25 },
-    effect: 'debugBonus',
-    value: 2,
-    desc: 'Debug rewards doubled. First attempt always succeeds.'
+  { 
+    id: 'glitch_compiler', 
+    name: 'Glitch Compiler', 
+    materials: { glitch_shard: 25 }, 
+    effect: 'debugBonus', 
+    value: 2, 
+    desc: 'Debug rewards doubled. First attempt always succeeds.' 
   },
-  {
-    id: 'essence_converter',
-    name: 'Essence Converter',
-    materials: { dimensional_essence: 1 },
-    effect: 'unlock',
-    value: 'converter',
-    desc: 'Convert PP to materials. Reality is transactional.'
+  { 
+    id: 'essence_converter', 
+    name: 'Essence Converter', 
+    materials: { dimensional_essence: 1 }, 
+    effect: 'unlock', 
+    value: 'converter', 
+    desc: 'Convert PP to materials. Reality is transactional.' 
   },
-  {
-    id: 'singularity_engine',
-    name: 'Singularity Engine',
-    materials: { singularity_node: 1 },
-    effect: 'ppPerSecond',
-    value: 50,
-    desc: 'Harness the void itself. +50 PP/sec. Unlock The Void.'
+  { 
+    id: 'singularity_engine', 
+    name: 'Singularity Engine', 
+    materials: { singularity_node: 1 }, 
+    effect: 'ppPerSecond', 
+    value: 50, 
+    desc: 'Harness the void itself. +50 PP/sec. Unlock The Void.' 
   },
 
   // Weapons - Obtained through dimensional tears
@@ -359,39 +356,39 @@ export const DIMENSIONAL_UPGRADES = [
   },
 
   // Research
-  {
-    id: 'temporal_rewind',
-    name: 'Temporal Rewind',
-    materials: { temporal_core: 5, dimensional_essence: 2 },
-    effect: 'timeTravel',
-    value: true,
-    desc: 'Once per day: undo the last 5 minutes.'
+  { 
+    id: 'temporal_rewind', 
+    name: 'Temporal Rewind', 
+    materials: { temporal_core: 5, dimensional_essence: 2 }, 
+    effect: 'timeTravel', 
+    value: true, 
+    desc: 'Once per day: undo the last 5 minutes.' 
   },
-  {
-    id: 'material_scanner',
-    name: 'Material Scanner',
-    materials: { reality_dust: 10 },
-    effect: 'portalScan',
-    value: true,
-    desc: 'Materials glow in the dimensional space.'
+  { 
+    id: 'material_scanner', 
+    name: 'Material Scanner', 
+    materials: { reality_dust: 10 }, 
+    effect: 'portalScan', 
+    value: true, 
+    desc: 'Materials glow in the dimensional space.' 
   },
-  {
-    id: 'dimensional_codex',
-    name: 'Dimensional Codex',
-    materials: { void_fragment: 15, static_crystal: 15, glitch_shard: 15, reality_dust: 15 },
-    effect: 'unlock',
-    value: 'lore',
-    desc: 'Unlock hidden truths. Achievement hints revealed.'
+  { 
+    id: 'dimensional_codex', 
+    name: 'Dimensional Codex', 
+    materials: { void_fragment: 15, static_crystal: 15, glitch_shard: 15, reality_dust: 15 }, 
+    effect: 'unlock', 
+    value: 'lore', 
+    desc: 'Unlock hidden truths. Achievement hints revealed.' 
   },
-  {
-    id: 'void_sight',
-    name: 'Void Sight',
-    materials: { void_fragment: 50, singularity_node: 1 },
-    effect: 'hiddenText',
-    value: true,
-    desc: 'See between the lines. Messages reveal themselves.'
+  { 
+    id: 'void_sight', 
+    name: 'Void Sight', 
+    materials: { void_fragment: 50, singularity_node: 1 }, 
+    effect: 'hiddenText', 
+    value: true, 
+    desc: 'See between the lines. Messages reveal themselves.' 
   },
-
+  
   // Endgame
   {
     id: 'singularity_collapse',
@@ -1442,15 +1439,5 @@ The files contain:
 • Your own documents from timelines that never were
 
 Reading them all reveals... patterns.`
-  }
-};
-
-export const EMPLOYEE_0_FILE = {
-  id: 'employee_0',
-  name: 'CASE-882: "Employee 0"',
-  story: 'SUBJECT: [REDACTED]\nSTATUS: TERMINATED/PROMOTED/NEVER EXISTED\n\n"We found him in the walls. Or rather, the walls found him. He had become the office. His skin was drywall. His blood was ink. He kept screaming about the printer. About the number 882. He said it was the key. He said it was the door. We didn\'t believe him until he printed himself out of existence."\n\nEFFECT: Permanent Sanity Regeneration (+0.5/sec) & Passive PP Generation (+0.5/sec).',
-  reward: {
-    sanityRegen: 0.5,
-    ppPerSecond: 0.5
   }
 };

@@ -40,7 +40,7 @@ import {
 
 
 export const createGameActions = (setGameState, addMessage, checkAchievements, grantXP) => {
-
+  
   const triggerScreenEffect = (effectType) => {
     const overlay = document.createElement('div');
     overlay.style.cssText = `
@@ -86,7 +86,7 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       overlay.remove();
     }, 1000);
   };
-
+  
   const sortPapers = () => {
     setGameState(prev => {
       // Apply skill effects to energy cost, then report buff modifier
@@ -165,12 +165,12 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
   const breatheAction = (action) => {
     setGameState(prev => {
       if (!prev.meditating) return prev;
-
+      
       const currentTime = Date.now();
       const elapsed = currentTime - prev.meditationStartTime;
       const target = prev.meditationTargetTime;
       const perfectWindow = prev.meditationPerfectWindow;
-
+      
       const isCorrectAction = prev.meditationPhase === action;
       if (!isCorrectAction) {
         addMessage('Wrong action! Focus on the rhythm...');
@@ -179,9 +179,9 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
           meditationScore: prev.meditationScore - 20
         };
       }
-
+      
       const difference = Math.abs(elapsed - target);
-
+      
       let points = 0;
       if (difference <= perfectWindow) {
         points = 100;
@@ -194,15 +194,15 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       } else {
         points = 10;
       }
-
+      
       const newScore = prev.meditationScore + points;
-
+      
       // Increment breath count only when completing a full cycle (after exhale -> moving to next inhale)
       let newBreathCount = prev.breathCount;
       if (action === 'exhale') {
         newBreathCount = prev.breathCount + 1;
       }
-
+      
       // Complete after 3 full breaths (after 3 exhales)
       if (newBreathCount >= 3) {
         const avgScore = newScore / 6;
@@ -239,10 +239,10 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
           meditationScore: 0
         };
       }
-
+      
       let nextPhase;
       let nextTargetTime;
-
+      
       if (action === 'inhale') {
         nextPhase = 'exhale';
         nextTargetTime = 1000 + Math.random() * 800; // Reduced from 2500-4000
@@ -250,7 +250,7 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
         nextPhase = 'inhale';
         nextTargetTime = 1500 + Math.random() * 1000; // Reduced from 3000-5000
       }
-
+      
       return {
         ...prev,
         breathCount: action === 'exhale' ? prev.breathCount + 1 : prev.breathCount,
@@ -994,7 +994,7 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
 
       // Check if it's a debuff (negative effects)
       const isDebuff = (newBuff.ppMult && newBuff.ppMult < 1) ||
-        (newBuff.energyCostMult && newBuff.energyCostMult > 1);
+                       (newBuff.energyCostMult && newBuff.energyCostMult > 1);
 
       const duration = Math.floor(newBuff.duration / 60);
       if (isDebuff) {
@@ -1035,76 +1035,6 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
     });
   };
 
-  /**
-   * Archive Search Action (Added 2025-11-24)
-   * Handles the "CASE-882" printer clue secret
-   */
-  const searchArchive = (query) => {
-    const normalizedQuery = query.toUpperCase().trim();
-    const validQueries = ['CASE-882', 'CASE 882', '882', 'CASE882'];
-
-    if (validQueries.includes(normalizedQuery)) {
-      // Trigger screen flash effect
-      triggerScreenEffect('flash');
-
-      setGameState(prev => {
-        // Don't grant rewards if already found
-        if (prev.employee0Found) {
-          // Still open the file for re-examination
-          setTimeout(() => {
-            const EMPLOYEE_0_FILE = {
-              id: 'employee_0',
-              name: 'CASE-882: "Employee 0"',
-              story: 'SUBJECT: [REDACTED]\nSTATUS: TERMINATED/PROMOTED/NEVER EXISTED\n\n"We found him in the walls. Or rather, the walls found him. He had become the office. His skin was drywall. His blood was ink. He kept screaming about the printer. About the number 882. He said it was the key. He said it was the door. We didn\'t believe him until he printed himself out of existence."\n\nEFFECT: Permanent Sanity Regeneration (+0.5/sec) & Passive PP Generation (+0.5/sec).',
-              reward: {
-                sanityRegen: 0.5,
-                ppPerSecond: 0.5
-              }
-            };
-            examineItem(EMPLOYEE_0_FILE);
-          }, 500);
-          return prev;
-        }
-
-        // First-time discovery: grant rewards
-        const newSanity = Math.min(100, prev.sanity + 20);
-        const newState = {
-          ...prev,
-          employee0Found: true,
-          sanity: newSanity,
-          ppPerSecond: prev.ppPerSecond + 0.5,
-          examinedItems: (prev.examinedItems || 0) + 1
-        };
-
-        // Show the file in ExamineModal
-        setTimeout(() => {
-          const EMPLOYEE_0_FILE = {
-            id: 'employee_0',
-            name: 'CASE-882: "Employee 0"',
-            story: 'SUBJECT: [REDACTED]\nSTATUS: TERMINATED/PROMOTED/NEVER EXISTED\n\n"We found him in the walls. Or rather, the walls found him. He had become the office. His skin was drywall. His blood was ink. He kept screaming about the printer. About the number 882. He said it was the key. He said it was the door. We didn\'t believe him until he printed himself out of existence."\n\nEFFECT: Permanent Sanity Regeneration (+0.5/sec) & Passive PP Generation (+0.5/sec).',
-            reward: {
-              sanityRegen: 0.5,
-              ppPerSecond: 0.5
-            }
-          };
-          examineItem(EMPLOYEE_0_FILE);
-        }, 500);
-
-        return newState;
-      });
-
-      addMessage('ACCESS GRANTED. RESTRICTED FILE "EMPLOYEE 0" RETRIEVED.');
-      addMessage('Sanity restored +20. Reality stabilizes (+0.5 PP/sec).');
-      grantXP(50);
-      setTimeout(() => checkAchievements(), 100);
-
-      return { success: true };
-    } else {
-      addMessage('No records found for that query.');
-      return { success: false };
-    }
-  };
-
   // Return all action handlers
   return {
     sortPapers,
@@ -1141,8 +1071,6 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
     // Journal system actions
     openJournal,
     closeJournal,
-    switchJournalTab,
-    // Archive search action (Added 2025-11-24)
-    searchArchive
+    switchJournalTab
   };
 };
