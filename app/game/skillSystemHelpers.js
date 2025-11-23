@@ -228,7 +228,7 @@ export const getModifiedCapacity = (baseCapacity, gameState) => {
 };
 
 /**
- * Applies skill-based PP multiplier to base PP gain
+ * Applies skill-based PP per click multiplier to base PP gain
  *
  * @param {number} basePP - Base PP amount before multipliers
  * @param {Object} gameState - Current game state
@@ -236,7 +236,21 @@ export const getModifiedCapacity = (baseCapacity, gameState) => {
  */
 export const applyPPMultiplier = (basePP, gameState) => {
   const effects = getActiveSkillEffects(gameState);
-  return basePP * (1 + effects.ppMultiplier);  // Return decimal value
+  // Apply both ppPerClickMultiplier (from sorting skills) and ppMultiplier (from overall bonuses)
+  return basePP * (1 + effects.ppPerClickMultiplier) * (1 + effects.ppMultiplier);
+};
+
+/**
+ * Applies skill-based PP per second multiplier to base passive PP gain
+ *
+ * @param {number} basePPS - Base PP/sec before multipliers
+ * @param {Object} gameState - Current game state
+ * @returns {number} PP/sec amount after skill multipliers
+ */
+export const applyPPSMultiplier = (basePPS, gameState) => {
+  const effects = getActiveSkillEffects(gameState);
+  // Apply both ppPerSecondMultiplier (from automation skills) and ppMultiplier (from overall bonuses)
+  return basePPS * (1 + effects.ppPerSecondMultiplier) * (1 + effects.ppMultiplier);
 };
 
 /**

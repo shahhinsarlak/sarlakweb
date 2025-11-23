@@ -114,6 +114,75 @@
 4. **Event-Driven Architecture**: No game loop - actions trigger updates
 5. **Modal-Based UI**: Complex interactions happen in dedicated modal components
 6. **No Emojis**: Never use emojis in the game UI or code. This is a text-based horror game with minimalist aesthetics - emojis break immersion and tone
+7. **Cascading Changes**: When modifying any game system, ALWAYS update ALL related documentation, help popups, journal entries, and UI displays. Changes must propagate throughout the entire codebase
+
+### CRITICAL: Cascading Change Checklist
+When making changes to ANY game system, you MUST verify and update ALL of the following:
+
+**For System Changes (e.g., Skill Tree, Combat, Documents):**
+- [ ] Core implementation files (constants, helpers, modals)
+- [ ] Related help popups in `constants.js` → `HELP_POPUPS`
+- [ ] Journal mechanic entries in `constants.js` → `MECHANICS_ENTRIES`
+- [ ] UI displays showing affected values (resources panel, stats, etc.)
+- [ ] Action handlers that use the system (`gameActions.js`)
+- [ ] Achievement conditions that reference the system
+- [ ] Tutorial/onboarding text
+
+**For Stat/Value Changes (e.g., PP, Energy, Skills):**
+- [ ] Calculation functions (e.g., `calculateEffectivePPPerClick`)
+- [ ] Display components showing the value
+- [ ] Breakdown/tooltip displays explaining the value
+- [ ] Helper functions that modify the value
+- [ ] Action handlers that generate/consume the value
+
+**For UI Changes (e.g., New Modals, Redesigns):**
+- [ ] Modal component implementation
+- [ ] Button/trigger to open the modal
+- [ ] Close/cancel functionality
+- [ ] State management for modal visibility
+- [ ] Related help popup explaining the feature
+- [ ] Journal entry documenting the mechanic
+
+**Examples of Cascading Changes:**
+```
+Example 1: Redesigning Skill Tree
+✅ CORRECT Approach:
+1. Update skillTreeConstants.js with new branches
+2. Redesign SkillTreeModal.js UI
+3. Update skillSystemHelpers.js effect calculations
+4. Update HELP_POPUPS.skillTree in constants.js
+5. Update MECHANICS_ENTRIES.skillTree in constants.js
+6. Update PP/click and PP/sec displays to show new bonuses
+7. Test all skill effects are working
+
+❌ WRONG Approach:
+1. Only update skillTreeConstants.js and SkillTreeModal.js
+2. Forget to update help popups (users see outdated info)
+3. Forget to update skill bonus displays (users can't see effects)
+
+Example 2: Adding New Stat Type
+✅ CORRECT Approach:
+1. Add to INITIAL_GAME_STATE
+2. Create calculation helper functions
+3. Add UI display in resources panel
+4. Add breakdown/tooltip showing components
+5. Create help popup explaining the stat
+6. Add journal mechanic entry
+7. Update any actions that modify the stat
+
+❌ WRONG Approach:
+1. Add to INITIAL_GAME_STATE
+2. Add basic display
+3. Forget helper functions (direct math in multiple places)
+4. Forget documentation (users confused)
+```
+
+**Failure to follow cascading changes results in:**
+- Inconsistent user experience
+- Outdated documentation/tutorials
+- Hidden or unclear game mechanics
+- Broken displays showing incorrect values
+- User frustration and confusion
 
 ---
 

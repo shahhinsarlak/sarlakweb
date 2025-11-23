@@ -20,7 +20,7 @@ import NotificationPopup from './NotificationPopup';
 import { createGameActions } from './gameActions';
 import { getDistortionStyle, distortText, getClockTime, createLevelUpParticles, createSkillPurchaseParticles, createScreenShake } from './gameUtils';
 import { saveGame, loadGame, exportToClipboard, importFromClipboard } from './saveSystem';
-import { addExperience, purchaseSkill, getActiveSkillEffects, getModifiedPortalCooldown, getModifiedCapacity, applyPPMultiplier } from './skillSystemHelpers';
+import { addExperience, purchaseSkill, getActiveSkillEffects, getModifiedPortalCooldown, getModifiedCapacity, applyPPMultiplier, applyPPSMultiplier } from './skillSystemHelpers';
 import { SKILLS, LEVEL_SYSTEM, XP_REWARDS } from './skillTreeConstants';
 import { DIMENSIONAL_MATERIALS } from './dimensionalConstants';
 import { getSanityTierDisplay, isSanityDrainPaused, calculatePaperQuality, applySanityPPModifier, getActiveBuffPPMultiplier, getActiveBuffXPMultiplier, getActiveBuffEnergyCostMultiplier, getActiveBuffPPPerSecondMultiplier } from './sanityPaperHelpers';
@@ -431,8 +431,8 @@ export default function Game() {
           let passiveGain = prev.ppPerSecond / 10;
 
           // Apply the same buff chain as ppPerClick:
-          // 1. Skill multipliers (from purchased skills)
-          passiveGain = applyPPMultiplier(passiveGain, prev);
+          // 1. Skill multipliers (from purchased skills) - use PP/sec specific multiplier
+          passiveGain = applyPPSMultiplier(passiveGain, prev);
 
           // 2. Sanity tier multipliers + efficiency report buffs
           passiveGain = applySanityPPModifier(passiveGain, prev);
@@ -1168,6 +1168,44 @@ export default function Game() {
               </div>
             </div>
 
+            {/* Locations Section */}
+            {gameState.unlockedLocations.length > 1 && (
+              <div style={{ marginBottom: '32px' }}>
+                <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6', marginBottom: '16px' }}>
+                  LOCATIONS
+                </div>
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(auto-fill, minmax(150px, 1fr))',
+                  gap: '12px'
+                }}>
+                  {gameState.unlockedLocations.map(loc => {
+                    return (
+                      <button
+                        key={loc}
+                        onClick={() => actions.changeLocation(loc)}
+                        disabled={gameState.location === loc}
+                        style={{
+                          background: gameState.location === loc ? 'var(--accent-color)' : 'none',
+                          border: '1px solid var(--border-color)',
+                          color: gameState.location === loc ? 'var(--bg-color)' : 'var(--text-color)',
+                          padding: '14px',
+                          cursor: gameState.location === loc ? 'default' : 'pointer',
+                          fontSize: '11px',
+                          fontFamily: 'inherit',
+                          letterSpacing: '0.5px',
+                          transition: 'all 0.2s',
+                          textAlign: 'center'
+                        }}
+                      >
+                        {LOCATIONS[loc]?.name || 'Unknown Location'}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Consolidated Upgrades Section - Moved under Actions */}
             <div style={{ marginBottom: '32px' }}>
               <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6, marginBottom: '12px' }}>
@@ -1474,43 +1512,6 @@ export default function Game() {
               )}
             </div>
 
-            {gameState.unlockedLocations.length > 1 && (
-              <div style={{ marginBottom: '40px' }}>
-                <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6, marginBottom: '16px' }}>
-                  LOCATIONS
-                </div>
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(auto-fill, minmax(150px, 1fr))',
-                  gap: '12px'
-                }}>
-                  {gameState.unlockedLocations.map(loc => {
-                    return (
-                      <button
-                        key={loc}
-                        onClick={() => actions.changeLocation(loc)}
-                        disabled={gameState.location === loc}
-                        style={{
-                          background: gameState.location === loc ? 'var(--accent-color)' : 'none',
-                          border: '1px solid var(--border-color)',
-                          color: gameState.location === loc ? 'var(--bg-color)' : 'var(--text-color)',
-                          padding: '14px',
-                          cursor: gameState.location === loc ? 'default' : 'pointer',
-                          fontSize: '11px',
-                          fontFamily: 'inherit',
-                          letterSpacing: '0.5px',
-                          transition: 'all 0.2s',
-                          textAlign: 'center'
-                        }}
-                      >
-                        {LOCATIONS[loc]?.name || 'Unknown Location'}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
             {gameState.location === 'archive' && currentLocation.items && (
               <div>
                 <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6, marginBottom: '16px' }}>
@@ -1613,7 +1614,9 @@ export default function Game() {
                       const effects = getActiveSkillEffects(gameState);
                       const tier = getSanityTierDisplay(gameState);
                       const buffMult = getActiveBuffPPMultiplier(gameState);
-                      const skillBonus = effects.ppMultiplier > 0 ? `+${(effects.ppMultiplier * 100).toFixed(0)}%` : 'none';
+                      // Calculate total skill bonus (click-specific + overall)
+                      const totalSkillMult = (1 + effects.ppPerClickMultiplier) * (1 + effects.ppMultiplier) - 1;
+                      const skillBonus = totalSkillMult > 0 ? `+${(totalSkillMult * 100).toFixed(0)}%` : 'none';
                       const sanityBonus = tier.ppModifier !== 1 ? `${tier.ppModifier >= 1 ? '+' : ''}${((tier.ppModifier - 1) * 100).toFixed(0)}%` : '0%';
                       const buffBonus = buffMult !== 1 ? `+${((buffMult - 1) * 100).toFixed(0)}%` : 'none';
 
@@ -1685,7 +1688,9 @@ export default function Game() {
                         const tier = getSanityTierDisplay(gameState);
                         const ppMult = getActiveBuffPPMultiplier(gameState);
                         const ppSecMult = getActiveBuffPPPerSecondMultiplier(gameState);
-                        const skillBonus = effects.ppMultiplier > 0 ? `+${(effects.ppMultiplier * 100).toFixed(0)}%` : 'none';
+                        // Calculate total skill bonus (passive-specific + overall)
+                        const totalSkillMult = (1 + effects.ppPerSecondMultiplier) * (1 + effects.ppMultiplier) - 1;
+                        const skillBonus = totalSkillMult > 0 ? `+${(totalSkillMult * 100).toFixed(0)}%` : 'none';
                         const sanityBonus = tier.ppModifier !== 1 ? `${tier.ppModifier >= 1 ? '+' : ''}${((tier.ppModifier - 1) * 100).toFixed(0)}%` : '0%';
                         const ppBuffBonus = ppMult !== 1 ? `+${((ppMult - 1) * 100).toFixed(0)}%` : 'none';
                         const ppSecBuffBonus = ppSecMult !== 1 ? `+${((ppSecMult - 1) * 100).toFixed(0)}%` : 'none';
