@@ -232,7 +232,7 @@ ${printing ? '    │  ───────────────────
         gridTemplateColumns: '60fr 40fr',
         gap: '40px'
       }}>
-        {/* Left Column - Printer */}
+        {/* Left Column - Printer & Document System */}
         <div>
           <div style={{
             fontSize: '11px',
@@ -292,167 +292,7 @@ ${printing ? '    │  ───────────────────
             </button>
           </div>
 
-          {/* Event Log - Moved under print button for better visibility */}
-          <div style={{
-            marginBottom: '30px',
-            border: '1px solid var(--border-color)',
-            padding: '16px',
-            backgroundColor: 'var(--hover-color)'
-          }}>
-            <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6, marginBottom: '12px' }}>
-              EVENT LOG
-            </div>
-            <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
-              {(gameState.recentMessages || []).slice(0, 10).map((msg, index) => (
-                <div
-                  key={index}
-                  style={{
-                    fontSize: '10px',
-                    padding: '6px 0',
-                    borderBottom: index < 9 ? '1px dotted var(--border-color)' : 'none',
-                    opacity: 1 - (index * 0.08),
-                    lineHeight: '1.4'
-                  }}
-                >
-                  {msg}
-                </div>
-              ))}
-              {(!gameState.recentMessages || gameState.recentMessages.length === 0) && (
-                <div style={{ fontSize: '10px', opacity: 0.5, fontStyle: 'italic' }}>
-                  No recent events...
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Printed Papers Output */}
-          {printedPapers.length > 0 && (
-            <div>
-              <div style={{
-                fontSize: '11px',
-                textTransform: 'uppercase',
-                letterSpacing: '1px',
-                opacity: 0.6,
-                marginBottom: '16px'
-              }}>
-                OUTPUT TRAY
-              </div>
-              <div style={{
-                border: '1px solid var(--border-color)',
-                padding: '16px',
-                backgroundColor: 'var(--hover-color)',
-                maxHeight: '300px',
-                overflowY: 'auto'
-              }}>
-                {printedPapers.map((paper, index) => (
-                  <div
-                    key={index}
-                    style={{
-                      marginBottom: '16px',
-                      paddingBottom: '16px',
-                      borderBottom: index < printedPapers.length - 1 ? '1px solid var(--border-color)' : 'none',
-                      opacity: 1 - (index * 0.2)
-                    }}
-                  >
-                    <div style={{ fontSize: '9px', opacity: 0.5, marginBottom: '8px' }}>
-                      [PAGE {printedPapers.length - index}]
-                    </div>
-                    <pre style={{
-                      fontSize: '8px',
-                      lineHeight: '1.2',
-                      margin: 0,
-                      fontFamily: 'inherit',
-                      whiteSpace: 'pre-wrap',
-                      wordBreak: 'break-all'
-                    }}>
-                      {paper.map((line, i) => (
-                        <div key={i}>{line}</div>
-                      ))}
-                    </pre>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Right Column - Stats & Info */}
-        <div>
-          <div style={{
-            border: '1px solid var(--border-color)',
-            padding: '24px',
-            marginBottom: '30px',
-            backgroundColor: 'var(--hover-color)'
-          }}>
-            <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6, marginBottom: '20px' }}>
-              RESOURCES
-            </div>
-            <div style={{ fontSize: '14px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
-                <span>PAPER</span>
-                <strong style={{ fontSize: '18px' }}>{gameState.paper.toFixed(1)}</strong>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
-                <span>PP</span>
-                <strong style={{ fontSize: '18px' }}>{gameState.pp.toFixed(1)}</strong>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
-                <span>ENERGY</span>
-                <strong style={{ fontSize: '18px' }}>{gameState.energy.toFixed(1)}%</strong>
-              </div>
-            </div>
-          </div>
-
-          <div style={{
-            border: '1px solid var(--border-color)',
-            padding: '24px',
-            marginBottom: '30px',
-            backgroundColor: 'var(--hover-color)'
-          }}>
-            <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6, marginBottom: '20px' }}>
-              PRINTER STATUS
-            </div>
-            <div style={{ fontSize: '12px' }}>
-              <div style={{ marginBottom: '12px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                  <span>Quality</span>
-                  <strong>{gameState.printerQuality || 0}%</strong>
-                </div>
-                <div style={{
-                  width: '100%',
-                  height: '8px',
-                  backgroundColor: 'var(--bg-color)',
-                  border: '1px solid var(--border-color)',
-                  overflow: 'hidden'
-                }}>
-                  <div style={{
-                    width: `${gameState.printerQuality || 0}%`,
-                    height: '100%',
-                    backgroundColor: 'var(--accent-color)',
-                    transition: 'width 0.3s'
-                  }} />
-                </div>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--border-color)' }}>
-                <span>Paper/Print</span>
-                <strong>{gameState.paperPerPrint || 1}</strong>
-              </div>
-              {gameState.paperPerSecond > 0 && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px' }}>
-                  <span>Auto-Print</span>
-                  <strong>+{gameState.paperPerSecond.toFixed(1)}/sec</strong>
-                </div>
-              )}
-              {gameState.printerUpgrades?.reality_printer && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px' }}>
-                  <span>PP Gain</span>
-                  <strong>+5 PP/print</strong>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Document System - Tabbed Design with Tier Buttons */}
+          {/* Document System - Moved to left column for primary action focus */}
           <div style={{
             border: '1px solid var(--border-color)',
             padding: '20px',
@@ -669,6 +509,166 @@ ${printing ? '    │  ───────────────────
                 </>
               );
             })()}
+          </div>
+
+          {/* Printed Papers Output */}
+          {printedPapers.length > 0 && (
+            <div>
+              <div style={{
+                fontSize: '11px',
+                textTransform: 'uppercase',
+                letterSpacing: '1px',
+                opacity: 0.6,
+                marginBottom: '16px'
+              }}>
+                OUTPUT TRAY
+              </div>
+              <div style={{
+                border: '1px solid var(--border-color)',
+                padding: '16px',
+                backgroundColor: 'var(--hover-color)',
+                maxHeight: '300px',
+                overflowY: 'auto'
+              }}>
+                {printedPapers.map((paper, index) => (
+                  <div
+                    key={index}
+                    style={{
+                      marginBottom: '16px',
+                      paddingBottom: '16px',
+                      borderBottom: index < printedPapers.length - 1 ? '1px solid var(--border-color)' : 'none',
+                      opacity: 1 - (index * 0.2)
+                    }}
+                  >
+                    <div style={{ fontSize: '9px', opacity: 0.5, marginBottom: '8px' }}>
+                      [PAGE {printedPapers.length - index}]
+                    </div>
+                    <pre style={{
+                      fontSize: '8px',
+                      lineHeight: '1.2',
+                      margin: 0,
+                      fontFamily: 'inherit',
+                      whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-all'
+                    }}>
+                      {paper.map((line, i) => (
+                        <div key={i}>{line}</div>
+                      ))}
+                    </pre>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Right Column - Stats & Info */}
+        <div>
+          <div style={{
+            border: '1px solid var(--border-color)',
+            padding: '24px',
+            marginBottom: '30px',
+            backgroundColor: 'var(--hover-color)'
+          }}>
+            <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6, marginBottom: '20px' }}>
+              RESOURCES
+            </div>
+            <div style={{ fontSize: '14px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
+                <span>PAPER</span>
+                <strong style={{ fontSize: '18px' }}>{gameState.paper.toFixed(1)}</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
+                <span>PP</span>
+                <strong style={{ fontSize: '18px' }}>{gameState.pp.toFixed(1)}</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
+                <span>ENERGY</span>
+                <strong style={{ fontSize: '18px' }}>{gameState.energy.toFixed(1)}%</strong>
+              </div>
+            </div>
+          </div>
+
+          <div style={{
+            border: '1px solid var(--border-color)',
+            padding: '24px',
+            marginBottom: '30px',
+            backgroundColor: 'var(--hover-color)'
+          }}>
+            <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6, marginBottom: '20px' }}>
+              PRINTER STATUS
+            </div>
+            <div style={{ fontSize: '12px' }}>
+              <div style={{ marginBottom: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                  <span>Quality</span>
+                  <strong>{gameState.printerQuality || 0}%</strong>
+                </div>
+                <div style={{
+                  width: '100%',
+                  height: '8px',
+                  backgroundColor: 'var(--bg-color)',
+                  border: '1px solid var(--border-color)',
+                  overflow: 'hidden'
+                }}>
+                  <div style={{
+                    width: `${gameState.printerQuality || 0}%`,
+                    height: '100%',
+                    backgroundColor: 'var(--accent-color)',
+                    transition: 'width 0.3s'
+                  }} />
+                </div>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--border-color)' }}>
+                <span>Paper/Print</span>
+                <strong>{gameState.paperPerPrint || 1}</strong>
+              </div>
+              {gameState.paperPerSecond > 0 && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px' }}>
+                  <span>Auto-Print</span>
+                  <strong>+{gameState.paperPerSecond.toFixed(1)}/sec</strong>
+                </div>
+              )}
+              {gameState.printerUpgrades?.reality_printer && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px' }}>
+                  <span>PP Gain</span>
+                  <strong>+5 PP/print</strong>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Event Log - Moved to right column for consistency with main page */}
+          <div style={{
+            border: '1px solid var(--border-color)',
+            padding: '16px',
+            marginBottom: '30px',
+            backgroundColor: 'var(--hover-color)'
+          }}>
+            <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6, marginBottom: '12px' }}>
+              EVENT LOG
+            </div>
+            <div style={{ maxHeight: '250px', overflowY: 'auto' }}>
+              {(gameState.recentMessages || []).slice(0, 15).map((msg, index) => (
+                <div
+                  key={index}
+                  style={{
+                    fontSize: '10px',
+                    padding: '6px 0',
+                    borderBottom: index < 14 ? '1px dotted var(--border-color)' : 'none',
+                    opacity: 1 - (index * 0.05),
+                    lineHeight: '1.4'
+                  }}
+                >
+                  {msg}
+                </div>
+              ))}
+              {(!gameState.recentMessages || gameState.recentMessages.length === 0) && (
+                <div style={{ fontSize: '10px', opacity: 0.5, fontStyle: 'italic' }}>
+                  No recent events...
+                </div>
+              )}
+            </div>
           </div>
 
           <div style={{
