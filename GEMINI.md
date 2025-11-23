@@ -3,22 +3,18 @@
 **Project:** Office Horror Incremental Game
 **Framework:** Next.js 15.5.6 with React 19.1.0
 **Language:** JavaScript (ES6+)
-**Version:** 2.1
-**Last Updated:** 2025-11-19
+**Version:** 2.0.5
+**Last Updated:** 2025-11-24
 
-**Major Changes in v2.1:**
-- Journal system for tracking discoveries (locations, colleagues, equipment, mechanics)
-- Colleague relationship system with dynamic dialogues and trust tracking
-- Mystery investigation system with clues and theories
-- Player path/alignment system (seeker, rationalist, protector, convert, rebel)
-- Story moments for mandatory narrative beats
+**Major Changes in v2.0.5:**
+- Journal system for tracking discoveries (locations, equipment, mechanics)
 - File drawer document management with consume/shred mechanics
-- Colleague notification and briefing screens
-- Context-aware dialogue based on relationship history
 - Achievement modal for viewing all achievements
+- Notification popup system
+- Buff replacement system
+- Debug system documentation
 
 **Major Changes in v2.0:**
-- Combat system added with turn-based mechanics
 - Loot generation system for randomized equipment
 - Sanity-paper mechanics with quality system
 - Help/tutorial popup system
@@ -48,7 +44,6 @@
 ## 1. Project Architecture
 
 ### Directory Structure
-```
 /app
   /game                    # Main game application
     page.js                # Main game component (UI orchestrator)
@@ -57,7 +52,6 @@
     constants.js           # Core game data: INITIAL_GAME_STATE, LOCATIONS, UPGRADES, ACHIEVEMENTS
     skillTreeConstants.js  # Skill tree definitions and XP system
     dimensionalConstants.js  # Dimensional mining materials
-    combatConstants.js     # Combat system: enemies, mechanics, balance
     equipmentConstants.js  # Weapons, armor, and equipment definitions
     lootConstants.js       # Loot tables, rarities, prefixes, imbuements
 
@@ -67,7 +61,6 @@
     sanityPaperHelpers.js  # Sanity-paper mechanics and quality system
     lootGenerationHelpers.js  # Loot generation algorithms
     journalHelpers.js      # Journal discovery tracking and queries
-    colleagueHelpers.js    # Context-aware dialogue and relationship logic
     gameUtils.js           # Utility functions (distortion, particles, effects)
     saveSystem.js          # Save/load/export/import functionality
 
@@ -76,13 +69,9 @@
     MeditationModal.js     # Breathing meditation minigame
     DebugModal.js          # Code debugging challenges
     DebugPanel.js          # Developer debug tools
-    ColleagueModal.js      # Colleague interaction dialogs
-    ColleagueBriefingModal.js  # Warning screen before colleague encounters
-    StoryMomentModal.js    # Mandatory narrative beat displays
-    JournalModal.js        # Discovery journal with tabs for locations/colleagues/equipment
+    JournalModal.js        # Discovery journal with tabs for locations/equipment/mechanics
     AchievementsModal.js   # Achievement progress viewer
     ExamineModal.js        # Archive item examination
-    CombatModal.js         # Turn-based combat interface
     Armory.js              # Equipment management UI
     PrinterRoom.js         # Paper printing system UI
     FileDrawer.js          # Document storage and management (inbox-like UI)
@@ -90,8 +79,12 @@
     DimensionalUpgradesDisplay.js  # Dimensional upgrade shop
     HelpPopup.js           # Context-aware tutorial system
     EventLog.js            # Message log display component
-    NotificationBubble.js  # Colleague encounter notifications (top-left corner)
+    NotificationPopup.js   # Notification toast system
+    BuffReplacementModal.js # UI for managing active buff limits
     CrystalOpeningModal.js # Loot reveal UI
+    
+    # Documentation
+    DEBUG_SYSTEM.md        # Documentation for debug challenges
 
   /apps                    # Apps showcase page
   page.js                  # Home page
@@ -119,7 +112,7 @@
 ### CRITICAL: Cascading Change Checklist
 When making changes to ANY game system, you MUST verify and update ALL of the following:
 
-**For System Changes (e.g., Skill Tree, Combat, Documents):**
+**For System Changes (e.g., Skill Tree, Documents, Loot):**
 - [ ] Core implementation files (constants, helpers, modals)
 - [ ] Related help popups in `constants.js` → `HELP_POPUPS`
 - [ ] Journal mechanic entries in `constants.js` → `MECHANICS_ENTRIES`
@@ -346,12 +339,9 @@ gameState.shownHelpPopups // Array of popup IDs that have been shown
 gameState.currentHelpPopup // Object or null: { id, title, content }
 gameState.meditationUnlocked  // Boolean: Meditation appears at <= 25% sanity
 
-// Combat System (Added 2025-10-23)
-gameState.currentEnemy    // Object or null: current enemy data
-gameState.playerCombatHP  // Number: player HP during combat
-gameState.combatLog       // Array of combat message objects
-gameState.isPlayerTurn    // Boolean: whose turn it is
-gameState.combatEnded     // Boolean: combat finished flag
+// Combat System (Removed v2.0.5 - Not implemented)
+// gameState.combatLog       // Removed
+// gameState.currentEnemy    // Removed
 
 // Equipment System (Added 2025-10-23)
 gameState.equippedWeapon  // String: legacy weapon ID (for old system)
@@ -365,10 +355,6 @@ gameState.equippedLootArmor   // Object: { head: null, chest: null, accessory: n
 gameState.equippedLootAnomalies  // Array of equipped loot anomaly IDs (max 3)
 
 // Special Mechanics
-gameState.strangeColleagueEvent  // Object or null: current colleague dialog
-gameState.pendingColleagueEncounter  // Object or null: briefing screen before colleague interaction
-gameState.colleagueNotification  // Object or null: { message, colleagueId, encounterId }
-gameState.completedColleagueEncounters  // Array: completed encounter IDs
 gameState.debugMode       // Boolean: debug challenge active
 gameState.currentBug      // Object or null: current debug challenge
 gameState.debugAttempts   // Number: attempts on current bug
@@ -379,26 +365,10 @@ gameState.timeRewindUsed  // Boolean: temporal rewind used today flag
 gameState.voidClauseActive  // Boolean: void contract buff active
 gameState.voidClauseExpires  // Number: timestamp when void clause expires
 
-// Colleague Relationship System (Added 2025-10-29)
-gameState.colleagueRelationships  // Object: { colleagueId: { trust, encounters, lastResponseType } }
-gameState.disagreementCount  // Number: total disagreements with colleagues
-gameState.colleagueResponseCount  // Number: total responses (for archive unlock)
-
-// Mystery & Path System (Added 2025-11-05)
-gameState.mysteryProgress  // Number 0-100: how much truth has been uncovered
-gameState.playerPath      // String or null: dominant path (seeker, rationalist, protector, convert, rebel)
-gameState.pathScores      // Object: { seeker, rationalist, protector, convert, rebel }
-gameState.investigation   // Object: { clues: [], theories: [] }
-
-// Story Moments System (Added 2025-11-05)
-gameState.completedStoryMoments  // Array: story moment IDs that have been seen
-gameState.pendingStoryMoment  // Object or null: current forced story encounter
-
 // Journal System (Added 2025-10-31, Revised 2025-11-01)
 gameState.journalOpen     // Boolean: is journal UI visible
-gameState.journalTab      // String: current tab (locations, colleagues, equipment, mechanics)
+gameState.journalTab      // String: current tab (locations, equipment, mechanics)
 gameState.discoveredLocations  // Array: location IDs that have been visited
-gameState.discoveredColleagues  // Array: colleague IDs that have been met
 gameState.discoveredBaseWeapons  // Array: base weapon type IDs found
 gameState.discoveredBaseArmor  // Array: base armor type IDs found
 gameState.discoveredBaseAnomalies  // Array: base anomaly type IDs found
@@ -409,6 +379,11 @@ gameState.storedDocuments  // Array: document objects with { id, type, tier, qua
 gameState.fileDrawerOpen  // Boolean: is file drawer UI visible
 gameState.documentSortBy  // String: sort order (newest, oldest, quality, type)
 gameState.documentMastery  // Object: { memos: 0, reports: 0, contracts: 0, prophecies: 0 }
+
+// Notification System (Added 2025-11-20)
+gameState.notifications   // Array: { id, message, timestamp }
+gameState.maxActiveBuffs  // Number: max active buffs (default 3)
+gameState.pendingBuff     // Object: buff waiting for replacement decision
 
 // Debug Flags (Development Only)
 gameState.debugForceTearSpawn  // Boolean: Force 100% dimensional tear spawn rate
@@ -460,8 +435,7 @@ export const INITIAL_GAME_STATE = {
 // 1. Initial game state (ALWAYS FIRST)
 export const INITIAL_GAME_STATE = { ... };
 
-// 2. Dialogue & Interaction Data
-export const STRANGE_COLLEAGUE_DIALOGUES = [ ... ];  // ASCII art + dialogue trees with relationship tracking
+// 2. Interaction Data
 export const DEBUG_CHALLENGES = [ ... ];              // Code debugging puzzles
 
 // 3. Location Data
@@ -496,10 +470,9 @@ export const LEVEL_SYSTEM = { ... };  // XP curve and leveling rules
 export const SKILLS = { ... };        // Skill definitions by ID
 export const XP_REWARDS = { ... };    // XP amounts for different actions
 
-// combatConstants.js
-export const ENEMY_ARCHETYPES = { ... };  // Base enemy types
-export const ENEMY_PREFIXES = { ... };    // Enemy modifiers by level
-export const COMBAT_MECHANICS = { ... };  // Combat rules and balance
+// combatConstants.js (Removed v2.0.5)
+// export const ENEMY_ARCHETYPES = { ... };
+// export const COMBAT_MECHANICS = { ... };
 
 // equipmentConstants.js
 export const WEAPONS = { ... };     // Weapon definitions
@@ -860,46 +833,7 @@ export const applyPPMultiplier = (basePP, gameState) => {
 };
 ```
 
-### Combat System Pattern (Added 2025-10-23)
-```javascript
-// Turn-based combat state machine
-const startCombat = () => {
-  setGameState(prev => {
-    const enemy = generateEnemy(prev.playerLevel || 1);
-    const playerStats = getPlayerCombatStats(prev);
 
-    return {
-      ...prev,
-      inCombat: true,
-      currentEnemy: enemy,
-      playerCombatHP: playerStats.maxHP,
-      combatLog: [],
-      isPlayerTurn: true,
-      combatEnded: false,
-      strangeColleagueEvent: null // Clear colleague event
-    };
-  });
-};
-
-// Enemy generation uses level scaling
-const enemy = generateEnemy(playerLevel);
-// Returns: { displayName, currentHP, maxHP, damage, ppReward, xpReward }
-
-// Player stats calculated from equipment
-const playerStats = getPlayerCombatStats(gameState);
-// Returns: { maxHP, damage, defense, critChance, critMultiplier }
-
-// Combat actions update log and handle turn switching
-const playerAttack = () => {
-  setGameState(prev => {
-    // Calculate damage with crit chance
-    // Update enemy HP
-    // Add to combat log
-    // Check for victory/defeat
-    // Switch turns
-  });
-};
-```
 
 ### Loot Generation Pattern (Added 2025-10-23)
 ```javascript
@@ -1007,7 +941,7 @@ if (!gameState.shownHelpPopups.includes(popupId)) {
 ### Journal Discovery Pattern (Added 2025-10-31)
 ```javascript
 // Track discoveries automatically when player encounters them
-import { discoverLocation, discoverColleague, discoverEquipment } from './journalHelpers';
+import { discoverLocation } from './journalHelpers';
 
 // Location discovery when changing locations
 const changeLocation = (locationId) => {
@@ -1015,14 +949,6 @@ const changeLocation = (locationId) => {
     ...prev,
     location: locationId,
     discoveredLocations: discoverLocation(prev, locationId)
-  }));
-};
-
-// Colleague discovery on first encounter
-const encounterColleague = (colleagueId) => {
-  setGameState(prev => ({
-    ...prev,
-    discoveredColleagues: discoverColleague(prev, colleagueId)
   }));
 };
 
@@ -1041,96 +967,11 @@ const lootItem = (item) => {
   }));
 };
 
-// Journal tabs: locations, colleagues, equipment, mechanics
-// Player can view lore, relationship status, and learned mechanics
+// Journal tabs: locations, equipment, mechanics
+// Player can view lore and learned mechanics
 ```
 
-### Colleague Relationship Pattern (Added 2025-10-29)
-```javascript
-// Dynamic dialogue based on relationship history
-import { getColleagueDialogue, getAvailableResponses } from './colleagueHelpers';
 
-// Get context-aware dialogue
-const colleague = STRANGE_COLLEAGUE_DIALOGUES.find(c => c.id === colleagueId);
-const relationship = gameState.colleagueRelationships[colleagueId];
-const dialogue = getColleagueDialogue(colleague, relationship);
-
-// Response options filtered by game state (sanity, equipment, documents, etc.)
-const responses = getAvailableResponses(colleague, gameState);
-
-// Process response and update relationship
-const respondToColleague = (responseOption) => {
-  setGameState(prev => {
-    const outcome = responseOption.outcome;
-    const relationship = prev.colleagueRelationships[colleagueId];
-
-    return {
-      ...prev,
-      colleagueRelationships: {
-        ...prev.colleagueRelationships,
-        [colleagueId]: {
-          trust: relationship.trust + (outcome.trust || 0),
-          encounters: relationship.encounters + 1,
-          lastResponseType: responseOption.type
-        }
-      },
-      // Apply outcome effects (pp, xp, sanity, clues, etc.)
-      pp: prev.pp + (outcome.pp || 0),
-      sanity: Math.max(0, Math.min(100, prev.sanity + (outcome.sanity || 0))),
-      mysteryProgress: prev.mysteryProgress + (outcome.mysteryProgress || 0),
-      pathScores: {
-        ...prev.pathScores,
-        [outcome.pathScore]: prev.pathScores[outcome.pathScore] + 1
-      },
-      // Add clue if provided
-      investigation: outcome.clue ? {
-        ...prev.investigation,
-        clues: [...prev.investigation.clues, {
-          ...outcome.clue,
-          collectedOn: Date.now()
-        }]
-      } : prev.investigation
-    };
-  });
-
-  // Grant XP
-  if (outcome.xp) grantXP(outcome.xp);
-};
-```
-
-### Story Moments Pattern (Added 2025-11-05)
-```javascript
-// Forced narrative encounters that override normal colleague events
-// Story moments trigger at specific conditions (day, mystery progress, etc.)
-
-// Check for pending story moments
-const checkStoryMoments = () => {
-  const storyMoment = STORY_MOMENTS.find(sm =>
-    !gameState.completedStoryMoments.includes(sm.id) &&
-    sm.trigger(gameState)
-  );
-
-  if (storyMoment) {
-    setGameState(prev => ({
-      ...prev,
-      pendingStoryMoment: storyMoment,
-      strangeColleagueEvent: null  // Clear normal colleague event
-    }));
-  }
-};
-
-// Complete story moment
-const completeStoryMoment = (momentId) => {
-  setGameState(prev => ({
-    ...prev,
-    completedStoryMoments: [...prev.completedStoryMoments, momentId],
-    pendingStoryMoment: null
-  }));
-};
-
-// Story moments are displayed in StoryMomentModal with dramatic presentation
-// They cannot be avoided and ensure key narrative beats are experienced
-```
 
 ### File Drawer Pattern (Added 2025-11-04)
 ```javascript
@@ -1202,48 +1043,7 @@ const shredDocument = (documentId) => {
 // Important documents always appear first
 ```
 
-### Mystery & Path Tracking Pattern (Added 2025-11-05)
-```javascript
-// Track player's investigation progress and narrative alignment
 
-// Collect clues from colleague encounters, events, and discoveries
-const addClue = (clue) => {
-  setGameState(prev => ({
-    ...prev,
-    investigation: {
-      ...prev.investigation,
-      clues: [...prev.investigation.clues, {
-        ...clue,
-        collectedOn: Date.now()
-      }]
-    }
-  }));
-};
-
-// Path scores determine player's alignment and ending
-// Paths: seeker, rationalist, protector, convert, rebel
-const updatePathScore = (pathType, points = 1) => {
-  setGameState(prev => ({
-    ...prev,
-    pathScores: {
-      ...prev.pathScores,
-      [pathType]: prev.pathScores[pathType] + points
-    }
-  }));
-};
-
-// Determine dominant path
-const getDominantPath = (pathScores) => {
-  const entries = Object.entries(pathScores);
-  const [dominantPath] = entries.reduce((max, entry) =>
-    entry[1] > max[1] ? entry : max
-  );
-  return dominantPath;
-};
-
-// Mystery progress unlocks new story moments and endings
-// Progress increases through clue collection and key discoveries
-```
 
 ---
 
