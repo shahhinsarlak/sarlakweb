@@ -134,12 +134,9 @@ export const INITIAL_GAME_STATE = {
   // Notification System (Added 2025-11-20)
   // Displays temporary popups in top-left corner
   notifications: [],  // Array of notification objects: { id, message, timestamp }
-  // Archive Case System (Added 2025-11-23)
-  // Hidden documents unlocked via output tray at 100% printer quality
-  currentCaseNumber: null,        // Case number currently shown in output tray
-  unlockedCases: [],              // Array of case numbers player has found
+  // Archive System (Added 2025-11-23)
+  unlockedCases: [],              // Array of case numbers player has discovered
   archiveSearchQuery: '',         // Current search input
-  lastCaseChangeTime: null,       // Timestamp of last case rotation
   // Debug flags
   debugForceTearSpawn: false // Force 100% tear spawn rate for testing
 };
