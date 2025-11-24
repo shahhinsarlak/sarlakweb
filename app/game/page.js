@@ -387,8 +387,8 @@ export default function Game() {
 
     let effectivePPS = gameState.ppPerSecond;
 
-    // 1. Apply skill multipliers
-    effectivePPS = applyPPMultiplier(effectivePPS, gameState);
+    // 1. Apply skill multipliers (PP/sec specific multipliers)
+    effectivePPS = applyPPSMultiplier(effectivePPS, gameState);
 
     // 2. Apply sanity tier multipliers + efficiency report buffs
     effectivePPS = applySanityPPModifier(effectivePPS, gameState);
