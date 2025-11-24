@@ -1137,7 +1137,7 @@ Some readers become the read.`,
     discoveryMessage: "This file should not exist. But you made it exist by looking."
   },
 
-  000: {
+  0: {
     id: 0,
     title: "Case Zero - Before the Beginning",
     classification: "ORIGIN FILE",
