@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { DOCUMENT_TYPES, TIER_MASTERY_WEIGHTS } from './constants';
+import { DOCUMENT_TYPES, TIER_MASTERY_WEIGHTS, ARCHIVE_CASES } from './constants';
 import {
   calculatePaperQuality,
   canPrintDocument,
@@ -511,9 +511,107 @@ ${printing ? '    │  ───────────────────
             })()}
           </div>
 
-          {/* Printed Papers Output */}
+          {/* Output Tray - Case Number Display (when quality >= 100%) */}
+          <div style={{ marginTop: '30px' }}>
+            <div style={{
+              fontSize: '11px',
+              textTransform: 'uppercase',
+              letterSpacing: '1px',
+              opacity: 0.6,
+              marginBottom: '16px'
+            }}>
+              OUTPUT TRAY
+            </div>
+            <div style={{
+              border: '1px solid var(--border-color)',
+              padding: '20px',
+              backgroundColor: gameState.printerQuality >= 100 ? 'rgba(255, 255, 255, 0.05)' : 'var(--hover-color)',
+              minHeight: '120px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              alignItems: 'center'
+            }}>
+              {gameState.printerQuality >= 100 ? (
+                <div style={{ width: '100%' }}>
+                  {gameState.currentCaseNumber ? (
+                    <div style={{
+                      textAlign: 'center',
+                      padding: '15px',
+                      border: '1px dashed var(--accent-color)',
+                      backgroundColor: 'rgba(0, 0, 0, 0.3)'
+                    }}>
+                      <div style={{ opacity: 0.7, fontSize: '10px', marginBottom: '8px', letterSpacing: '1px' }}>
+                        CLASSIFIED DOCUMENT
+                      </div>
+                      <div style={{
+                        fontFamily: "'Courier New', monospace",
+                        fontSize: '28px',
+                        fontWeight: 'bold',
+                        color: 'var(--accent-color)',
+                        letterSpacing: '4px',
+                        marginBottom: '8px'
+                      }}>
+                        CASE #{gameState.currentCaseNumber}
+                      </div>
+                      <div style={{ opacity: 0.5, fontSize: '10px', marginTop: '8px', letterSpacing: '0.5px' }}>
+                        CLASSIFICATION: [REDACTED]
+                      </div>
+                      <div style={{
+                        marginTop: '15px',
+                        paddingTop: '15px',
+                        borderTop: '1px solid var(--border-color)',
+                        fontSize: '9px',
+                        opacity: 0.7,
+                        fontStyle: 'italic'
+                      }}>
+                        Search this case number in the Archive
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ opacity: 0.5, fontSize: '11px', textAlign: 'center' }}>
+                      {gameState.unlockedCases.length >= Object.keys(ARCHIVE_CASES).length
+                        ? 'ALL CASES ACCESSED'
+                        : 'AWAITING CASE ASSIGNMENT'}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div style={{ width: '100%' }}>
+                  <div style={{
+                    padding: '20px',
+                    textAlign: 'center',
+                    fontSize: '11px',
+                    opacity: 0.3,
+                    fontFamily: "'Courier New', monospace",
+                    letterSpacing: '1px'
+                  }}>
+                    ██████████████████████
+                    <br />
+                    ████████ ███████ ████
+                    <br />
+                    ██████████████████████
+                  </div>
+                  <div style={{
+                    textAlign: 'center',
+                    fontSize: '9px',
+                    opacity: 0.5,
+                    marginTop: '15px'
+                  }}>
+                    Quality must reach 100%
+                    <br />
+                    <span style={{ fontSize: '10px', opacity: 0.7 }}>
+                      Currently: {gameState.printerQuality.toFixed(1)}%
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Printed Papers (shown below output tray if any) */}
           {printedPapers.length > 0 && (
-            <div>
+            <div style={{ marginTop: '30px' }}>
               <div style={{
                 fontSize: '11px',
                 textTransform: 'uppercase',
@@ -521,7 +619,7 @@ ${printing ? '    │  ───────────────────
                 opacity: 0.6,
                 marginBottom: '16px'
               }}>
-                OUTPUT TRAY
+                RECENT PRINTS
               </div>
               <div style={{
                 border: '1px solid var(--border-color)',
