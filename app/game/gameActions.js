@@ -13,7 +13,7 @@
  * - upgrades: Purchase permanent improvements
  * - printer: Paper generation system
  */
-import { LOCATIONS, UPGRADES, DEBUG_CHALLENGES, PRINTER_UPGRADES, DOCUMENT_TYPES, TIER_MASTERY_WEIGHTS } from './constants';
+import { LOCATIONS, UPGRADES, DEBUG_CHALLENGES, PRINTER_UPGRADES, DOCUMENT_TYPES, TIER_MASTERY_WEIGHTS, ARCHIVE_CASES } from './constants';
 import {
   applyEnergyCostReduction,
   applyPPMultiplier
@@ -1035,6 +1035,97 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
     });
   };
 
+  /**
+   * Unlocks an archive case and grants rewards
+   * Called when player searches for a case number
+   */
+  const unlockCase = (caseNumber) => {
+    setGameState(prev => {
+      // Already unlocked
+      if (prev.unlockedCases.includes(caseNumber)) {
+        return {
+          ...prev,
+          recentMessages: ['Case already reviewed.', ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
+        };
+      }
+
+      const archiveCase = ARCHIVE_CASES[caseNumber];
+      if (!archiveCase) {
+        return {
+          ...prev,
+          recentMessages: ['Invalid case number.', ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
+        };
+      }
+
+      const messages = [archiveCase.discoveryMessage];
+      const newState = {
+        ...prev,
+        unlockedCases: [...prev.unlockedCases, caseNumber],
+        archiveSearchQuery: '',
+        recentMessages: [...messages, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
+      };
+
+      // Apply rewards
+      if (archiveCase.rewards.pp) {
+        newState.pp = prev.pp + archiveCase.rewards.pp;
+        messages.unshift(`+${archiveCase.rewards.pp} PP`);
+      }
+      if (archiveCase.rewards.paper) {
+        newState.paper = prev.paper + archiveCase.rewards.paper;
+        messages.unshift(`+${archiveCase.rewards.paper} Paper`);
+      }
+      if (archiveCase.rewards.xp) {
+        grantXP(archiveCase.rewards.xp);
+        messages.unshift(`+${archiveCase.rewards.xp} XP`);
+      }
+      if (archiveCase.rewards.sanity) {
+        newState.sanity = Math.max(0, Math.min(100, prev.sanity + archiveCase.rewards.sanity));
+        const sign = archiveCase.rewards.sanity >= 0 ? '+' : '';
+        messages.unshift(`${sign}${archiveCase.rewards.sanity} Sanity`);
+      }
+      if (archiveCase.rewards.skillPoint) {
+        newState.skillPoints = prev.skillPoints + archiveCase.rewards.skillPoint;
+        messages.unshift(`+${archiveCase.rewards.skillPoint} Skill Point${archiveCase.rewards.skillPoint > 1 ? 's' : ''}`);
+      }
+      if (archiveCase.rewards.dimensionalMaterial) {
+        const { type, amount } = archiveCase.rewards.dimensionalMaterial;
+        newState.dimensionalInventory = {
+          ...prev.dimensionalInventory,
+          [type]: (prev.dimensionalInventory[type] || 0) + amount
+        };
+        messages.unshift(`+${amount} ${type.replace(/_/g, ' ')}`);
+      }
+      if (archiveCase.rewards.buff) {
+        const buff = {
+          id: `case_${caseNumber}_buff`,
+          name: `Case ${caseNumber} Insight`,
+          ppMult: archiveCase.rewards.buff.ppMult || 1.0,
+          xpMult: archiveCase.rewards.buff.xpMult || 1.0,
+          expiresAt: Date.now() + (archiveCase.rewards.buff.duration * 1000)
+        };
+        newState.activeReportBuffs = [...(prev.activeReportBuffs || []), buff];
+        messages.unshift(`Buff activated: ${(buff.ppMult * 100 - 100).toFixed(0)}% PP for ${archiveCase.rewards.buff.duration}s`);
+      }
+      if (archiveCase.rewards.permanentBuff) {
+        if (archiveCase.rewards.permanentBuff.ppPerSecond) {
+          newState.ppPerSecond = prev.ppPerSecond + archiveCase.rewards.permanentBuff.ppPerSecond;
+          messages.unshift(`Permanent: +${archiveCase.rewards.permanentBuff.ppPerSecond} PP/sec`);
+        }
+      }
+
+      // Update messages with all rewards
+      newState.recentMessages = [...messages, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15);
+
+      // Grant XP and check achievements
+      if (!archiveCase.rewards.xp) {
+        grantXP(50); // Default XP for unlocking a case
+      }
+      setTimeout(() => checkAchievements(), 50);
+
+      return newState;
+    });
+  };
+
   // Return all action handlers
   return {
     sortPapers,
@@ -1071,6 +1162,8 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
     // Journal system actions
     openJournal,
     closeJournal,
-    switchJournalTab
+    switchJournalTab,
+    // Archive case system actions (Added 2025-11-23)
+    unlockCase
   };
 };

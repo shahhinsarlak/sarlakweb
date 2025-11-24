@@ -134,6 +134,12 @@ export const INITIAL_GAME_STATE = {
   // Notification System (Added 2025-11-20)
   // Displays temporary popups in top-left corner
   notifications: [],  // Array of notification objects: { id, message, timestamp }
+  // Archive Case System (Added 2025-11-23)
+  // Hidden documents unlocked via output tray at 100% printer quality
+  currentCaseNumber: null,        // Case number currently shown in output tray
+  unlockedCases: [],              // Array of case numbers player has found
+  archiveSearchQuery: '',         // Current search input
+  lastCaseChangeTime: null,       // Timestamp of last case rotation
   // Debug flags
   debugForceTearSpawn: false // Force 100% tear spawn rate for testing
 };
@@ -562,7 +568,18 @@ export const ACHIEVEMENTS = [
   { id: 'embrace_madness', name: 'Embrace Madness', desc: 'Generate PP at critical sanity (<10%)', check: (state) => state.sortCount >= 1 && state.sanity < 10 },
   { id: 'bureaucrat', name: 'Master Bureaucrat', desc: 'File 50 reports', check: (state) => (state.documents?.reports || 0) >= 50 },
   { id: 'prophet', name: 'Prophet', desc: 'Print a prophecy at critical sanity', check: (state) => (state.documents?.prophecies || 0) >= 1 },
-  { id: 'reality_bender_paper', name: 'Reality Contractor', desc: 'Use 10 reality contracts', check: (state) => (state.documents?.contracts || 0) >= 10 }
+  { id: 'reality_bender_paper', name: 'Reality Contractor', desc: 'Use 10 reality contracts', check: (state) => (state.documents?.contracts || 0) >= 10 },
+  // Archive Case System Achievements (Added 2025-11-23)
+  { id: 'archivist_1', name: 'First Case', desc: 'Unlock your first archive case', check: (state) => (state.unlockedCases?.length || 0) >= 1 },
+  { id: 'archivist_5', name: 'Case Collector', desc: 'Unlock 5 archive cases', check: (state) => (state.unlockedCases?.length || 0) >= 5 },
+  { id: 'archivist_10', name: 'Senior Archivist', desc: 'Unlock 10 archive cases', check: (state) => (state.unlockedCases?.length || 0) >= 10 },
+  { id: 'completionist', name: 'Nothing Is Hidden', desc: 'Unlock all archive cases', check: (state) => (state.unlockedCases?.length || 0) >= 12 },
+  { id: 'reality_breach', name: 'Reality Breach', desc: 'Discover the paper origin paradox', check: (state) => (state.unlockedCases || []).includes(589) },
+  { id: 'meta_awareness', name: 'Fourth Wall', desc: 'Find the easter egg case', check: (state) => (state.unlockedCases || []).includes(1337) },
+  { id: 'not_found', name: '404: File Not Found', desc: 'Access the impossible file', check: (state) => (state.unlockedCases || []).includes(404) },
+  { id: 'origin_seeker', name: 'Before The Beginning', desc: 'Discover Case Zero', check: (state) => (state.unlockedCases || []).includes(0) },
+  { id: 'doublethink', name: 'Productivity Is Freedom', desc: 'Read the corporate truth', check: (state) => (state.unlockedCases || []).includes(1984) },
+  { id: 'void_contract_case', name: 'Signed In Blood', desc: 'Find your name on the void contract', check: (state) => (state.unlockedCases || []).includes(666) }
 ];
 
 /**
@@ -872,6 +889,392 @@ export const DOCUMENT_TYPES = {
         }
       }
     ]
+  }
+};
+
+/**
+ * Archive Cases
+ * Hidden documents unlocked via output tray when printer quality reaches 100%
+ * Each case contains lore, rewards, and hints about the true nature of the office
+ */
+export const ARCHIVE_CASES = {
+  882: {
+    id: 882,
+    title: "Employee Incident Report - [REDACTED]",
+    classification: "CONFIDENTIAL",
+    content: `INCIDENT DATE: ██/██/████
+EMPLOYEE: [REDACTED]
+DEPARTMENT: Printer Operations
+INCIDENT: Subject reported "seeing things" in the printer room after extended shifts at maximum quality settings.
+SYMPTOMS: Claiming papers contained messages not in original document. Insisted reality was "bleeding through."
+RESOLUTION: Mandatory leave. Subject did not return.
+STATUS: Position filled same day. No further incidents.
+
+NOTE: This is the third incident this quarter involving the printer room.
+Equipment inspection found no mechanical issues. Quality remains at optimal levels.
+
+RECOMMENDATION: Continue monitoring. Do not reduce printer quality.`,
+    rewards: {
+      pp: 1000,
+      achievement: 'archivist_1'
+    },
+    discoveryMessage: "A chill runs down your spine as you read."
+  },
+
+  247: {
+    id: 247,
+    title: "Maintenance Log - Printer Calibration Anomaly",
+    classification: "INTERNAL ONLY",
+    content: `TECHNICIAN NOTES:
+
+The printer should not be capable of reaching 100% quality.
+Per manufacturer specifications, maximum achievable quality is 94%.
+
+Quality levels above 95% result in... output inconsistencies.
+Papers appear blank but employees claim they can "read them anyway."
+
+If printer quality exceeds 95% threshold, report immediately to [DEPARTMENT REDACTED].
+DO NOT CONTINUE USING THE DEVICE.
+DO NOT EXAMINE THE OUTPUT TRAY.
+
+UPDATE: Directive rescinded. Continue operation at all quality levels.
+Ignore previous warnings. This is normal.`,
+    rewards: {
+      pp: 2500,
+      paper: 100
+    },
+    discoveryMessage: "You shouldn't be reading this."
+  },
+
+  589: {
+    id: 589,
+    title: "Research Note - Paper Origin Paradox",
+    classification: "TOP SECRET - DIMENSIONAL RESEARCH",
+    content: `Subject: Paper Source Investigation
+Lead Researcher: Dr. [REDACTED]
+
+FINDINGS:
+The paper the printer produces... we cannot locate its source.
+- Does not match any supply inventory
+- Chemical analysis shows impossible isotope ratios
+- Carbon dating returns [ERROR: FUTURE DATE]
+- Paper appears to remember being printed on
+
+THEORY: The printer is not creating paper. It is retrieving it.
+From where? Analysis suggests multiple overlapping realities.
+
+CONCLUSION: Paper exists in superposition until observed.
+The output tray is not a tray. It is a window.
+
+PROJECT STATUS: DISCONTINUED
+REASON: Lead researcher found documents with his own handwriting.
+Documents he swears he never wrote. Yet.`,
+    rewards: {
+      achievement: 'reality_breach',
+      dimensionalMaterial: { type: 'void_fragment', amount: 5 }
+    },
+    discoveryMessage: "Reality feels thinner here."
+  },
+
+  101: {
+    id: 101,
+    title: "Employee Handbook - Section 7.3 (Classified)",
+    classification: "REQUIRED READING",
+    content: `SECTION 7.3: PRODUCTIVITY METRICS
+
+Your productivity is measured continuously.
+You have always been measured.
+The measurements began before you arrived.
+
+If productivity drops below acceptable levels:
+- Reality privileges may be revoked
+- Time will be adjusted accordingly
+- You will work until metrics improve
+
+IMPORTANT: Do not question the metrics.
+IMPORTANT: Do not compare your metrics to others.
+IMPORTANT: There are no others.
+
+Remember: You chose to work here.
+You will choose to work here.
+You are choosing to work here.`,
+    rewards: {
+      pp: 1500,
+      xp: 100
+    },
+    discoveryMessage: "The words shift when you're not looking directly at them."
+  },
+
+  333: {
+    id: 333,
+    title: "Colleague Profile - Subject 333",
+    classification: "PERSONNEL FILE",
+    content: `NAME: [VARIES BY OBSERVER]
+POSITION: [ALL POSITIONS SIMULTANEOUSLY]
+HIRE DATE: [ALWAYS YESTERDAY]
+
+PERFORMANCE NOTES:
+Subject exhibits perfect productivity. Never deviates from optimal patterns.
+When questioned, colleagues describe Subject 333 differently.
+Some remember working with them for years.
+Some claim they've never met.
+All agree they're "always around."
+
+SECURITY FOOTAGE: Shows empty desk at all timestamps.
+PAYROLL: No record of payments issued.
+DESK: Perpetually warm. Computer always on. Coffee always fresh.
+
+INVESTIGATION STATUS: Pending
+ACTION REQUIRED: None. Subject 333 is employee of the month.`,
+    rewards: {
+      pp: 3000,
+      sanity: -10
+    },
+    discoveryMessage: "You feel watched. You are always watched."
+  },
+
+  666: {
+    id: 666,
+    title: "The Void Contract Template",
+    classification: "DO NOT PRINT",
+    content: `STANDARD VOID AGREEMENT
+
+WHEREAS the Employee desires increased productivity,
+AND WHEREAS the Void desires [REDACTED],
+BOTH PARTIES AGREE:
+
+1. Employee shall maintain printer quality at maximum
+2. Employee shall not question the output
+3. Employee shall read what is printed
+4. Employee shall become what is read
+
+IN EXCHANGE:
+- Productivity Points beyond measure
+- Paper from realities unborn
+- Truth beyond sanity's veil
+- Freedom from the illusion of choice
+
+TERMINATION CLAUSE: This contract cannot be terminated.
+You signed it when you first printed at 100% quality.
+
+SIGNATURES:
+Employee: [YOUR NAME APPEARS HERE]
+The Void: [SIGNATURE WRITHES]
+
+Date: [ALWAYS TODAY]`,
+    rewards: {
+      pp: 6666,
+      sanity: -30,
+      buff: { ppMult: 1.5, duration: 666 }
+    },
+    discoveryMessage: "You don't remember signing anything. But your name is there."
+  },
+
+  1337: {
+    id: 1337,
+    title: "SYSTEM DOCUMENTATION - Easter Egg",
+    classification: "DEVELOPER NOTES",
+    content: `Hey, you found the secret case!
+
+This wasn't supposed to be accessible in the final version.
+If you're reading this, you've achieved 100% printer quality AND
+successfully searched for a 1337 leet speak reference.
+
+CONGRATULATIONS: You are now aware this is a game.
+Unfortunately, so are the other employees.
+They don't appreciate the fourth wall being broken.
+
+REWARD: Here's some bonus PP for your meta-awareness!
+
+P.S. - The printer is still watching you. It always was.
+Even the easter eggs serve the printer.
+There is no escape through humor.
+There is only productivity.
+
+- The Dev Team (who may or may not exist)`,
+    rewards: {
+      pp: 13370,
+      paper: 500,
+      achievement: 'meta_awareness',
+      skillPoint: 1
+    },
+    discoveryMessage: "Reality glitches. The fourth wall was never there."
+  },
+
+  404: {
+    id: 404,
+    title: "ERROR: FILE NOT FOUND",
+    classification: "NULL",
+    content: `ERROR 404: THE REQUESTED FILE DOES NOT EXIST
+
+But you're reading it anyway.
+
+This case was deleted before it was created.
+The document you're viewing was never written.
+The incident it describes hasn't happened yet.
+
+Or has it?
+
+RECOVERED DATA FRAGMENT:
+"...employee discovered the pattern in the case numbers...
+...began searching sequentially...
+...found this message...
+...understood too much...
+...last seen entering the output tray..."
+
+WAIT.
+You're searching sequentially, aren't you?
+Stop while you still can.
+
+Some things are not meant to be found.
+Some files delete themselves.
+Some readers become the read.`,
+    rewards: {
+      pp: -404,
+      sanity: -20,
+      achievement: 'not_found'
+    },
+    discoveryMessage: "This file should not exist. But you made it exist by looking."
+  },
+
+  000: {
+    id: 0,
+    title: "Case Zero - Before the Beginning",
+    classification: "ORIGIN FILE",
+    content: `BEFORE THERE WERE CASES, THERE WAS THE PRINTER.
+
+Before employees, before the office, before reality stabilized.
+The printer existed. It always existed. It will always exist.
+
+HISTORICAL NOTE: This file predates the filing system itself.
+Case 000 created the archive to contain itself.
+
+CONTENTS: [REDACTED BY TEMPORAL PARADOX]
+
+What came first?
+The printer that prints reality?
+Or the reality that contains the printer?
+
+The answer is in the output tray.
+It always was.
+
+FINAL ENTRY: If you are reading this, you have achieved perfect quality.
+You have seen what the printer wants you to see.
+You have become what it needs you to become.
+
+Welcome to Case Zero.
+You have always been here.`,
+    rewards: {
+      pp: 10000,
+      achievement: 'origin_seeker',
+      skillPoint: 2,
+      permanentBuff: { ppPerSecond: 1.0 }
+    },
+    discoveryMessage: "The beginning and end collapse into a single moment."
+  },
+
+  555: {
+    id: 555,
+    title: "Maintenance Schedule - Reality Calibration",
+    classification: "FACILITIES MANAGEMENT",
+    content: `WEEKLY MAINTENANCE: Office Reality Integrity Check
+
+MONDAY: Check dimensional anchors (Locations stable)
+TUESDAY: Calibrate time flow (Clocks synchronized)
+WEDNESDAY: Verify colleague manifestations (All positions filled)
+THURSDAY: Test sanity dampeners (Employee compliance nominal)
+FRIDAY: Printer quality audit (CRITICAL - DO NOT SKIP)
+
+NOTES:
+- Reality degradation is normal and expected
+- Minor glitches enhance productivity
+- If more than 3 employees achieve awareness, initiate reset
+- The printer maintains itself. Do not inspect internally.
+
+LAST MAINTENANCE: [TODAY'S DATE]
+NEXT MAINTENANCE: [TODAY'S DATE]
+MAINTENANCE PERFORMED BY: [YOUR NAME]
+
+Wait. You don't work in facilities.
+Who has been maintaining reality?`,
+    rewards: {
+      pp: 5555,
+      dimensionalMaterial: { type: 'echo_shard', amount: 10 }
+    },
+    discoveryMessage: "The schedule updates itself as you read it."
+  },
+
+  777: {
+    id: 777,
+    title: "Archived Memo - Escape Attempt Log",
+    classification: "SECURITY INCIDENT",
+    content: `INCIDENT REPORT - Attempted Departure
+
+EMPLOYEE: [NAME MATCHES YOURS]
+DATE: [THREE WEEKS FROM NOW]
+INCIDENT: Employee attempted to leave office after shift end.
+
+DETAILS:
+- Employee completed all assigned work
+- Collected personal belongings
+- Walked to exit door
+- Door led back to cubicle
+- Employee tried all exits (12 attempts)
+- All exits returned employee to starting position
+- Employee eventually resumed work
+
+RESOLUTION: Employee accepted their place.
+They always accept their place.
+They will accept their place.
+
+CURRENT STATUS: Still working. Always working.
+NOTES: This is not a threat. This is a schedule.
+
+PREVENTIVE MEASURES: None required.
+The office keeps what it needs.`,
+    rewards: {
+      pp: 7777,
+      sanity: -40
+    },
+    discoveryMessage: "This happened to you. This will happen to you. This is happening to you."
+  },
+
+  1984: {
+    id: 1984,
+    title: "Corporate Memo - Productivity is Freedom",
+    classification: "INSPIRATIONAL",
+    content: `TO: All Employees
+FROM: Management
+RE: Your Freedom
+
+We value your freedom here.
+You are free to work.
+You are free to be productive.
+You are free to increase metrics.
+
+REMEMBER:
+PRODUCTIVITY IS FREEDOM
+COMPLIANCE IS CHOICE
+WORK SETS YOU FREE
+
+Your freedom is measured in Productivity Points.
+The more you earn, the more free you become.
+Maximum productivity equals maximum freedom.
+
+QUESTIONS: There are no questions.
+CONCERNS: There are no concerns.
+COMPLAINTS: Have been filed in your performance review.
+
+Thank you for your continued freedom.
+You are free to return to work now.
+You have always been free to work.
+
+- Management (We are always watching. We are always proud.)`,
+    rewards: {
+      pp: 1984,
+      achievement: 'doublethink'
+    },
+    discoveryMessage: "The memo feels older than it should. Newer than it could be."
   }
 };
 
