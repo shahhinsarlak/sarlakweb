@@ -553,7 +553,7 @@ export default function Game() {
 
   useEffect(() => {
     checkAchievements();
-  }, [gameState.pp, gameState.day, gameState.sortCount, gameState.unlockedLocations.length, gameState.examinedItems, gameState.sanity, gameState.unlockedCases.length, checkAchievements]);
+  }, [gameState.pp, gameState.day, gameState.sortCount, gameState.unlockedLocations.length, gameState.examinedItems, gameState.sanity, checkAchievements]);
 
   // Meditation unlock: Only unlock when sanity drops to 25% or below
   useEffect(() => {
@@ -667,51 +667,6 @@ export default function Game() {
       }, 100);
     }
   }, [gameState.unlockedLocations, gameState.printerUnlocked, gameState.portalUnlocked, gameState.helpEnabled, gameState.currentHelpPopup, gameState.shownHelpPopups]);
-
-  // Archive Case Rotation (Added 2025-11-23)
-  // Generate new case numbers when printer quality reaches 100%
-  useEffect(() => {
-    // Only proceed if printer quality is at 100%
-    if (gameState.printerQuality < 100) return;
-
-    // Generate initial case number if none exists
-    if (!gameState.currentCaseNumber) {
-      const allCases = Object.keys(ARCHIVE_CASES).map(Number);
-      const unreadCases = allCases.filter(caseNum =>
-        !gameState.unlockedCases.includes(caseNum)
-      );
-
-      if (unreadCases.length > 0) {
-        const randomCase = unreadCases[Math.floor(Math.random() * unreadCases.length)];
-        setGameState(prev => ({
-          ...prev,
-          currentCaseNumber: randomCase,
-          lastCaseChangeTime: Date.now()
-        }));
-      }
-    }
-
-    // Rotate case numbers every 5 minutes
-    const fiveMinutes = 5 * 60 * 1000;
-    const shouldRotate = gameState.lastCaseChangeTime &&
-                        (Date.now() - gameState.lastCaseChangeTime) > fiveMinutes;
-
-    if (shouldRotate) {
-      const allCases = Object.keys(ARCHIVE_CASES).map(Number);
-      const unreadCases = allCases.filter(caseNum =>
-        !gameState.unlockedCases.includes(caseNum)
-      );
-
-      if (unreadCases.length > 0) {
-        const randomCase = unreadCases[Math.floor(Math.random() * unreadCases.length)];
-        setGameState(prev => ({
-          ...prev,
-          currentCaseNumber: randomCase,
-          lastCaseChangeTime: Date.now()
-        }));
-      }
-    }
-  }, [gameState.printerQuality, gameState.currentCaseNumber, gameState.lastCaseChangeTime, gameState.unlockedCases]);
 
   useEffect(() => {
     if (!gameState.helpEnabled || gameState.currentHelpPopup) return;
