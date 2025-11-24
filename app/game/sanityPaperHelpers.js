@@ -160,47 +160,6 @@ export const canPrintDocument = (docType, gameState) => {
 };
 
 /**
- * Generate a random prophecy message based on game state
- * @param {Object} gameState - Current game state
- * @returns {string} Prophecy message
- */
-export const generateProphecy = (gameState) => {
-  const prophecies = [
-    'T̴h̴e̴ ̴w̴a̴l̴l̴s̴ ̴h̴a̴v̴e̴ ̴m̴e̴m̴o̴r̴i̴e̴s̴.̴ Day 30 breaks them.',
-    'The archive knows your name. It always has.',
-    'Portal frequency: 20 toggles. The lights remember.',
-    'Combat is negotiation. Agreement is survival. Disagreement is... something else.',
-    'Paper begets paper. Print begets reality. Reality begets...?',
-    'Dimensional essence sleeps in the void. Wake it with madness.',
-    'The printer speaks: "Quality is sanity. Sanity is fiction."',
-    'Your colleague was never real. But they remember you.',
-    'T̷h̷e̷ ̷d̷r̷a̷w̷e̷r̷ ̷o̷p̷e̷n̷s̷ ̷w̷h̷e̷n̷ ̷y̷o̷u̷ ̷s̷t̷o̷p̷ ̷l̷o̷o̷k̷i̷n̷g̷.',
-    'Meditation is remembering to forget. Or forgetting to remember?',
-    'The fluorescent lights hum at 60Hz. That is the frequency of truth.',
-    'Productivity points: your soul, measured in increments.',
-    'The break room exists in all timelines. Choose carefully.',
-    'Debug the code. Debug reality. Same thing. Different syntax.',
-    'Sanity drains to reveal. Revelation drains to transform.',
-    'Paper quality mirrors mind quality. Neither is real.'
-  ];
-
-  // Add context-specific prophecies based on game state
-  if (gameState.portalUnlocked && !gameState.dimensionalUpgrades?.singularity_collapse) {
-    prophecies.push('Two nodes. Collapse them. Escape awaits.');
-  }
-
-  if (gameState.disagreementCount >= 15 && gameState.disagreementCount < 20) {
-    prophecies.push(`${20 - gameState.disagreementCount} more disagreements. Then: revelation.`);
-  }
-
-  if (!gameState.portalUnlocked && gameState.themeToggleCount >= 10) {
-    prophecies.push(`Toggle ${20 - gameState.themeToggleCount} more times. Reality tears.`);
-  }
-
-  return prophecies[Math.floor(Math.random() * prophecies.length)];
-};
-
-/**
  * Get a random dimensional material for essence clause contract
  * @returns {string} Material ID
  */
@@ -322,9 +281,10 @@ export const getActiveBuffPPPerSecondMultiplier = (gameState) => {
   const activeBuffs = gameState.activeReportBuffs || [];
   const now = Date.now();
   const ppSecBuffs = activeBuffs.filter(b => b.expiresAt > now && b.ppPerSecondMult);
-  // Stack buffs additively
-  const totalBonus = ppSecBuffs.reduce((sum, b) => sum + (b.ppPerSecondMult - 1), 0);
-  return 1 + totalBonus;
+  // Stack buffs additively (full values, not mult-1)
+  // Two 4x buffs = 4 + 4 = 8x bonus = 9x total (1 + 8) = 800% increase
+  const totalBonus = ppSecBuffs.reduce((sum, b) => sum + b.ppPerSecondMult, 0);
+  return ppSecBuffs.length > 0 ? 1 + totalBonus : 1;
 };
 
 /**

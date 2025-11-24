@@ -66,8 +66,7 @@ export const INITIAL_GAME_STATE = {
   documentMastery: {
     memos: 0,      // Total memos printed (unlocks tiers at 0, 5, 15, 30, 50)
     reports: 0,    // Total reports printed
-    contracts: 0,  // Total contracts printed
-    prophecies: 0  // Total prophecies printed
+    contracts: 0   // Total contracts printed
   },
   // File Drawer System (Redesigned 2025-11-04)
   // Documents are stored here and can be consumed/shredded

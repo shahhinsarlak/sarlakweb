@@ -334,7 +334,15 @@ ${printing ? '    │  ───────────────────
               borderBottom: '1px solid var(--border-color)',
               flexWrap: 'wrap'
             }}>
-              {Object.entries(DOCUMENT_TYPES).map(([id, data]) => {
+              {Object.entries(DOCUMENT_TYPES)
+                .filter(([id]) => {
+                  // Hide contracts until portal is unlocked
+                  if (id === 'contract' && !gameState.portalUnlocked) return false;
+                  // Hide prophecy entirely (removed from game)
+                  if (id === 'prophecy') return false;
+                  return true;
+                })
+                .map(([id, data]) => {
                 const progress = getTierProgress(id, gameState);
                 const isSelected = selectedDocType === id;
                 return (
