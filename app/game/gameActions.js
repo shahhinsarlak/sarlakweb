@@ -25,7 +25,6 @@ import {
   applyEnergyCostModifier,
   calculatePaperQuality,
   canPrintDocument,
-  generateProphecy,
   getRandomDimensionalMaterial,
   cleanExpiredBuffs,
   getTierData,
@@ -295,7 +294,7 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       if (isCorrect) {
         const reward = Math.floor(200 + Math.random() * 300);
         addMessage(`DEBUG SUCCESS: +${reward} PP. The code compiles. Reality stabilizes.`);
-        grantXP(15); // XP_REWARDS.completeDebug
+        grantXP(15, false); // XP_REWARDS.completeDebug - suppress particles for debug challenges
         return {
           ...prev,
           pp: prev.pp + reward,
@@ -830,6 +829,7 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
 
           const buffParts = [];
           if (buff.ppMult) buffParts.push(`${((buff.ppMult - 1) * 100).toFixed(0)}% more PP`);
+          if (buff.ppPerSecondMult) buffParts.push(`${buff.ppPerSecondMult}x PP/sec`);
           if (buff.xpMult) buffParts.push(`${((buff.xpMult - 1) * 100).toFixed(0)}% more XP`);
           if (buff.energyCostMult) {
             const reduction = ((1 - buff.energyCostMult) * 100).toFixed(0);
@@ -896,13 +896,10 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
         messages.push(`PERMANENT +${outcome.permanentPPPerSec} PP/sec`);
       }
 
-      // Handle lore/prophecy
+      // Handle lore (prophecy removed from game)
       if (outcome.lore) {
         if (outcome.lore === 'static') {
           messages.push(outcome.desc);
-        } else {
-          const prophecyText = generateProphecy(prev);
-          messages.push('PROPHECY:', prophecyText);
         }
       }
 

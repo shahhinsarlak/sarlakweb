@@ -75,26 +75,28 @@ export default function Game() {
     }));
   }, []);
 
-  const grantXP = useCallback((amount) => {
+  const grantXP = useCallback((amount, showParticles = true) => {
     setGameState(prev => {
       // Pass empty function to prevent addExperience from adding messages
       const xpResult = addExperience(prev, amount, () => {});
-      
+
       // Manually add level-up message here to avoid duplicates
       const messages = [];
       if (xpResult.leveledUp) {
         const levelsGained = xpResult.playerLevel - prev.playerLevel;
         const skillPointsGained = xpResult.skillPoints - (prev.skillPoints || 0);
-        
+
         if (levelsGained === 1) {
           messages.push(`LEVEL UP! You are now level ${xpResult.playerLevel}. +${skillPointsGained} Skill Point${skillPointsGained > 1 ? 's' : ''}!`);
         } else {
           messages.push(`LEVEL UP! You gained ${levelsGained} levels and are now level ${xpResult.playerLevel}. +${skillPointsGained} Skill Points!`);
         }
-        
-        setTimeout(() => {
-          createLevelUpParticles();
-        }, 100);
+
+        if (showParticles) {
+          setTimeout(() => {
+            createLevelUpParticles();
+          }, 100);
+        }
       }
       
       return {
@@ -394,14 +396,9 @@ export default function Game() {
     effectivePPS = applySanityPPModifier(effectivePPS, gameState);
 
     // 3. Apply void contract multipliers (ppPerSecondMult from contracts)
-    const activeBuffs = gameState.activeReportBuffs || [];
-    const now = Date.now();
-    const ppSecBuffs = activeBuffs.filter(b => b.expiresAt > now && b.ppPerSecondMult);
-
-    if (ppSecBuffs.length > 0) {
-      const maxMult = Math.max(...ppSecBuffs.map(b => b.ppPerSecondMult));
-      effectivePPS *= maxMult;
-    }
+    // Use the helper function to get stacked multiplier
+    const ppSecMult = getActiveBuffPPPerSecondMultiplier(gameState);
+    effectivePPS *= ppSecMult;
 
     return effectivePPS;
   };
