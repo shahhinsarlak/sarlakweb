@@ -598,6 +598,19 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       // Use weighted mastery gain based on tier (higher tiers = more mastery)
       const masteryGain = TIER_MASTERY_WEIGHTS[tierNumber] || 1;
 
+      // Notification message
+      const icon = qualityIcons[qualityOutcome];
+      const qualityLabel = qualityOutcome.toUpperCase();
+      const message = `${icon} ${tierData.name} [${qualityLabel}] created! Check File Drawer to consume.`;
+
+      // Create notification
+      const notification = {
+        id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        message: message,
+        timestamp: Date.now()
+      };
+
+      const maxMessages = prev.maxLogMessages || 15;
       const newState = {
         ...prev,
         paper: prev.paper - (tierData.cost.paper || 0),
@@ -607,7 +620,9 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
           ...prev.documentMastery,
           [`${docType}s`]: (prev.documentMastery?.[`${docType}s`] || 0) + masteryGain
         },
-        storedDocuments: [...(prev.storedDocuments || []), document]
+        storedDocuments: [...(prev.storedDocuments || []), document],
+        recentMessages: [message, ...prev.recentMessages].slice(0, maxMessages),
+        notifications: [...(prev.notifications || []), notification]
       };
 
       // Visual effects based on quality
@@ -616,13 +631,6 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
           triggerScreenEffect('shake');
         }
       }, 100);
-
-      // Notification message
-      const icon = qualityIcons[qualityOutcome];
-      const qualityLabel = qualityOutcome.toUpperCase();
-      const message = `${icon} ${tierData.name} [${qualityLabel}] created! Check File Drawer to consume.`;
-
-      addMessage(message);
 
       setTimeout(() => checkAchievements(), 100);
 
