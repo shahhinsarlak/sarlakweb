@@ -8,13 +8,25 @@
  * - Adds item to player's loot inventory
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { formatImbuements } from './lootGenerationHelpers';
 import NotificationPopup from './NotificationPopup';
 
 export default function CrystalOpeningModal({ lootItem, onComplete, onClose, notifications, onDismissNotification }) {
   const [tapCount, setTapCount] = useState(0);
   const [isRevealing, setIsRevealing] = useState(false);
+
+  // Handle escape key to close modal (only after reveal)
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape' && isRevealing) {
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [onClose, isRevealing]);
 
   /**
    * Get readable text color for rarity - always use light colors since modal is always on black background

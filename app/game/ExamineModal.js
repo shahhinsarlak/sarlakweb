@@ -1,7 +1,20 @@
 'use client';
+import { useEffect } from 'react';
 import NotificationPopup from './NotificationPopup';
 
 export default function ExamineModal({ item, closeExamine, notifications, onDismissNotification }) {
+  // Handle escape key to close modal
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') {
+        closeExamine();
+      }
+    };
+
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [closeExamine]);
+
   return (
     <>
       <div style={{

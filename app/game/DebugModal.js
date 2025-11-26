@@ -1,6 +1,19 @@
+import { useEffect } from 'react';
 import NotificationPopup from './NotificationPopup';
 
 export default function DebugModal({ gameState, submitDebug, updateDebugCode, cancelDebug, notifications, onDismissNotification }) {
+  // Handle escape key to close modal
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') {
+        cancelDebug();
+      }
+    };
+
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [cancelDebug]);
+
   if (!gameState.currentBug) return null;
 
   return (

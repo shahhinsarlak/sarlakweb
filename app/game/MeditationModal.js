@@ -1,7 +1,19 @@
+import { useEffect } from 'react';
 import EventLog from './EventLog';
 import NotificationPopup from './NotificationPopup';
 
 export default function MeditationModal({ gameState, breatheAction, cancelMeditation, notifications, onDismissNotification }) {
+  // Handle escape key to close modal
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') {
+        cancelMeditation();
+      }
+    };
+
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [cancelMeditation]);
   const elapsed = gameState.meditationStartTime ? Date.now() - gameState.meditationStartTime : 0;
   const target = gameState.meditationTargetTime || 3000;
   const progress = Math.min(100, (elapsed / target) * 100);
