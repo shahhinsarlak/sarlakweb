@@ -247,97 +247,188 @@ export const LOCATIONS = {
         name: 'Incident Report #447',
         story: 'Date: ████/██/████. Employee complained about "seeing patterns in the fluorescent lights." Investigation determined: Employee does not exist. Case closed. Follow-up: Employee filed three more reports. Resolution: Removed employee from timeline. Status: Employee still filing reports.'
       },
+      {
+        id: 'birthday',
+        name: 'Birthday Card',
+        story: 'Happy 43rd Birthday! The entire office signed it. There are 1,847 signatures. You recognize all of them. They\'re all yours. Different handwriting, different pens, different years. Some signatures are dated from decades you haven\'t lived yet.'
+      },
+      {
+        id: 'timecard',
+        name: 'Timesheet - Week 0',
+        story: 'Monday: 8 hours. Tuesday: 8 hours. Wednesday: 8 hours. Thursday: 8 hours. Friday: 8 hours. Saturday: You don\'t work Saturdays. Sunday: You don\'t work Sundays. Total: 847 hours. "Overtime approved by: The Fluorescent Lights."'
+      },
+      {
+        id: 'complaint',
+        name: 'HR Complaint Form',
+        story: 'Employee Name: [REDACTED]. Complaint: "The coffee machine is screaming." Date Filed: Every Tuesday. HR Response: "Coffee machine does not exist. Employee has been working here for -3 years. Complaint valid. No action required."'
+      },
+      {
+        id: 'training',
+        name: 'Safety Training Manual',
+        story: 'Chapter 4: What To Do If You Stop Existing. Step 1: Remain calm. Step 2: Continue working. Step 3: Do not inform HR. Step 4: You have always been here. Step 5: Ignore the humming. Step 6: Return to Step 1.'
+      },
+      {
+        id: 'meeting',
+        name: 'Meeting Minutes',
+        story: 'All-Hands Meeting, Conference Room B. Attendees: Everyone. No one. You (x847). Topics Discussed: The Quota. The Lights. The Thing In The Break Room. Action Items: Exist harder. Forget meeting occurred. Schedule next meeting for yesterday.'
+      },
+      {
+        id: 'vacation',
+        name: 'Vacation Request',
+        story: 'Request: 2 weeks PTO, dates: ██/██ to ██/██. Manager Response: "DENIED. Reason: You are currently on vacation. You have been on vacation for 12 years. You are also at your desk. Please return from vacation to submit vacation request."'
+      },
+      {
+        id: 'exit',
+        name: 'Exit Interview Notes',
+        story: 'Employee: You. Reason for Leaving: "I want to exist somewhere else." Length of Employment: ∞ years. Would you recommend this company: Yes (No is not an option). Final Comments: "I never clocked in. I can\'t clock out. The lights are following me home."'
+      },
+      {
+        id: 'directory',
+        name: 'Phone Directory',
+        story: 'A-C: You (ext. 0000). D-F: You (ext. 0000). G-I: You (ext. 0000). J-L: You (ext. 0000). M-O: You (ext. 0000). P-R: You (ext. 0000). S-U: You (ext. 0000). V-Z: You (ext. 0000). Emergency Contact: You (ext. 0000).'
+      },
+      {
+        id: 'medical',
+        name: 'Medical Records',
+        story: 'Patient: You. Diagnosed Conditions: Temporal Displacement Syndrome, Chronic Existence Failure, Fluorescent Light Sensitivity. Prescribed Treatment: Continue working. Prognosis: You have always had these conditions. They predate your birth.'
+      },
+      {
+        id: 'emergency',
+        name: 'Emergency Procedures',
+        story: 'IN CASE OF REALITY BREACH: 1) Do not acknowledge the breach. 2) Continue sorting papers. 3) If walls become transparent, maintain eye contact with your desk. 4) If you see yourself, you are the copy. Proceed to Archive. 5) The lights will guide you.'
+      },
+      {
+        id: 'newsletter',
+        name: 'Company Newsletter',
+        story: 'Employee of the Month: You (847th consecutive month!). Upcoming Events: The Reckoning (TBD). Office Closures: Never. Reminder: The coffee machine incident never happened. Please stop reporting it. Birthday: You (Every day). In Memoriam: You (1987-2∞∞∞).'
+      },
+      {
+        id: 'layoff',
+        name: 'Layoff Notice',
+        story: 'Dear Employee, due to restructuring, your position has been eliminated effective ██/██/████. You are no longer employed. Please continue reporting to work. Your final paycheck will be deposited never. Thank you for your -12 years of service.'
+      },
+      {
+        id: 'policy',
+        name: 'Updated Company Policy',
+        story: 'Effective immediately: Employees must exist between 9 AM - 5 PM. Non-existence during business hours will result in disciplinary action. Breaks: Two 15-min non-existence breaks permitted. Dress Code: Casual Fridays now include partial transparency.'
+      },
+      {
+        id: 'maintenance',
+        name: 'Maintenance Log - Lights',
+        story: 'Entry 1: Lights installed. Entry 2: Lights watching. Entry 3: Lights humming. Entry 847: Lights have always been here. Entry 848: We installed the building around the lights. Entry 849: The lights installed us. Entry ∞: [DATA EXPUNGED]'
+      },
+      {
+        id: 'security',
+        name: 'Security Footage Log',
+        story: 'Camera 1 - Cubicle Area: Subject enters 9:04 AM. Subject never leaves. Camera 2 - Hallway: Empty. Always empty. Was never not empty. Camera 3 - Break Room: [FOOTAGE CORRUPTED]. Camera 4 - Your Desk: You are watching yourself watch this footage.'
+      },
 
-      // Encrypted/corrupted documents
+      // Encrypted documents with eerie ASCII art
       {
-        id: 'encrypted_01',
-        name: '████████████',
-        story: '█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████'
+        id: 'encrypted_eye',
+        name: 'O̷B̷S̷E̷R̷V̷A̷T̷I̷O̷N̷ ̷L̷O̷G̷',
+        story: `The document shows only this:
+
+        ░░░░░░░░░░░░░░░░░░░░░░░░░░░
+        ░░░░░░░▓▓▓▓▓▓▓▓▓▓▓░░░░░░░░░
+        ░░░░░▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░░░░░░
+        ░░░░▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░░░░░
+        ░░░▓▓▓▓▓▓░░░░░░░▓▓▓▓▓▓░░░░░
+        ░░▓▓▓▓▓░░░░░░░░░░░▓▓▓▓▓░░░░
+        ░░▓▓▓▓░░░░▓▓▓▓▓░░░░▓▓▓▓░░░░
+        ░▓▓▓▓░░░░▓▓▓▓▓▓▓░░░░▓▓▓▓░░░
+        ░▓▓▓▓░░░░▓▓▓▓▓▓▓░░░░▓▓▓▓░░░
+        ░▓▓▓▓░░░░░▓▓▓▓▓░░░░░▓▓▓▓░░░
+        ░░▓▓▓▓░░░░░░░░░░░░░▓▓▓▓░░░░
+        ░░▓▓▓▓▓░░░░░░░░░░░▓▓▓▓▓░░░░
+        ░░░▓▓▓▓▓▓░░░░░░░▓▓▓▓▓▓░░░░░
+        ░░░░▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░░░░░
+        ░░░░░▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░░░░░░
+        ░░░░░░░▓▓▓▓▓▓▓▓▓▓▓░░░░░░░░░
+        ░░░░░░░░░░░░░░░░░░░░░░░░░░░
+
+        IT SEES YOU`
       },
       {
-        id: 'encrypted_02',
-        name: 'F̴͎̈I̷͓̾L̶̰̍E̴̱͠ ̶̱̌#̸̰͝█̶̣̈́█̴̰̏█̵̱̄',
-        story: '█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████'
+        id: 'encrypted_hallway',
+        name: 'C̸O̸R̸R̸I̸D̸O̸R̸ ̸M̸A̸P̸',
+        story: `The page depicts:
+
+        ║║║║║║║║║║║║║║║║║║║║║║║║║║║║
+        ║                          ║
+        ║    ┌─────────────────┐   ║
+        ║    │                 │   ║
+        ║    │    ░░░░░░░░░    │   ║
+        ║    │    ░░░░█░░░░    │   ║
+        ║    │    ░░░███░░░    │   ║
+        ║    │    ░░█████░░    │   ║
+        ║    │    ░███████░    │   ║
+        ║    │    ░░█████░░    │   ║
+        ║    │    ░░░███░░░    │   ║
+        ║    │    ░░░░█░░░░    │   ║
+        ║    │    ░░░░█░░░░    │   ║
+        ║    │                 │   ║
+        ║    └─────────────────┘   ║
+        ║                          ║
+        ║║║║║║║║║║║║║║║║║║║║║║║║║║║║
+
+        SOMEONE IS STANDING AT THE END
+        THEY HAVE BEEN THERE SINCE BEFORE THE BUILDING WAS BUILT`
       },
       {
-        id: 'encrypted_03',
-        name: 'R̷E̷D̷A̷C̷T̷E̷D̷',
-        story: '█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████'
+        id: 'encrypted_spiral',
+        name: 'R̷E̷A̷L̷I̷T̷Y̷ ̷M̷A̷T̷R̷I̷X̷',
+        story: `The text spirals inward:
+
+                    ██████████████████
+                ████                  ████
+              ██                          ██
+            ██    ████████████████████      ██
+          ██    ██                    ██      ██
+        ██    ██    ██████████████      ██      ██
+        ██    ██  ██              ██      ██    ██
+        ██    ██  ██  ██████████  ██      ██    ██
+        ██    ██  ██  ██      ██  ██      ██    ██
+        ██    ██  ██  ██  ██  ██  ██      ██    ██
+        ██    ██  ██  ██████████  ██      ██    ██
+        ██    ██  ██              ██      ██    ██
+        ██    ██    ██████████████████    ██    ██
+          ██    ██                    ██  ██  ██
+            ██    ████████████████████    ██
+              ██                        ██
+                ████                  ████
+                    ██████████████████
+
+        THE CENTER IS EVERYWHERE
+        YOU ARE ALREADY THERE`
       },
       {
-        id: 'encrypted_04',
-        name: '███ VOID ███',
-        story: '█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████'
-      },
-      {
-        id: 'encrypted_05',
-        name: 'C̸O̸R̸R̸U̸P̸T̸E̸D̸',
-        story: '█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████'
-      },
-      {
-        id: 'encrypted_06',
-        name: '████████',
-        story: '█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████'
-      },
-      {
-        id: 'encrypted_07',
-        name: 'N̴O̴ ̴D̴A̴T̴A̴',
-        story: '█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████'
-      },
-      {
-        id: 'encrypted_08',
-        name: '███████████',
-        story: '█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████'
-      },
-      {
-        id: 'encrypted_09',
-        name: 'E̷R̷R̷O̷R̷ ̷4̷0̷4̷',
-        story: '█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████'
-      },
-      {
-        id: 'encrypted_10',
-        name: '████ NULL ████',
-        story: '█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████'
-      },
-      {
-        id: 'encrypted_11',
-        name: 'D̶E̶L̶E̶T̶E̶D̶',
-        story: '█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████'
-      },
-      {
-        id: 'encrypted_12',
-        name: '███████████',
-        story: '█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████'
-      },
-      {
-        id: 'encrypted_13',
-        name: 'M̷I̷S̷S̷I̷N̷G̷',
-        story: '█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████'
-      },
-      {
-        id: 'encrypted_14',
-        name: '████████',
-        story: '█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████'
-      },
-      {
-        id: 'encrypted_15',
-        name: 'U̸N̸K̸N̸O̸W̸N̸',
-        story: '█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████'
-      },
-      {
-        id: 'encrypted_16',
-        name: '███ LOST ███',
-        story: '█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████'
-      },
-      {
-        id: 'encrypted_17',
-        name: '████████████',
-        story: '█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████'
-      },
-      {
-        id: 'encrypted_18',
-        name: 'N̴̢̛O̶̰͝ ̷̰̈A̴͓̾C̷̱̍Č̸̰E̴̱͠S̶̰͝S̷̱̄',
-        story: '█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████'
+        id: 'encrypted_lights',
+        name: 'L̴I̴G̴H̴T̴ ̴P̴A̴T̴T̴E̴R̴N̴S̴',
+        story: `Fluorescent schematic:
+
+        ═══════════════════════════════════════
+        ║ ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ ║
+        ║ ▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓ ║
+        ═══════════════════════════════════════
+                       █████
+                       █████
+                       █████
+        ═══════════════════════════════════════
+        ║ ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ ║
+        ║ ▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓ ║
+        ═══════════════════════════════════════
+                       █████
+                       █████
+                       █████
+        ═══════════════════════════════════════
+        ║ ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ ║
+        ║ ▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓ ║
+        ═══════════════════════════════════════
+
+        THEY ARE NOT PROVIDING LIGHT
+        THEY ARE CONSUMING DARKNESS
+        THEY HUNGER`
       }
     ]
   },
