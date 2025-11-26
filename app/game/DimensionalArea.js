@@ -223,18 +223,42 @@ export default function DimensionalArea({ gameState, setGameState, onExit, grant
   const handleExit = () => {
     setGameState(prev => {
       const newDimensionalInventory = { ...(prev.dimensionalInventory || {}) };
-      
+
+      // Build messages and notifications for collected materials
+      const messages = [];
+      const notifications = [];
+
       Object.keys(currentInventory).forEach(materialId => {
-        newDimensionalInventory[materialId] = (newDimensionalInventory[materialId] || 0) + currentInventory[materialId];
+        const count = currentInventory[materialId];
+        if (count > 0) {
+          const material = DIMENSIONAL_MATERIALS.find(m => m.id === materialId);
+          const message = `Collected: ${count}x ${material?.name || materialId}`;
+
+          messages.push(message);
+          notifications.push({
+            id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            message: message,
+            timestamp: Date.now()
+          });
+        }
+
+        newDimensionalInventory[materialId] = (newDimensionalInventory[materialId] || 0) + count;
       });
-      
+
+      // Add summary message if any materials were collected
+      if (messages.length > 0) {
+        messages.unshift('Portal exit: Materials transferred to inventory');
+      }
+
       return {
         ...prev,
         dimensionalInventory: newDimensionalInventory,
-        portalCooldown: 60
+        portalCooldown: 60,
+        recentMessages: [...messages, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15),
+        notifications: [...(prev.notifications || []), ...notifications]
       };
     });
-    
+
     onExit();
   };
 
