@@ -48,8 +48,8 @@ export const getDistortionStyle = (sanity) => {
       left: 0;
       width: 100vw;
       height: 100vh;
-      pointerEvents: none;
-      zIndex: 5000;
+      pointer-events: none;
+      z-index: 5000;
       overflow: hidden;
     `;
     document.body.appendChild(container);
@@ -112,11 +112,11 @@ export const getDistortionStyle = (sanity) => {
         width: ${size}px;
         height: ${size}px;
         background: ${color};
-        borderRadius: 50%;
+        border-radius: 50%;
         opacity: 1;
-        boxShadow: 0 0 ${size * 3}px ${color}, 0 0 ${size * 6}px ${color};
+        box-shadow: 0 0 ${size * 3}px ${color}, 0 0 ${size * 6}px ${color};
         animation: levelUpParticle${i} ${duration}s ease-out ${delay}s forwards;
-        zIndex: 5001;
+        z-index: 5001;
         pointer-events: none;
       `;
   
@@ -165,11 +165,11 @@ export const getDistortionStyle = (sanity) => {
         width: ${size}px;
         height: ${size}px;
         background: ${color};
-        borderRadius: 50%;
+        border-radius: 50%;
         opacity: 1;
-        boxShadow: 0 0 ${size * 3}px ${color}, 0 0 ${size * 6}px ${color};
+        box-shadow: 0 0 ${size * 3}px ${color}, 0 0 ${size * 6}px ${color};
         animation: levelUpBurst${i} ${duration}s ease-out ${delay}s forwards;
-        zIndex: 5001;
+        z-index: 5001;
         pointer-events: none;
       `;
   
@@ -242,11 +242,11 @@ export const getDistortionStyle = (sanity) => {
         width: ${size}px;
         height: ${size}px;
         background: ${color};
-        borderRadius: 50%;
+        border-radius: 50%;
         opacity: 1;
-        boxShadow: 0 0 ${size * 2}px ${color};
+        box-shadow: 0 0 ${size * 2}px ${color};
         animation: skillParticle${i} ${duration}s ease-out ${delay}s forwards;
-        zIndex: 5001;
+        z-index: 5001;
         pointer-events: none;
       `;
   
