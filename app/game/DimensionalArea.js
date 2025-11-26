@@ -21,11 +21,11 @@ export default function DimensionalArea({ gameState, setGameState, onExit, grant
   const [showCrystalModal, setShowCrystalModal] = useState(false);
   const [currentLootItem, setCurrentLootItem] = useState(null);
   const [tearCollected, setTearCollected] = useState(false);
-  const [glitchingChars, setGlitchingChars] = useState(new Set());
-  
+  const [glitchOverlays, setGlitchOverlays] = useState([]);
+
   const effects = getActiveSkillEffects(gameState);
   const modifiedCapacity = getModifiedCapacity(DIMENSIONAL_CAPACITY, gameState);
-  
+
   // Generate encrypted text once per portal entry
   const encryptedText = useMemo(() => generateEncryptedText(3000), []);
 
@@ -78,28 +78,30 @@ export default function DimensionalArea({ gameState, setGameState, onExit, grant
     }));
   }, []);
 
-  // Text glitching effect - randomly glitch a few characters
+  // Lightweight glitch effect - positioned overlays only
   useEffect(() => {
     const glitchInterval = setInterval(() => {
-      // Pick 3-5 random character positions to glitch
+      // Generate 3-5 random glitch overlays
       const numGlitches = Math.floor(Math.random() * 3) + 3;
-      const newGlitchingChars = new Set();
+      const glitchChars = '!@#$%^&*()_+-=[]{}|;:,.<>?';
 
-      for (let i = 0; i < numGlitches; i++) {
-        const pos = Math.floor(Math.random() * encryptedText.length);
-        newGlitchingChars.add(pos);
-      }
+      const newOverlays = Array.from({ length: numGlitches }, (_, i) => ({
+        id: `glitch_${Date.now()}_${i}`,
+        char: glitchChars[Math.floor(Math.random() * glitchChars.length)],
+        top: Math.random() * 80 + 10, // 10-90% of viewport
+        left: Math.random() * 90 + 5   // 5-95% of viewport
+      }));
 
-      setGlitchingChars(newGlitchingChars);
+      setGlitchOverlays(newOverlays);
 
       // Clear glitches after 100ms
       setTimeout(() => {
-        setGlitchingChars(new Set());
+        setGlitchOverlays([]);
       }, 100);
-    }, 2000 + Math.random() * 3000); // Glitch every 2-5 seconds
+    }, 3000 + Math.random() * 2000); // Glitch every 3-5 seconds
 
     return () => clearInterval(glitchInterval);
-  }, [encryptedText.length]);
+  }, []);
 
   const currentCapacity = Object.values(currentInventory).reduce((sum, count) => sum + count, 0);
   const remainingCapacity = modifiedCapacity - currentCapacity;
@@ -210,40 +212,6 @@ export default function DimensionalArea({ gameState, setGameState, onExit, grant
     onExit();
   };
 
-  // Helper function to render text with glitch effect
-  const renderTextWithGlitches = (text, startIndex, key) => {
-    const chars = text.split('');
-    const glitchChars = '!@#$%^&*()_+-=[]{}|;:,.<>?';
-
-    return (
-      <span key={key}>
-        {chars.map((char, i) => {
-          const absolutePos = startIndex + i;
-          const isGlitching = glitchingChars.has(absolutePos);
-
-          if (isGlitching && char !== ' ' && char !== '\n') {
-            // Replace with random glitch character
-            const glitchChar = glitchChars[Math.floor(Math.random() * glitchChars.length)];
-            return (
-              <span
-                key={`${key}-${i}`}
-                style={{
-                  color: '#ff0000',
-                  textShadow: '0 0 4px #ff0000',
-                  animation: 'glitchFlicker 0.1s linear'
-                }}
-              >
-                {glitchChar}
-              </span>
-            );
-          }
-
-          return char;
-        })}
-      </span>
-    );
-  };
-
   const renderTextWithNodes = () => {
     const elements = [];
     let lastIndex = 0;
@@ -261,9 +229,12 @@ export default function DimensionalArea({ gameState, setGameState, onExit, grant
       // Skip collected material nodes
       if (!node.isTear && collectedNodes.includes(node.id)) return;
 
-      // Add text before this node with glitch effect
-      const textSegment = encryptedText.slice(lastIndex, node.position);
-      elements.push(renderTextWithGlitches(textSegment, lastIndex, `text-${idx}`));
+      // Add text before this node
+      elements.push(
+        <span key={`text-${idx}`}>
+          {encryptedText.slice(lastIndex, node.position)}
+        </span>
+      );
 
       if (node.isTear) {
         // Render dimensional tear
@@ -371,9 +342,11 @@ export default function DimensionalArea({ gameState, setGameState, onExit, grant
       lastIndex = node.position;
     });
 
-    // Add final text segment with glitch effect
-    const finalTextSegment = encryptedText.slice(lastIndex);
-    elements.push(renderTextWithGlitches(finalTextSegment, lastIndex, 'text-final'));
+    elements.push(
+      <span key="text-final">
+        {encryptedText.slice(lastIndex)}
+      </span>
+    );
 
     return elements;
   };
@@ -459,6 +432,27 @@ export default function DimensionalArea({ gameState, setGameState, onExit, grant
             zIndex: 1
           }}
         />
+      ))}
+
+      {/* Glitch overlays - positioned absolutely over text */}
+      {glitchOverlays.map(glitch => (
+        <div
+          key={glitch.id}
+          style={{
+            position: 'fixed',
+            left: `${glitch.left}%`,
+            top: `${glitch.top}%`,
+            color: '#ff0000',
+            textShadow: '0 0 4px #ff0000',
+            fontSize: '12px',
+            fontFamily: 'Times New Roman, serif',
+            pointerEvents: 'none',
+            zIndex: 999,
+            animation: 'glitchFlicker 0.1s linear'
+          }}
+        >
+          {glitch.char}
+        </div>
       ))}
 
       <div style={{
