@@ -116,7 +116,7 @@ export default function Game() {
       const achievementMessages = [];
       let hasNew = false;
       let totalXP = 0;
-  
+
       ACHIEVEMENTS.forEach(achievement => {
         if (!newAchievements.includes(achievement.id) && achievement.check(prev)) {
           newAchievements.push(achievement.id);
@@ -125,24 +125,32 @@ export default function Game() {
           totalXP += XP_REWARDS.completeAchievement;
         }
       });
-  
+
       if (hasNew) {
         // Pass a callback that adds to achievementMessages instead of directly calling addMessage
         const xpResult = addExperience(prev, totalXP, (msg) => {
           achievementMessages.push(msg);
         });
-        
+
         if (xpResult.leveledUp) {
           setTimeout(() => {
             createLevelUpParticles();
           }, 0);
         }
-        
-        return { 
-          ...prev, 
+
+        // Create notifications for all achievement messages
+        const newNotifications = achievementMessages.map(msg => ({
+          id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          message: msg,
+          timestamp: Date.now()
+        }));
+
+        return {
+          ...prev,
           ...xpResult,
           achievements: newAchievements,
-          recentMessages: [...achievementMessages.reverse(), ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
+          recentMessages: [...achievementMessages.reverse(), ...prev.recentMessages].slice(0, prev.maxLogMessages || 15),
+          notifications: [...(prev.notifications || []), ...newNotifications]
         };
       }
       return prev;
@@ -166,13 +174,21 @@ export default function Game() {
             // Trigger screen shake effect
             setTimeout(() => createScreenShake(), 0);
 
+            // Create notifications for portal unlock messages
+            const newNotifications = messages.map(msg => ({
+              id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+              message: msg,
+              timestamp: Date.now()
+            }));
+
             return {
               ...prev,
               themeToggleCount: newCount,
               portalUnlocked: true,
               unlockedLocations: [...new Set([...prev.unlockedLocations, 'portal'])],
               sanity: Math.max(0, prev.sanity - 10),
-              recentMessages: [...messages.reverse(), ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
+              recentMessages: [...messages.reverse(), ...prev.recentMessages].slice(0, prev.maxLogMessages || 15),
+              notifications: [...(prev.notifications || []), ...newNotifications]
             };
           }
           

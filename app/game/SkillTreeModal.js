@@ -1,10 +1,22 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { SKILLS, SKILL_BRANCHES, LEVEL_SYSTEM } from './skillTreeConstants';
 import NotificationPopup from './NotificationPopup';
 
 export default function SkillTreeModal({ gameState, onClose, onPurchaseSkill, notifications, onDismissNotification }) {
   const [activeTab, setActiveTab] = useState('efficiency');
   const [hoveredSkill, setHoveredSkill] = useState(null);
+
+  // Handle escape key to close modal
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [onClose]);
 
   const playerLevel = gameState.playerLevel || 1;
   const currentXP = gameState.playerXP || 0;

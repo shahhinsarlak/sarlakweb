@@ -10,9 +10,22 @@
  * @param {Function} onReplace - Callback when player chooses to replace a buff (buffId)
  * @param {Function} onCancel - Callback when player cancels the operation
  */
+import { useEffect } from 'react';
 import NotificationPopup from './NotificationPopup';
 
 export default function BuffReplacementModal({ gameState, pendingBuff, onReplace, onCancel, notifications, onDismissNotification }) {
+  // Handle escape key to cancel
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') {
+        onCancel();
+      }
+    };
+
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [onCancel]);
+
   if (!pendingBuff) return null;
 
   // Get active buffs (filter expired)

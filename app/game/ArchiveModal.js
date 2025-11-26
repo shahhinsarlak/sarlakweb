@@ -1,5 +1,5 @@
 'use client';
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import NotificationPopup from './NotificationPopup';
 
 /**
@@ -26,6 +26,17 @@ export default function ArchiveModal({
   examinedCount,
   examinedItems = []
 }) {
+  // Handle escape key to close modal
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [onClose]);
   // Create book representations for each archive item
   const createBook = (item, index) => {
     const isExamined = examinedItems.includes(item.id);

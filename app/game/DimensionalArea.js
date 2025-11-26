@@ -21,6 +21,7 @@ export default function DimensionalArea({ gameState, setGameState, onExit, grant
   const [showCrystalModal, setShowCrystalModal] = useState(false);
   const [currentLootItem, setCurrentLootItem] = useState(null);
   const [tearCollected, setTearCollected] = useState(false);
+  const [glitchingChars, setGlitchingChars] = useState(new Set());
   
   const effects = getActiveSkillEffects(gameState);
   const modifiedCapacity = getModifiedCapacity(DIMENSIONAL_CAPACITY, gameState);
@@ -65,6 +66,40 @@ export default function DimensionalArea({ gameState, setGameState, onExit, grant
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [armoryUnlocked, gameState.debugForceTearSpawn]); // Regenerate when armory unlocked or debug flag changes
+
+  // Generate random particles for background
+  const particles = useMemo(() => {
+    return Array.from({ length: 15 }, (_, i) => ({
+      id: `particle_${i}`,
+      left: Math.random() * 100,
+      animationDelay: Math.random() * 10,
+      animationDuration: 15 + Math.random() * 10,
+      size: 1 + Math.random() * 2
+    }));
+  }, []);
+
+  // Text glitching effect - randomly glitch a few characters
+  useEffect(() => {
+    const glitchInterval = setInterval(() => {
+      // Pick 3-5 random character positions to glitch
+      const numGlitches = Math.floor(Math.random() * 3) + 3;
+      const newGlitchingChars = new Set();
+
+      for (let i = 0; i < numGlitches; i++) {
+        const pos = Math.floor(Math.random() * encryptedText.length);
+        newGlitchingChars.add(pos);
+      }
+
+      setGlitchingChars(newGlitchingChars);
+
+      // Clear glitches after 100ms
+      setTimeout(() => {
+        setGlitchingChars(new Set());
+      }, 100);
+    }, 2000 + Math.random() * 3000); // Glitch every 2-5 seconds
+
+    return () => clearInterval(glitchInterval);
+  }, [encryptedText.length]);
 
   const currentCapacity = Object.values(currentInventory).reduce((sum, count) => sum + count, 0);
   const remainingCapacity = modifiedCapacity - currentCapacity;
@@ -175,6 +210,40 @@ export default function DimensionalArea({ gameState, setGameState, onExit, grant
     onExit();
   };
 
+  // Helper function to render text with glitch effect
+  const renderTextWithGlitches = (text, startIndex, key) => {
+    const chars = text.split('');
+    const glitchChars = '!@#$%^&*()_+-=[]{}|;:,.<>?';
+
+    return (
+      <span key={key}>
+        {chars.map((char, i) => {
+          const absolutePos = startIndex + i;
+          const isGlitching = glitchingChars.has(absolutePos);
+
+          if (isGlitching && char !== ' ' && char !== '\n') {
+            // Replace with random glitch character
+            const glitchChar = glitchChars[Math.floor(Math.random() * glitchChars.length)];
+            return (
+              <span
+                key={`${key}-${i}`}
+                style={{
+                  color: '#ff0000',
+                  textShadow: '0 0 4px #ff0000',
+                  animation: 'glitchFlicker 0.1s linear'
+                }}
+              >
+                {glitchChar}
+              </span>
+            );
+          }
+
+          return char;
+        })}
+      </span>
+    );
+  };
+
   const renderTextWithNodes = () => {
     const elements = [];
     let lastIndex = 0;
@@ -192,12 +261,9 @@ export default function DimensionalArea({ gameState, setGameState, onExit, grant
       // Skip collected material nodes
       if (!node.isTear && collectedNodes.includes(node.id)) return;
 
-      // Add text before this node
-      elements.push(
-        <span key={`text-${idx}`}>
-          {encryptedText.slice(lastIndex, node.position)}
-        </span>
-      );
+      // Add text before this node with glitch effect
+      const textSegment = encryptedText.slice(lastIndex, node.position);
+      elements.push(renderTextWithGlitches(textSegment, lastIndex, `text-${idx}`));
 
       if (node.isTear) {
         // Render dimensional tear
@@ -288,7 +354,7 @@ export default function DimensionalArea({ gameState, setGameState, onExit, grant
                 padding: '4px 8px',
                 fontSize: '10px',
                 fontFamily: "'SF Mono', monospace",
-                color: node.color,
+                color: '#ffffff',
                 whiteSpace: 'nowrap',
                 marginBottom: '4px',
                 pointerEvents: 'none',
@@ -305,11 +371,9 @@ export default function DimensionalArea({ gameState, setGameState, onExit, grant
       lastIndex = node.position;
     });
 
-    elements.push(
-      <span key="text-final">
-        {encryptedText.slice(lastIndex)}
-      </span>
-    );
+    // Add final text segment with glitch effect
+    const finalTextSegment = encryptedText.slice(lastIndex);
+    elements.push(renderTextWithGlitches(finalTextSegment, lastIndex, 'text-final'));
 
     return elements;
   };
@@ -333,6 +397,31 @@ export default function DimensionalArea({ gameState, setGameState, onExit, grant
             transform: scale(1.1);
           }
         }
+
+        @keyframes glitchFlicker {
+          0% { opacity: 1; }
+          25% { opacity: 0.3; }
+          50% { opacity: 1; }
+          75% { opacity: 0.5; }
+          100% { opacity: 1; }
+        }
+
+        @keyframes particleFloat {
+          0% {
+            transform: translateY(0) translateX(0);
+            opacity: 0;
+          }
+          10% {
+            opacity: 0.15;
+          }
+          90% {
+            opacity: 0.15;
+          }
+          100% {
+            transform: translateY(-100vh) translateX(20px);
+            opacity: 0;
+          }
+        }
       `}</style>
       <div style={{
         position: 'fixed',
@@ -351,6 +440,27 @@ export default function DimensionalArea({ gameState, setGameState, onExit, grant
         margin: 0,
         boxSizing: 'border-box'
       }}>
+      {/* Subtle particle background effect */}
+      {particles.map(particle => (
+        <div
+          key={particle.id}
+          style={{
+            position: 'fixed',
+            left: `${particle.left}%`,
+            bottom: 0,
+            width: `${particle.size}px`,
+            height: `${particle.size}px`,
+            backgroundColor: '#333333',
+            borderRadius: '50%',
+            opacity: 0,
+            pointerEvents: 'none',
+            animation: `particleFloat ${particle.animationDuration}s linear infinite`,
+            animationDelay: `${particle.animationDelay}s`,
+            zIndex: 1
+          }}
+        />
+      ))}
+
       <div style={{
         position: 'fixed',
         top: 0,
