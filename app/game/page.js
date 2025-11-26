@@ -874,20 +874,7 @@ export default function Game() {
     );
   }
 
-  if (gameState.archiveOpen) {
-    const archiveLocation = LOCATIONS.archive;
-    return (
-      <ArchiveModal
-        items={archiveLocation.items}
-        onClose={actions.closeArchive}
-        onExamineItem={actions.examineItem}
-        notifications={gameState.notifications}
-        onDismissNotification={dismissNotification}
-        examinedCount={gameState.examinedItems}
-      />
-    );
-  }
-
+  // Check examiningItem first (takes priority over archive modal)
   if (gameState.examiningItem) {
     return (
       <ExamineModal
@@ -898,6 +885,21 @@ export default function Game() {
         gameState={gameState}
         setGameState={setGameState}
         actions={actions}
+      />
+    );
+  }
+
+  if (gameState.archiveOpen) {
+    const archiveLocation = LOCATIONS.archive;
+    return (
+      <ArchiveModal
+        items={archiveLocation.items}
+        onClose={actions.closeArchive}
+        onExamineItem={actions.examineItem}
+        notifications={gameState.notifications}
+        onDismissNotification={dismissNotification}
+        examinedCount={gameState.examinedItems}
+        examinedItems={gameState.examinedArchiveItems}
       />
     );
   }
@@ -1528,43 +1530,6 @@ export default function Game() {
               )}
             </div>
 
-            {gameState.location === 'archive' && currentLocation.items && (
-              <div>
-                <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6, marginBottom: '16px' }}>
-                  THE ARCHIVE
-                </div>
-                <button
-                  onClick={() => actions.openArchive()}
-                  style={{
-                    background: 'var(--accent-color)',
-                    border: '1px solid var(--border-color)',
-                    color: 'var(--bg-color)',
-                    padding: '20px 24px',
-                    cursor: 'pointer',
-                    fontSize: '13px',
-                    fontFamily: 'inherit',
-                    letterSpacing: '2px',
-                    fontWeight: 'bold',
-                    width: '100%',
-                    transition: 'all 0.2s ease',
-                    marginBottom: '16px'
-                  }}
-                >
-                  VIEW BOOKSHELF ({gameState.examinedItems} / {currentLocation.items.length} EXAMINED)
-                </button>
-                <div style={{
-                  fontSize: '11px',
-                  opacity: 0.6,
-                  textAlign: 'center',
-                  lineHeight: '1.6',
-                  fontStyle: 'italic'
-                }}>
-                  Files from employees who never were.
-                  <br />
-                  Documents that should not exist.
-                </div>
-              </div>
-            )}
           </div>
 
           <div>
