@@ -118,8 +118,16 @@ When making changes to ANY game system, you MUST verify and update ALL of the fo
 - [ ] Journal mechanic entries in `constants.js` → `MECHANICS_ENTRIES`
 - [ ] UI displays showing affected values (resources panel, stats, etc.)
 - [ ] Action handlers that use the system (`gameActions.js`)
-- [ ] Achievement conditions that reference the system
+- [ ] Achievement conditions that reference the system (`constants.js` → `ACHIEVEMENTS`)
 - [ ] Tutorial/onboarding text
+
+**For Feature Addition/Removal:**
+- [ ] Add/remove relevant achievements in `constants.js` → `ACHIEVEMENTS`
+- [ ] Add/remove state properties in `INITIAL_GAME_STATE`
+- [ ] Update help popups to reflect new/removed features
+- [ ] Update journal entries if feature affects discoverable content
+- [ ] Remove obsolete UI components and buttons
+- [ ] Clean up unused helper functions and constants
 
 **For Stat/Value Changes (e.g., PP, Energy, Skills):**
 - [ ] Calculation functions (e.g., `calculateEffectivePPPerClick`)
@@ -168,6 +176,23 @@ Example 2: Adding New Stat Type
 2. Add basic display
 3. Forget helper functions (direct math in multiple places)
 4. Forget documentation (users confused)
+
+Example 3: Removing a Feature (e.g., Combat System)
+✅ CORRECT Approach:
+1. Remove combat-related state properties from INITIAL_GAME_STATE
+2. Remove combat achievements from ACHIEVEMENTS array
+3. Remove combat UI components (CombatModal.js, etc.)
+4. Remove combat helper functions and constants
+5. Clean up action handlers that triggered combat
+6. Remove combat help popups and journal entries
+7. Search codebase for any remaining references and remove them
+
+❌ WRONG Approach:
+1. Comment out combat code but leave it in the codebase
+2. Leave combat achievements that can never be earned
+3. Leave broken buttons that reference removed features
+4. Keep state properties that are never used
+5. Leave outdated help popups mentioning the removed feature
 ```
 
 **Failure to follow cascading changes results in:**
