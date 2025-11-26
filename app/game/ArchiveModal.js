@@ -1,4 +1,5 @@
 'use client';
+import { useMemo } from 'react';
 import NotificationPopup from './NotificationPopup';
 
 /**
@@ -176,10 +177,21 @@ export default function ArchiveModal({
     );
   };
 
-  // Split items into rows of 6
+  // Shuffle items for random positions (stable during component lifetime)
+  const shuffledItems = useMemo(() => {
+    const itemsCopy = [...items];
+    // Fisher-Yates shuffle algorithm
+    for (let i = itemsCopy.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [itemsCopy[i], itemsCopy[j]] = [itemsCopy[j], itemsCopy[i]];
+    }
+    return itemsCopy;
+  }, [items]);
+
+  // Split shuffled items into rows of 6
   const rows = [];
-  for (let i = 0; i < items.length; i += 6) {
-    rows.push(items.slice(i, i + 6));
+  for (let i = 0; i < shuffledItems.length; i += 6) {
+    rows.push(shuffledItems.slice(i, i + 6));
   }
 
   return (

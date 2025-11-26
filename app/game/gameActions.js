@@ -36,6 +36,10 @@ import {
 import {
   discoverLocation
 } from './journalHelpers';
+import {
+  createScreenShake
+} from './gameUtils';
+
 
 
 export const createGameActions = (setGameState, addMessage, checkAchievements, grantXP) => {
@@ -410,6 +414,7 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       if (!isAlreadyExamined) {
         if (prev.energy < EXAMINE_ENERGY_COST) {
           addMessage('Too exhausted to focus on the text.');
+          createScreenShake('normal');
           return prev;
         }
 
