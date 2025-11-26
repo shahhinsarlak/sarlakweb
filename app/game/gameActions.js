@@ -395,7 +395,8 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       return {
         ...prev,
         examiningItem: item,
-        examinedItems: newExaminedItems
+        examinedItems: newExaminedItems,
+        archiveOpen: false  // Close archive modal when examining an item
       };
     });
   };
@@ -407,6 +408,19 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
     }));
   };
 
+  const openArchive = () => {
+    setGameState(prev => ({
+      ...prev,
+      archiveOpen: true
+    }));
+  };
+
+  const closeArchive = () => {
+    setGameState(prev => ({
+      ...prev,
+      archiveOpen: false
+    }));
+  };
 
   const buyUpgrade = (upgrade) => {
     setGameState(prev => {
@@ -1054,6 +1068,8 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
     changeLocation,
     examineItem,
     closeExamine,
+    openArchive,
+    closeArchive,
     buyUpgrade,
     printPaper,
     buyPrinterUpgrade,
