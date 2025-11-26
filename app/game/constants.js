@@ -33,6 +33,7 @@ export const INITIAL_GAME_STATE = {
   disagreementCount: 0,
   achievements: [],
   examiningItem: null,
+  archiveOpen: false,
   sortCount: 0,
   examinedItems: 0,
   meditating: false,

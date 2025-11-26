@@ -14,6 +14,7 @@ import Armory from './Armory';
 import FileDrawer from './FileDrawer';
 import HelpPopup from './HelpPopup';
 import AchievementsModal from './AchievementsModal';
+import ArchiveModal from './ArchiveModal';
 import JournalModal from './JournalModal';
 import BuffReplacementModal from './BuffReplacementModal';
 import NotificationPopup from './NotificationPopup';
@@ -873,6 +874,20 @@ export default function Game() {
     );
   }
 
+  if (gameState.archiveOpen) {
+    const archiveLocation = LOCATIONS.archive;
+    return (
+      <ArchiveModal
+        items={archiveLocation.items}
+        onClose={actions.closeArchive}
+        onExamineItem={actions.examineItem}
+        notifications={gameState.notifications}
+        onDismissNotification={dismissNotification}
+        examinedCount={gameState.examinedItems}
+      />
+    );
+  }
+
   if (gameState.examiningItem) {
     return (
       <ExamineModal
@@ -1516,29 +1531,37 @@ export default function Game() {
             {gameState.location === 'archive' && currentLocation.items && (
               <div>
                 <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6, marginBottom: '16px' }}>
-                  ARCHIVED ITEMS
+                  THE ARCHIVE
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {currentLocation.items.map(item => (
-                    <button
-                      key={item.id}
-                      onClick={() => actions.examineItem(item)}
-                      style={{
-                        background: 'none',
-                        border: '1px solid var(--border-color)',
-                        color: 'var(--text-color)',
-                        padding: '14px 16px',
-                        cursor: 'pointer',
-                        fontSize: '12px',
-                        fontFamily: 'inherit',
-                        textAlign: 'left',
-                        transition: 'all 0.2s',
-                        letterSpacing: '0.5px'
-                      }}
-                    >
-                      {item.name}
-                    </button>
-                  ))}
+                <button
+                  onClick={() => actions.openArchive()}
+                  style={{
+                    background: 'var(--accent-color)',
+                    border: '1px solid var(--border-color)',
+                    color: 'var(--bg-color)',
+                    padding: '20px 24px',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    fontFamily: 'inherit',
+                    letterSpacing: '2px',
+                    fontWeight: 'bold',
+                    width: '100%',
+                    transition: 'all 0.2s ease',
+                    marginBottom: '16px'
+                  }}
+                >
+                  VIEW BOOKSHELF ({gameState.examinedItems} / {currentLocation.items.length} EXAMINED)
+                </button>
+                <div style={{
+                  fontSize: '11px',
+                  opacity: 0.6,
+                  textAlign: 'center',
+                  lineHeight: '1.6',
+                  fontStyle: 'italic'
+                }}>
+                  Files from employees who never were.
+                  <br />
+                  Documents that should not exist.
                 </div>
               </div>
             )}
