@@ -81,24 +81,27 @@ export default function DimensionalArea({ gameState, setGameState, onExit, grant
   // Lightweight glitch effect - positioned overlays only
   useEffect(() => {
     const glitchInterval = setInterval(() => {
-      // Generate 3-5 random glitch overlays
-      const numGlitches = Math.floor(Math.random() * 3) + 3;
-      const glitchChars = '!@#$%^&*()_+-=[]{}|;:,.<>?';
+      // Generate 10-15 random glitch overlays
+      const numGlitches = Math.floor(Math.random() * 6) + 10;
+      const glitchChars = '!@#$%^&*()_+-=[]{}|;:,.<>?█▓▒░';
+      const glitchColors = ['#ff0000', '#ff00ff', '#00ffff', '#ffff00'];
 
       const newOverlays = Array.from({ length: numGlitches }, (_, i) => ({
         id: `glitch_${Date.now()}_${i}`,
         char: glitchChars[Math.floor(Math.random() * glitchChars.length)],
+        color: glitchColors[Math.floor(Math.random() * glitchColors.length)],
         top: Math.random() * 80 + 10, // 10-90% of viewport
-        left: Math.random() * 90 + 5   // 5-95% of viewport
+        left: Math.random() * 90 + 5,   // 5-95% of viewport
+        size: Math.random() > 0.7 ? 16 : 12 // Occasionally larger glitches
       }));
 
       setGlitchOverlays(newOverlays);
 
-      // Clear glitches after 100ms
+      // Clear glitches after 80ms
       setTimeout(() => {
         setGlitchOverlays([]);
-      }, 100);
-    }, 3000 + Math.random() * 2000); // Glitch every 3-5 seconds
+      }, 80);
+    }, 800 + Math.random() * 1200); // Glitch every 0.8-2 seconds
 
     return () => clearInterval(glitchInterval);
   }, []);
@@ -395,6 +398,33 @@ export default function DimensionalArea({ gameState, setGameState, onExit, grant
             opacity: 0;
           }
         }
+
+        @keyframes portalPulse {
+          0%, 100% {
+            opacity: 0.03;
+          }
+          50% {
+            opacity: 0.08;
+          }
+        }
+
+        @keyframes scanline {
+          0% {
+            transform: translateY(-100%);
+          }
+          100% {
+            transform: translateY(100vh);
+          }
+        }
+
+        @keyframes staticNoise {
+          0%, 100% {
+            opacity: 0.02;
+          }
+          50% {
+            opacity: 0.05;
+          }
+        }
       `}</style>
       <div style={{
         position: 'fixed',
@@ -413,6 +443,65 @@ export default function DimensionalArea({ gameState, setGameState, onExit, grant
         margin: 0,
         boxSizing: 'border-box'
       }}>
+      {/* Portal background effects */}
+      {/* Animated gradient pulse */}
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: 'radial-gradient(circle at 50% 50%, rgba(100, 0, 150, 0.1) 0%, transparent 70%)',
+        animation: 'portalPulse 8s ease-in-out infinite',
+        pointerEvents: 'none',
+        zIndex: 0
+      }} />
+
+      {/* Vignette effect */}
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: 'radial-gradient(circle at 50% 50%, transparent 0%, rgba(0, 0, 0, 0.7) 100%)',
+        pointerEvents: 'none',
+        zIndex: 0
+      }} />
+
+      {/* Scanline effect */}
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: '2px',
+        background: 'linear-gradient(to bottom, transparent, rgba(100, 0, 150, 0.3), transparent)',
+        boxShadow: '0 0 20px rgba(100, 0, 150, 0.5)',
+        animation: 'scanline 6s linear infinite',
+        pointerEvents: 'none',
+        zIndex: 10
+      }} />
+
+      {/* Static noise overlay */}
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: `repeating-linear-gradient(
+          0deg,
+          rgba(0, 0, 0, 0.05) 0px,
+          rgba(255, 255, 255, 0.03) 1px,
+          rgba(0, 0, 0, 0.05) 2px
+        )`,
+        animation: 'staticNoise 0.5s infinite',
+        pointerEvents: 'none',
+        zIndex: 0,
+        opacity: 0.3
+      }} />
+
       {/* Subtle particle background effect */}
       {particles.map(particle => (
         <div
@@ -442,10 +531,11 @@ export default function DimensionalArea({ gameState, setGameState, onExit, grant
             position: 'fixed',
             left: `${glitch.left}%`,
             top: `${glitch.top}%`,
-            color: '#ff0000',
-            textShadow: '0 0 4px #ff0000',
-            fontSize: '12px',
+            color: glitch.color,
+            textShadow: `0 0 6px ${glitch.color}, 0 0 12px ${glitch.color}`,
+            fontSize: `${glitch.size}px`,
             fontFamily: 'Times New Roman, serif',
+            fontWeight: 'bold',
             pointerEvents: 'none',
             zIndex: 999,
             animation: 'glitchFlicker 0.1s linear'
