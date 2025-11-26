@@ -373,6 +373,19 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
         }
       }
 
+      // Archive - Auto-open modal
+      if (loc === 'archive') {
+        const randomAtmo = locationData.atmosphere[Math.floor(Math.random() * locationData.atmosphere.length)];
+        addMessage(randomAtmo);
+        return {
+          ...prev,
+          location: loc,
+          energy: Math.max(0, prev.energy - 5),
+          archiveOpen: true,  // Automatically open archive modal
+          discoveredLocations
+        };
+      }
+
       // Regular location change
       const randomAtmo = locationData.atmosphere ?
         locationData.atmosphere[Math.floor(Math.random() * locationData.atmosphere.length)] :
@@ -390,13 +403,36 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
 
   const examineItem = (item) => {
     setGameState(prev => {
-      const newExaminedItems = (prev.examinedItems || 0) + 1;
-      checkAchievements();
+      const EXAMINE_ENERGY_COST = 25;
+      const isAlreadyExamined = prev.examinedArchiveItems.includes(item.id);
+
+      // If not examined yet, check energy cost
+      if (!isAlreadyExamined) {
+        if (prev.energy < EXAMINE_ENERGY_COST) {
+          addMessage('Too exhausted to focus on the text.');
+          return prev;
+        }
+
+        // First time examining - deduct energy and add to examined list
+        const newExaminedItems = (prev.examinedItems || 0) + 1;
+        checkAchievements();
+        addMessage(`You spend ${EXAMINE_ENERGY_COST} energy deciphering the document.`);
+
+        return {
+          ...prev,
+          examiningItem: item,
+          examinedItems: newExaminedItems,
+          examinedArchiveItems: [...prev.examinedArchiveItems, item.id],
+          energy: prev.energy - EXAMINE_ENERGY_COST
+          // Don't close archiveOpen - stay in archive
+        };
+      }
+
+      // Already examined - open for free
       return {
         ...prev,
-        examiningItem: item,
-        examinedItems: newExaminedItems,
-        archiveOpen: false  // Close archive modal when examining an item
+        examiningItem: item
+        // Don't close archiveOpen - stay in archive
       };
     });
   };
@@ -418,8 +454,10 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
   const closeArchive = () => {
     setGameState(prev => ({
       ...prev,
-      archiveOpen: false
+      archiveOpen: false,
+      location: 'cubicle'  // Return to cubicle when leaving archive
     }));
+    addMessage('You leave The Archive. The silence follows.');
   };
 
   const buyUpgrade = (upgrade) => {

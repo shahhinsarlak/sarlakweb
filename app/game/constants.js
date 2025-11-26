@@ -36,6 +36,7 @@ export const INITIAL_GAME_STATE = {
   archiveOpen: false,
   sortCount: 0,
   examinedItems: 0,
+  examinedArchiveItems: [],  // Array of archive item IDs that have been examined (costs 25 energy first time)
   meditating: false,
   breathCount: 0,
   maxLogMessages: 15,
@@ -195,40 +196,148 @@ export const LOCATIONS = {
     atmosphere: ['The silence is deafening.', 'Every file is labeled with your name.', 'Time moves differently here.'],
     
     items: [
-      { 
-        id: 'resignation', 
-        name: 'Resignation Letter', 
-        story: 'Dated 3 years from now. Signed by you. "I quit because I never started." The ink is still wet.' 
+      // Readable documents with lore
+      {
+        id: 'resignation',
+        name: 'Resignation Letter',
+        story: 'Dated 3 years from now. Signed by you. "I quit because I never started." The ink is still wet.'
       },
-      { 
-        id: 'firstday', 
-        name: 'First Day Photo', 
-        story: 'Employee orientation, 1987. You\'re in the photo. You weren\'t born until 1995. Everyone is smiling. No one has eyes.' 
+      {
+        id: 'firstday',
+        name: 'First Day Photo',
+        story: 'Employee orientation, 1987. You\'re in the photo. You weren\'t born until 1995. Everyone is smiling. No one has eyes.'
       },
-      { 
-        id: 'contract', 
-        name: 'Original Contract', 
-        story: 'Section 7.3: "Employee agrees to exist retroactively." You don\'t remember signing this. The signature matches yours perfectly.' 
+      {
+        id: 'contract',
+        name: 'Original Contract',
+        story: 'Section 7.3: "Employee agrees to exist retroactively." You don\'t remember signing this. The signature matches yours perfectly.'
       },
-      { 
-        id: 'performance', 
-        name: 'Performance Reviews', 
-        story: '847 annual reviews. All rated "Satisfactory." All dated today. All written in your handwriting.' 
+      {
+        id: 'performance',
+        name: 'Performance Reviews',
+        story: '847 annual reviews. All rated "Satisfactory." All dated today. All written in your handwriting.'
       },
-      { 
-        id: 'memo', 
-        name: 'Interdepartmental Memo', 
-        story: 'TO: You. FROM: You. RE: You. "The fluorescent lights have always been watching. They are proud of your progress."' 
+      {
+        id: 'memo',
+        name: 'Interdepartmental Memo',
+        story: 'TO: You. FROM: You. RE: You. "The fluorescent lights have always been watching. They are proud of your progress."'
       },
-      { 
-        id: 'manual', 
-        name: 'Employee Handbook', 
-        story: 'Chapter 19: How to Leave. All pages are blank except one: "You can\'t."' 
+      {
+        id: 'manual',
+        name: 'Employee Handbook',
+        story: 'Chapter 19: How to Leave. All pages are blank except one: "You can\'t."'
       },
-      { 
-        id: 'glitched', 
-        name: '█████ WARNING ████', 
-        story: 'The document flickers. Text phases in and out. "DON\'T SWITCH THE L̵I̴G̷H̸T̶S̷ – tried twenty times – the walls started bre█████ – something came through – it SAW me – if you\'re reading this STOP at 19 – the dimensional t█████ – they call it progress but it\'s a DOOR – Day 7 minimum or it won\'t –" The rest dissolves into static.' 
+      {
+        id: 'glitched',
+        name: '█████ WARNING ████',
+        story: 'The document flickers. Text phases in and out. "DON\'T SWITCH THE L̵I̴G̷H̸T̶S̷ – tried twenty times – the walls started bre█████ – something came through – it SAW me – if you\'re reading this STOP at 19 – the dimensional t█████ – they call it progress but it\'s a DOOR – Day 7 minimum or it won\'t –" The rest dissolves into static.'
+      },
+      {
+        id: 'payroll',
+        name: 'Payroll Records',
+        story: 'Your salary: $█████ per ████. Benefits include: reality insurance, temporal stability, existence guarantee. Deductions: 40% to The Lights, 30% to The Walls, 30% to The Silence. Net pay: -$████.'
+      },
+      {
+        id: 'promotion',
+        name: 'Promotion Notice',
+        story: 'Congratulations on your promotion to Senior Non-Existence Coordinator. Your new responsibilities include: maintaining the illusion of progress, documenting events that never happened, and reporting to supervisors who were never hired.'
+      },
+      {
+        id: 'incident',
+        name: 'Incident Report #447',
+        story: 'Date: ████/██/████. Employee complained about "seeing patterns in the fluorescent lights." Investigation determined: Employee does not exist. Case closed. Follow-up: Employee filed three more reports. Resolution: Removed employee from timeline. Status: Employee still filing reports.'
+      },
+
+      // Encrypted/corrupted documents
+      {
+        id: 'encrypted_01',
+        name: '████████████',
+        story: '█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████'
+      },
+      {
+        id: 'encrypted_02',
+        name: 'F̴͎̈I̷͓̾L̶̰̍E̴̱͠ ̶̱̌#̸̰͝█̶̣̈́█̴̰̏█̵̱̄',
+        story: '█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████'
+      },
+      {
+        id: 'encrypted_03',
+        name: 'R̷E̷D̷A̷C̷T̷E̷D̷',
+        story: '█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████'
+      },
+      {
+        id: 'encrypted_04',
+        name: '███ VOID ███',
+        story: '█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████'
+      },
+      {
+        id: 'encrypted_05',
+        name: 'C̸O̸R̸R̸U̸P̸T̸E̸D̸',
+        story: '█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████'
+      },
+      {
+        id: 'encrypted_06',
+        name: '████████',
+        story: '█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████'
+      },
+      {
+        id: 'encrypted_07',
+        name: 'N̴O̴ ̴D̴A̴T̴A̴',
+        story: '█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████'
+      },
+      {
+        id: 'encrypted_08',
+        name: '███████████',
+        story: '█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████'
+      },
+      {
+        id: 'encrypted_09',
+        name: 'E̷R̷R̷O̷R̷ ̷4̷0̷4̷',
+        story: '█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████'
+      },
+      {
+        id: 'encrypted_10',
+        name: '████ NULL ████',
+        story: '█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████'
+      },
+      {
+        id: 'encrypted_11',
+        name: 'D̶E̶L̶E̶T̶E̶D̶',
+        story: '█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████'
+      },
+      {
+        id: 'encrypted_12',
+        name: '███████████',
+        story: '█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████'
+      },
+      {
+        id: 'encrypted_13',
+        name: 'M̷I̷S̷S̷I̷N̷G̷',
+        story: '█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████'
+      },
+      {
+        id: 'encrypted_14',
+        name: '████████',
+        story: '█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████'
+      },
+      {
+        id: 'encrypted_15',
+        name: 'U̸N̸K̸N̸O̸W̸N̸',
+        story: '█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████'
+      },
+      {
+        id: 'encrypted_16',
+        name: '███ LOST ███',
+        story: '█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████'
+      },
+      {
+        id: 'encrypted_17',
+        name: '████████████',
+        story: '█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████'
+      },
+      {
+        id: 'encrypted_18',
+        name: 'N̴̢̛O̶̰͝ ̷̰̈A̴͓̾C̷̱̍Č̸̰E̴̱͠S̶̰͝S̷̱̄',
+        story: '█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████'
       }
     ]
   },
