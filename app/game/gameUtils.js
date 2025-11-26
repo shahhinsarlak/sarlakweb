@@ -117,6 +117,7 @@ export const getDistortionStyle = (sanity) => {
         boxShadow: 0 0 ${size * 3}px ${color}, 0 0 ${size * 6}px ${color};
         animation: levelUpParticle${i} ${duration}s ease-out ${delay}s forwards;
         zIndex: 5001;
+        pointer-events: none;
       `;
   
       // Create unique animation for each particle
@@ -169,6 +170,7 @@ export const getDistortionStyle = (sanity) => {
         boxShadow: 0 0 ${size * 3}px ${color}, 0 0 ${size * 6}px ${color};
         animation: levelUpBurst${i} ${duration}s ease-out ${delay}s forwards;
         zIndex: 5001;
+        pointer-events: none;
       `;
   
       const style = document.createElement('style');
@@ -245,6 +247,7 @@ export const getDistortionStyle = (sanity) => {
         boxShadow: 0 0 ${size * 2}px ${color};
         animation: skillParticle${i} ${duration}s ease-out ${delay}s forwards;
         zIndex: 5001;
+        pointer-events: none;
       `;
   
       const style = document.createElement('style');
