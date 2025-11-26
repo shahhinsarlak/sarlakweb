@@ -102,7 +102,7 @@ export default function ArchiveModal({
             maxWidth: '100%',
             zIndex: 2
           }}>
-            {item.name}
+            {isExamined ? item.name : '???'}
           </div>
 
           {/* Decorative book spine lines */}
