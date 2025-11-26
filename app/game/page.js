@@ -198,12 +198,20 @@ export default function Game() {
           } else if (newCount === 15) {
             newMessage = prev.day >= 7 ? 'Reality feels... thinner. Keep going?' : 'Almost there...';
           }
-          
+
           if (newMessage) {
+            // Create notification for intermediate messages too
+            const notification = {
+              id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+              message: newMessage,
+              timestamp: Date.now()
+            };
+
             return {
               ...prev,
               themeToggleCount: newCount,
-              recentMessages: [newMessage, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
+              recentMessages: [newMessage, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15),
+              notifications: [...(prev.notifications || []), notification]
             };
           }
           

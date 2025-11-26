@@ -39,6 +39,18 @@ export default function PrinterRoom({ gameState, setGameState, onExit, grantXP, 
     return () => clearInterval(interval);
   }, []);
 
+  // Escape key handler
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') {
+        onExit();
+      }
+    };
+
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [onExit]);
+
   const handlePrint = () => {
     if (gameState.energy < 3) {
       return;

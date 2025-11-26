@@ -8,9 +8,22 @@
  */
 
 'use client';
+import { useEffect } from 'react';
 import NotificationPopup from './NotificationPopup';
 
 export default function FileDrawer({ gameState, onClose, actions, notifications, onDismissNotification }) {
+  // Escape key handler
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [onClose]);
+
   // Get and sort documents
   const getSortedDocuments = () => {
     const docs = gameState.storedDocuments || [];

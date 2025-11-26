@@ -22,6 +22,7 @@ export default function DimensionalArea({ gameState, setGameState, onExit, grant
   const [currentLootItem, setCurrentLootItem] = useState(null);
   const [tearCollected, setTearCollected] = useState(false);
   const [glitchOverlays, setGlitchOverlays] = useState([]);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
   const effects = getActiveSkillEffects(gameState);
   const modifiedCapacity = getModifiedCapacity(DIMENSIONAL_CAPACITY, gameState);
@@ -104,6 +105,28 @@ export default function DimensionalArea({ gameState, setGameState, onExit, grant
     }, 800 + Math.random() * 1200); // Glitch every 0.8-2 seconds
 
     return () => clearInterval(glitchInterval);
+  }, []);
+
+  // Escape key handler
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') {
+        handleExit();
+      }
+    };
+
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, []);
+
+  // Mouse tracking for distortion effect
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      setMousePos({ x: e.clientX, y: e.clientY });
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
   const currentCapacity = Object.values(currentInventory).reduce((sum, count) => sum + count, 0);
@@ -544,6 +567,56 @@ export default function DimensionalArea({ gameState, setGameState, onExit, grant
           {glitch.char}
         </div>
       ))}
+
+      {/* Mouse distortion effect - weird ripple that follows cursor */}
+      <div
+        style={{
+          position: 'fixed',
+          left: mousePos.x - 150,
+          top: mousePos.y - 150,
+          width: '300px',
+          height: '300px',
+          borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(100, 0, 150, 0.2) 0%, rgba(100, 0, 150, 0.1) 30%, transparent 70%)',
+          pointerEvents: 'none',
+          zIndex: 5,
+          mixBlendMode: 'screen',
+          filter: 'blur(20px)',
+          transition: 'left 0.1s ease-out, top 0.1s ease-out'
+        }}
+      />
+      <div
+        style={{
+          position: 'fixed',
+          left: mousePos.x - 100,
+          top: mousePos.y - 100,
+          width: '200px',
+          height: '200px',
+          borderRadius: '50%',
+          border: '2px solid rgba(100, 0, 150, 0.3)',
+          pointerEvents: 'none',
+          zIndex: 5,
+          boxShadow: '0 0 30px rgba(100, 0, 150, 0.5), inset 0 0 30px rgba(100, 0, 150, 0.3)',
+          transition: 'left 0.15s ease-out, top 0.15s ease-out',
+          animation: 'portalPulse 2s ease-in-out infinite'
+        }}
+      />
+      <div
+        style={{
+          position: 'fixed',
+          left: mousePos.x - 50,
+          top: mousePos.y - 50,
+          width: '100px',
+          height: '100px',
+          borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(255, 0, 255, 0.1) 0%, transparent 70%)',
+          pointerEvents: 'none',
+          zIndex: 6,
+          filter: 'blur(10px)',
+          mixBlendMode: 'color-dodge',
+          transition: 'left 0.05s ease-out, top 0.05s ease-out'
+        }}
+      />
 
       <div style={{
         position: 'fixed',

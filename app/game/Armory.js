@@ -9,7 +9,7 @@
  * - Borderlands-style loot display
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import EventLog from './EventLog';
@@ -19,6 +19,18 @@ import NotificationPopup from './NotificationPopup';
 export default function Armory({ gameState, setGameState, onExit, notifications, onDismissNotification }) {
   const [activeTab, setActiveTab] = useState('weapons');
   const [hoveredItem, setHoveredItem] = useState(null);
+
+  // Escape key handler
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') {
+        onExit();
+      }
+    };
+
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [onExit]);
 
   // Get loot items from inventory
   const lootInventory = gameState.lootInventory || [];
