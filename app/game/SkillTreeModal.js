@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { SKILLS, SKILL_BRANCHES, LEVEL_SYSTEM } from './skillTreeConstants';
-import EventLog from './EventLog';
 import NotificationPopup from './NotificationPopup';
 
 export default function SkillTreeModal({ gameState, onClose, onPurchaseSkill, notifications, onDismissNotification }) {
@@ -343,7 +342,6 @@ export default function SkillTreeModal({ gameState, onClose, onPurchaseSkill, no
 
   return (
     <>
-      <EventLog messages={gameState.recentMessages} />
       <div style={{
         position: 'fixed',
         top: 0,
