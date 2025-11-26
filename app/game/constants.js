@@ -762,7 +762,6 @@ export const ACHIEVEMENTS = [
   // Paper & Sanity System Achievements
   { id: 'embrace_madness', name: 'Embrace Madness', desc: 'Generate PP at critical sanity (<10%)', check: (state) => state.sortCount >= 1 && state.sanity < 10 },
   { id: 'bureaucrat', name: 'Master Bureaucrat', desc: 'File 50 reports', check: (state) => (state.documentMastery?.reports || 0) >= 50 },
-  { id: 'prophet', name: 'Prophet', desc: 'Print a prophecy at critical sanity', check: (state) => (state.documentMastery?.prophecies || 0) >= 1 },
   { id: 'reality_bender_paper', name: 'Reality Contractor', desc: 'Print 10 reality contracts', check: (state) => (state.documentMastery?.contracts || 0) >= 10 },
 ];
 
