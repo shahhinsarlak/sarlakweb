@@ -335,6 +335,13 @@ export default function Game() {
       } else if (upgrade.effect === 'equipment') {
         // Equipment is unlocked via dimensional upgrades, message added
         newState.recentMessages = [`Crafted: ${upgrade.name}. Available in the Armory.`, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15);
+      } else if (upgrade.effect === 'portalCooldown') {
+        // Cap current portal cooldown to new maximum if it's higher
+        const newMaxCooldown = getModifiedPortalCooldown(60, newState);
+        if (prev.portalCooldown > newMaxCooldown) {
+          newState.portalCooldown = newMaxCooldown;
+          newState.recentMessages = [`Crafted: ${upgrade.name}. Portal cooldown adjusted to ${newMaxCooldown}s.`, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15);
+        }
       }
 
       grantXP(XP_REWARDS.purchaseDimensionalUpgrade);
