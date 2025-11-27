@@ -204,15 +204,31 @@ export const applySkillsToMaterialCollection = (materialId, baseAmount, gameStat
 };
 
 /**
- * Calculates portal cooldown with skill modifiers
+ * Calculates portal cooldown with skill and upgrade modifiers
  *
- * @param {number} baseCooldown - Base cooldown in seconds
+ * @param {number} baseCooldown - Base cooldown in seconds (default 60)
  * @param {Object} gameState - Current game state
  * @returns {number} Modified cooldown (minimum 10 seconds)
  */
 export const getModifiedPortalCooldown = (baseCooldown, gameState) => {
+  let cooldown = baseCooldown;
+
+  // Dimensional Anchor: sets cooldown to 30s
+  if (gameState.dimensionalUpgrades?.dimensional_anchor) {
+    cooldown = 30;
+  }
+
+  // Temporal Accelerator: reduces by additional 10s (stacks with anchor)
+  if (gameState.dimensionalUpgrades?.temporal_accelerator) {
+    cooldown -= 10;
+  }
+
+  // Apply skill reductions
   const effects = getActiveSkillEffects(gameState);
-  return Math.max(10, baseCooldown - effects.portalCooldownReduction);
+  cooldown -= effects.portalCooldownReduction;
+
+  // Minimum 10 seconds
+  return Math.max(10, cooldown);
 };
 
 /**
