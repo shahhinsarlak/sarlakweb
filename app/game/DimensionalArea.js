@@ -27,6 +27,11 @@ export default function DimensionalArea({ gameState, setGameState, onExit, grant
   const effects = getActiveSkillEffects(gameState);
   const modifiedCapacity = getModifiedCapacity(DIMENSIONAL_CAPACITY, gameState);
 
+  // Material Scanner increases glow intensity
+  if (gameState.dimensionalUpgrades?.material_scanner) {
+    effects.glowIntensity = 2;
+  }
+
   // Generate encrypted text once per portal entry
   const encryptedText = useMemo(() => generateEncryptedText(3000), []);
 
