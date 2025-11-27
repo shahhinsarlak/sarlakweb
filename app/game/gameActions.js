@@ -369,6 +369,11 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       // Handle direct locations
       if (locationData.isDirect) {
         if (loc === 'portal') {
+          // Check portal cooldown
+          if (prev.portalCooldown > 0) {
+            addMessage(`Portal is still stabilizing. Wait ${Math.ceil(prev.portalCooldown)}s.`);
+            return prev;
+          }
           return { ...prev, inDimensionalArea: true, discoveredLocations };
         } else if (loc === 'printerroom') {
           return { ...prev, inPrinterRoom: true, discoveredLocations };

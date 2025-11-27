@@ -1222,25 +1222,56 @@ export default function Game() {
                   gap: '12px'
                 }}>
                   {gameState.unlockedLocations.map(loc => {
+                    const isPortal = loc === 'portal';
+                    const portalOnCooldown = isPortal && gameState.portalCooldown > 0;
+                    const isDisabled = gameState.location === loc || portalOnCooldown;
+                    const maxCooldown = getModifiedPortalCooldown(60, gameState);
+                    const cooldownProgress = isPortal && gameState.portalCooldown > 0
+                      ? ((maxCooldown - gameState.portalCooldown) / maxCooldown) * 100
+                      : 100;
+
                     return (
                       <button
                         key={loc}
                         onClick={() => actions.changeLocation(loc)}
-                        disabled={gameState.location === loc}
+                        disabled={isDisabled}
                         style={{
+                          position: 'relative',
+                          overflow: 'hidden',
                           background: gameState.location === loc ? 'var(--accent-color)' : 'none',
                           border: '1px solid var(--border-color)',
                           color: gameState.location === loc ? 'var(--bg-color)' : 'var(--text-color)',
                           padding: '14px',
-                          cursor: gameState.location === loc ? 'default' : 'pointer',
+                          cursor: isDisabled ? 'not-allowed' : 'pointer',
                           fontSize: '11px',
                           fontFamily: 'inherit',
                           letterSpacing: '0.5px',
                           transition: 'all 0.2s',
-                          textAlign: 'center'
+                          textAlign: 'center',
+                          opacity: portalOnCooldown ? 0.5 : 1
                         }}
                       >
-                        {LOCATIONS[loc]?.name || 'Unknown Location'}
+                        {isPortal && gameState.portalCooldown > 0 && (
+                          <div style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            height: '100%',
+                            width: `${cooldownProgress}%`,
+                            backgroundColor: '#666666',
+                            opacity: 0.3,
+                            transition: 'width 0.1s linear',
+                            zIndex: 0
+                          }} />
+                        )}
+                        <div style={{ position: 'relative', zIndex: 1 }}>
+                          {LOCATIONS[loc]?.name || 'Unknown Location'}
+                          {portalOnCooldown && (
+                            <div style={{ fontSize: '9px', opacity: 0.8, marginTop: '4px' }}>
+                              [{Math.ceil(gameState.portalCooldown)}s]
+                            </div>
+                          )}
+                        </div>
                       </button>
                     );
                   })}
