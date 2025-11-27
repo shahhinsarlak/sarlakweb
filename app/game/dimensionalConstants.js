@@ -5,13 +5,13 @@
  */
 
 export const DIMENSIONAL_MATERIALS = [
-  { id: 'void_fragment', name: 'Void Fragment', color: '#1a1a2e', rarity: 0.40, size: 'small' },
-  { id: 'static_crystal', name: 'Static Crystal', color: '#4a4a6a', rarity: 0.30, size: 'small' },
-  { id: 'glitch_shard', name: 'Glitch Shard', color: '#7f00ff', rarity: 0.20, size: 'medium' },
-  { id: 'reality_dust', name: 'Reality Dust', color: '#ff6b9d', rarity: 0.08, size: 'small' },
-  { id: 'temporal_core', name: 'Temporal Core', color: '#00ffff', rarity: 0.015, size: 'medium' },
-  { id: 'dimensional_essence', name: 'Dimensional Essence', color: '#ffd700', rarity: 0.004, size: 'large' },
-  { id: 'singularity_node', name: 'Singularity Node', color: '#ff0000', rarity: 0.0015, size: 'large' } // Increased from 0.001 (0.1%) to 0.0015 (0.15%) for better balance
+  { id: 'void_fragment', name: 'Void Fragment', color: '#1a1a2e', rarity: 0.40, size: 'large' },   // 40% - most common, largest
+  { id: 'static_crystal', name: 'Static Crystal', color: '#4a4a6a', rarity: 0.30, size: 'medium' }, // 30% - common, medium
+  { id: 'glitch_shard', name: 'Glitch Shard', color: '#7f00ff', rarity: 0.20, size: 'medium' },     // 20% - uncommon, medium
+  { id: 'reality_dust', name: 'Reality Dust', color: '#ff6b9d', rarity: 0.08, size: 'small' },      // 8% - rare, small
+  { id: 'temporal_core', name: 'Temporal Core', color: '#00ffff', rarity: 0.015, size: 'small' },   // 1.5% - very rare, small
+  { id: 'dimensional_essence', name: 'Dimensional Essence', color: '#ffd700', rarity: 0.004, size: 'small' }, // 0.4% - extremely rare, small
+  { id: 'singularity_node', name: 'Singularity Node', color: '#ff0000', rarity: 0.0015, size: 'small' } // 0.15% - rarest, smallest
 ];
 
 export const SIZE_RANGES = {
