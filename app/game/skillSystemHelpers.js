@@ -232,15 +232,22 @@ export const getModifiedPortalCooldown = (baseCooldown, gameState) => {
 };
 
 /**
- * Calculates dimensional inventory capacity with skill bonuses
+ * Calculates dimensional inventory capacity with skill bonuses and dimensional upgrades
  *
  * @param {number} baseCapacity - Base capacity without bonuses
  * @param {Object} gameState - Current game state
- * @returns {number} Total capacity with skill bonuses
+ * @returns {number} Total capacity with skill bonuses and upgrades
  */
 export const getModifiedCapacity = (baseCapacity, gameState) => {
   const effects = getActiveSkillEffects(gameState);
-  return baseCapacity + effects.capacityBonus;
+  let capacity = baseCapacity + effects.capacityBonus;
+
+  // Reality Stabilizer sets capacity to 40
+  if (gameState.dimensionalUpgrades?.reality_stabilizer) {
+    capacity = 40 + effects.capacityBonus;
+  }
+
+  return capacity;
 };
 
 /**

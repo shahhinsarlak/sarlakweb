@@ -229,6 +229,11 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
           message = 'Your rhythm is chaotic. The fluorescent hum grows louder.';
         }
 
+        // Crystal Meditation doubles sanity gain
+        if (prev.dimensionalUpgrades?.crystal_meditation) {
+          sanityGain *= 2;
+        }
+
         addMessage(message);
         return {
           ...prev,
@@ -293,10 +298,21 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
     setGameState(prev => {
       if (!prev.currentBug) return prev;
 
-      const isCorrect = prev.currentBug.userCode.trim() === prev.currentBug.correct.trim();
+      const hasGlitchCompiler = prev.dimensionalUpgrades?.glitch_compiler;
+      const isFirstAttempt = prev.debugAttempts === 0;
+
+      // Glitch Compiler: first attempt always succeeds
+      const autoSuccess = hasGlitchCompiler && isFirstAttempt;
+      const isCorrect = autoSuccess || prev.currentBug.userCode.trim() === prev.currentBug.correct.trim();
 
       if (isCorrect) {
-        const reward = Math.floor(200 + Math.random() * 300);
+        let reward = Math.floor(200 + Math.random() * 300);
+
+        // Glitch Compiler: double rewards
+        if (hasGlitchCompiler) {
+          reward *= 2;
+        }
+
         addMessage(`DEBUG SUCCESS: +${reward} PP. The code compiles. Reality stabilizes.`);
         grantXP(15, false); // XP_REWARDS.completeDebug - suppress particles for debug challenges
         return {
