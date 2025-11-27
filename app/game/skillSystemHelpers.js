@@ -223,9 +223,12 @@ export const getModifiedPortalCooldown = (baseCooldown, gameState) => {
     cooldown -= 10;
   }
 
-  // Apply skill reductions
+  // Apply skill reductions (percentage-based)
+  // reality_anchor skill gives portalCooldownReduction as percentage (0.15 = 15%)
   const effects = getActiveSkillEffects(gameState);
-  cooldown -= effects.portalCooldownReduction;
+  if (effects.portalCooldownReduction > 0) {
+    cooldown = cooldown * (1 - effects.portalCooldownReduction);
+  }
 
   // Minimum 10 seconds
   return Math.max(10, cooldown);
