@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   DIMENSIONAL_MATERIALS,
   DIMENSIONAL_CAPACITY,
@@ -117,7 +117,7 @@ export default function DimensionalArea({ gameState, setGameState, onExit, grant
 
     window.addEventListener('keydown', handleEscape);
     return () => window.removeEventListener('keydown', handleEscape);
-  }, []);
+  }, [handleExit]);
 
   // Mouse tracking for distortion effect
   useEffect(() => {
@@ -220,7 +220,7 @@ export default function DimensionalArea({ gameState, setGameState, onExit, grant
     }
   };
 
-  const handleExit = () => {
+  const handleExit = useCallback(() => {
     setGameState(prev => {
       const newDimensionalInventory = { ...(prev.dimensionalInventory || {}) };
 
@@ -260,7 +260,7 @@ export default function DimensionalArea({ gameState, setGameState, onExit, grant
     });
 
     onExit();
-  };
+  }, [currentInventory, setGameState, onExit]);
 
   const renderTextWithNodes = () => {
     const elements = [];
