@@ -107,18 +107,6 @@ export default function DimensionalArea({ gameState, setGameState, onExit, grant
     return () => clearInterval(glitchInterval);
   }, []);
 
-  // Escape key handler
-  useEffect(() => {
-    const handleEscape = (e) => {
-      if (e.key === 'Escape') {
-        handleExit();
-      }
-    };
-
-    window.addEventListener('keydown', handleEscape);
-    return () => window.removeEventListener('keydown', handleEscape);
-  }, [handleExit]);
-
   // Mouse tracking for distortion effect
   useEffect(() => {
     const handleMouseMove = (e) => {
@@ -261,6 +249,18 @@ export default function DimensionalArea({ gameState, setGameState, onExit, grant
 
     onExit();
   }, [currentInventory, setGameState, onExit]);
+
+  // Escape key handler (must come after handleExit definition)
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') {
+        handleExit();
+      }
+    };
+
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [handleExit]);
 
   const renderTextWithNodes = () => {
     const elements = [];
