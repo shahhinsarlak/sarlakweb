@@ -12,6 +12,8 @@ export default function Particles() {
   const audioContextRef = useRef(null);
   const audioBufferRef = useRef(null);
   const [theme, setTheme] = useState('light');
+  const [spawnRate, setSpawnRate] = useState(30);
+  const [particleSpeed, setParticleSpeed] = useState(0.2);
 
   useEffect(() => {
     // Get initial theme
@@ -79,8 +81,8 @@ export default function Particles() {
     const maxParticles = 200;
     const particles = [];
     const particleGeometry = new THREE.SphereGeometry(0.3, 8, 8);
-    const particleColor = theme === 'dark' ? 0xe0e0e0 : 0x1a1a1a;
-    const particleMaterial = new THREE.MeshBasicMaterial({ color: particleColor });
+    const normalColor = theme === 'dark' ? 0xe0e0e0 : 0x1a1a1a;
+    const dangerColor = 0xff0000; // Red for particles about to die
 
     particlesRef.current = particles;
 
@@ -112,7 +114,9 @@ export default function Particles() {
 
     // Function to spawn particle
     const spawnParticle = (position = null) => {
-      const particle = new THREE.Mesh(particleGeometry, particleMaterial);
+      // Each particle gets its own material so we can change colors independently
+      const material = new THREE.MeshBasicMaterial({ color: normalColor });
+      const particle = new THREE.Mesh(particleGeometry, material);
 
       if (position) {
         // Spawn near a specific position (for Conway rules)
@@ -131,11 +135,11 @@ export default function Particles() {
       particle.position.y = Math.max(-bounds.y, Math.min(bounds.y, particle.position.y));
       particle.position.z = Math.max(-bounds.z, Math.min(bounds.z, particle.position.z));
 
-      // Random velocity
+      // Random velocity using current speed setting
       particle.velocity = new THREE.Vector3(
-        (Math.random() - 0.5) * 0.2,
-        (Math.random() - 0.5) * 0.2,
-        (Math.random() - 0.5) * 0.2
+        (Math.random() - 0.5) * particleSpeed,
+        (Math.random() - 0.5) * particleSpeed,
+        (Math.random() - 0.5) * particleSpeed
       );
 
       scene.add(particle);
@@ -148,6 +152,7 @@ export default function Particles() {
     // Function to remove particle
     const removeParticle = (particle) => {
       scene.remove(particle);
+      particle.material.dispose(); // Clean up individual material
       const index = particles.indexOf(particle);
       if (index > -1) {
         particles.splice(index, 1);
@@ -171,7 +176,7 @@ export default function Particles() {
       const now = Date.now();
 
       // Initial spawn to populate scene
-      if (particles.length < 30) {
+      if (particles.length < spawnRate) {
         spawnParticle();
       }
 
@@ -204,6 +209,8 @@ export default function Particles() {
 
       for (let i = 0; i < particles.length; i++) {
         connectionMap.set(particles[i], []);
+        // Reset all particles to normal color first
+        particles[i].material.color.setHex(normalColor);
       }
 
       for (let i = 0; i < particles.length; i++) {
@@ -224,6 +231,13 @@ export default function Particles() {
           }
         }
       }
+
+      // Color particles with 4+ connections red (about to die)
+      connectionMap.forEach((connections, particle) => {
+        if (connections.length >= 4) {
+          particle.material.color.setHex(dangerColor);
+        }
+      });
 
       // Conway's Game of Life rules (check every 500ms)
       if (now - lastConwayCheck > 500) {
@@ -271,15 +285,20 @@ export default function Particles() {
     // Cleanup
     return () => {
       window.removeEventListener('resize', handleResize);
+      // Dispose of all particle materials
+      particles.forEach(particle => {
+        if (particle.material) {
+          particle.material.dispose();
+        }
+      });
       renderer.dispose();
       particleGeometry.dispose();
-      particleMaterial.dispose();
       lineMaterial.dispose();
       if (audioContextRef.current) {
         audioContextRef.current.close();
       }
     };
-  }, [theme]);
+  }, [theme, spawnRate, particleSpeed]);
 
   return (
     <>
@@ -304,13 +323,74 @@ export default function Particles() {
           <p style={{
             maxWidth: '600px',
             textAlign: 'center',
-            marginBottom: '40px',
+            marginBottom: '20px',
             opacity: 0.7,
             lineHeight: '1.6'
           }}>
             Interactive 3D particle system with Conway-inspired rules.
             Particles with 2 connections spawn new ones, those with 4+ die.
           </p>
+
+          {/* Controls */}
+          <div style={{
+            display: 'flex',
+            gap: '30px',
+            marginBottom: '30px',
+            flexWrap: 'wrap',
+            justifyContent: 'center',
+            maxWidth: '600px'
+          }}>
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '8px',
+              minWidth: '250px'
+            }}>
+              <label style={{
+                fontSize: '0.9rem',
+                fontWeight: '500'
+              }}>
+                Spawn Count: {spawnRate}
+              </label>
+              <input
+                type="range"
+                min="10"
+                max="100"
+                value={spawnRate}
+                onChange={(e) => setSpawnRate(Number(e.target.value))}
+                style={{
+                  width: '100%',
+                  cursor: 'pointer'
+                }}
+              />
+            </div>
+
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '8px',
+              minWidth: '250px'
+            }}>
+              <label style={{
+                fontSize: '0.9rem',
+                fontWeight: '500'
+              }}>
+                Particle Speed: {particleSpeed.toFixed(2)}
+              </label>
+              <input
+                type="range"
+                min="0.1"
+                max="1.0"
+                step="0.05"
+                value={particleSpeed}
+                onChange={(e) => setParticleSpeed(Number(e.target.value))}
+                style={{
+                  width: '100%',
+                  cursor: 'pointer'
+                }}
+              />
+            </div>
+          </div>
 
           <div style={{
             width: '100%',
