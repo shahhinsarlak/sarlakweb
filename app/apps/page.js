@@ -77,29 +77,30 @@ export default function Apps() {
               </div>
             </div>
 
-            {/* Placeholder for future apps */}
-            <div className="app-card coming-soon">
+            {/* Particles App */}
+            <div className="app-card">
               <div className="app-header">
-                <div className="app-status development">
+                <div className="app-status live">
                   <span className="status-indicator"></span>
-                  In Development
+                  Live Demo
                 </div>
               </div>
               <div className="app-info">
-                <h3 className="app-title">Next Application</h3>
+                <h3 className="app-title">Particles 3D</h3>
                 <p className="app-description">
-                  Another experimental web application currently in development. 
-                  Stay tuned for updates.
+                  Interactive 3D particle system with dynamic connections.
+                  Particles move through space and form links when nearby.
                 </p>
                 <div className="app-tech">
                   <span className="tech-tag">React</span>
-                  <span className="tech-tag">Node.js</span>
+                  <span className="tech-tag">Three.js</span>
+                  <span className="tech-tag">WebGL</span>
                 </div>
               </div>
               <div className="app-actions">
-                <button className="app-button disabled">
-                  Coming Soon
-                </button>
+                <Link href="/apps/particles" className="app-button primary">
+                  Launch Demo
+                </Link>
               </div>
             </div>
 
