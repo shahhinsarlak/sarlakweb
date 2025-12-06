@@ -184,21 +184,28 @@ export default function Particles() {
         particles[particle.index] = lastParticle;
         lastParticle.index = particle.index;
 
-        // Update instance matrix
+        // Update instance matrix for swapped particle
         const matrix = new THREE.Matrix4();
         matrix.setPosition(lastParticle.position);
         instancedMesh.setMatrixAt(particle.index, matrix);
 
-        // Update color
+        // Update color for swapped particle
         colors[particle.index * 3] = colors[lastIndex * 3];
         colors[particle.index * 3 + 1] = colors[lastIndex * 3 + 1];
         colors[particle.index * 3 + 2] = colors[lastIndex * 3 + 2];
       }
 
+      // Hide the removed particle by moving it far away and scaling to 0
+      const hideMatrix = new THREE.Matrix4();
+      hideMatrix.setPosition(new THREE.Vector3(10000, 10000, 10000));
+      hideMatrix.scale(new THREE.Vector3(0, 0, 0));
+      instancedMesh.setMatrixAt(lastIndex, hideMatrix);
+
       particleCount--;
       particles.pop();
       instancedMesh.count = particleCount;
       instancedMesh.instanceMatrix.needsUpdate = true;
+      instancedMesh.geometry.attributes.color.needsUpdate = true;
     };
 
     // Create lines between nearby particles - optimized with single geometry
@@ -236,6 +243,7 @@ export default function Particles() {
       let lineIndex = 0;
 
       for (let i = 0; i < particleCount; i++) {
+        if (!particles[i] || !particles[i].active) continue;
         connectionMap.set(particles[i], []);
         // Reset all particles to normal color first
         colors[i * 3] = normalColorObj.r;
@@ -245,7 +253,13 @@ export default function Particles() {
 
       // Calculate connections and update line positions
       for (let i = 0; i < particleCount; i++) {
+        // Skip inactive particles
+        if (!particles[i] || !particles[i].active) continue;
+
         for (let j = i + 1; j < particleCount; j++) {
+          // Skip inactive particles
+          if (!particles[j] || !particles[j].active) continue;
+
           const distance = particles[i].position.distanceTo(particles[j].position);
 
           if (distance < maxDistance && lineIndex < maxConnections) {
