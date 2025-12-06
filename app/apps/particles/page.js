@@ -13,7 +13,6 @@ export default function Particles() {
   const audioBufferRef = useRef(null);
   const [theme, setTheme] = useState('light');
   const [spawnRate, setSpawnRate] = useState(30);
-  const [particleSpeed, setParticleSpeed] = useState(0.2);
 
   useEffect(() => {
     // Get initial theme
@@ -106,15 +105,11 @@ export default function Particles() {
     let particleCount = 0; // Track active particles
     let frameCount = 0; // For throttling spawns
 
-    // Boundaries - calculate visible area at z=0
-    const aspectRatio = canvasRef.current.clientWidth / canvasRef.current.clientHeight;
-    const vFOV = (camera.fov * Math.PI) / 180;
-    const height = 2 * Math.tan(vFOV / 2) * camera.position.z;
-    const width = height * aspectRatio;
+    // Spawning bounds - smaller, centered region
     const bounds = {
-      x: width / 2 - 5,
-      y: height / 2 - 5,
-      z: 30
+      x: 20, // Reduced spawn area
+      y: 20,
+      z: 20
     };
 
     let lastConwayCheck = 0;
@@ -138,18 +133,17 @@ export default function Particles() {
 
       const particle = {
         position: new THREE.Vector3(),
-        velocity: new THREE.Vector3(),
         index: particleCount,
         active: true
       };
 
       if (position) {
-        // Spawn near a specific position (for Conway rules)
-        particle.position.x = position.x + (Math.random() - 0.5) * 5;
-        particle.position.y = position.y + (Math.random() - 0.5) * 5;
-        particle.position.z = position.z + (Math.random() - 0.5) * 5;
+        // Spawn near a specific position (for Conway rules) - closer proximity for density
+        particle.position.x = position.x + (Math.random() - 0.5) * 2;
+        particle.position.y = position.y + (Math.random() - 0.5) * 2;
+        particle.position.z = position.z + (Math.random() - 0.5) * 2;
       } else {
-        // Random position within bounds
+        // Random position within bounds (centered spawn region)
         particle.position.x = (Math.random() - 0.5) * bounds.x * 2;
         particle.position.y = (Math.random() - 0.5) * bounds.y * 2;
         particle.position.z = (Math.random() - 0.5) * bounds.z * 2;
@@ -159,13 +153,6 @@ export default function Particles() {
       particle.position.x = Math.max(-bounds.x, Math.min(bounds.x, particle.position.x));
       particle.position.y = Math.max(-bounds.y, Math.min(bounds.y, particle.position.y));
       particle.position.z = Math.max(-bounds.z, Math.min(bounds.z, particle.position.z));
-
-      // Random velocity using current speed setting
-      particle.velocity.set(
-        (Math.random() - 0.5) * particleSpeed,
-        (Math.random() - 0.5) * particleSpeed,
-        (Math.random() - 0.5) * particleSpeed
-      );
 
       // Update instance matrix
       const matrix = new THREE.Matrix4();
@@ -243,36 +230,8 @@ export default function Particles() {
         spawnParticle();
       }
 
-      // Update existing particles
-      const matrix = new THREE.Matrix4();
-      for (let i = 0; i < particleCount; i++) {
-        const particle = particles[i];
-
-        // Move particle
-        particle.position.add(particle.velocity);
-
-        // Bounce off boundaries
-        if (Math.abs(particle.position.x) > bounds.x) {
-          particle.velocity.x *= -1;
-          particle.position.x = Math.max(-bounds.x, Math.min(bounds.x, particle.position.x));
-        }
-        if (Math.abs(particle.position.y) > bounds.y) {
-          particle.velocity.y *= -1;
-          particle.position.y = Math.max(-bounds.y, Math.min(bounds.y, particle.position.y));
-        }
-        if (Math.abs(particle.position.z) > bounds.z) {
-          particle.velocity.z *= -1;
-          particle.position.z = Math.max(-bounds.z, Math.min(bounds.z, particle.position.z));
-        }
-
-        // Update instance matrix
-        matrix.setPosition(particle.position);
-        instancedMesh.setMatrixAt(i, matrix);
-      }
-      instancedMesh.instanceMatrix.needsUpdate = true;
-
       // Update lines between nearby particles and track connections
-      const maxDistance = 15;
+      const maxDistance = 8; // Reduced connection radius for denser packing
       const connectionMap = new Map(); // Track connections per particle
       let lineIndex = 0;
 
@@ -390,7 +349,7 @@ export default function Particles() {
         audioContextRef.current.close();
       }
     };
-  }, [theme, spawnRate, particleSpeed]);
+  }, [theme, spawnRate]);
 
   return (
     <>
@@ -419,7 +378,7 @@ export default function Particles() {
             opacity: 0.7,
             lineHeight: '1.6'
           }}>
-            Interactive 3D particle system with Conway-inspired rules.
+            Static 3D particle network with Conway-inspired life rules.
             Particles with 2 connections spawn new ones, those with 4+ die.
           </p>
 
@@ -430,7 +389,7 @@ export default function Particles() {
             marginBottom: '30px',
             flexWrap: 'wrap',
             justifyContent: 'center',
-            maxWidth: '600px'
+            maxWidth: '400px'
           }}>
             <div style={{
               display: 'flex',
@@ -450,32 +409,6 @@ export default function Particles() {
                 max="80"
                 value={spawnRate}
                 onChange={(e) => setSpawnRate(Number(e.target.value))}
-                style={{
-                  width: '100%',
-                  cursor: 'pointer'
-                }}
-              />
-            </div>
-
-            <div style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '8px',
-              minWidth: '250px'
-            }}>
-              <label style={{
-                fontSize: '0.9rem',
-                fontWeight: '500'
-              }}>
-                Particle Speed: {particleSpeed.toFixed(2)}
-              </label>
-              <input
-                type="range"
-                min="0.1"
-                max="1.0"
-                step="0.05"
-                value={particleSpeed}
-                onChange={(e) => setParticleSpeed(Number(e.target.value))}
                 style={{
                   width: '100%',
                   cursor: 'pointer'
