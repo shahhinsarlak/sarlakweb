@@ -316,7 +316,7 @@ export default function Particles() {
 
         // Energy transfer through connections (resonance effect)
         if (connectionCount >= 2) {
-          // Connected particles share and boost energy
+          // Well-connected particles share and boost energy
           let avgEnergy = particle.energy;
           for (const neighbor of data.connections) {
             avgEnergy += neighbor.energy;
@@ -324,9 +324,13 @@ export default function Particles() {
           avgEnergy /= (connectionCount + 1);
           particle.energy = Math.min(1, avgEnergy + 0.002); // Slight boost when connected
           particle.isolatedTime = 0;
-        } else if (connectionCount <= 1) {
-          // Isolated particles lose energy
-          particle.energy = Math.max(0, particle.energy - 0.003);
+        } else if (connectionCount === 1) {
+          // Single connection - stable, slight energy decay but survivable
+          particle.energy = Math.max(0.2, particle.energy - 0.0005);
+          particle.isolatedTime = 0; // Not isolated if has a connection
+        } else {
+          // Truly isolated (0 connections) - lose energy faster
+          particle.energy = Math.max(0, particle.energy - 0.004);
           particle.isolatedTime++;
         }
 
@@ -341,8 +345,8 @@ export default function Particles() {
           colors[idx * 3] = energizedColorObj.r;
           colors[idx * 3 + 1] = energizedColorObj.g;
           colors[idx * 3 + 2] = energizedColorObj.b;
-        } else if (connectionCount <= 1 && particle.energy < 0.3) {
-          // Isolated and fading - gray
+        } else if (connectionCount === 0 && particle.energy < 0.3) {
+          // Truly isolated and fading - gray
           colors[idx * 3] = fadingColorObj.r;
           colors[idx * 3 + 1] = fadingColorObj.g;
           colors[idx * 3 + 2] = fadingColorObj.b;
