@@ -77,14 +77,34 @@ export default function Particles() {
     renderer.setPixelRatio(window.devicePixelRatio);
     rendererRef.current = renderer;
 
-    // Particle pool
-    const maxParticles = 200;
+    // Particle pool - using InstancedMesh for better performance
+    const maxParticles = 150; // Reduced from 200 for better performance
     const particles = [];
-    const particleGeometry = new THREE.SphereGeometry(0.3, 8, 8);
+    const particleGeometry = new THREE.SphereGeometry(0.3, 6, 6); // Reduced segments
     const normalColor = theme === 'dark' ? 0xe0e0e0 : 0x1a1a1a;
     const dangerColor = 0xff0000; // Red for particles about to die
 
+    // Use InstancedMesh for much better performance
+    const instancedMaterial = new THREE.MeshBasicMaterial({ color: normalColor });
+    const instancedMesh = new THREE.InstancedMesh(particleGeometry, instancedMaterial, maxParticles);
+    instancedMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    scene.add(instancedMesh);
+
+    // Color array for per-instance coloring
+    const colors = new Float32Array(maxParticles * 3);
+    const normalColorObj = new THREE.Color(normalColor);
+    const dangerColorObj = new THREE.Color(dangerColor);
+    for (let i = 0; i < maxParticles; i++) {
+      colors[i * 3] = normalColorObj.r;
+      colors[i * 3 + 1] = normalColorObj.g;
+      colors[i * 3 + 2] = normalColorObj.b;
+    }
+    instancedMesh.geometry.setAttribute('color', new THREE.InstancedBufferAttribute(colors, 3));
+    instancedMaterial.vertexColors = true;
+
     particlesRef.current = particles;
+    let particleCount = 0; // Track active particles
+    let frameCount = 0; // For throttling spawns
 
     // Boundaries - calculate visible area at z=0
     const aspectRatio = canvasRef.current.clientWidth / canvasRef.current.clientHeight;
@@ -114,9 +134,14 @@ export default function Particles() {
 
     // Function to spawn particle
     const spawnParticle = (position = null) => {
-      // Each particle gets its own material so we can change colors independently
-      const material = new THREE.MeshBasicMaterial({ color: normalColor });
-      const particle = new THREE.Mesh(particleGeometry, material);
+      if (particleCount >= maxParticles) return null;
+
+      const particle = {
+        position: new THREE.Vector3(),
+        velocity: new THREE.Vector3(),
+        index: particleCount,
+        active: true
+      };
 
       if (position) {
         // Spawn near a specific position (for Conway rules)
@@ -136,14 +161,25 @@ export default function Particles() {
       particle.position.z = Math.max(-bounds.z, Math.min(bounds.z, particle.position.z));
 
       // Random velocity using current speed setting
-      particle.velocity = new THREE.Vector3(
+      particle.velocity.set(
         (Math.random() - 0.5) * particleSpeed,
         (Math.random() - 0.5) * particleSpeed,
         (Math.random() - 0.5) * particleSpeed
       );
 
-      scene.add(particle);
+      // Update instance matrix
+      const matrix = new THREE.Matrix4();
+      matrix.setPosition(particle.position);
+      instancedMesh.setMatrixAt(particleCount, matrix);
+      instancedMesh.instanceMatrix.needsUpdate = true;
+
+      // Set color to normal
+      colors[particleCount * 3] = normalColorObj.r;
+      colors[particleCount * 3 + 1] = normalColorObj.g;
+      colors[particleCount * 3 + 2] = normalColorObj.b;
+
       particles.push(particle);
+      particleCount++;
 
       playParticleSound();
       return particle;
@@ -151,22 +187,48 @@ export default function Particles() {
 
     // Function to remove particle
     const removeParticle = (particle) => {
-      scene.remove(particle);
-      particle.material.dispose(); // Clean up individual material
-      const index = particles.indexOf(particle);
-      if (index > -1) {
-        particles.splice(index, 1);
+      if (!particle.active) return;
+      particle.active = false;
+
+      // Swap with last active particle for efficient removal
+      const lastIndex = particleCount - 1;
+      if (particle.index !== lastIndex) {
+        const lastParticle = particles[lastIndex];
+        particles[particle.index] = lastParticle;
+        lastParticle.index = particle.index;
+
+        // Update instance matrix
+        const matrix = new THREE.Matrix4();
+        matrix.setPosition(lastParticle.position);
+        instancedMesh.setMatrixAt(particle.index, matrix);
+
+        // Update color
+        colors[particle.index * 3] = colors[lastIndex * 3];
+        colors[particle.index * 3 + 1] = colors[lastIndex * 3 + 1];
+        colors[particle.index * 3 + 2] = colors[lastIndex * 3 + 2];
       }
+
+      particleCount--;
+      particles.pop();
+      instancedMesh.count = particleCount;
+      instancedMesh.instanceMatrix.needsUpdate = true;
     };
 
-    // Create lines between nearby particles
+    // Create lines between nearby particles - optimized with single geometry
     const lineColor = theme === 'dark' ? 0xe0e0e0 : 0x1a1a1a;
     const lineMaterial = new THREE.LineBasicMaterial({
       color: lineColor,
       transparent: true,
       opacity: 0.3
     });
-    const lineSegments = new THREE.Group();
+
+    // Pre-allocate line positions (max possible connections)
+    const maxConnections = maxParticles * 10; // Rough estimate
+    const linePositions = new Float32Array(maxConnections * 6); // 2 vertices * 3 coords per connection
+    const lineGeometry = new THREE.BufferGeometry();
+    lineGeometry.setAttribute('position', new THREE.BufferAttribute(linePositions, 3));
+    lineGeometry.setDrawRange(0, 0); // Start with no lines
+    const lineSegments = new THREE.LineSegments(lineGeometry, lineMaterial);
     scene.add(lineSegments);
 
     // Animation function
@@ -174,14 +236,16 @@ export default function Particles() {
       requestAnimationFrame(animate);
 
       const now = Date.now();
+      frameCount++;
 
-      // Initial spawn to populate scene
-      if (particles.length < spawnRate) {
+      // Initial spawn to populate scene (throttled - only spawn every 3rd frame)
+      if (particleCount < spawnRate && frameCount % 3 === 0) {
         spawnParticle();
       }
 
       // Update existing particles
-      for (let i = particles.length - 1; i >= 0; i--) {
+      const matrix = new THREE.Matrix4();
+      for (let i = 0; i < particleCount; i++) {
         const particle = particles[i];
 
         // Move particle
@@ -200,30 +264,41 @@ export default function Particles() {
           particle.velocity.z *= -1;
           particle.position.z = Math.max(-bounds.z, Math.min(bounds.z, particle.position.z));
         }
+
+        // Update instance matrix
+        matrix.setPosition(particle.position);
+        instancedMesh.setMatrixAt(i, matrix);
       }
+      instancedMesh.instanceMatrix.needsUpdate = true;
 
       // Update lines between nearby particles and track connections
-      lineSegments.clear();
       const maxDistance = 15;
       const connectionMap = new Map(); // Track connections per particle
+      let lineIndex = 0;
 
-      for (let i = 0; i < particles.length; i++) {
+      for (let i = 0; i < particleCount; i++) {
         connectionMap.set(particles[i], []);
         // Reset all particles to normal color first
-        particles[i].material.color.setHex(normalColor);
+        colors[i * 3] = normalColorObj.r;
+        colors[i * 3 + 1] = normalColorObj.g;
+        colors[i * 3 + 2] = normalColorObj.b;
       }
 
-      for (let i = 0; i < particles.length; i++) {
-        for (let j = i + 1; j < particles.length; j++) {
+      // Calculate connections and update line positions
+      for (let i = 0; i < particleCount; i++) {
+        for (let j = i + 1; j < particleCount; j++) {
           const distance = particles[i].position.distanceTo(particles[j].position);
 
-          if (distance < maxDistance) {
-            const lineGeometry = new THREE.BufferGeometry().setFromPoints([
-              particles[i].position,
-              particles[j].position
-            ]);
-            const line = new THREE.Line(lineGeometry, lineMaterial);
-            lineSegments.add(line);
+          if (distance < maxDistance && lineIndex < maxConnections) {
+            // Update line positions
+            const idx = lineIndex * 6;
+            linePositions[idx] = particles[i].position.x;
+            linePositions[idx + 1] = particles[i].position.y;
+            linePositions[idx + 2] = particles[i].position.z;
+            linePositions[idx + 3] = particles[j].position.x;
+            linePositions[idx + 4] = particles[j].position.y;
+            linePositions[idx + 5] = particles[j].position.z;
+            lineIndex++;
 
             // Track connections for Conway rules
             connectionMap.get(particles[i]).push(particles[j]);
@@ -232,36 +307,55 @@ export default function Particles() {
         }
       }
 
+      // Update line geometry
+      lineGeometry.attributes.position.needsUpdate = true;
+      lineGeometry.setDrawRange(0, lineIndex * 2); // 2 vertices per line
+
       // Color particles with 4+ connections red (about to die)
       connectionMap.forEach((connections, particle) => {
         if (connections.length >= 4) {
-          particle.material.color.setHex(dangerColor);
+          colors[particle.index * 3] = dangerColorObj.r;
+          colors[particle.index * 3 + 1] = dangerColorObj.g;
+          colors[particle.index * 3 + 2] = dangerColorObj.b;
         }
       });
+      instancedMesh.geometry.attributes.color.needsUpdate = true;
 
-      // Conway's Game of Life rules (check every 500ms)
-      if (now - lastConwayCheck > 500) {
+      // Conway's Game of Life rules (check every 1000ms to reduce spawning rate)
+      if (now - lastConwayCheck > 1000) {
         lastConwayCheck = now;
+
+        const particlesToRemove = [];
+        const particlesToSpawn = [];
 
         connectionMap.forEach((connections, particle) => {
           const connectionCount = connections.length;
 
           // Rule 1: If exactly 2 connections, spawn a new particle nearby
-          if (connectionCount === 2 && particles.length < maxParticles) {
+          if (connectionCount === 2 && particleCount < maxParticles) {
             // Calculate midpoint between the 3 particles
             const midpoint = new THREE.Vector3()
               .add(particle.position)
               .add(connections[0].position)
               .add(connections[1].position)
               .divideScalar(3);
-            spawnParticle(midpoint);
+            particlesToSpawn.push(midpoint);
           }
 
           // Rule 2: If 4+ connections, this particle dies
           if (connectionCount >= 4) {
-            removeParticle(particle);
+            particlesToRemove.push(particle);
           }
         });
+
+        // Process removals first
+        particlesToRemove.forEach(p => removeParticle(p));
+
+        // Then spawns (limit to prevent explosion)
+        const spawnLimit = Math.min(particlesToSpawn.length, 5);
+        for (let i = 0; i < spawnLimit; i++) {
+          spawnParticle(particlesToSpawn[i]);
+        }
       }
 
       // Rotate camera slowly
@@ -285,15 +379,13 @@ export default function Particles() {
     // Cleanup
     return () => {
       window.removeEventListener('resize', handleResize);
-      // Dispose of all particle materials
-      particles.forEach(particle => {
-        if (particle.material) {
-          particle.material.dispose();
-        }
-      });
-      renderer.dispose();
+      // Dispose of instanced mesh and geometries
+      instancedMesh.dispose();
       particleGeometry.dispose();
+      instancedMaterial.dispose();
+      lineGeometry.dispose();
       lineMaterial.dispose();
+      renderer.dispose();
       if (audioContextRef.current) {
         audioContextRef.current.close();
       }
@@ -355,7 +447,7 @@ export default function Particles() {
               <input
                 type="range"
                 min="10"
-                max="100"
+                max="80"
                 value={spawnRate}
                 onChange={(e) => setSpawnRate(Number(e.target.value))}
                 style={{
