@@ -94,14 +94,14 @@ export default function Home() {
           <section className="section">
             <h2 className="section-title">Current Focus</h2>
             <div className="grid">
-              <div className="card">
+              <Link href="/game" className="card">
                 <div className="card-title">Software Development</div>
                 <div className="card-description">Creating efficient, minimal solutions</div>
-              </div>
-              <div className="card">
+              </Link>
+              <Link href="/apps" className="card">
                 <div className="card-title">Creative Projects</div>
                 <div className="card-description">Exploring digital art and design</div>
-              </div>
+              </Link>
             </div>
           </section>
 
@@ -123,10 +123,9 @@ export default function Home() {
             <h2 className="section-title">Connect</h2>
             <div className="links">
               <Link href="/apps" className="link">Web Apps</Link>
-              <a href="#" className="link">Email</a>
-              <a href="#" className="link">GitHub</a>
-              <a href="#" className="link">LinkedIn</a>
-              <a href="#" className="link">Twitter</a>
+              <a href="mailto:shahhinsarlak@gmail.com" className="link">Email</a>
+              <a href="https://github.com/shahhinsarlak" target="_blank" rel="noopener noreferrer" className="link">GitHub</a>
+              <a href="https://www.linkedin.com/in/shahhin-sarlak" target="_blank" rel="noopener noreferrer" className="link">LinkedIn</a>
             </div>
           </section>
           </main>
