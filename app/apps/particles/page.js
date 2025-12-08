@@ -290,18 +290,10 @@ export default function Particles() {
         }
       }
 
-      // Clear remaining line buffer positions to prevent ghost lines
-      // Set stale positions far away (not to origin which would create visible lines)
-      const clearStart = lineIndex * 6;
-      const clearEnd = Math.min(clearStart + 300, linePositions.length); // Clear more aggressively
-      for (let i = clearStart; i < clearEnd; i += 6) {
-        // Set both endpoints of stale lines to same far-away point (zero-length line)
-        linePositions[i] = 99999;
-        linePositions[i + 1] = 99999;
-        linePositions[i + 2] = 99999;
-        linePositions[i + 3] = 99999;
-        linePositions[i + 4] = 99999;
-        linePositions[i + 5] = 99999;
+      // Clear ALL remaining line buffer positions to prevent ghost lines
+      // This ensures no stale connections are rendered
+      for (let i = lineIndex * 6; i < linePositions.length; i++) {
+        linePositions[i] = 0;
       }
 
       // Update line geometry
