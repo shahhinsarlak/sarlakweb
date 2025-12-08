@@ -6,6 +6,26 @@
 **Version:** 2.0.5
 **Last Updated:** 2025-11-24
 
+---
+
+## CRITICAL: Git Workflow Policy
+
+**MANDATORY:** Automatically commit and push ALL website changes immediately after making them.
+
+When making ANY changes to this website:
+1. Make the requested changes to the files
+2. Immediately run: `git add [changed files]`
+3. Immediately commit with a descriptive message
+4. Immediately push to origin/main
+
+**No exceptions.** This applies to:
+- Code changes (components, pages, styles)
+- Content updates (text, copy, descriptions)
+- Configuration changes
+- Any other modifications
+
+The user expects changes to be committed and pushed automatically without being asked.
+
 **Major Changes in v2.0.5:**
 - Journal system for tracking discoveries (locations, equipment, mechanics)
 - File drawer document management with consume/shred mechanics
