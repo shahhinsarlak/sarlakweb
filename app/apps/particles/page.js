@@ -179,9 +179,46 @@ export default function Particles() {
       return particle;
     };
 
+    // Death particles for burst effect
+    const deathParticles = [];
+
+    // Create death burst effect
+    const createDeathBurst = (position) => {
+      const burstCount = 5;
+      for (let i = 0; i < burstCount; i++) {
+        const geometry = new THREE.SphereGeometry(0.15, 4, 4);
+        const material = new THREE.MeshBasicMaterial({
+          color: theme === 'dark' ? 0xff4444 : 0xff0000,
+          transparent: true,
+          opacity: 1
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.position.copy(position);
+
+        // Random velocity
+        const velocity = new THREE.Vector3(
+          (Math.random() - 0.5) * 2,
+          (Math.random() - 0.5) * 2,
+          (Math.random() - 0.5) * 2
+        );
+
+        scene.add(mesh);
+        deathParticles.push({
+          mesh,
+          velocity,
+          life: 1.0,
+          fadeSpeed: 0.05
+        });
+      }
+    };
+
     // Function to remove particle
     const removeParticle = (particle) => {
       if (!particle.active) return;
+
+      // Create death burst effect at particle position
+      createDeathBurst(particle.position.clone());
+
       particle.active = false;
 
       // Swap with last active particle for efficient removal
@@ -409,6 +446,27 @@ export default function Particles() {
         for (let i = 0; i < spawnLimit; i++) {
           const spawn = particlesToSpawn[i];
           spawnParticle(spawn.position, spawn.energy);
+        }
+      }
+
+      // Update death particles
+      for (let i = deathParticles.length - 1; i >= 0; i--) {
+        const dp = deathParticles[i];
+
+        // Move particle outward
+        dp.mesh.position.add(dp.velocity);
+        dp.velocity.multiplyScalar(0.95); // Slow down
+
+        // Fade out
+        dp.life -= dp.fadeSpeed;
+        dp.mesh.material.opacity = dp.life;
+
+        // Remove when fully faded
+        if (dp.life <= 0) {
+          scene.remove(dp.mesh);
+          dp.mesh.geometry.dispose();
+          dp.mesh.material.dispose();
+          deathParticles.splice(i, 1);
         }
       }
 
