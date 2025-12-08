@@ -41,41 +41,6 @@ export default function Apps() {
 
         <section className="section">
           <div className="apps-grid">
-            
-            {/* Odoo Demo App */}
-            <div className="app-card">
-              <div className="app-header">
-                <div className="app-status live">
-                  <span className="status-indicator"></span>
-                  Live Demo
-                </div>
-              </div>
-              <div className="app-info">
-                <h3 className="app-title">Odoo ERP Demo</h3>
-                <p className="app-description">
-                  Full-featured Odoo ERP system demonstration with CRM, inventory, 
-                  accounting, and project management modules.
-                </p>
-                <div className="app-tech">
-                  <span className="tech-tag">Python</span>
-                  <span className="tech-tag">PostgreSQL</span>
-                  <span className="tech-tag">Web Framework</span>
-                </div>
-              </div>
-              <div className="app-actions">
-                <a 
-                  href="https://sedemo.odoo.com/" 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  className="app-button primary"
-                >
-                  Launch Demo
-                </a>
-                <a href="#" className="app-button secondary">
-                  View Source
-                </a>
-              </div>
-            </div>
 
             {/* Particles App */}
             <div className="app-card">

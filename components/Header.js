@@ -34,7 +34,7 @@ export default function Header() {
           Apps
         </Link>
         <Link href="/game" className={`nav-link ${pathname === '/game' ? 'active' : ''}`}>
-          Game
+          4B
         </Link>
       </nav>
       <button className="theme-toggle" onClick={toggleTheme}>
