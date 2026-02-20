@@ -63,15 +63,17 @@ export default function Home() {
                 fontFamily: 'inherit',
                 textTransform: 'uppercase',
                 letterSpacing: '0.5px',
-                opacity: 0.7
+                opacity: 0.6
               }}
               onMouseOver={(e) => {
                 e.target.style.opacity = '1';
                 e.target.style.borderColor = 'var(--accent-color)';
+                e.target.style.boxShadow = '0 0 8px var(--accent-glow)';
               }}
               onMouseOut={(e) => {
-                e.target.style.opacity = '0.7';
+                e.target.style.opacity = '0.6';
                 e.target.style.borderColor = 'var(--border-color)';
+                e.target.style.boxShadow = 'none';
               }}
               title={showConwaysGame ? 'Hide Conway\'s Game of Life' : 'Show Conway\'s Game of Life'}
             >

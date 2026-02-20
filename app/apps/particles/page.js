@@ -517,14 +517,18 @@ export default function Particles() {
           minHeight: 'calc(100vh - 200px)'
         }}>
           <h1 style={{
-            fontSize: '2.5rem',
+            fontFamily: 'var(--font-display)',
+            fontSize: '2rem',
             marginBottom: '20px',
-            fontWeight: '300'
+            fontWeight: '500',
+            letterSpacing: '-0.03em',
+            color: 'var(--text-color)'
           }}>
             Particles
           </h1>
 
           <p style={{
+            fontFamily: 'var(--font-display)',
             maxWidth: '600px',
             textAlign: 'center',
             marginBottom: '20px',
@@ -552,8 +556,11 @@ export default function Particles() {
               minWidth: '250px'
             }}>
               <label style={{
-                fontSize: '0.9rem',
-                fontWeight: '500'
+                fontFamily: 'var(--font-display)',
+                fontSize: '0.85rem',
+                fontWeight: '500',
+                color: 'var(--text-color)',
+                opacity: 0.8
               }}>
                 Spawn Count: {spawnRate}
               </label>
@@ -578,9 +585,7 @@ export default function Particles() {
             position: 'relative',
             borderRadius: '8px',
             overflow: 'hidden',
-            boxShadow: theme === 'dark'
-              ? '0 4px 20px rgba(0, 0, 0, 0.5)'
-              : '0 4px 20px rgba(0, 0, 0, 0.1)'
+            boxShadow: '0 4px 24px rgba(0, 0, 0, 0.6), 0 0 0 1px var(--border-color)'
           }}>
             <canvas
               ref={canvasRef}
@@ -599,9 +604,7 @@ export default function Particles() {
               right: 0,
               bottom: 0,
               pointerEvents: 'none',
-              background: theme === 'dark'
-                ? 'radial-gradient(ellipse at center, transparent 40%, rgba(10, 10, 10, 0.3) 100%)'
-                : 'radial-gradient(ellipse at center, transparent 40%, rgba(255, 255, 255, 0.3) 100%)'
+              background: 'radial-gradient(ellipse at center, transparent 40%, rgba(10, 10, 10, 0.4) 100%)'
             }} />
           </div>
         </main>
