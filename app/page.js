@@ -108,14 +108,38 @@ export default function Home() {
           <section className="section">
             <h2 className="section-title">Projects</h2>
             <div className="grid">
-              <div className="card">
-                <div className="card-title">Coming Soon</div>
-                <div className="card-description">Future projects will be showcased here</div>
-              </div>
-              <div className="card">
-                <div className="card-title">In Development</div>
-                <div className="card-description">Currently building something new</div>
-              </div>
+              <Link href="/game" className="card">
+                <div className="card-title">Office Horror</div>
+                <div className="card-description">
+                  Browser-based incremental game with loot drops, a skill tree, sanity mechanics, and dimensional exploration.
+                </div>
+                <div style={{ marginTop: '12px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: '10px', padding: '2px 6px', border: '1px solid var(--border-color)', opacity: 0.7 }}>Next.js</span>
+                  <span style={{ fontSize: '10px', padding: '2px 6px', border: '1px solid var(--border-color)', opacity: 0.7 }}>React</span>
+                  <span style={{ fontSize: '10px', padding: '2px 6px', border: '1px solid var(--border-color)', opacity: 0.7 }}>JavaScript</span>
+                </div>
+              </Link>
+              <Link href="/td" className="card">
+                <div className="card-title">Tower Defense</div>
+                <div className="card-description">
+                  A tower defense game built in the browser — place towers, survive waves, experiment with strategy.
+                </div>
+                <div style={{ marginTop: '12px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: '10px', padding: '2px 6px', border: '1px solid var(--border-color)', opacity: 0.7 }}>JavaScript</span>
+                  <span style={{ fontSize: '10px', padding: '2px 6px', border: '1px solid var(--border-color)', opacity: 0.7 }}>Canvas</span>
+                </div>
+              </Link>
+              <Link href="/apps/particles" className="card">
+                <div className="card-title">Particles 3D</div>
+                <div className="card-description">
+                  Interactive 3D particle system — particles move through space and form connections when nearby.
+                </div>
+                <div style={{ marginTop: '12px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: '10px', padding: '2px 6px', border: '1px solid var(--border-color)', opacity: 0.7 }}>React</span>
+                  <span style={{ fontSize: '10px', padding: '2px 6px', border: '1px solid var(--border-color)', opacity: 0.7 }}>Three.js</span>
+                  <span style={{ fontSize: '10px', padding: '2px 6px', border: '1px solid var(--border-color)', opacity: 0.7 }}>WebGL</span>
+                </div>
+              </Link>
             </div>
           </section>
 
