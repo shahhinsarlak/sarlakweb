@@ -87,7 +87,7 @@ export default function Home() {
             </div>
             <p className="intro-text">
               Student developer building real working software — games, tools, and experiments.
-              Curious about what's possible, shipping things to find out.
+              Curious about what&apos;s possible, shipping things to find out.
             </p>
           </section>
 
