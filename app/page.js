@@ -86,8 +86,8 @@ export default function Home() {
               Available for work
             </div>
             <p className="intro-text">
-              Building digital experiences through code and design. 
-              This space will showcase creative works, software projects, and experimental ideas.
+              Student developer building real working software — games, tools, and experiments.
+              Curious about what's possible, shipping things to find out.
             </p>
           </section>
 
@@ -95,12 +95,12 @@ export default function Home() {
             <h2 className="section-title">Current Focus</h2>
             <div className="grid">
               <Link href="/game" className="card">
-                <div className="card-title">Software Development</div>
-                <div className="card-description">Creating efficient, minimal solutions</div>
+                <div className="card-title">Incremental Game</div>
+                <div className="card-description">Office Horror — a browser-based incremental with loot, skills, and sanity mechanics</div>
               </Link>
               <Link href="/apps" className="card">
-                <div className="card-title">Creative Projects</div>
-                <div className="card-description">Exploring digital art and design</div>
+                <div className="card-title">Web Apps</div>
+                <div className="card-description">Particles 3D and other experiments built with React and Three.js</div>
               </Link>
             </div>
           </section>
