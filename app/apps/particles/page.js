@@ -11,27 +11,7 @@ export default function Particles() {
   const particlesRef = useRef([]);
   const audioContextRef = useRef(null);
   const audioBufferRef = useRef(null);
-  const [theme, setTheme] = useState('light');
   const [spawnRate, setSpawnRate] = useState(60); // Higher default for denser network
-
-  useEffect(() => {
-    // Get initial theme
-    const savedTheme = localStorage.getItem('theme') || 'light';
-    setTheme(savedTheme);
-
-    // Listen for theme changes
-    const handleThemeChange = (event) => {
-      if (event.data?.type === 'THEME_TOGGLE') {
-        const newTheme = localStorage.getItem('theme') || 'light';
-        setTheme(newTheme);
-      }
-    };
-    window.addEventListener('message', handleThemeChange);
-
-    return () => {
-      window.removeEventListener('message', handleThemeChange);
-    };
-  }, []);
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -53,7 +33,7 @@ export default function Particles() {
 
     // Scene setup
     const scene = new THREE.Scene();
-    const bgColor = theme === 'dark' ? 0x0a0a0a : 0xffffff;
+    const bgColor = 0x0a0a0a;
     scene.background = new THREE.Color(bgColor);
     sceneRef.current = scene;
 
@@ -80,10 +60,10 @@ export default function Particles() {
     const maxParticles = 200; // Increased for denser network
     const particles = [];
     const particleGeometry = new THREE.SphereGeometry(0.3, 6, 6);
-    const normalColor = theme === 'dark' ? 0xe0e0e0 : 0x1a1a1a;
+    const normalColor = 0xe0e0e0;
     const dangerColor = 0xff0000; // Red for dying particles
-    const energizedColor = theme === 'dark' ? 0x00ffff : 0x0066ff; // Cyan/blue for high energy
-    const fadingColor = theme === 'dark' ? 0x666666 : 0xaaaaaa; // Gray for isolated particles
+    const energizedColor = 0x00ffff; // Cyan for high energy
+    const fadingColor = 0x666666; // Gray for isolated particles
 
     // Use InstancedMesh for much better performance
     const instancedMaterial = new THREE.MeshBasicMaterial({ color: normalColor });
@@ -188,7 +168,7 @@ export default function Particles() {
       for (let i = 0; i < burstCount; i++) {
         const geometry = new THREE.SphereGeometry(0.15, 4, 4);
         const material = new THREE.MeshBasicMaterial({
-          color: theme === 'dark' ? 0xff4444 : 0xff0000,
+          color: 0xff4444,
           transparent: true,
           opacity: 1
         });
@@ -253,7 +233,7 @@ export default function Particles() {
     };
 
     // Create lines between nearby particles - optimized with single geometry
-    const lineColor = theme === 'dark' ? 0xe0e0e0 : 0x1a1a1a;
+    const lineColor = 0xe0e0e0;
     const lineMaterial = new THREE.LineBasicMaterial({
       color: lineColor,
       transparent: true,
@@ -502,7 +482,7 @@ export default function Particles() {
         audioContextRef.current.close();
       }
     };
-  }, [theme, spawnRate]);
+  }, [spawnRate]);
 
   return (
     <>
