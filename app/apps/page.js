@@ -69,30 +69,6 @@ export default function Apps() {
               </div>
             </div>
 
-            <div className="app-card coming-soon">
-              <div className="app-header">
-                <div className="app-status planning">
-                  <span className="status-indicator"></span>
-                  Planning
-                </div>
-              </div>
-              <div className="app-info">
-                <h3 className="app-title">Future Experiment</h3>
-                <p className="app-description">
-                  Exploring new technologies and frameworks. 
-                  This space will be updated with new experiments.
-                </p>
-                <div className="app-tech">
-                  <span className="tech-tag">TBD</span>
-                </div>
-              </div>
-              <div className="app-actions">
-                <button className="app-button disabled">
-                  In Planning
-                </button>
-              </div>
-            </div>
-
           </div>
         </section>
 
