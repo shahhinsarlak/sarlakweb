@@ -164,6 +164,14 @@ export default function ExampleModal({ gameState, onClose, onAction }) {
 Use for: dynamic values, component-specific layout, modal overlays.
 Avoid for: repeated patterns (use CSS classes), animations (use @keyframes).
 
+### ESLint / JSX Compliance (enforced by AWS Amplify build)
+- **Always escape special characters in JSX text.** Unescaped `'`, `"`, `>`, `}` cause build failures.
+  - Apostrophes: use `&apos;` (e.g. `what&apos;s`)
+  - Quotes: use `&quot;`
+  - Left/right single quotes: use `&lsquo;` / `&rsquo;`
+- Run `npm run build` locally before pushing to catch ESLint errors before Amplify does.
+- The `react/no-unescaped-entities` rule is active — any raw `'` or `"` inside JSX elements will fail the build.
+
 ---
 
 ## Game Systems Reference
