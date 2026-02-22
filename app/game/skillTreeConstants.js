@@ -306,7 +306,7 @@ export const SKILLS = {
 
 export const LEVEL_SYSTEM = {
   baseXP: 100,
-  xpMultiplier: 1.5,
+  xpMultiplier: 1.3,
   maxLevel: 50,
   
   getXPForLevel: (level) => {
