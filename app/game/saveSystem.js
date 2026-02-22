@@ -10,6 +10,8 @@
  * Save format: JSON with version and timestamp
  */
 
+import { INITIAL_GAME_STATE } from './constants';
+
 /**
  * Saves current game state to a downloadable JSON file
  *
@@ -50,12 +52,16 @@ export const loadGame = (file, setGameState, addMessage) => {
       reader.onload = (e) => {
         try {
           const saveData = JSON.parse(e.target.result);
-          
+
           if (!saveData.version || !saveData.state) {
             throw new Error('Invalid save file format');
           }
-          
-          setGameState(saveData.state);
+
+          // Merge loaded state with INITIAL_GAME_STATE defaults so old saves
+          // receive all new properties introduced after the save was created.
+          const mergedState = { ...INITIAL_GAME_STATE, ...saveData.state };
+
+          setGameState(mergedState);
           addMessage('Save loaded successfully.');
           resolve(saveData);
         } catch (error) {
@@ -112,7 +118,9 @@ export const importFromClipboard = (setGameState, addMessage) => {
           if (!saveData.version || !saveData.state) {
             throw new Error('Invalid save data');
           }
-          setGameState(saveData.state);
+          // Merge with INITIAL_GAME_STATE defaults for version migration
+          const mergedState = { ...INITIAL_GAME_STATE, ...saveData.state };
+          setGameState(mergedState);
           addMessage('Save imported from clipboard.');
           return saveData;
         })
