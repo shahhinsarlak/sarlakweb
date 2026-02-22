@@ -45,9 +45,9 @@ export const addExperience = (gameState, xpAmount, addMessage) => {
   
   if (leveledUp) {
     if (levelsGained === 1) {
-      addMessage(`🎉 LEVEL UP! You are now level ${newLevel}. +${skillPointsGained} Skill Point${skillPointsGained > 1 ? 's' : ''}!`);
+      addMessage(`LEVEL UP! You are now level ${newLevel}. +${skillPointsGained} Skill Point${skillPointsGained > 1 ? 's' : ''}!`);
     } else {
-      addMessage(`🎉 LEVEL UP! You gained ${levelsGained} levels and are now level ${newLevel}. +${skillPointsGained} Skill Points!`);
+      addMessage(`LEVEL UP! You gained ${levelsGained} levels and are now level ${newLevel}. +${skillPointsGained} Skill Points!`);
     }
   }
   
