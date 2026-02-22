@@ -331,7 +331,6 @@ export const XP_REWARDS = {
     dimensional_essence: 20,
     singularity_node: 50
   },
-  defeatColleague: 25,
   purchaseUpgrade: 10,
   purchaseDimensionalUpgrade: 15,
   unlockLocation: 30,
