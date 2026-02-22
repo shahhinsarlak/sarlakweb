@@ -53,7 +53,7 @@ export const getDistortionStyle = (sanity) => {
       overflow: hidden;
     `;
     document.body.appendChild(container);
-  
+
     // Dimensional resource colors only
     const dimensionalColors = [
       '#1a1a2e', // Void Fragment
@@ -64,18 +64,21 @@ export const getDistortionStyle = (sanity) => {
       '#ffd700', // Dimensional Essence
       '#ff0000'  // Singularity Node
     ];
-  
+
+    // Collect all keyframe definitions into a single string
+    let allKeyframes = '';
+
     // Create particles from all edges of the screen
     for (let i = 0; i < 50; i++) {
       const particle = document.createElement('div');
       const size = Math.random() * 12 + 6;
       const duration = Math.random() * 2 + 1.5;
       const delay = Math.random() * 0.5;
-      
+
       // Randomly start from different edges
       const edge = Math.floor(Math.random() * 4); // 0: top, 1: right, 2: bottom, 3: left
       let startX, startY, endX, endY;
-      
+
       switch(edge) {
         case 0: // Top edge
           startX = Math.random() * window.innerWidth;
@@ -102,9 +105,9 @@ export const getDistortionStyle = (sanity) => {
           endY = Math.random() * window.innerHeight;
           break;
       }
-      
+
       const color = dimensionalColors[Math.floor(Math.random() * dimensionalColors.length)];
-      
+
       particle.style.cssText = `
         position: absolute;
         left: ${startX}px;
@@ -119,10 +122,9 @@ export const getDistortionStyle = (sanity) => {
         z-index: 5001;
         pointer-events: none;
       `;
-  
-      // Create unique animation for each particle
-      const style = document.createElement('style');
-      style.textContent = `
+
+      // Accumulate keyframe definitions (one style tag for all particles)
+      allKeyframes += `
         @keyframes levelUpParticle${i} {
           0% {
             opacity: 1;
@@ -138,10 +140,9 @@ export const getDistortionStyle = (sanity) => {
           }
         }
       `;
-      document.head.appendChild(style);
       container.appendChild(particle);
     }
-  
+
     // Add center burst effect
     for (let i = 0; i < 30; i++) {
       const particle = document.createElement('div');
@@ -150,14 +151,14 @@ export const getDistortionStyle = (sanity) => {
       const delay = Math.random() * 0.3;
       const angle = (Math.PI * 2 * i) / 30;
       const distance = 300 + Math.random() * 200;
-      
+
       const startX = window.innerWidth / 2;
       const startY = window.innerHeight / 2;
       const endX = Math.cos(angle) * distance;
       const endY = Math.sin(angle) * distance;
-      
+
       const color = dimensionalColors[Math.floor(Math.random() * dimensionalColors.length)];
-      
+
       particle.style.cssText = `
         position: absolute;
         left: ${startX}px;
@@ -172,9 +173,8 @@ export const getDistortionStyle = (sanity) => {
         z-index: 5001;
         pointer-events: none;
       `;
-  
-      const style = document.createElement('style');
-      style.textContent = `
+
+      allKeyframes += `
         @keyframes levelUpBurst${i} {
           0% {
             opacity: 1;
@@ -189,19 +189,20 @@ export const getDistortionStyle = (sanity) => {
           }
         }
       `;
-      document.head.appendChild(style);
       container.appendChild(particle);
     }
-  
+
+    // Inject ONE style tag for all keyframes combined
+    const styleId = 'level-up-particles-style-' + Date.now();
+    const batchStyle = document.createElement('style');
+    batchStyle.id = styleId;
+    batchStyle.textContent = allKeyframes;
+    document.head.appendChild(batchStyle);
+
     // Clean up after animation completes
     setTimeout(() => {
       container.remove();
-      // Clean up all the dynamic styles
-      document.querySelectorAll('style').forEach(style => {
-        if (style.textContent.includes('levelUpParticle') || style.textContent.includes('levelUpBurst')) {
-          style.remove();
-        }
-      });
+      document.getElementById(styleId)?.remove();
     }, 3500);
   };
 
@@ -217,24 +218,27 @@ export const getDistortionStyle = (sanity) => {
       z-index: 5000;
     `;
     document.body.appendChild(container);
-  
+
     const colors = ['#4a90e2', '#00bfff', '#1e90ff', '#87ceeb'];
-  
+
+    // Collect all keyframe definitions into a single string
+    let allKeyframes = '';
+
     for (let i = 0; i < 40; i++) {
       const particle = document.createElement('div');
       const size = Math.random() * 10 + 5;
       const duration = Math.random() * 1.5 + 1;
       const delay = Math.random() * 0.3;
-      
+
       const startX = window.innerWidth / 2;
       const startY = window.innerHeight / 2;
       const angle = (Math.PI * 2 * i) / 40;
       const distance = 150 + Math.random() * 150;
       const endX = Math.cos(angle) * distance;
       const endY = Math.sin(angle) * distance;
-      
+
       const color = colors[Math.floor(Math.random() * colors.length)];
-      
+
       particle.style.cssText = `
         position: absolute;
         left: ${startX}px;
@@ -249,9 +253,8 @@ export const getDistortionStyle = (sanity) => {
         z-index: 5001;
         pointer-events: none;
       `;
-  
-      const style = document.createElement('style');
-      style.textContent = `
+
+      allKeyframes += `
         @keyframes skillParticle${i} {
           0% {
             opacity: 1;
@@ -263,17 +266,19 @@ export const getDistortionStyle = (sanity) => {
           }
         }
       `;
-      document.head.appendChild(style);
       container.appendChild(particle);
     }
-  
+
+    // Inject ONE style tag for all keyframes combined
+    const styleId = 'skill-particles-style-' + Date.now();
+    const batchStyle = document.createElement('style');
+    batchStyle.id = styleId;
+    batchStyle.textContent = allKeyframes;
+    document.head.appendChild(batchStyle);
+
     setTimeout(() => {
       container.remove();
-      document.querySelectorAll('style').forEach(style => {
-        if (style.textContent.includes('skillParticle')) {
-          style.remove();
-        }
-      });
+      document.getElementById(styleId)?.remove();
     }, 2500);
   };
 
