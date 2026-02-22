@@ -16,7 +16,11 @@
 import { LOCATIONS, UPGRADES, DEBUG_CHALLENGES, PRINTER_UPGRADES, DOCUMENT_TYPES, TIER_MASTERY_WEIGHTS } from './constants';
 import {
   applyEnergyCostReduction,
-  applyPPMultiplier
+  applyPPMultiplier,
+  getModifiedRestCooldown,
+  checkFreeAction,
+  getChaosBonus,
+  getActiveSkillEffects
 } from './skillSystemHelpers';
 import { XP_REWARDS } from './skillTreeConstants';
 import {
@@ -54,7 +58,10 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       // Cap minimum energy cost at 10% of base (prevent gaining energy with buffs)
       energyCost = Math.max(energyCost, baseEnergyCost * 0.1);
 
-      if (prev.energy < energyCost) {
+      // Temporal Distortion: free action chance skips energy cost
+      const isFreeAction = checkFreeAction(prev);
+
+      if (!isFreeAction && prev.energy < energyCost) {
         addMessage('Too exhausted. Your hands won\'t move.');
         return prev;
       }
@@ -62,7 +69,13 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       // Apply skill effects to PP gain, then sanity-based modifier
       const basePP = prev.ppPerClick;
       const ppWithSkills = applyPPMultiplier(basePP, prev);
-      const ppGain = applySanityPPModifier(ppWithSkills, prev);
+      let ppGain = applySanityPPModifier(ppWithSkills, prev);
+
+      // Sanity Sacrifice: chaos bonus adds PP per 10 sanity lost
+      const chaosBonus = getChaosBonus(prev);
+      if (chaosBonus > 0) {
+        ppGain = ppGain * (1 + chaosBonus);
+      }
 
       // Clean expired buffs
       const activeBuffs = cleanExpiredBuffs(prev);
@@ -70,7 +83,7 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       const newState = {
         ...prev,
         pp: prev.pp + ppGain,
-        energy: Math.max(0, prev.energy - energyCost),
+        energy: isFreeAction ? prev.energy : Math.max(0, prev.energy - energyCost),
         sortCount: (prev.sortCount || 0) + 1,
         activeReportBuffs: activeBuffs
       };
@@ -96,10 +109,12 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       const maxEnergy = 100 + (prev.upgrades.energydrink ? 20 : 0);
       addMessage('You close your eyes. The fluorescent lights burn through your eyelids.');
       checkAchievements();
+      // Power Napping skill reduces rest cooldown
+      const cooldown = getModifiedRestCooldown(30, prev);
       return {
         ...prev,
         energy: maxEnergy,
-        restCooldown: 30
+        restCooldown: cooldown
       };
     });
   };
@@ -845,13 +860,19 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
 
       // Handle buffs
       if (outcome.buff) {
+        // Filing Expertise skill extends document buff duration
+        const skillEffects = getActiveSkillEffects(prev);
+        const durationMult = 1 + (skillEffects.documentDurationMultiplier || 0);
+        const adjustedDuration = outcome.buff.duration * durationMult;
+
         const buff = {
           id: `${doc.type}_${doc.tier}_${doc.quality}_${Date.now()}`,
           name: doc.tierName,
           desc: outcome.desc,
-          duration: outcome.buff.duration,  // Store duration for later calculations
-          expiresAt: Date.now() + (outcome.buff.duration * 1000),
-          ...outcome.buff
+          duration: adjustedDuration,  // Store duration for later calculations
+          expiresAt: Date.now() + (adjustedDuration * 1000),
+          ...outcome.buff,
+          duration: adjustedDuration  // Override duration from spread with adjusted value
         };
 
         // Check if player has room for more buffs

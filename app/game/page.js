@@ -21,7 +21,7 @@ import NotificationPopup from './NotificationPopup';
 import { createGameActions } from './gameActions';
 import { getDistortionStyle, distortText, getClockTime, createLevelUpParticles, createSkillPurchaseParticles, createScreenShake } from './gameUtils';
 import { saveGame, loadGame, exportToClipboard, importFromClipboard } from './saveSystem';
-import { addExperience, purchaseSkill, getActiveSkillEffects, getModifiedPortalCooldown, getModifiedCapacity, applyPPMultiplier, applyPPSMultiplier } from './skillSystemHelpers';
+import { addExperience, purchaseSkill, getActiveSkillEffects, getModifiedPortalCooldown, getModifiedCapacity, applyPPMultiplier, applyPPSMultiplier, getMaxSanity } from './skillSystemHelpers';
 import { SKILLS, LEVEL_SYSTEM, XP_REWARDS } from './skillTreeConstants';
 import { DIMENSIONAL_MATERIALS } from './dimensionalConstants';
 import { getSanityTierDisplay, isSanityDrainPaused, calculatePaperQuality, applySanityPPModifier, getActiveBuffPPMultiplier, getActiveBuffXPMultiplier, getActiveBuffEnergyCostMultiplier, getActiveBuffPPPerSecondMultiplier } from './sanityPaperHelpers';
@@ -519,6 +519,20 @@ export default function Game() {
         // Reality Anchor sets minimum sanity threshold
         if (prev.dimensionalUpgrades?.reality_anchor && newState.sanity < 20) {
           newState.sanity = 20;
+        }
+
+        // Resilient Mind skill raises maximum sanity cap (e.g. +10 per level)
+        const maxSanityCap = getMaxSanity(100, prev);
+        if (newState.sanity > maxSanityCap) {
+          newState.sanity = maxSanityCap;
+        }
+
+        // Executive Authority skill raises max stored documents (file drawer capacity)
+        const skillEffectsForState = getActiveSkillEffects(prev);
+        const baseMaxDocs = 3;
+        const maxDocsFromSkills = baseMaxDocs + (skillEffectsForState.maxStoredDocuments || 0);
+        if (newState.maxActiveBuffs !== maxDocsFromSkills) {
+          newState.maxActiveBuffs = maxDocsFromSkills;
         }
 
         if (Math.random() < 0.02) {
