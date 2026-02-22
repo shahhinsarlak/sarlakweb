@@ -590,6 +590,100 @@ export const DIMENSIONAL_UPGRADES = [
     desc: 'See between the lines. Messages reveal themselves.' 
   },
   
+  // Armory Equipment Unlocks — Weapons
+  {
+    id: 'shard_weapon',
+    name: 'Shard Blade Schematic',
+    materials: { void_fragment: 20, glitch_shard: 10 },
+    effect: 'unlock',
+    value: 'shard_weapon',
+    desc: 'Forge the Glitch Shard Blade. Reality bleeds where this blade passes.'
+  },
+  {
+    id: 'void_cleaver_craft',
+    name: 'Void Cleaver Forge',
+    materials: { void_fragment: 30, dimensional_essence: 1 },
+    effect: 'unlock',
+    value: 'void_cleaver_craft',
+    desc: 'Carve a weapon from pure absence. Targets cease to have been.'
+  },
+  {
+    id: 'temporal_blade_craft',
+    name: 'Temporal Blade Schematic',
+    materials: { temporal_core: 5, void_fragment: 20 },
+    effect: 'unlock',
+    value: 'temporal_blade_craft',
+    desc: 'Forge a blade that exists in multiple timelines simultaneously.'
+  },
+  {
+    id: 'reality_weapon_craft',
+    name: 'Reality Render Schematic',
+    materials: { singularity_node: 1, dimensional_essence: 2 },
+    effect: 'unlock',
+    value: 'reality_weapon_craft',
+    desc: 'The office\'s final secret. It doesn\'t destroy — it removes from narrative.'
+  },
+
+  // Armory Equipment Unlocks — Armor
+  {
+    id: 'crystal_armor_craft',
+    name: 'Crystalline Suit Weave',
+    materials: { static_crystal: 20, glitch_shard: 15 },
+    effect: 'unlock',
+    value: 'crystal_armor_craft',
+    desc: 'Weave armor from static crystals. Reality bends around you.'
+  },
+  {
+    id: 'void_visor_craft',
+    name: 'Void Visor Lens',
+    materials: { void_fragment: 15, reality_dust: 5 },
+    effect: 'unlock',
+    value: 'void_visor_craft',
+    desc: 'See through the veil between realities. The truth is worse than you imagined.'
+  },
+  {
+    id: 'temporal_accessory_craft',
+    name: 'Temporal Watch Assembly',
+    materials: { temporal_core: 3, reality_dust: 8 },
+    effect: 'unlock',
+    value: 'temporal_accessory_craft',
+    desc: 'Assemble a watch that bends time. Hours compress into minutes.'
+  },
+
+  // Armory Equipment Unlocks — Anomalies
+  {
+    id: 'forgotten_memo_find',
+    name: 'Retrieve Forgotten Memo',
+    materials: { void_fragment: 15, reality_dust: 5 },
+    effect: 'unlock',
+    value: 'forgotten_memo_find',
+    desc: 'Retrieve the memo from the archive\'s deepest drawer. Knowledge seeps in.'
+  },
+  {
+    id: 'glitched_keycard_find',
+    name: 'Recover Glitched Keycard',
+    materials: { glitch_shard: 20, static_crystal: 10 },
+    effect: 'unlock',
+    value: 'glitched_keycard_find',
+    desc: 'Recover a keycard phasing between dimensions. Opens doors that don\'t exist.'
+  },
+  {
+    id: 'void_shard_collect',
+    name: 'Collect Void Shard',
+    materials: { void_fragment: 40 },
+    effect: 'unlock',
+    value: 'void_shard_collect',
+    desc: 'Extract a shard of pure nothing. It weighs impossibly heavy.'
+  },
+  {
+    id: 'singularity_core_extract',
+    name: 'Extract Singularity Core',
+    materials: { singularity_node: 1, dimensional_essence: 1 },
+    effect: 'unlock',
+    value: 'singularity_core_extract',
+    desc: 'Extract a fragment of the office\'s heart. It consumes everything.'
+  },
+
   // Endgame
   {
     id: 'singularity_collapse',
