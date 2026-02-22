@@ -708,21 +708,21 @@ export const PRINTER_UPGRADES = [
 ];
 
 export const EVENTS = [
-  { id: 'email1', prob: 0.1, sanity: -5, message: 'New email: "Meeting moved to yesterday. Attendance mandatory."', minDay: 1 },
-  { id: 'whisper', prob: 0.08, sanity: -3, message: 'You hear someone whisper your employee ID number.', minDay: 2 },
-  { id: 'memo', prob: 0.12, pp: 50, message: 'You find a memo: "Productivity +5%. Reality -2%. Good work."', minDay: 3 },
-  { id: 'coffee_spill', prob: 0.15, energy: -10, message: 'Your coffee spills. Upwards.', minDay: 2 },
-  { id: 'coworker', prob: 0.05, sanity: -10, message: 'Your coworker asks how long you\'ve worked here. You don\'t remember them.', minDay: 4 },
-  { id: 'promotion_offer', prob: 0.03, pp: 200, message: 'Promotion offer! Accept within 3 seconds. You accepted it 5 seconds ago.', minDay: 5 },
-  { id: 'lights_flicker', prob: 0.2, message: 'The lights flicker. In morse code. It says: HELP', minDay: 3 },
+  { id: 'email1', prob: 0.08, sanity: -5, message: 'New email: "Meeting moved to yesterday. Attendance mandatory."', minDay: 1 },
+  { id: 'whisper', prob: 0.06, sanity: -3, message: 'You hear someone whisper your employee ID number.', minDay: 2 },
+  { id: 'memo', prob: 0.09, pp: 50, message: 'You find a memo: "Productivity +5%. Reality -2%. Good work."', minDay: 3 },
+  { id: 'coffee_spill', prob: 0.11, energy: -10, message: 'Your coffee spills. Upwards.', minDay: 2 },
+  { id: 'coworker', prob: 0.04, sanity: -10, message: 'Your coworker asks how long you\'ve worked here. You don\'t remember them.', minDay: 4 },
+  { id: 'promotion_offer', prob: 0.02, pp: 200, message: 'Promotion offer! Accept within 3 seconds. You accepted it 5 seconds ago.', minDay: 5 },
+  { id: 'lights_flicker', prob: 0.14, message: 'The lights flicker. In morse code. It says: HELP', minDay: 3 },
   { id: 'extra_finger', prob: 0.02, sanity: -20, message: 'You count your fingers. 11. That seems right.', minDay: 7 },
-  { id: 'good_news', prob: 0.1, pp: 100, energy: 20, message: 'Good news! Your performance review is... satisfactory.', minDay: 2 },
-  { id: 'phone_ring', prob: 0.07, sanity: -5, message: 'The phone rings. It\'s not plugged in.', minDay: 4 },
-  { id: 'mirror', prob: 0.04, sanity: -15, message: 'You see your reflection. It\'s younger than you. It mouths: "Get out."', minDay: 6 },
-  { id: 'overtime', prob: 0.1, pp: 150, energy: -30, message: 'Mandatory overtime. You\'ve been here 23 hours today. The sun hasn\'t moved.', minDay: 5 },
-  { id: 'compliment', prob: 0.15, sanity: 5, message: 'Your manager says you\'re doing great. You\'ve never met your manager.', minDay: 3 },
-  { id: 'glitch', prob: 0.06, sanity: -8, message: 'Reality.exe has stopped responding. Resuming...', minDay: 8 },
-  { id: 'bonus', prob: 0.05, pp: 500, message: 'Quarterly bonus! Direct deposited to ███████', minDay: 10 }
+  { id: 'good_news', prob: 0.08, pp: 100, energy: 20, message: 'Good news! Your performance review is... satisfactory.', minDay: 2 },
+  { id: 'phone_ring', prob: 0.05, sanity: -5, message: 'The phone rings. It\'s not plugged in.', minDay: 4 },
+  { id: 'mirror', prob: 0.03, sanity: -15, message: 'You see your reflection. It\'s younger than you. It mouths: "Get out."', minDay: 6 },
+  { id: 'overtime', prob: 0.08, pp: 150, energy: -30, message: 'Mandatory overtime. You\'ve been here 23 hours today. The sun hasn\'t moved.', minDay: 5 },
+  { id: 'compliment', prob: 0.11, sanity: 5, message: 'Your manager says you\'re doing great. You\'ve never met your manager.', minDay: 3 },
+  { id: 'glitch', prob: 0.05, sanity: -8, message: 'Reality.exe has stopped responding. Resuming...', minDay: 8 },
+  { id: 'bonus', prob: 0.04, pp: 500, message: 'Quarterly bonus! Direct deposited to \u2588\u2588\u2588\u2588\u2588\u2588\u2588', minDay: 10 }
 ];
 
 export const ACHIEVEMENTS = [
