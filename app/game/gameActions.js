@@ -44,52 +44,6 @@ import {
 
 export const createGameActions = (setGameState, addMessage, checkAchievements, grantXP) => {
   
-  const triggerScreenEffect = (effectType) => {
-    const overlay = document.createElement('div');
-    overlay.style.cssText = `
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      z-index: 9999;
-      pointer-events: none;
-    `;
-
-    if (effectType === 'flash') {
-      overlay.style.background = 'white';
-      overlay.style.animation = 'flash 0.8s ease-out';
-      const style = document.createElement('style');
-      style.textContent = `
-        @keyframes flash {
-          0% { opacity: 0; }
-          10% { opacity: 1; }
-          100% { opacity: 0; }
-        }
-      `;
-      document.head.appendChild(style);
-    } else if (effectType === 'shake') {
-      document.body.style.animation = 'shake 0.5s ease-in-out';
-      const style = document.createElement('style');
-      style.textContent = `
-        @keyframes shake {
-          0%, 100% { transform: translate(0, 0); }
-          10%, 30%, 50%, 70%, 90% { transform: translate(-5px, -5px); }
-          20%, 40%, 60%, 80% { transform: translate(5px, 5px); }
-        }
-      `;
-      document.head.appendChild(style);
-      setTimeout(() => {
-        document.body.style.animation = '';
-      }, 500);
-    }
-
-    document.body.appendChild(overlay);
-    setTimeout(() => {
-      overlay.remove();
-    }, 1000);
-  };
-  
   const sortPapers = () => {
     setGameState(prev => {
       // Apply skill effects to energy cost, then report buff modifier
@@ -705,7 +659,7 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       // Visual effects based on quality
       setTimeout(() => {
         if (qualityOutcome === 'corrupted') {
-          triggerScreenEffect('shake');
+          createScreenShake('normal');
         }
       }, 100);
 
@@ -1138,7 +1092,6 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
     printPaper,
     buyPrinterUpgrade,
     enterPrinterRoom,
-    triggerScreenEffect,
     // Document system actions (Revised 2025-11-01, Redesigned 2025-11-04)
     printDocument,
     // File drawer system actions (Added 2025-11-04)
