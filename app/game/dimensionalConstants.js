@@ -5,7 +5,7 @@
  */
 
 export const DIMENSIONAL_MATERIALS = [
-  { id: 'void_fragment', name: 'Void Fragment', color: '#1a1a2e', rarity: 0.40, size: 'large' },   // 40% - most common, largest
+  { id: 'void_fragment', name: 'Void Fragment', color: '#1a1a2e', rarity: 0.3995, size: 'large' },  // ~40% - most common, largest
   { id: 'static_crystal', name: 'Static Crystal', color: '#4a4a6a', rarity: 0.30, size: 'medium' }, // 30% - common, medium
   { id: 'glitch_shard', name: 'Glitch Shard', color: '#7f00ff', rarity: 0.20, size: 'medium' },     // 20% - uncommon, medium
   { id: 'reality_dust', name: 'Reality Dust', color: '#ff6b9d', rarity: 0.08, size: 'small' },      // 8% - rare, small
