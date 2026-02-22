@@ -491,6 +491,14 @@ export default function Game() {
         }
 
         // Sanity drain system - base drain reduced by upgrades
+        // Phase 1 foreshadowing: very light drain begins at 20 PP
+        if (prev.phase === 1 && prev.pp > 20) {
+          if (!isSanityDrainPaused(prev)) {
+            newState.sanity = Math.max(0, prev.sanity - 0.01);
+          }
+        }
+
+        // Phase 2 full drain: triggered at 100 PP (lowered from 500 for earlier horror)
         if (prev.phase >= 2) {
           // Check if sanity drain is paused by stability report buff
           if (!isSanityDrainPaused(prev)) {
@@ -552,7 +560,7 @@ export default function Game() {
           }
         }
 
-        if (prev.phase === 1 && prev.pp > 500) {
+        if (prev.phase === 1 && prev.pp > 100) {
           newState.phase = 2;
           newState.recentMessages = ['Something has changed. Or has it always been this way?', ...prev.recentMessages].slice(0, prev.maxLogMessages || 15);
         }
