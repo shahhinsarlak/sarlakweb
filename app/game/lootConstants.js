@@ -8,7 +8,7 @@
  * - BASE_LOOT_ITEMS: Core items that can drop with random stats
  */
 
-import { RARITY } from './equipmentConstants';
+import { RARITY, WEAPONS, ARMOR, ANOMALIES } from './equipmentConstants';
 
 // Prefixes that modify item stats (% based)
 export const LOOT_PREFIXES = {
@@ -269,227 +269,48 @@ export const IMBUEMENT_COUNTS = {
   mythic: { min: 3, max: 3 }
 };
 
-// Base loot items (core items that can spawn)
+// Base loot items — derived from equipmentConstants to eliminate duplication.
+// Each item is mapped to the shape expected by lootGenerationHelpers.js.
 export const BASE_LOOT_ITEMS = {
-  // Weapons
-  weapons: [
-    {
-      id: 'stapler_shiv',
-      name: 'Stapler Shiv',
-      type: 'weapon',
-      baseDamage: 8,
-      baseCritChance: 0.05,
-      baseCritMultiplier: 1.5,
-      ascii: `  ┌─┐
-  │▓│
-  └─┘
-   ║`,
-      lore: 'Improvised from office supplies. Sharp enough to cause existential dread.'
-    },
-    {
-      id: 'shard_blade',
-      name: 'Glitch Shard Blade',
-      type: 'weapon',
-      baseDamage: 15,
-      baseCritChance: 0.12,
-      baseCritMultiplier: 1.8,
-      ascii: `    ◢
-   ◢█◣
-  ◢███◣
- ◢█████◣
-◢███████◣
-   ║║║`,
-      lore: 'Forged from reality\'s broken edges.'
-    },
-    {
-      id: 'void_cleaver',
-      name: 'Void Cleaver',
-      type: 'weapon',
-      baseDamage: 22,
-      baseCritChance: 0.10,
-      baseCritMultiplier: 2.0,
-      ascii: `╔═══╗
-║▓▓▓║
-║▓█▓║
-║▓▓▓║
-╚═╦═╝
-  ║
-  ║`,
-      lore: 'Carved from pure absence. Where it strikes, things cease to have been.'
-    },
-    {
-      id: 'temporal_edge',
-      name: 'Temporal Edge',
-      type: 'weapon',
-      baseDamage: 18,
-      baseCritChance: 0.20,
-      baseCritMultiplier: 1.9,
-      ascii: `   ⟨━⟩
-  ⟨━━━⟩
- ⟨━━━━━⟩
-⟨━━━━━━━⟩
-    ║
-    ║`,
-      lore: 'Each strike exists in multiple timelines.'
-    },
-    {
-      id: 'reality_render',
-      name: 'Reality Render',
-      type: 'weapon',
-      baseDamage: 30,
-      baseCritChance: 0.15,
-      baseCritMultiplier: 2.5,
-      ascii: `  ╔═══╗
-  ║ ⊗ ║
-╔═╬═══╬═╗
-║▓▓▓▓▓▓▓║
-╚═╬═══╬═╝
-  ║   ║
-  ║   ║`,
-      lore: 'The office\'s final secret. It doesn\'t destroy enemies - it removes them from the narrative.'
-    }
-  ],
+  weapons: Object.values(WEAPONS).map(w => ({
+    id: w.id,
+    name: w.name,
+    type: 'weapon',
+    baseDamage: w.damage,
+    baseCritChance: w.critChance,
+    baseCritMultiplier: w.critMultiplier,
+    ascii: w.ascii,
+    lore: w.lore
+  })),
 
-  // Armor
-  armor: [
-    {
-      id: 'standard_headset',
-      name: 'Standard Headset',
-      type: 'armor',
-      slot: 'head',
-      baseDefense: 2,
-      ascii: `┌─┐ ┌─┐
-│ ╰─╯ │
-└─────┘`,
-      lore: 'Noise-cancelling. Blocks out the screaming.'
-    },
-    {
-      id: 'void_visor',
-      name: 'Void Visor',
-      type: 'armor',
-      slot: 'head',
-      baseDefense: 5,
-      baseSanityResist: 0.15,
-      ascii: `╔═════╗
-║█▓▓▓█║
-╚══╦══╝
-   ║`,
-      lore: 'See through the veil. The truth is worse than you imagined.'
-    },
-    {
-      id: 'dress_shirt',
-      name: 'Dress Shirt',
-      type: 'armor',
-      slot: 'chest',
-      baseDefense: 3,
-      ascii: `┌─┬─┐
-│ │ │
-├─┼─┤
-│ │ │
-└─┴─┘`,
-      lore: 'Business casual. The uniform of corporate servitude.'
-    },
-    {
-      id: 'crystalline_suit',
-      name: 'Crystalline Suit',
-      type: 'armor',
-      slot: 'chest',
-      baseDefense: 10,
-      baseDamageReflect: 0.10,
-      ascii: `╔═◊═╗
-║◊█◊║
-╠═◊═╣
-║◊◊◊║
-╚═══╝`,
-      lore: 'Woven from static crystals. Reality bends around you.'
-    },
-    {
-      id: 'id_badge',
-      name: 'Employee ID Badge',
-      type: 'armor',
-      slot: 'accessory',
-      baseDefense: 0,
-      basePPBonus: 0.10,
-      ascii: `┌───┐
-│███│
-│   │
-└───┘`,
-      lore: 'Your identity. Or someone\'s. The photo doesn\'t look like you.'
-    },
-    {
-      id: 'temporal_watch',
-      name: 'Temporal Watch',
-      type: 'armor',
-      slot: 'accessory',
-      baseDefense: 2,
-      baseXPBonus: 0.15,
-      ascii: `╔═══╗
-║⌚⚙║
-╚═══╝`,
-      lore: 'Time moves differently when you wear it.'
-    }
-  ],
+  armor: Object.values(ARMOR).map(a => ({
+    id: a.id,
+    name: a.name,
+    type: 'armor',
+    slot: a.slot,
+    baseDefense: a.defense,
+    // Map special effects to flat bonus fields for loot generation
+    baseSanityResist: a.specialEffect === 'sanity_resist' ? 0.15 : undefined,
+    basePPBonus: a.specialEffect === 'pp_bonus' ? 0.10 : undefined,
+    baseXPBonus: a.specialEffect === 'time_bonus' ? 0.15 : undefined,
+    baseDamageReflect: a.specialEffect === 'damage_reflect' ? 0.10 : undefined,
+    ascii: a.ascii,
+    lore: a.lore
+  })),
 
-  // Anomalies
-  anomalies: [
-    {
-      id: 'coffee_stain',
-      name: 'Eternal Coffee Stain',
-      type: 'anomaly',
-      baseEnergyRegen: 0.1,
-      ascii: `  ╭─╮
-  │░│
-  ╰─╯
- ░░░░`,
-      lore: 'From your first day. It\'s never dried.'
-    },
-    {
-      id: 'forgotten_memo',
-      name: 'Forgotten Memo',
-      type: 'anomaly',
-      baseXPBonus: 0.12,
-      ascii: `┌─────┐
-│█████│
-│░░░░░│
-│░░░░░│
-└─────┘`,
-      lore: 'You can\'t read it. The text shifts every time you look.'
-    },
-    {
-      id: 'glitched_keycard',
-      name: 'G̷l̷i̷t̷c̷h̷e̷d̷ Keycard',
-      type: 'anomaly',
-      baseCritChance: 0.08,
-      ascii: `┌─▓─┐
-│▓█▓│
-│█▓█│
-└─▓─┘`,
-      lore: 'Opens doors that don\'t exist. Closes doors that do.'
-    },
-    {
-      id: 'void_fragment_shard',
-      name: 'Void Fragment Shard',
-      type: 'anomaly',
-      baseDamageBonus: 0.15,
-      ascii: `   ◢
-  ◢▓◣
- ◢▓█▓◣
-◢▓███▓◣`,
-      lore: 'A piece of pure nothing. It weighs impossibly heavy.'
-    },
-    {
-      id: 'singularity_core',
-      name: 'Singularity Core Fragment',
-      type: 'anomaly',
-      baseAllStats: 0.20,
-      ascii: `  ⊗
- ⊗█⊗
-⊗███⊗
- ⊗█⊗
-  ⊗`,
-      lore: 'The office\'s heart. It consumes everything.'
-    }
-  ]
+  anomalies: Object.values(ANOMALIES).map(an => ({
+    id: an.id,
+    name: an.name,
+    type: 'anomaly',
+    // Map anomaly effects to flat bonus fields
+    baseEnergyRegen: an.effect === 'energy_regen' ? an.effectValue : undefined,
+    baseXPBonus: an.effect === 'xp_boost' ? an.effectValue : undefined,
+    baseCritChance: an.effect === 'crit_chance' ? an.effectValue : undefined,
+    baseDamageBonus: an.effect === 'damage_boost' ? an.effectValue : undefined,
+    baseAllStats: an.effect === 'all_stats' ? an.effectValue : undefined,
+    ascii: an.ascii,
+    lore: an.lore
+  }))
 };
 
 // Tear spawn configuration
