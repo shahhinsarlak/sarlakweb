@@ -529,15 +529,7 @@ export const DIMENSIONAL_UPGRADES = [
     value: 2, 
     desc: 'Debug rewards doubled. First attempt always succeeds.' 
   },
-  { 
-    id: 'essence_converter', 
-    name: 'Essence Converter', 
-    materials: { dimensional_essence: 1 }, 
-    effect: 'unlock', 
-    value: 'converter', 
-    desc: 'Convert PP to materials. Reality is transactional.' 
-  },
-  { 
+  {
     id: 'singularity_engine', 
     name: 'Singularity Engine', 
     materials: { singularity_node: 1 }, 
