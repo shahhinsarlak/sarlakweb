@@ -17,10 +17,10 @@ async function fetchWordsFromClaude() {
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
   const message = await client.messages.create({
     model: 'claude-haiku-4-5-20251001',
-    max_tokens: 2048,
+    max_tokens: 4096,
     messages: [{
       role: 'user',
-      content: 'Generate exactly 128 inspirational and moody single words. For each word, provide a short 1-sentence caption (max 12 words). Return as JSON array: [{"word": "...", "caption": "..."}]',
+      content: 'Generate exactly 128 inspirational and moody single words. For each word, provide a short 1-sentence caption (max 12 words). Output raw JSON only — no markdown, no code fences, no explanation. Format: [{"word": "...", "caption": "..."}]',
     }],
   });
   const text = message.content[0].text;
