@@ -51,8 +51,54 @@ function drawWheel(canvas, rotationAngle) {
   ctx.stroke();
 }
 
-function handleSpin() {
-  // Implemented in Task 2
+function spinWheel({ canvasRef, frameIdRef, isSpinningRef, currentAngleRef, onComplete }) {
+  const selectedIndex = Math.floor(Math.random() * SEGMENT_COUNT);
+
+  // Compute target rotation so selectedIndex lands at 12 o'clock (-PI/2)
+  // The center of selectedIndex is at: currentAngle + (selectedIndex + 0.5) * SEGMENT_ANGLE
+  // We want that center at -PI/2 (12 o'clock)
+  // So: targetAngle + (selectedIndex + 0.5) * SEGMENT_ANGLE ≡ -PI/2 (mod 2PI)
+  // Add 5 full extra spins for visual effect
+  const EXTRA_SPINS = 5;
+  const currentAngle = currentAngleRef.current;
+  const segmentCenterOffset = (selectedIndex + 0.5) * SEGMENT_ANGLE;
+  const desiredPointerAngle = -Math.PI / 2;
+  // Angle the wheel base needs to be at so segment center is at pointer
+  const targetBase = desiredPointerAngle - segmentCenterOffset;
+  // How far to rotate from current position (always forward — positive delta)
+  let delta = targetBase - (currentAngle % (2 * Math.PI));
+  if (delta <= 0) delta += 2 * Math.PI;
+  const targetAngle = currentAngle + delta + EXTRA_SPINS * 2 * Math.PI;
+
+  const startAngle = currentAngle;
+  const startTime = performance.now();
+  const DURATION_MS = 4000; // 4 seconds
+
+  function animate(timestamp) {
+    const elapsed = timestamp - startTime;
+    const progress = Math.min(elapsed / DURATION_MS, 1.0);
+    // Ease-out cubic — decelerates smoothly
+    const eased = 1 - Math.pow(1 - progress, 3);
+    const angle = startAngle + (targetAngle - startAngle) * eased;
+
+    currentAngleRef.current = angle;
+    drawWheel(canvasRef.current, angle);
+
+    if (progress < 1.0) {
+      // Only re-schedule if still spinning — gate prevents loop continuing after stop
+      if (isSpinningRef.current) {
+        frameIdRef.current = requestAnimationFrame(animate);
+      }
+    } else {
+      // Animation complete
+      currentAngleRef.current = targetAngle;
+      isSpinningRef.current = false;
+      onComplete(selectedIndex);
+    }
+  }
+
+  isSpinningRef.current = true;
+  frameIdRef.current = requestAnimationFrame(animate);
 }
 
 export default function SpinWheel() {
@@ -101,6 +147,25 @@ export default function SpinWheel() {
     if (!canvasRef.current || words.length === 0) return;
     drawWheel(canvasRef.current, currentAngleRef.current);
   }, [words]);
+
+  function handleSpin() {
+    if (isSpinningRef.current || words.length === 0) return;
+    setIsSpinning(true);
+    setSelectedWord(null);
+    setCaption(null);
+
+    spinWheel({
+      canvasRef,
+      frameIdRef,
+      isSpinningRef,
+      currentAngleRef,
+      onComplete: (selectedIndex) => {
+        setIsSpinning(false);
+        setSelectedWord(words[selectedIndex].word);
+        setCaption(words[selectedIndex].caption);
+      },
+    });
+  }
 
   return (
     <div className={styles.wheelPage}>
