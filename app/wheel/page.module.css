@@ -65,19 +65,45 @@
   align-items: center;
 }
 
+@keyframes wordReveal {
+  0% {
+    opacity: 0;
+    transform: translateY(12px) scale(0.95);
+    filter: blur(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes captionReveal {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  100% {
+    opacity: 0.8;
+    transform: translateY(0);
+  }
+}
+
 .selectedWord {
   font-size: 2rem;
   font-weight: 700;
   color: var(--accent-color);
   letter-spacing: 0.05em;
+  animation: wordReveal 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .caption {
   font-size: 1rem;
   color: var(--text-color);
-  opacity: 0.8;
+  opacity: 0;
   max-width: 480px;
   line-height: 1.5;
+  animation: captionReveal 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.2s forwards;
 }
 
 .loadingText {

@@ -20,7 +20,7 @@ async function fetchWordsFromClaude() {
     max_tokens: 4096,
     messages: [{
       role: 'user',
-      content: 'Generate exactly 128 inspirational and moody single words. For each word, provide a short 1-sentence caption (max 12 words). Output raw JSON only — no markdown, no code fences, no explanation. Format: [{"word": "...", "caption": "..."}]',
+      content: 'Generate exactly 128 single words for abstract design inspiration. Draw from completely different domains — include textures (granular, molten, lacquered), materials (obsidian, resin, tallow), phenomena (parallax, refraction, subsidence), emotions (languor, vertigo, ennui), actions (unfurl, corrode, oscillate), sounds (hiss, thrum, static), colours (umber, celadon, ashen), structures (labyrinth, filament, lattice), time states (liminal, vestigial, nascent), and natural forces (erosion, vortex, sediment). Avoid generic motivational words. Vary widely across all these domains. For each word, write a short evocative caption (max 12 words) that feels like a design brief. Output raw JSON only — no markdown, no code fences, no explanation. Format: [{"word": "...", "caption": "..."}]',
     }],
   });
   const text = message.content[0].text;

@@ -190,8 +190,12 @@ export default function SpinWheel() {
         SPIN
       </button>
       <div className={styles.resultSection}>
-        {selectedWord && <p className={styles.selectedWord}>{selectedWord}</p>}
-        {caption && <p className={styles.caption}>{caption}</p>}
+        {selectedWord && (
+          <p key={selectedWord} className={styles.selectedWord}>{selectedWord}</p>
+        )}
+        {caption && (
+          <p key={caption} className={styles.caption}>{caption}</p>
+        )}
       </div>
     </div>
   );
