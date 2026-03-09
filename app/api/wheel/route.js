@@ -24,7 +24,9 @@ async function fetchWordsFromClaude() {
     }],
   });
   const text = message.content[0].text;
-  return JSON.parse(text);
+  // Strip markdown code fences if present (Claude often wraps JSON in ```json ... ```)
+  const json = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
+  return JSON.parse(json);
 }
 
 export async function GET() {
