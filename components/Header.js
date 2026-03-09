@@ -23,6 +23,9 @@ export default function Header() {
         <Link href="/game" className={`nav-link ${pathname === '/game' ? 'active' : ''}`}>
           Incremental
         </Link>
+        <Link href="/wheel" className={`nav-link ${pathname === '/wheel' ? 'active' : ''}`}>
+          Wheel
+        </Link>
       </nav>
     </header>
   );
