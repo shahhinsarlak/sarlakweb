@@ -40,6 +40,12 @@
   padding: 0.6rem 1.5rem;
   cursor: pointer;
   width: 100%;
+  transition: var(--transition);
+}
+
+.accessButton:hover {
+  background: var(--bg-elevated);
+  box-shadow: 0 0 12px var(--accent-glow);
 }
 
 .tool {
@@ -47,12 +53,15 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  max-width: 560px;
+  width: 100%;
+  margin: 0 auto;
 }
 
 .subtitle {
   font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
   font-size: 0.9rem;
-  color: var(--border-color);
+  color: var(--text-muted);
   letter-spacing: 0.05em;
   margin-top: -1rem;
 }
@@ -66,11 +75,17 @@
   padding: 0.6rem 2rem;
   cursor: pointer;
   margin-top: 2rem;
+  transition: var(--transition);
 }
 
 .generateButton:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+.generateButton:hover:not(:disabled) {
+  background: var(--bg-elevated);
+  box-shadow: 0 0 12px var(--accent-glow);
 }
 
 .tweetGrid {
@@ -87,6 +102,11 @@
   background: var(--bg-elevated);
   padding: 1.25rem;
   width: 100%;
+}
+
+.tweetCard:hover {
+  border-color: var(--accent-color);
+  transition: border-color 0.2s;
 }
 
 .tweetType {
@@ -113,6 +133,12 @@
   letter-spacing: 0.05em;
   padding: 0.3rem 0.75rem;
   cursor: pointer;
+  transition: var(--transition);
+}
+
+.copyButton:hover {
+  border-color: var(--accent-color);
+  color: var(--accent-color);
 }
 
 .errorMessage {
