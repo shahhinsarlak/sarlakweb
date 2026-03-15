@@ -1,0 +1,58 @@
+.gate {
+  min-height: calc(100vh - 120px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.heading {
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+  font-size: 2.5rem;
+  letter-spacing: 0.15em;
+  color: var(--text-color);
+  margin-bottom: 2rem;
+}
+
+.input {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-color);
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+  padding: 0.75rem 1rem;
+  width: 240px;
+  display: block;
+  margin-bottom: 0.75rem;
+}
+
+.error {
+  color: #ef4444;
+  font-size: 0.85rem;
+  margin-bottom: 0.75rem;
+}
+
+.accessButton {
+  background: transparent;
+  border: 1px solid var(--accent-color);
+  color: var(--accent-color);
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+  letter-spacing: 0.1em;
+  padding: 0.6rem 1.5rem;
+  cursor: pointer;
+  width: 100%;
+}
+
+.tool {
+  padding-top: 3rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.subtitle {
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+  font-size: 0.9rem;
+  color: var(--border-color);
+  letter-spacing: 0.05em;
+  margin-top: -1rem;
+}
