@@ -112,8 +112,8 @@ export default function RayanClient() {
       {genError && <p className={styles.errorMessage}>{genError}</p>}
       {tweets.length > 0 && (
         <div className={styles.tweetGrid}>
-          {tweets.map((item) => (
-            <TweetCard key={item.type} item={item} />
+          {tweets.map((item, index) => (
+            <TweetCard key={`${item.type}-${index}`} item={item} />
           ))}
         </div>
       )}
