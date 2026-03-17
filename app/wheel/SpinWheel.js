@@ -106,6 +106,7 @@ export default function SpinWheel() {
   const frameIdRef = useRef(null);
   const isSpinningRef = useRef(false);
   const currentAngleRef = useRef(0);
+  const containerRef = useRef(null);
 
   const [words, setWords] = useState([]);
   const [isSpinning, setIsSpinning] = useState(false);
@@ -137,8 +138,9 @@ export default function SpinWheel() {
 
   // rAF cleanup effect — runs once on mount, cleanup only
   useEffect(() => {
+    const frameId = frameIdRef.current;
     return () => {
-      cancelAnimationFrame(frameIdRef.current); // Critical: prevent loop surviving unmount
+      cancelAnimationFrame(frameId); // Critical: prevent loop surviving unmount
     };
   }, []);
 
@@ -147,6 +149,22 @@ export default function SpinWheel() {
     if (!canvasRef.current || words.length === 0) return;
     drawWheel(canvasRef.current, currentAngleRef.current);
   }, [words]);
+
+  // Resize handler — redraws canvas at correct pixel size when container width changes
+  useEffect(() => {
+    if (!containerRef.current || !canvasRef.current) return;
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const size = Math.min(CANVAS_SIZE, Math.floor(entry.contentRect.width));
+        if (size <= 0) return;
+        canvasRef.current.width = size;
+        canvasRef.current.height = size;
+        drawWheel(canvasRef.current, currentAngleRef.current);
+      }
+    });
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, []);
 
   function handleSpin() {
     if (isSpinningRef.current || words.length === 0) return;
@@ -172,7 +190,7 @@ export default function SpinWheel() {
       {loadingWords && <p className={styles.loadingText}>LOADING...</p>}
       {error && <p className={styles.errorText}>{error}</p>}
       {!loadingWords && !error && (
-        <div className={styles.wheelContainer}>
+        <div className={styles.wheelContainer} ref={containerRef}>
           <div className={styles.pointer} />
           <canvas
             ref={canvasRef}
