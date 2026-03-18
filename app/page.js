@@ -1,14 +1,10 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import ConwaysGameOfLife from '../components/ConwaysGameOfLife';
-import CursorShadow from '../components/CursorShadow';
 import Link from 'next/link';
 
 export default function Home() {
-  const [showConwaysGame, setShowConwaysGame] = useState(false);
-
   useEffect(() => {
     // Add entrance animations
     const observer = new IntersectionObserver((entries) => {
@@ -32,79 +28,22 @@ export default function Home() {
 
   return (
     <>
-      {/* Conway's Game of Life Background - Only render when enabled */}
-      {showConwaysGame && <ConwaysGameOfLife />}
-      
-      {/* Cursor Shadow Effect */}
-      <CursorShadow />
-      
       {/* Main Content */}
       <div style={{ position: 'relative', zIndex: 1 }}>
         <div className="container">
           <Header />
 
-          {/* Conway's Game of Life Toggle Button */}
-          <div style={{
-            position: 'fixed',
-            top: '20px',
-            right: '20px',
-            zIndex: 1000
-          }}>
-            <button
-              onClick={() => setShowConwaysGame(!showConwaysGame)}
-              style={{
-                background: showConwaysGame ? 'var(--accent-color)' : 'transparent',
-                color: showConwaysGame ? 'var(--bg-color)' : 'var(--text-color)',
-                border: '1px solid var(--border-color)',
-                padding: '8px 12px',
-                fontSize: '10px',
-                cursor: 'pointer',
-                transition: 'var(--transition)',
-                fontFamily: 'inherit',
-                textTransform: 'uppercase',
-                letterSpacing: '0.5px',
-                opacity: 0.6
-              }}
-              onMouseOver={(e) => {
-                e.target.style.opacity = '1';
-                e.target.style.borderColor = 'var(--accent-color)';
-                e.target.style.boxShadow = '0 0 8px var(--accent-glow)';
-              }}
-              onMouseOut={(e) => {
-                e.target.style.opacity = '0.6';
-                e.target.style.borderColor = 'var(--border-color)';
-                e.target.style.boxShadow = 'none';
-              }}
-              title={showConwaysGame ? 'Hide Conway\'s Game of Life' : 'Show Conway\'s Game of Life'}
-            >
-              {showConwaysGame ? '◼ Game Off' : '▶ Game On'}
-            </button>
-          </div>
-
           <main className="main-content">
           <section className="section">
+            <h1 className="hero-name">SHAHHIN SARLAK</h1>
             <div className="status">
               <span className="status-dot"></span>
               Available for work
             </div>
             <p className="intro-text">
-              Student developer building real working software — games, tools, and experiments.
+              Student developer building real working software &mdash; games, tools, and experiments.
               Curious about what&apos;s possible, shipping things to find out.
             </p>
-          </section>
-
-          <section className="section">
-            <h2 className="section-title">Current Focus</h2>
-            <div className="grid">
-              <Link href="/game" className="card">
-                <div className="card-title">Incremental Game</div>
-                <div className="card-description">Office Horror — a browser-based incremental with loot, skills, and sanity mechanics</div>
-              </Link>
-              <Link href="/apps" className="card">
-                <div className="card-title">Web Apps</div>
-                <div className="card-description">Particles 3D and other experiments built with React and Three.js</div>
-              </Link>
-            </div>
           </section>
 
           <section className="section">
@@ -116,9 +55,9 @@ export default function Home() {
                   Browser-based incremental game with loot drops, a skill tree, sanity mechanics, and dimensional exploration.
                 </div>
                 <div style={{ marginTop: '12px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: '10px', padding: '2px 6px', border: '1px solid var(--border-color)', opacity: 0.7 }}>Next.js</span>
-                  <span style={{ fontSize: '10px', padding: '2px 6px', border: '1px solid var(--border-color)', opacity: 0.7 }}>React</span>
-                  <span style={{ fontSize: '10px', padding: '2px 6px', border: '1px solid var(--border-color)', opacity: 0.7 }}>JavaScript</span>
+                  <span style={{ fontSize: '10px', padding: '2px 6px', border: '1px solid var(--accent-color)' }}>Next.js</span>
+                  <span style={{ fontSize: '10px', padding: '2px 6px', border: '1px solid var(--accent-color)' }}>React</span>
+                  <span style={{ fontSize: '10px', padding: '2px 6px', border: '1px solid var(--accent-color)' }}>JavaScript</span>
                 </div>
               </Link>
               <Link href="/td" className="card">
@@ -127,8 +66,8 @@ export default function Home() {
                   A tower defense game built in the browser — place towers, survive waves, experiment with strategy.
                 </div>
                 <div style={{ marginTop: '12px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: '10px', padding: '2px 6px', border: '1px solid var(--border-color)', opacity: 0.7 }}>JavaScript</span>
-                  <span style={{ fontSize: '10px', padding: '2px 6px', border: '1px solid var(--border-color)', opacity: 0.7 }}>Canvas</span>
+                  <span style={{ fontSize: '10px', padding: '2px 6px', border: '1px solid var(--accent-color)' }}>JavaScript</span>
+                  <span style={{ fontSize: '10px', padding: '2px 6px', border: '1px solid var(--accent-color)' }}>Canvas</span>
                 </div>
               </Link>
               <Link href="/apps/particles" className="card">
@@ -137,9 +76,9 @@ export default function Home() {
                   Interactive 3D particle system — particles move through space and form connections when nearby.
                 </div>
                 <div style={{ marginTop: '12px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: '10px', padding: '2px 6px', border: '1px solid var(--border-color)', opacity: 0.7 }}>React</span>
-                  <span style={{ fontSize: '10px', padding: '2px 6px', border: '1px solid var(--border-color)', opacity: 0.7 }}>Three.js</span>
-                  <span style={{ fontSize: '10px', padding: '2px 6px', border: '1px solid var(--border-color)', opacity: 0.7 }}>WebGL</span>
+                  <span style={{ fontSize: '10px', padding: '2px 6px', border: '1px solid var(--accent-color)' }}>React</span>
+                  <span style={{ fontSize: '10px', padding: '2px 6px', border: '1px solid var(--accent-color)' }}>Three.js</span>
+                  <span style={{ fontSize: '10px', padding: '2px 6px', border: '1px solid var(--accent-color)' }}>WebGL</span>
                 </div>
               </Link>
             </div>
