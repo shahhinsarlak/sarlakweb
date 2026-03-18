@@ -1,15 +1,15 @@
 :root {
-    --bg-color: #0f0f0f;
-    --bg-elevated: #1a1a1a;
+    --bg-color: #0c0a09;
+    --bg-elevated: #1c1917;
     --text-color: #f0f0f0;
     --text-muted: rgba(240, 240, 240, 0.5);
     --border-color: #2a2a2a;
-    --accent-color: #8b5cf6;
-    --accent-dim: #7c3aed;
-    --accent-glow: rgba(139, 92, 246, 0.25);
+    --accent-color: #f97316;
+    --accent-dim: #ea580c;
+    --accent-glow: rgba(249, 115, 22, 0.25);
     --hover-color: #1e1e1e;
     --transition: all 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);
-    --font-display: 'Inter', 'Segoe UI', system-ui, sans-serif;
+    --font-display: 'Space Grotesk', 'Segoe UI', system-ui, sans-serif;
     --font-mono: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
 }
 
@@ -300,6 +300,15 @@ h1, h2, h3, h4, h5, h6 {
 .nav-link.active {
     opacity: 1;
     color: var(--accent-color);
+}
+
+.nav-link:hover {
+    text-shadow: 0 0 12px #f97316;
+}
+
+.nav-link.active {
+    border-bottom: 2px solid var(--accent-color);
+    padding-bottom: 4px;
 }
 
 .logo a {
