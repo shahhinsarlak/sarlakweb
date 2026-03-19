@@ -1,5 +1,16 @@
 # GSD Roadmap
 
+## Phase 13 — Visited Link Color Fix
+
+**Goal:** Links across the entire site retain their designed color after being clicked — no browser-default blue or purple visited state ever appears.
+**Plans:** 1 plan
+**Requirements:** [LINK-01, LINK-02]
+
+Plans:
+- [ ] 13-01-PLAN.md — Global visited-link color override and build verification
+
+---
+
 ## Phase 12 — Feature Pages and Build Verification
 
 | Plan | Name | Status | Plans |
