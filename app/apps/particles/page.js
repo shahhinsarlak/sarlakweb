@@ -21,6 +21,7 @@ export default function Particles() {
   const particlesRef = useRef([]);
   const particleCountRef = useRef(0);
   const rafIdRef = useRef(null);
+  const simTimerRef = useRef(null);
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -103,6 +104,87 @@ export default function Particles() {
       spawnParticle();
     }
 
+    // 8b. Death burst particles array (local to useEffect)
+    const deathParticles = [];
+
+    // 8c. createDeathBurst — 5 amber fragments, fades over ~20 frames
+    const createDeathBurst = (position) => {
+      for (let i = 0; i < 5; i++) {
+        const geo = new THREE.SphereGeometry(0.15, 4, 4);
+        const mat = new THREE.MeshBasicMaterial({
+          color: AMBER,
+          transparent: true,
+          opacity: 1,
+        });
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.position.copy(position);
+        const velocity = new THREE.Vector3(
+          (Math.random() - 0.5) * 2,
+          (Math.random() - 0.5) * 2,
+          (Math.random() - 0.5) * 2
+        );
+        scene.add(mesh);
+        deathParticles.push({ mesh, velocity, life: 1.0, fadeSpeed: 0.05 });
+      }
+    };
+
+    // 8d. removeParticle — swap-and-pop pattern to keep array dense
+    const removeParticle = (particle) => {
+      if (!particle.alive) return;
+      createDeathBurst(particle.position.clone());
+      particle.alive = false;
+      const count = particleCountRef.current;
+      const lastIndex = count - 1;
+      const particles = particlesRef.current;
+
+      if (particle.index !== lastIndex) {
+        const lastParticle = particles[lastIndex];
+        particles[particle.index] = lastParticle;
+        lastParticle.index = particle.index;
+        const matrix = new THREE.Matrix4();
+        matrix.setPosition(lastParticle.position);
+        instancedMesh.setMatrixAt(particle.index, matrix);
+      }
+
+      particleCountRef.current = lastIndex;
+      instancedMesh.count = lastIndex;
+      instancedMesh.instanceMatrix.needsUpdate = true;
+      particles.pop();
+    };
+
+    // 8e. Conway simulation tick — 1200ms interval, one death per tick for crowded clusters
+    simTimerRef.current = setInterval(() => {
+      const particles = particlesRef.current;
+      const count = particleCountRef.current;
+      if (count === 0) return;
+
+      const neighbors = new Map();
+      for (let i = 0; i < count; i++) {
+        neighbors.set(i, []);
+      }
+      for (let i = 0; i < count; i++) {
+        for (let j = i + 1; j < count; j++) {
+          const distSq = particles[i].position.distanceToSquared(particles[j].position);
+          if (distSq < PROXIMITY_THRESHOLD_SQ) {
+            neighbors.get(i).push(particles[j]);
+            neighbors.get(j).push(particles[i]);
+          }
+        }
+      }
+
+      const candidates = [];
+      for (let i = 0; i < count; i++) {
+        if (neighbors.get(i).length >= 3) {
+          candidates.push(particles[i]);
+        }
+      }
+
+      if (candidates.length > 0) {
+        const victim = candidates[Math.floor(Math.random() * candidates.length)];
+        removeParticle(victim);
+      }
+    }, 1200);
+
     // 9. Animation loop
     const animate = () => {
       rafIdRef.current = requestAnimationFrame(animate);
@@ -130,6 +212,21 @@ export default function Particles() {
       lineGeometry.attributes.position.needsUpdate = true;
       lineGeometry.setDrawRange(0, lineIndex * 2);
 
+      // Animate death burst fragments
+      for (let i = deathParticles.length - 1; i >= 0; i--) {
+        const dp = deathParticles[i];
+        dp.mesh.position.add(dp.velocity);
+        dp.velocity.multiplyScalar(0.95);
+        dp.life -= dp.fadeSpeed;
+        dp.mesh.material.opacity = Math.max(0, dp.life);
+        if (dp.life <= 0) {
+          scene.remove(dp.mesh);
+          dp.mesh.geometry.dispose();
+          dp.mesh.material.dispose();
+          deathParticles.splice(i, 1);
+        }
+      }
+
       renderer.render(scene, camera);
     };
     rafIdRef.current = requestAnimationFrame(animate);
@@ -150,6 +247,12 @@ export default function Particles() {
     // 11. Cleanup (all bugs fixed)
     return () => {
       cancelAnimationFrame(rafIdRef.current);
+      clearInterval(simTimerRef.current);
+      deathParticles.forEach(dp => {
+        scene.remove(dp.mesh);
+        dp.mesh.geometry.dispose();
+        dp.mesh.material.dispose();
+      });
       controls.dispose();
       window.removeEventListener('resize', handleResize);
       instancedMesh.dispose();
