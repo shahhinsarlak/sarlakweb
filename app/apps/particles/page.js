@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Header from '../../../components/Header';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
@@ -22,6 +22,8 @@ export default function Particles() {
   const particleCountRef = useRef(0);
   const rafIdRef = useRef(null);
   const simTimerRef = useRef(null);
+  const spawnRef = useRef(null);
+  const [sliderValue, setSliderValue] = useState(5);
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -98,6 +100,7 @@ export default function Particles() {
       particleCountRef.current = count + 1;
       instancedMesh.count = particleCountRef.current;
     };
+    spawnRef.current = spawnParticle;
 
     // 8. Spawn 10 particles immediately on mount
     for (let i = 0; i < 10; i++) {
@@ -282,6 +285,46 @@ export default function Particles() {
           zIndex: 1,
         }}
       />
+      <div style={{
+        position: 'fixed',
+        bottom: 24,
+        right: 24,
+        zIndex: 10,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        background: 'rgba(12,10,9,0.7)',
+        borderRadius: 12,
+        padding: '10px 16px',
+      }}>
+        <input
+          type="range"
+          min={1}
+          max={20}
+          value={sliderValue}
+          onChange={(e) => setSliderValue(Number(e.target.value))}
+          style={{ accentColor: '#f97316', width: 100 }}
+        />
+        <button
+          onClick={() => {
+            for (let i = 0; i < sliderValue; i++) {
+              spawnRef.current?.();
+            }
+          }}
+          style={{
+            border: '1px solid #f97316',
+            background: 'transparent',
+            color: '#f97316',
+            padding: '6px 14px',
+            borderRadius: 6,
+            cursor: 'pointer',
+            fontFamily: 'inherit',
+            fontSize: 14,
+          }}
+        >
+          {`Add ${sliderValue}`}
+        </button>
+      </div>
     </>
   );
 }
