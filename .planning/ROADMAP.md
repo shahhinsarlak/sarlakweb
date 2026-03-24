@@ -1,5 +1,17 @@
 # GSD Roadmap
 
+## Phase 17 — Game Quick Wins
+
+**Goal:** Add PP scaling explosions (tier multipliers with formatted displays) and achievement reward bonuses that give tangible gameplay impact to unlocked achievements.
+**Plans:** 2 plans
+**Requirements:** [FEAT-03, FEAT-05]
+
+Plans:
+- [ ] 17-01-PLAN.md — PP tier multipliers, formatPP utility, TierUnlockModal
+- [ ] 17-02-PLAN.md — Achievement reward bonuses and AchievementsModal UI
+
+---
+
 ## Phase 13 — Visited Link Color Fix
 
 **Goal:** Links across the entire site retain their designed color after being clicked — no browser-default blue or purple visited state ever appears.
