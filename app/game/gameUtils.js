@@ -282,6 +282,20 @@ export const getDistortionStyle = (sanity) => {
     }, 2500);
   };
 
+/**
+ * Formats PP values with K/M/B/T suffixes for display
+ * Values below 10K shown as locale-formatted integers.
+ * @param {number} value - Raw PP value
+ * @returns {string} Formatted string (e.g., "12.50K", "3.50M")
+ */
+export const formatPP = (value) => {
+  if (value < 10000) return Math.floor(value).toLocaleString();
+  if (value < 1000000) return (value / 1000).toFixed(2) + 'K';
+  if (value < 1000000000) return (value / 1000000).toFixed(2) + 'M';
+  if (value < 1000000000000) return (value / 1000000000).toFixed(2) + 'B';
+  return (value / 1000000000000).toFixed(2) + 'T';
+};
+
   export const createScreenShake = (intensity = 'normal') => {
     // Shake the entire document to include modals
     const shakeElement = document.documentElement;

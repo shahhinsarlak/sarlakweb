@@ -137,7 +137,9 @@ export const INITIAL_GAME_STATE = {
   // Displays temporary popups in top-left corner
   notifications: [],  // Array of notification objects: { id, message, timestamp }
   // Debug flags
-  debugForceTearSpawn: false // Force 100% tear spawn rate for testing
+  debugForceTearSpawn: false, // Force 100% tear spawn rate for testing
+  // PP Tier Multiplier System
+  ppMultiplierTier: 0, // Current tier index (0 = no tier unlocked yet)
 };
 
 
@@ -868,6 +870,19 @@ export const TIER_MASTERY_WEIGHTS = {
   4: 12,  // Tier 4: +12 mastery per print
   5: 25   // Tier 5: +25 mastery per print
 };
+
+/**
+ * PP Multiplier Tier System
+ *
+ * As players accumulate PP, they unlock permanent multiplier tiers.
+ * Each tier increases the PP multiplier applied to all PP gains.
+ * Checked every 100ms in the game tick.
+ */
+export const PP_MULTIPLIER_TIERS = [
+  { tier: 1, threshold: 10000,       multiplier: 2,  name: 'Reality Bonus',         desc: 'Productivity doubles. The office approves.' },
+  { tier: 2, threshold: 1000000,     multiplier: 5,  name: 'Void Coefficient',      desc: 'Existence is multiplicative. Not additive.' },
+  { tier: 3, threshold: 1000000000,  multiplier: 25, name: 'Singularity Resonance', desc: 'Numbers are no longer real. Neither are you.' }
+];
 
 /**
  * Document Tier System (Revised 2025-11-01)

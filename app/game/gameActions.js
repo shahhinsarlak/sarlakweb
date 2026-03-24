@@ -13,7 +13,7 @@
  * - upgrades: Purchase permanent improvements
  * - printer: Paper generation system
  */
-import { LOCATIONS, UPGRADES, DEBUG_CHALLENGES, PRINTER_UPGRADES, DOCUMENT_TYPES, TIER_MASTERY_WEIGHTS } from './constants';
+import { LOCATIONS, UPGRADES, DEBUG_CHALLENGES, PRINTER_UPGRADES, DOCUMENT_TYPES, TIER_MASTERY_WEIGHTS, PP_MULTIPLIER_TIERS } from './constants';
 import {
   applyEnergyCostReduction,
   applyPPMultiplier,
@@ -70,6 +70,12 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       const basePP = prev.ppPerClick;
       const ppWithSkills = applyPPMultiplier(basePP, prev);
       let ppGain = applySanityPPModifier(ppWithSkills, prev);
+
+      // Apply PP tier multiplier
+      const currentTier = prev.ppMultiplierTier || 0;
+      const tierData = PP_MULTIPLIER_TIERS.find(t => t.tier === currentTier);
+      const tierMult = tierData ? tierData.multiplier : 1;
+      ppGain = ppGain * tierMult;
 
       // Sanity Sacrifice: chaos bonus adds PP per 10 sanity lost
       const chaosBonus = getChaosBonus(prev);
