@@ -20,7 +20,8 @@ import {
   getModifiedRestCooldown,
   checkFreeAction,
   getChaosBonus,
-  getActiveSkillEffects
+  getActiveSkillEffects,
+  getAchievementBonuses
 } from './skillSystemHelpers';
 import { XP_REWARDS } from './skillTreeConstants';
 import {
@@ -81,6 +82,12 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       const chaosBonus = getChaosBonus(prev);
       if (chaosBonus > 0) {
         ppGain = ppGain * (1 + chaosBonus);
+      }
+
+      // Apply achievement bonus
+      const achievementBonuses = getAchievementBonuses(prev);
+      if (achievementBonuses.ppMultiplier > 0) {
+        ppGain = ppGain * (1 + achievementBonuses.ppMultiplier);
       }
 
       // Clean expired buffs

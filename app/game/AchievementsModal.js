@@ -69,6 +69,32 @@ export default function AchievementsModal({ gameState, achievements, onClose, no
             <div style={{ fontSize: '12px', opacity: 0.6 }}>
               {unlockedAchievements.length} / {achievements.length} Unlocked
             </div>
+            {(() => {
+              const unlocked = gameState.achievements || [];
+              let totalPPMult = 0;
+              let totalCooldown = 0;
+              achievements.forEach(a => {
+                if (a.reward && unlocked.includes(a.id)) {
+                  if (a.reward.type === 'ppMultiplier') totalPPMult += a.reward.value;
+                  if (a.reward.type === 'portalCooldownReduction') totalCooldown += a.reward.value;
+                }
+              });
+              if (totalPPMult === 0 && totalCooldown === 0) return null;
+              return (
+                <div style={{
+                  fontSize: '11px',
+                  marginTop: '8px',
+                  padding: '8px 12px',
+                  border: '1px solid var(--border-color)',
+                  backgroundColor: 'var(--hover-color)',
+                  opacity: 0.8
+                }}>
+                  Achievement Bonuses:
+                  {totalPPMult > 0 && <span style={{ marginLeft: '8px', color: 'var(--accent-color)' }}>+{(totalPPMult * 100).toFixed(0)}% PP</span>}
+                  {totalCooldown > 0 && <span style={{ marginLeft: '8px', color: 'var(--accent-color)' }}>-{(totalCooldown * 100).toFixed(0)}% Portal CD</span>}
+                </div>
+              );
+            })()}
           </div>
           <button
             onClick={onClose}
@@ -125,6 +151,22 @@ export default function AchievementsModal({ gameState, achievements, onClose, no
                       color: isUnlocked ? 'var(--accent-color)' : 'var(--text-color)'
                     }}>
                       {achievement.name}
+                      {achievement.reward && (
+                        <span style={{
+                          fontSize: '10px',
+                          marginLeft: '8px',
+                          padding: '1px 6px',
+                          border: '1px solid var(--accent-color)',
+                          color: isUnlocked ? 'var(--accent-color)' : 'var(--text-color)',
+                          opacity: isUnlocked ? 0.9 : 0.4,
+                          letterSpacing: '0.5px',
+                          verticalAlign: 'middle'
+                        }}>
+                          {achievement.reward.type === 'ppMultiplier'
+                            ? `+${(achievement.reward.value * 100).toFixed(0)}%`
+                            : `-${(achievement.reward.value * 100).toFixed(0)}%`}
+                        </span>
+                      )}
                     </div>
                     <div style={{
                       fontSize: '11px',
