@@ -9,6 +9,7 @@
  */
 
 import { SKILLS, LEVEL_SYSTEM, XP_REWARDS } from './skillTreeConstants';
+import { ACHIEVEMENTS } from './constants';
 
 /**
  * Adds experience points and handles level ups
@@ -383,4 +384,33 @@ export const getChaosBonus = (gameState) => {
 
   const sanityLost = 100 - (gameState.sanity || 100);
   return (Math.floor(sanityLost / 10) * chaosRate);
+};
+
+/**
+ * Calculates total bonus from unlocked achievement rewards
+ *
+ * Iterates over ACHIEVEMENTS that have a reward field,
+ * checks if unlocked in gameState.achievements array,
+ * and sums up bonuses by type.
+ *
+ * @param {Object} gameState - Current game state
+ * @returns {Object} { ppMultiplier: number, portalCooldownReduction: number }
+ */
+export const getAchievementBonuses = (gameState) => {
+  const unlocked = gameState.achievements || [];
+  let ppMultiplier = 0;
+  let portalCooldownReduction = 0;
+
+  for (const achievement of ACHIEVEMENTS) {
+    if (!achievement.reward) continue;
+    if (!unlocked.includes(achievement.id)) continue;
+
+    if (achievement.reward.type === 'ppMultiplier') {
+      ppMultiplier += achievement.reward.value;
+    } else if (achievement.reward.type === 'portalCooldownReduction') {
+      portalCooldownReduction += achievement.reward.value;
+    }
+  }
+
+  return { ppMultiplier, portalCooldownReduction };
 };
