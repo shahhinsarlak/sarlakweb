@@ -18,8 +18,9 @@ import ArchiveModal from './ArchiveModal';
 import JournalModal from './JournalModal';
 import BuffReplacementModal from './BuffReplacementModal';
 import NotificationPopup from './NotificationPopup';
+import TierUnlockModal from './TierUnlockModal';
 import { createGameActions } from './gameActions';
-import { getDistortionStyle, distortText, getClockTime, createLevelUpParticles, createSkillPurchaseParticles, createScreenShake } from './gameUtils';
+import { getDistortionStyle, distortText, getClockTime, createLevelUpParticles, createSkillPurchaseParticles, createScreenShake, formatPP } from './gameUtils';
 import { saveGame, loadGame, exportToClipboard, importFromClipboard } from './saveSystem';
 import { addExperience, purchaseSkill, getActiveSkillEffects, getModifiedPortalCooldown, getModifiedCapacity, applyPPMultiplier, applyPPSMultiplier, getMaxSanity } from './skillSystemHelpers';
 import { SKILLS, LEVEL_SYSTEM, XP_REWARDS } from './skillTreeConstants';
@@ -35,7 +36,8 @@ import {
   DIMENSIONAL_UPGRADES,
   HELP_POPUPS,
   HELP_TRIGGERS,
-  ARCHIVE_CASES
+  ARCHIVE_CASES,
+  PP_MULTIPLIER_TIERS
 } from './constants';
 
 export default function Game() {
@@ -48,6 +50,7 @@ export default function Game() {
   const [selectedUpgradeType, setSelectedUpgradeType] = useState('pp'); // 'pp', 'printer', 'dimensional'
   const [buffTooltip, setBuffTooltip] = useState(null); // { buff, x, y }
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [tierUnlock, setTierUnlock] = useState(null); // { name, multiplier, desc } when tier crossed
 
   const addMessage = useCallback((msg) => {
     setGameState(prev => {
@@ -468,6 +471,12 @@ export default function Game() {
           // 2. Sanity tier multipliers + efficiency report buffs
           passiveGain = applySanityPPModifier(passiveGain, prev);
 
+          // Apply PP tier multiplier to passive gain
+          const currentTier = prev.ppMultiplierTier || 0;
+          const tierData = PP_MULTIPLIER_TIERS.find(t => t.tier === currentTier);
+          const passiveTierMult = tierData ? tierData.multiplier : 1;
+          passiveGain = passiveGain * passiveTierMult;
+
           // 3. Void contract multipliers (ppPerSecondMult from contracts)
           const activeBuffs = prev.activeReportBuffs || [];
           const now = Date.now();
@@ -563,6 +572,17 @@ export default function Game() {
         if (prev.phase === 1 && prev.pp > 100) {
           newState.phase = 2;
           newState.recentMessages = ['Something has changed. Or has it always been this way?', ...prev.recentMessages].slice(0, prev.maxLogMessages || 15);
+        }
+
+        // PP tier multiplier check
+        const currentTierCheck = newState.ppMultiplierTier || 0;
+        const nextTierData = PP_MULTIPLIER_TIERS.find(t => t.tier === currentTierCheck + 1);
+        if (nextTierData && newState.pp >= nextTierData.threshold) {
+          newState.ppMultiplierTier = nextTierData.tier;
+          setTimeout(() => {
+            setTierUnlock({ name: nextTierData.name, multiplier: nextTierData.multiplier, desc: nextTierData.desc });
+            addMessage(`TIER UNLOCKED: ${nextTierData.name}. PP multiplier is now ${nextTierData.multiplier}x. ${nextTierData.desc}`);
+          }, 0);
         }
 
         return newState;
@@ -768,7 +788,12 @@ export default function Game() {
     // Use the same logic as the actual sortPapers action
     const ppGain = applySanityPPModifier(ppWithSkills, gameState);
 
-    return ppGain.toFixed(1); // Show 1 decimal place
+    // Apply tier multiplier
+    const currentTier = gameState.ppMultiplierTier || 0;
+    const tierData = PP_MULTIPLIER_TIERS.find(t => t.tier === currentTier);
+    const tierMult = tierData ? tierData.multiplier : 1;
+    const finalGain = ppGain * tierMult;
+    return formatPP(finalGain);
   };
 
   const currentLocation = LOCATIONS[gameState.location];
@@ -1667,9 +1692,12 @@ export default function Game() {
                 RESOURCES
               </div>
               <div style={{ fontSize: '14px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px', alignItems: 'center' }}>
                   <span>PP</span>
-                  <strong style={{ fontSize: '18px' }}>{gameState.pp.toFixed(1)}</strong>
+                  <span style={{ display: 'flex', alignItems: 'center' }}>
+                    <strong style={{ fontSize: '18px' }}>{formatPP(gameState.pp)}</strong>
+                    {gameState.ppMultiplierTier > 0 && <span style={{ fontSize: '11px', color: 'var(--accent-color)', marginLeft: '6px', opacity: 0.8 }}>[T{gameState.ppMultiplierTier}]</span>}
+                  </span>
                 </div>
                 <div style={{
                   fontSize: '11px',
@@ -1694,7 +1722,13 @@ export default function Game() {
                       const sanityBonus = tier.ppModifier !== 1 ? `${tier.ppModifier >= 1 ? '+' : ''}${((tier.ppModifier - 1) * 100).toFixed(0)}%` : '0%';
                       const buffBonus = buffMult !== 1 ? `+${((buffMult - 1) * 100).toFixed(0)}%` : 'none';
 
-                      return `Base: ${gameState.ppPerClick} • Skills: ${skillBonus} • Sanity: ${sanityBonus} • Buffs: ${buffBonus}`;
+                      const currentTier = gameState.ppMultiplierTier || 0;
+                      const tierData = PP_MULTIPLIER_TIERS.find(t => t.tier === currentTier);
+                      const tierName = tierData ? tierData.name : 'None';
+                      const tierMult = tierData ? tierData.multiplier : 1;
+                      const tierBonus = tierMult !== 1 ? `${tierMult}x` : 'none';
+
+                      return `Base: ${gameState.ppPerClick} • Skills: ${skillBonus} • Sanity: ${sanityBonus} • Buffs: ${buffBonus} • Tier: ${tierBonus} (${tierName})`;
                     })()}
                   </div>
                 </div>
@@ -2100,6 +2134,16 @@ export default function Game() {
         notifications={gameState.notifications}
         onDismiss={dismissNotification}
       />
+
+      {/* Tier Unlock Modal */}
+      {tierUnlock && (
+        <TierUnlockModal
+          tierName={tierUnlock.name}
+          multiplier={tierUnlock.multiplier}
+          tierDesc={tierUnlock.desc}
+          onClose={() => setTierUnlock(null)}
+        />
+      )}
 
       {/* Buff Tooltip that follows mouse */}
       {buffTooltip && (
