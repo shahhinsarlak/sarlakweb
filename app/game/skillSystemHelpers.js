@@ -231,6 +231,12 @@ export const getModifiedPortalCooldown = (baseCooldown, gameState) => {
     cooldown = cooldown * (1 - effects.portalCooldownReduction);
   }
 
+  // Apply achievement bonuses (percentage-based, same pattern as skills)
+  const achBonuses = getAchievementBonuses(gameState);
+  if (achBonuses.portalCooldownReduction > 0) {
+    cooldown = cooldown * (1 - achBonuses.portalCooldownReduction);
+  }
+
   // Minimum 10 seconds
   return Math.max(10, cooldown);
 };
