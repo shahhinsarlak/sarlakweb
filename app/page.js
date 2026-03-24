@@ -60,17 +60,7 @@ export default function Home() {
                   <span style={{ fontSize: '10px', padding: '2px 6px', border: '1px solid var(--accent-color)' }}>JavaScript</span>
                 </div>
               </Link>
-              <Link href="/td" className="card">
-                <div className="card-title">Tower Defense</div>
-                <div className="card-description">
-                  A tower defense game built in the browser — place towers, survive waves, experiment with strategy.
-                </div>
-                <div style={{ marginTop: '12px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: '10px', padding: '2px 6px', border: '1px solid var(--accent-color)' }}>JavaScript</span>
-                  <span style={{ fontSize: '10px', padding: '2px 6px', border: '1px solid var(--accent-color)' }}>Canvas</span>
-                </div>
-              </Link>
-              <Link href="/apps/particles" className="card">
+<Link href="/apps/particles" className="card">
                 <div className="card-title">Particles 3D</div>
                 <div className="card-description">
                   Interactive 3D particle system — particles move through space and form connections when nearby.

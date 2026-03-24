@@ -17,14 +17,8 @@ export default function Header() {
         <Link href="/apps" className={`nav-link ${pathname === '/apps' ? 'active' : ''}`}>
           Apps
         </Link>
-        <Link href="/td" className={`nav-link ${pathname === '/td' ? 'active' : ''}`}>
-          Tower Defense
-        </Link>
         <Link href="/game" className={`nav-link ${pathname === '/game' ? 'active' : ''}`}>
           Incremental
-        </Link>
-        <Link href="/wheel" className={`nav-link ${pathname === '/wheel' ? 'active' : ''}`}>
-          Wheel
         </Link>
       </nav>
     </header>
