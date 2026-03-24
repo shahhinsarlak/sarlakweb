@@ -69,6 +69,31 @@ export default function Apps() {
               </div>
             </div>
 
+            {/* Spin Wheel App */}
+            <div className="app-card">
+              <div className="app-header">
+                <div className="app-status live">
+                  <span className="status-indicator"></span>
+                  Live Demo
+                </div>
+              </div>
+              <div className="app-info">
+                <h3 className="app-title">Spin Wheel</h3>
+                <p className="app-description">
+                  Daily-refreshed spin wheel powered by Claude AI &mdash; spin for a word and caption, regenerated each morning at Sydney midnight.
+                </p>
+                <div className="app-tech">
+                  <span className="tech-tag">Next.js</span>
+                  <span className="tech-tag">Claude API</span>
+                </div>
+              </div>
+              <div className="app-actions">
+                <Link href="/wheel" className="app-button primary">
+                  Launch Demo
+                </Link>
+              </div>
+            </div>
+
           </div>
         </section>
 
