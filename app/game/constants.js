@@ -140,6 +140,16 @@ export const INITIAL_GAME_STATE = {
   debugForceTearSpawn: false, // Force 100% tear spawn rate for testing
   // PP Tier Multiplier System
   ppMultiplierTier: 0, // Current tier index (0 = no tier unlocked yet)
+  // Automation System (Added Phase 18)
+  automation: {
+    autoSort: false,
+    autoSortThreshold: 80,
+    autoPrint: false,
+    autoPrintDocType: 'memo',
+    autoPrintThreshold: 50,
+    autoPortal: false,
+    lastAutoPrint: 0,
+  },
 };
 
 
@@ -467,6 +477,14 @@ export const UPGRADES = [
   { id: 'monitor', name: 'Second Monitor', cost: 1200, effect: 'ppPerSecond', value: 3, desc: 'Twice the work. Twice the witnessing.' },
   { id: 'pills', name: 'Prescription Pills', cost: 2500, effect: 'sanityDrain', value: 0.5, desc: 'Sanity drains 50% slower. The pills help you cope.' },
   { id: 'promotion', name: 'SENIOR ANALYST', cost: 12000, effect: 'ppPerSecond', value: 10, desc: 'Congratulations on your mandatory advancement.' },
+  { id: 'robotic_assistant', name: 'Robotic Assistant', cost: 5000, effect: 'unlock', value: 'autoSort',
+    desc: 'An invisible hand sorts the papers. It has always been here.' },
+  { id: 'document_automaton', name: 'Document Automaton', cost: 15000, effect: 'unlock', value: 'autoPrint',
+    desc: 'The printer runs itself. You hear it printing at 3 AM.',
+    requiresUpgrade: 'robotic_assistant' },
+  { id: 'void_protocol', name: 'Void Protocol', cost: 50000, effect: 'unlock', value: 'autoPortal',
+    desc: 'The portal opens on schedule. It expects you.',
+    requiresUpgrade: 'document_automaton' },
 ];
 
 export const DIMENSIONAL_UPGRADES = [
@@ -851,6 +869,12 @@ export const ACHIEVEMENTS = [
   { id: 'embrace_madness', name: 'Embrace Madness', desc: 'Generate PP at critical sanity (<10%)', check: (state) => state.sortCount >= 1 && state.sanity < 10 },
   { id: 'bureaucrat', name: 'Master Bureaucrat', desc: 'File 50 reports', check: (state) => (state.documentMastery?.reports || 0) >= 50, reward: { type: 'ppMultiplier', value: 0.02 } },
   { id: 'reality_bender_paper', name: 'Reality Contractor', desc: 'Print 10 reality contracts', check: (state) => (state.documentMastery?.contracts || 0) >= 10 },
+  // Automation Achievements
+  { id: 'first_automation', name: 'Automated', desc: 'Enable your first automation',
+    check: (state) => state.automation?.autoSort || state.automation?.autoPrint || state.automation?.autoPortal },
+  { id: 'full_automation', name: 'Full Automation', desc: 'Enable all three automations',
+    check: (state) => state.automation?.autoSort && state.automation?.autoPrint && state.automation?.autoPortal,
+    reward: { type: 'ppMultiplier', value: 0.05 } },
 ];
 
 /**
@@ -1369,7 +1393,13 @@ These rare rifts contain powerful loot:
 Tears contain powerful equipment.
 The void is generous to explorers.`,
     category: 'mechanics'
-  }
+  },
+  firstAutomation: {
+    id: 'firstAutomation',
+    title: 'AUTOMATION ONLINE',
+    content: `The machine works so you don\u0027t have to.\n\nPurchase automation upgrades to unlock each slot.\nConfigure thresholds. Enable the toggle. Watch the work do itself.\n\nEfficiency is mandatory. You are optional.`,
+    category: 'progression'
+  },
 };
 
 /**
@@ -1398,7 +1428,9 @@ export const HELP_TRIGGERS = {
     const currentLootCount = state.lootInventory?.length || 0;
     const prevLootCount = prevState?.lootInventory?.length || 0;
     return currentLootCount > prevLootCount;
-  }
+  },
+  firstAutomation: (state, prevState) =>
+    state.upgrades?.robotic_assistant && (!prevState || !prevState.upgrades?.robotic_assistant),
 };
 
 /**
@@ -1741,5 +1773,12 @@ The files contain:
 • Your own documents from timelines that never were
 
 Reading them all reveals... patterns.`
-  }
+  },
+  firstAutomation: {
+    id: 'firstAutomation',
+    title: 'Automation System',
+    category: 'Automation',
+    summary: 'The office runs itself.',
+    details: `Three automation upgrades offload repetitive tasks:\n\nROBOTIC ASSISTANT - sorts papers automatically when energy threshold is met.\nDOCUMENT AUTOMATON - prints documents automatically when paper threshold is met.\nVOID PROTOCOL - enters the portal automatically when cooldown is zero.\n\nToggle each automation in the AUTOMATION PANEL. Thresholds are configurable.`
+  },
 };
