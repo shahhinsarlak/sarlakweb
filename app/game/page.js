@@ -19,6 +19,7 @@ import JournalModal from './JournalModal';
 import BuffReplacementModal from './BuffReplacementModal';
 import NotificationPopup from './NotificationPopup';
 import TierUnlockModal from './TierUnlockModal';
+import AutomationPanel from './AutomationPanel';
 import { createGameActions } from './gameActions';
 import { getDistortionStyle, distortText, getClockTime, createLevelUpParticles, createSkillPurchaseParticles, createScreenShake, formatPP } from './gameUtils';
 import { saveGame, loadGame, exportToClipboard, importFromClipboard } from './saveSystem';
@@ -37,7 +38,8 @@ import {
   HELP_POPUPS,
   HELP_TRIGGERS,
   ARCHIVE_CASES,
-  PP_MULTIPLIER_TIERS
+  PP_MULTIPLIER_TIERS,
+  DOCUMENT_TYPES
 } from './constants';
 
 export default function Game() {
@@ -45,6 +47,7 @@ export default function Game() {
   const [gameState, setGameState] = useState(INITIAL_GAME_STATE);
   const [showSaveMenu, setShowSaveMenu] = useState(false);
   const [showDebugPanel, setShowDebugPanel] = useState(false);
+  const [showAutomationPanel, setShowAutomationPanel] = useState(false);
   const [hoveredUpgrade, setHoveredUpgrade] = useState(null);
   const [showAchievements, setShowAchievements] = useState(false);
   const [selectedUpgradeType, setSelectedUpgradeType] = useState('pp'); // 'pp', 'printer', 'dimensional'
@@ -585,6 +588,46 @@ export default function Game() {
           }, 0);
         }
 
+        // === AUTOMATION BLOCKS ===
+
+        // autoSort — same energy cost as manual sort, simplified PP gain (no skill chain)
+        if (newState.automation?.autoSort &&
+            newState.upgrades?.robotic_assistant &&
+            newState.energy >= (newState.automation.autoSortThreshold ?? 80)) {
+          const baseEnergyCost = 2;
+          newState.energy = Math.max(0, newState.energy - baseEnergyCost);
+          newState.pp = newState.pp + (newState.ppPerClick || 1);
+          newState.sortCount = (newState.sortCount || 0) + 1;
+        }
+
+        // autoPrint — rate limited to once per 3 seconds, tier 1 only
+        if (newState.automation?.autoPrint &&
+            newState.upgrades?.document_automaton &&
+            newState.paper >= (newState.automation.autoPrintThreshold ?? 50) &&
+            newState.printerUnlocked &&
+            Date.now() - (newState.automation.lastAutoPrint || 0) > 3000) {
+          const docType = newState.automation.autoPrintDocType || 'memo';
+          const docDef = DOCUMENT_TYPES[docType];
+          const tier1Cost = docDef?.tiers?.[0]?.cost || { paper: 5, energy: 3 };
+          newState.paper = Math.max(0, newState.paper - (tier1Cost.paper || 5));
+          newState.energy = Math.max(0, newState.energy - (tier1Cost.energy || 3));
+          if (tier1Cost.sanity) {
+            newState.sanity = Math.max(0, newState.sanity - tier1Cost.sanity);
+          }
+          newState.documentsCreated = (newState.documentsCreated || 0) + 1;
+          newState.automation = { ...newState.automation, lastAutoPrint: Date.now() };
+          setTimeout(() => addMessage(`[AUTO] Printed ${docType} (tier 1)`), 0);
+        }
+
+        // autoPortal — silent entry, no confirmation
+        if (newState.automation?.autoPortal &&
+            newState.upgrades?.void_protocol &&
+            newState.portalCooldown === 0 &&
+            !newState.inDimensionalArea) {
+          newState.inDimensionalArea = true;
+          setTimeout(() => addMessage('[AUTO] Void Protocol activated. Entering portal.'), 0);
+        }
+
         return newState;
       });
     }, 100);
@@ -800,7 +843,8 @@ export default function Game() {
   const availableUpgrades = UPGRADES.filter(u =>
     !gameState.upgrades[u.id] &&
     (u.effect !== 'unlock' || gameState.pp >= u.cost * 0.5) &&
-    (!u.dayRequirement || gameState.day >= u.dayRequirement)
+    (!u.dayRequirement || gameState.day >= u.dayRequirement) &&
+    (!u.requiresUpgrade || gameState.upgrades[u.requiresUpgrade])
   );
 
   const enterDimensionalArea = () => {
@@ -1116,6 +1160,21 @@ export default function Game() {
               }}
             >
               DEBUG
+            </button>
+            <button
+              onClick={() => setShowAutomationPanel(!showAutomationPanel)}
+              style={{
+                padding: '8px 12px',
+                backgroundColor: showAutomationPanel ? 'var(--accent-color, #f97316)' : 'var(--bg-color, #1a1a2e)',
+                color: 'var(--text-color, #e0e0e0)',
+                border: '1px solid var(--border-color, #333)',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontFamily: "'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace",
+                fontSize: '12px',
+              }}
+            >
+              AUTO
             </button>
             <button
               onClick={() => setGameState(prev => ({ ...prev, pp: prev.pp + 100000 }))}
@@ -1981,6 +2040,14 @@ export default function Game() {
             setGameState={setGameState}
             addMessage={addMessage}
             onClose={() => setShowDebugPanel(false)}
+          />
+        )}
+
+        {showAutomationPanel && (
+          <AutomationPanel
+            gameState={gameState}
+            setGameState={setGameState}
+            onClose={() => setShowAutomationPanel(false)}
           />
         )}
 
