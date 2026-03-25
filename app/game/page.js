@@ -20,10 +20,11 @@ import BuffReplacementModal from './BuffReplacementModal';
 import NotificationPopup from './NotificationPopup';
 import TierUnlockModal from './TierUnlockModal';
 import AutomationPanel from './AutomationPanel';
+import PrestigeSurviveModal from './PrestigeSurviveModal';
 import { createGameActions } from './gameActions';
 import { getDistortionStyle, distortText, getClockTime, createLevelUpParticles, createSkillPurchaseParticles, createScreenShake, formatPP } from './gameUtils';
 import { saveGame, loadGame, exportToClipboard, importFromClipboard } from './saveSystem';
-import { addExperience, purchaseSkill, getActiveSkillEffects, getModifiedPortalCooldown, getModifiedCapacity, applyPPMultiplier, applyPPSMultiplier, getMaxSanity } from './skillSystemHelpers';
+import { addExperience, purchaseSkill, getActiveSkillEffects, getModifiedPortalCooldown, getModifiedCapacity, applyPPMultiplier, applyPPSMultiplier, getMaxSanity, getPrestigePathBonus } from './skillSystemHelpers';
 import { SKILLS, LEVEL_SYSTEM, XP_REWARDS } from './skillTreeConstants';
 import { DIMENSIONAL_MATERIALS } from './dimensionalConstants';
 import { getSanityTierDisplay, isSanityDrainPaused, calculatePaperQuality, applySanityPPModifier, getActiveBuffPPMultiplier, getActiveBuffXPMultiplier, getActiveBuffEnergyCostMultiplier, getActiveBuffPPPerSecondMultiplier } from './sanityPaperHelpers';
@@ -39,7 +40,8 @@ import {
   HELP_TRIGGERS,
   ARCHIVE_CASES,
   PP_MULTIPLIER_TIERS,
-  DOCUMENT_TYPES
+  DOCUMENT_TYPES,
+  PRESTIGE_PATHS
 } from './constants';
 
 export default function Game() {
@@ -54,6 +56,7 @@ export default function Game() {
   const [buffTooltip, setBuffTooltip] = useState(null); // { buff, x, y }
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [tierUnlock, setTierUnlock] = useState(null); // { name, multiplier, desc } when tier crossed
+  const [showPrestigeModal, setShowPrestigeModal] = useState(false);
 
   const addMessage = useCallback((msg) => {
     setGameState(prev => {
@@ -84,8 +87,11 @@ export default function Game() {
 
   const grantXP = useCallback((amount, showParticles = true) => {
     setGameState(prev => {
+      // Apply Seeker path bonus to XP gain
+      const seekerBonus = getPrestigePathBonus(prev, 'xpGain');
+      const adjustedAmount = seekerBonus > 0 ? amount * (1 + seekerBonus) : amount;
       // Pass empty function to prevent addExperience from adding messages
-      const xpResult = addExperience(prev, amount, () => {});
+      const xpResult = addExperience(prev, adjustedAmount, () => {});
 
       // Manually add level-up message here to avoid duplicates
       const messages = [];
@@ -490,11 +496,28 @@ export default function Game() {
             passiveGain *= maxMult;
           }
 
+          // Apply prestige multiplier (applied to all PP gain after tier multiplier)
+          if (prev.prestigeMultiplier && prev.prestigeMultiplier > 1) {
+            passiveGain *= prev.prestigeMultiplier;
+          }
+
+          // Apply Rationalist path bonus to passive PP
+          const ppSecBonus = getPrestigePathBonus(prev, 'ppPerSecond');
+          if (ppSecBonus > 0) {
+            passiveGain *= (1 + ppSecBonus);
+          }
+
           newState.pp = prev.pp + passiveGain;
         }
 
         if (prev.paperPerSecond > 0) {
-          newState.paper = prev.paper + (prev.paperPerSecond / 10);
+          let paperGain = prev.paperPerSecond / 10;
+          // Apply Convert path bonus to paper production
+          const paperBonus = getPrestigePathBonus(prev, 'paperRate');
+          if (paperBonus > 0) {
+            paperGain *= (1 + paperBonus);
+          }
+          newState.paper = prev.paper + paperGain;
         }
 
         newState.timeInOffice = prev.timeInOffice + 0.1;
@@ -524,6 +547,12 @@ export default function Game() {
             // Void Shield reduces drain by additional 50%
             if (prev.dimensionalUpgrades?.void_shield) {
               sanityDrainRate *= 0.5;
+            }
+
+            // Apply Protector path bonus (reduces sanity drain rate)
+            const sanityBonus = getPrestigePathBonus(prev, 'sanityRegen');
+            if (sanityBonus > 0) {
+              sanityDrainRate *= (1 - sanityBonus);
             }
 
             // Apply sanity drain
@@ -1176,6 +1205,23 @@ export default function Game() {
             >
               AUTO
             </button>
+            {gameState.upgrades?.promotion && (
+              <button
+                onClick={() => setShowPrestigeModal(true)}
+                style={{
+                  background: 'none',
+                  border: '1px solid var(--accent-color, #f97316)',
+                  color: 'var(--accent-color, #f97316)',
+                  padding: '8px 16px',
+                  cursor: 'pointer',
+                  fontSize: '11px',
+                  fontFamily: 'inherit',
+                  letterSpacing: '2px',
+                }}
+              >
+                SURVIVE ANOTHER DAY
+              </button>
+            )}
             <button
               onClick={() => setGameState(prev => ({ ...prev, pp: prev.pp + 100000 }))}
               style={{
@@ -1867,6 +1913,26 @@ export default function Game() {
                     </div>
                   </div>
                 )}
+                {gameState.prestigeCount > 0 && (
+                  <div style={{
+                    paddingTop: '16px',
+                    borderTop: '1px solid var(--border-color)',
+                    marginTop: '16px',
+                    fontSize: '11px',
+                  }}>
+                    <div style={{ opacity: 0.6, marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '1px', fontSize: '10px' }}>
+                      PRESTIGE
+                    </div>
+                    <div style={{ marginBottom: '4px' }}>
+                      Run #{gameState.prestigeCount + 1} &bull; <span style={{ color: 'var(--accent-color)' }}>+{((gameState.prestigeMultiplier - 1) * 100).toFixed(0)}% PP</span>
+                    </div>
+                    {(gameState.activePathBonuses || []).map((bonus, idx) => (
+                      <div key={idx} style={{ fontSize: '10px', opacity: 0.7 }}>
+                        {PRESTIGE_PATHS.find(p => p.id === bonus.path)?.name || bonus.path}: <span style={{ color: 'var(--accent-color)' }}>+{Math.abs(bonus.value * 100).toFixed(0)}% {bonus.type}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
                 {gameState.paperPerSecond > 0 && (
                   <div style={{
                     paddingTop: gameState.ppPerSecond > 0 ? '8px' : '16px',
@@ -2209,6 +2275,18 @@ export default function Game() {
           multiplier={tierUnlock.multiplier}
           tierDesc={tierUnlock.desc}
           onClose={() => setTierUnlock(null)}
+        />
+      )}
+
+      {/* Prestige Modal */}
+      {showPrestigeModal && (
+        <PrestigeSurviveModal
+          gameState={gameState}
+          onPrestige={(path) => {
+            actions.prestige(path);
+            setShowPrestigeModal(false);
+          }}
+          onClose={() => setShowPrestigeModal(false)}
         />
       )}
 
