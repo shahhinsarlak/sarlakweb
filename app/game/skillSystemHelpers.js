@@ -237,6 +237,12 @@ export const getModifiedPortalCooldown = (baseCooldown, gameState) => {
     cooldown = cooldown * (1 - achBonuses.portalCooldownReduction);
   }
 
+  // Apply prestige path bonuses (Rebel path: portalCooldown value is -0.15)
+  const prestigePortalBonus = getPrestigePathBonus(gameState, 'portalCooldown');
+  if (prestigePortalBonus !== 0) {
+    cooldown = cooldown * (1 + prestigePortalBonus); // value is negative, so this reduces cooldown
+  }
+
   // Minimum 10 seconds
   return Math.max(10, cooldown);
 };
@@ -419,4 +425,17 @@ export const getAchievementBonuses = (gameState) => {
   }
 
   return { ppMultiplier, portalCooldownReduction };
+};
+
+/**
+ * Sum prestige path bonuses for a given bonus type
+ * @param {Object} gameState - Current game state
+ * @param {string} bonusType - Bonus type to sum ('xpGain', 'ppPerSecond', 'sanityRegen', 'paperRate', 'portalCooldown')
+ * @returns {number} Total bonus value (can be negative for portalCooldown)
+ */
+export const getPrestigePathBonus = (gameState, bonusType) => {
+  const bonuses = gameState.activePathBonuses || [];
+  return bonuses
+    .filter(b => b.type === bonusType)
+    .reduce((sum, b) => sum + b.value, 0);
 };
