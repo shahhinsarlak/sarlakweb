@@ -154,6 +154,15 @@ export const INITIAL_GAME_STATE = {
   prestigeCount: 0,           // Number of times player has prestiged
   prestigeMultiplier: 1,      // Applied to all PP gain: 1 + (0.1 * prestigeCount)
   activePathBonuses: [],      // Array of { path, type, value } persisted across resets
+  // Void Contracts (Phase 20)
+  temporalPactActive: false,    // CONTRACT 1: ppPerSecond 2x, no time rewind
+  voidBargainActive: false,     // CONTRACT 2: 2x material drop rate, portal cooldown doubled
+  sanityErosionActive: false,   // CONTRACT 3: sanity<30 gives 3x ppPerClick instead of penalty
+  maxSanity: 100,               // Mutable cap - Sanity Erosion sets to 60
+  // Focus Mode (Phase 20)
+  focusModeExpiry: 0,           // Unix ms timestamp when buff expires (0 = inactive)
+  // Offline Accumulation (Phase 20)
+  lastSavedAt: 0,               // Unix ms timestamp of last save
 };
 
 

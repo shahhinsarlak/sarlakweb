@@ -95,6 +95,11 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
         ppGain *= prev.prestigeMultiplier;
       }
 
+      // Sanity Erosion: 3x ppPerClick when sanity below 30
+      if (prev.sanityErosionActive && prev.sanity < 30) {
+        ppGain *= 3;
+      }
+
       // Clean expired buffs
       const activeBuffs = cleanExpiredBuffs(prev);
 
@@ -226,7 +231,7 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
           ...prev,
           meditating: false,
           breathCount: 0,
-          sanity: Math.min(100, prev.sanity + sanityGain),
+          sanity: Math.min(prev.maxSanity || 100, prev.sanity + sanityGain),
           energy: Math.max(0, prev.energy - 10),
           meditationPhase: null,
           meditationStartTime: null,
@@ -308,7 +313,7 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
           debugMode: false,
           currentBug: null,
           debugAttempts: 0,
-          sanity: Math.min(100, prev.sanity + 5)
+          sanity: Math.min(prev.maxSanity || 100, prev.sanity + 5)
         };
       } else {
         const newAttempts = prev.debugAttempts + 1;
@@ -1149,6 +1154,41 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
     addMessage('The fluorescent lights flicker. Everything resets. But you remember.');
   };
 
+  // Void Contracts action (Added Phase 20)
+  const purchaseVoidContract = (contract) => {
+    setGameState(prev => {
+      // 1. Validate: not already active
+      if (prev[contract.activeFlag]) return prev;
+
+      // 2. Validate: can afford
+      const canAfford = Object.entries(contract.materials).every(
+        ([id, cost]) => (prev.dimensionalInventory?.[id] || 0) >= cost
+      );
+      if (!canAfford) return prev;
+
+      // 3. Build state: deduct materials, set flag
+      const newInventory = { ...prev.dimensionalInventory };
+      Object.entries(contract.materials).forEach(([id, cost]) => {
+        newInventory[id] = (newInventory[id] || 0) - cost;
+      });
+
+      const newState = {
+        ...prev,
+        dimensionalInventory: newInventory,
+        [contract.activeFlag]: true,
+      };
+
+      // Contract-specific side effects
+      if (contract.id === 'sanity_erosion') {
+        newState.maxSanity = 60;
+        newState.sanity = Math.min(prev.sanity, 60);
+      }
+
+      return newState;
+    });
+    addMessage('Void contract sealed. There is no going back.');
+  };
+
   // Return all action handlers
   return {
     sortPapers,
@@ -1189,5 +1229,7 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
     switchJournalTab,
     // Prestige system actions (Added Phase 19)
     prestige,
+    // Void Contracts actions (Added Phase 20)
+    purchaseVoidContract,
   };
 };
