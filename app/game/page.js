@@ -8,6 +8,7 @@ import DebugPanel from './DebugPanel';
 import ExamineModal from './ExamineModal';
 import DimensionalArea from './DimensionalArea';
 import DimensionalUpgradesDisplay from './DimensionalUpgradesDisplay';
+import VoidContractsDisplay from './VoidContractsDisplay';
 import SkillTreeModal from './SkillTreeModal';
 import PrinterRoom from './PrinterRoom';
 import Armory from './Armory';
@@ -505,6 +506,11 @@ export default function Game() {
           const ppSecBonus = getPrestigePathBonus(prev, 'ppPerSecond');
           if (ppSecBonus > 0) {
             passiveGain *= (1 + ppSecBonus);
+          }
+
+          // Temporal Pact: ppPerSecond 2x permanently
+          if (prev.temporalPactActive) {
+            passiveGain *= 2;
           }
 
           newState.pp = prev.pp + passiveGain;
@@ -1682,6 +1688,14 @@ export default function Game() {
                   })}
                 </div>
               </div>
+              )}
+
+              {/* Void Contracts */}
+              {selectedUpgradeType === 'dimensional' && Object.keys(gameState.dimensionalInventory || {}).some(key => gameState.dimensionalInventory[key] > 0) && (
+                <VoidContractsDisplay
+                  gameState={gameState}
+                  onPurchase={actions.purchaseVoidContract}
+                />
               )}
 
               {/* Dimensional Upgrades */}

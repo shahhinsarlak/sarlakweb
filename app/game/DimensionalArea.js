@@ -142,6 +142,11 @@ export default function DimensionalArea({ gameState, setGameState, onExit, grant
       amount = Math.floor(amount * maxMult);
     }
 
+    // Void Bargain: material drop rate permanently doubled
+    if (gameState.voidBargainActive) {
+      amount = Math.floor(amount * 2);
+    }
+
     setCurrentInventory(prev => ({
       ...prev,
       [node.materialId]: (prev[node.materialId] || 0) + amount

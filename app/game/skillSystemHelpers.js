@@ -243,6 +243,11 @@ export const getModifiedPortalCooldown = (baseCooldown, gameState) => {
     cooldown = cooldown * (1 + prestigePortalBonus); // value is negative, so this reduces cooldown
   }
 
+  // Void Bargain: portal cooldown permanently doubled
+  if (gameState.voidBargainActive) {
+    cooldown = cooldown * 2;
+  }
+
   // Minimum 10 seconds
   return Math.max(10, cooldown);
 };
@@ -368,7 +373,8 @@ export const getModifiedRestCooldown = (baseCooldown, gameState) => {
  */
 export const getMaxSanity = (baseSanity, gameState) => {
   const effects = getActiveSkillEffects(gameState);
-  return baseSanity + (effects.maxSanity || 0);
+  const cap = gameState.maxSanity || 100;
+  return Math.min(baseSanity + (effects.maxSanity || 0), cap);
 };
 
 /**
