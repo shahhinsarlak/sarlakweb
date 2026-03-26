@@ -95,6 +95,11 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
         ppGain *= prev.prestigeMultiplier;
       }
 
+      // Focus Mode: +50% ppPerClick when active
+      if (prev.focusModeExpiry > Date.now()) {
+        ppGain *= 1.5;
+      }
+
       // Sanity Erosion: 3x ppPerClick when sanity below 30
       if (prev.sanityErosionActive && prev.sanity < 30) {
         ppGain *= 3;

@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import MeditationModal from './MeditationModal';
@@ -58,6 +58,7 @@ export default function Game() {
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [tierUnlock, setTierUnlock] = useState(null); // { name, multiplier, desc } when tier crossed
   const [showPrestigeModal, setShowPrestigeModal] = useState(false);
+  const clickTimestampsRef = useRef([]);
 
   const addMessage = useCallback((msg) => {
     setGameState(prev => {
@@ -663,6 +664,11 @@ export default function Game() {
           setTimeout(() => addMessage('[AUTO] Void Protocol activated. Entering portal.'), 0);
         }
 
+        // Focus Mode expiry check — clear buff once timestamp has passed
+        if (prev.focusModeExpiry > 0 && Date.now() > prev.focusModeExpiry) {
+          newState.focusModeExpiry = 0;
+        }
+
         return newState;
       });
     }, 100);
@@ -872,6 +878,23 @@ export default function Game() {
     const tierMult = tierData ? tierData.multiplier : 1;
     const finalGain = ppGain * tierMult;
     return formatPP(finalGain);
+  };
+
+  const handleSortPapers = () => {
+    const now = Date.now();
+    clickTimestampsRef.current.push(now);
+    // Keep only clicks within the last 30 seconds
+    clickTimestampsRef.current = clickTimestampsRef.current.filter(t => now - t <= 30000);
+
+    if (clickTimestampsRef.current.length >= 20) {
+      // Trigger or refresh Focus Mode — reset 30s expiry window
+      setGameState(prev => ({
+        ...prev,
+        focusModeExpiry: Date.now() + 30000,
+      }));
+    }
+
+    actions.sortPapers();
   };
 
   const currentLocation = LOCATIONS[gameState.location];
@@ -1288,7 +1311,7 @@ export default function Game() {
                 gap: '10px'
               }}>
                 <button
-                  onClick={actions.sortPapers}
+                  onClick={handleSortPapers}
                   style={{
                     ...getDistortionStyle(gameState.sanity),
                     background: 'none',
@@ -1850,6 +1873,16 @@ export default function Game() {
                       return `Base: ${gameState.ppPerClick} • Skills: ${skillBonus} • Sanity: ${sanityBonus} • Buffs: ${buffBonus} • Tier: ${tierBonus} (${tierName})`;
                     })()}
                   </div>
+                  {gameState.focusModeExpiry > Date.now() && (
+                    <div style={{
+                      fontSize: '11px',
+                      color: '#f97316',
+                      fontWeight: 600,
+                      marginTop: '4px',
+                    }}>
+                      [FOCUS MODE: {Math.max(0, Math.ceil((gameState.focusModeExpiry - Date.now()) / 1000))}s]
+                    </div>
+                  )}
                 </div>
                 {gameState.printerUnlocked && (
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
