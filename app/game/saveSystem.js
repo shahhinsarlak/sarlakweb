@@ -61,6 +61,34 @@ export const loadGame = (file, setGameState, addMessage) => {
           // receive all new properties introduced after the save was created.
           const mergedState = { ...INITIAL_GAME_STATE, ...saveData.state };
 
+          // Offline PP accumulation (Phase 20)
+          const now = Date.now();
+          if (mergedState.lastSavedAt && mergedState.lastSavedAt > 0) {
+            const elapsedSeconds = Math.min((now - mergedState.lastSavedAt) / 1000, 14400); // cap 4h
+            if (elapsedSeconds > 60 && mergedState.ppPerSecond > 0) {
+              const offlinePP = Math.floor(mergedState.ppPerSecond * 0.5 * elapsedSeconds);
+              mergedState.pp = (mergedState.pp || 0) + offlinePP;
+
+              const hours = (elapsedSeconds / 3600).toFixed(1);
+              let ppDisplay;
+              if (offlinePP >= 1e12) ppDisplay = (offlinePP / 1e12).toFixed(1) + 'T';
+              else if (offlinePP >= 1e9) ppDisplay = (offlinePP / 1e9).toFixed(1) + 'B';
+              else if (offlinePP >= 1e6) ppDisplay = (offlinePP / 1e6).toFixed(1) + 'M';
+              else if (offlinePP >= 1e3) ppDisplay = (offlinePP / 1e3).toFixed(1) + 'K';
+              else ppDisplay = String(offlinePP);
+
+              mergedState.notifications = [
+                ...(mergedState.notifications || []),
+                {
+                  id: `offline_${now}`,
+                  message: `You were away ${hours}h. Earned +${ppDisplay} PP while offline.`,
+                  timestamp: now,
+                },
+              ];
+            }
+          }
+          mergedState.lastSavedAt = now;
+
           setGameState(mergedState);
           addMessage('Save loaded successfully.');
           resolve(saveData);
@@ -120,6 +148,35 @@ export const importFromClipboard = (setGameState, addMessage) => {
           }
           // Merge with INITIAL_GAME_STATE defaults for version migration
           const mergedState = { ...INITIAL_GAME_STATE, ...saveData.state };
+
+          // Offline PP accumulation (Phase 20)
+          const now = Date.now();
+          if (mergedState.lastSavedAt && mergedState.lastSavedAt > 0) {
+            const elapsedSeconds = Math.min((now - mergedState.lastSavedAt) / 1000, 14400); // cap 4h
+            if (elapsedSeconds > 60 && mergedState.ppPerSecond > 0) {
+              const offlinePP = Math.floor(mergedState.ppPerSecond * 0.5 * elapsedSeconds);
+              mergedState.pp = (mergedState.pp || 0) + offlinePP;
+
+              const hours = (elapsedSeconds / 3600).toFixed(1);
+              let ppDisplay;
+              if (offlinePP >= 1e12) ppDisplay = (offlinePP / 1e12).toFixed(1) + 'T';
+              else if (offlinePP >= 1e9) ppDisplay = (offlinePP / 1e9).toFixed(1) + 'B';
+              else if (offlinePP >= 1e6) ppDisplay = (offlinePP / 1e6).toFixed(1) + 'M';
+              else if (offlinePP >= 1e3) ppDisplay = (offlinePP / 1e3).toFixed(1) + 'K';
+              else ppDisplay = String(offlinePP);
+
+              mergedState.notifications = [
+                ...(mergedState.notifications || []),
+                {
+                  id: `offline_${now}`,
+                  message: `You were away ${hours}h. Earned +${ppDisplay} PP while offline.`,
+                  timestamp: now,
+                },
+              ];
+            }
+          }
+          mergedState.lastSavedAt = now;
+
           setGameState(mergedState);
           addMessage('Save imported from clipboard.');
           return saveData;

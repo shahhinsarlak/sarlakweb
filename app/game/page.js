@@ -280,7 +280,9 @@ export default function Game() {
   };
 
   const handleSaveGame = () => {
-    saveGame(gameState);
+    const stateToSave = { ...gameState, lastSavedAt: Date.now() };
+    saveGame(stateToSave);
+    setGameState(prev => ({ ...prev, lastSavedAt: stateToSave.lastSavedAt }));
     addMessage('Game saved to file.');
     setShowSaveMenu(false);
   };
@@ -294,8 +296,10 @@ export default function Game() {
   };
 
   const handleExportClipboard = async () => {
-    const success = await exportToClipboard(gameState);
+    const stateToExport = { ...gameState, lastSavedAt: Date.now() };
+    const success = await exportToClipboard(stateToExport);
     if (success) {
+      setGameState(prev => ({ ...prev, lastSavedAt: stateToExport.lastSavedAt }));
       addMessage('Save data copied to clipboard.');
     } else {
       addMessage('Failed to copy to clipboard.');
