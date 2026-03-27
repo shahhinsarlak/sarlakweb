@@ -41,7 +41,12 @@ export const getDistortionStyle = (sanity) => {
   };
 
   export const createLevelUpParticles = () => {
+    // Remove existing container if present (prevents DOM accumulation on rapid calls)
+    const existingContainer = document.getElementById('level-up-particles-container');
+    if (existingContainer) existingContainer.remove();
+
     const container = document.createElement('div');
+    container.id = 'level-up-particles-container';
     container.style.cssText = `
       position: fixed;
       top: 0;
@@ -207,7 +212,12 @@ export const getDistortionStyle = (sanity) => {
   };
 
   export const createSkillPurchaseParticles = () => {
+    // Remove existing container if present (prevents DOM accumulation on rapid calls)
+    const existingSkillContainer = document.getElementById('skill-purchase-particles-container');
+    if (existingSkillContainer) existingSkillContainer.remove();
+
     const container = document.createElement('div');
+    container.id = 'skill-purchase-particles-container';
     container.style.cssText = `
       position: fixed;
       top: 0;
