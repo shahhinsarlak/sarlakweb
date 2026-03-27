@@ -54,18 +54,18 @@ export default function FileDrawer({ gameState, onClose, actions, notifications,
 
   // Quality icons
   const qualityIcons = {
-    corrupted: '💀',
-    standard: '📄',
-    pristine: '✨',
-    perfect: '⭐'
+    corrupted: '[CORRUPT]',
+    standard: '[DOC]',
+    pristine: '[PRISTINE]',
+    perfect: '[PERFECT]'
   };
 
   // Document type icons
   const typeIcons = {
-    memo: '📝',
-    report: '📊',
-    contract: '📜',
-    prophecy: '🔮'
+    memo: '[MEMO]',
+    report: '[REPORT]',
+    contract: '[CONTRACT]',
+    prophecy: '[PROPHECY]'
   };
 
   // Quality colors
@@ -127,7 +127,7 @@ export default function FileDrawer({ gameState, onClose, actions, notifications,
         }}>
           <div>
             <div style={{ fontSize: '14px', fontWeight: 'bold', letterSpacing: '1px' }}>
-              📂 FILE DRAWER
+              [DRAWER] FILE DRAWER
             </div>
             <div style={{ fontSize: '10px', opacity: 0.6, marginTop: '4px' }}>
               {documents.length} document{documents.length !== 1 ? 's' : ''} stored
@@ -256,7 +256,7 @@ export default function FileDrawer({ gameState, onClose, actions, notifications,
                     }}
                     title={doc.important ? 'Remove important flag' : 'Mark as important'}
                   >
-                    {doc.important ? '⭐' : '☆'}
+                    {doc.important ? '[STAR]' : '[-]'}
                   </button>
 
                   {/* Type Icon */}
@@ -338,7 +338,7 @@ export default function FileDrawer({ gameState, onClose, actions, notifications,
           opacity: 0.6,
           lineHeight: '1.5'
         }}>
-          💡 CONSUME documents to apply their effects. SHRED to recover paper based on quality.
+          [TIP] CONSUME documents to apply their effects. SHRED to recover paper based on quality.
           Star important documents to protect them from bulk shredding.
         </div>
       </div>

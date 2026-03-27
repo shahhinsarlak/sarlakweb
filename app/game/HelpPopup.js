@@ -63,10 +63,10 @@ export default function HelpPopup({ popup, onDismiss }) {
           marginBottom: '16px',
           color: popup.category === 'warning' ? '#ff4444' : 'var(--text-color)'
         }}>
-          {popup.category === 'warning' ? '⚠️ WARNING' :
-           popup.category === 'exploration' ? '🗺️ DISCOVERY' :
-           popup.category === 'progression' ? '⬆️ PROGRESSION' :
-           popup.category === 'mechanics' ? '⚙️ MECHANIC' : '📖 TUTORIAL'}
+          {popup.category === 'warning' ? '[WARNING]' :
+           popup.category === 'exploration' ? '[DISCOVERY]' :
+           popup.category === 'progression' ? '[PROGRESSION]' :
+           popup.category === 'mechanics' ? '[MECHANIC]' : '[TUTORIAL]'}
         </div>
 
         {/* Title */}

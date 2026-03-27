@@ -273,11 +273,11 @@ export default function JournalModal({ gameState, onClose, onSwitchTab, notifica
 
           {/* Stats */}
           <div style={{ fontSize: '11px', marginBottom: '8px' }}>
-            {equipmentData.damage && <div>⚔️ Damage: {equipmentData.damage}</div>}
-            {equipmentData.defense !== undefined && equipmentData.defense > 0 && <div>🛡️ Defense: {equipmentData.defense}</div>}
-            {equipmentData.critChance && <div>💥 Crit Chance: {(equipmentData.critChance * 100).toFixed(0)}%</div>}
-            {equipmentData.effect && <div>✨ Effect: {equipmentData.effect.replace('_', ' ')}</div>}
-            {equipmentData.specialEffect && <div>✨ Special: {equipmentData.specialEffect.replace('_', ' ')}</div>}
+            {equipmentData.damage && <div>[DAMAGE] Damage: {equipmentData.damage}</div>}
+            {equipmentData.defense !== undefined && equipmentData.defense > 0 && <div>[DEFENSE] Defense: {equipmentData.defense}</div>}
+            {equipmentData.critChance && <div>[CRIT] Crit Chance: {(equipmentData.critChance * 100).toFixed(0)}%</div>}
+            {equipmentData.effect && <div>[EFFECT] Effect: {equipmentData.effect.replace('_', ' ')}</div>}
+            {equipmentData.specialEffect && <div>[EFFECT] Special: {equipmentData.specialEffect.replace('_', ' ')}</div>}
           </div>
 
           {/* Lore */}
