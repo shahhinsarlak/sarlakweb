@@ -141,7 +141,7 @@ export default function AchievementsModal({ gameState, achievements, onClose, no
                     lineHeight: 1,
                     marginTop: '2px'
                   }}>
-                    {isUnlocked ? '🏆' : '🔒'}
+                    {isUnlocked ? '[TROPHY]' : '[LOCK]'}
                   </div>
                   <div style={{ flex: 1 }}>
                     <div style={{
