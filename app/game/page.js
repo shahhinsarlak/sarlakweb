@@ -45,6 +45,8 @@ import {
   PRESTIGE_PATHS
 } from './constants';
 
+const PORTAL_UNLOCK_ENTRIES = ['glitched', 'maintenance', 'encrypted_lights'];
+
 export default function Game() {
   const [isMobile, setIsMobile] = useState(false);
   const [gameState, setGameState] = useState(INITIAL_GAME_STATE);
@@ -171,75 +173,34 @@ export default function Game() {
     });
   }, []);
 
+  // Portal unlock: triggers when all three light-related archive entries have been read AND day >= 7
   useEffect(() => {
-    const handleThemeChange = (e) => {
-      if (e.data && e.data.type === 'THEME_TOGGLE') {
-        setGameState(prev => {
-          const currentCount = prev.themeToggleCount || 0;
-          const newCount = currentCount + 1;
-          
-          if (newCount === 20 && prev.day >= 7 && !prev.portalUnlocked) {
-            const messages = [
-              'Reality shivers. The lights... they respond to you now.',
-              'Something tears open in the fabric of the office.',
-              'NEW LOCATION: The Portal'
-            ];
-
-            // Trigger screen shake effect
-            setTimeout(() => createScreenShake(), 0);
-
-            // Create notifications for portal unlock messages
-            const newNotifications = messages.map(msg => ({
-              id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-              message: msg,
-              timestamp: Date.now()
-            }));
-
-            return {
-              ...prev,
-              themeToggleCount: newCount,
-              portalUnlocked: true,
-              unlockedLocations: [...new Set([...prev.unlockedLocations, 'portal'])],
-              sanity: Math.max(0, prev.sanity - 10),
-              recentMessages: [...messages.reverse(), ...prev.recentMessages].slice(0, prev.maxLogMessages || 15),
-              notifications: [...(prev.notifications || []), ...newNotifications]
-            };
-          }
-          
-          let newMessage = null;
-          if (newCount === 10) {
-            newMessage = prev.day >= 7 ? 'The lights flicker in response. They\'re watching...' : 'Progress tracked. Keep going...';
-          } else if (newCount === 15) {
-            newMessage = prev.day >= 7 ? 'Reality feels... thinner. Keep going?' : 'Almost there...';
-          }
-
-          if (newMessage) {
-            // Create notification for intermediate messages too
-            const notification = {
-              id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-              message: newMessage,
-              timestamp: Date.now()
-            };
-
-            return {
-              ...prev,
-              themeToggleCount: newCount,
-              recentMessages: [newMessage, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15),
-              notifications: [...(prev.notifications || []), notification]
-            };
-          }
-          
-          return {
-            ...prev,
-            themeToggleCount: newCount
-          };
-        });
+    setGameState(prev => {
+      const hasAllEntries = PORTAL_UNLOCK_ENTRIES.every(id => prev.examinedArchiveItems.includes(id));
+      if (hasAllEntries && prev.day >= 7 && !prev.portalUnlocked) {
+        const messages = [
+          'The lights respond to what you have read.',
+          'Something tears open in the fabric of the office.',
+          'NEW LOCATION: The Portal'
+        ];
+        setTimeout(() => createScreenShake(), 0);
+        const newNotifications = messages.map(msg => ({
+          id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          message: msg,
+          timestamp: Date.now()
+        }));
+        return {
+          ...prev,
+          portalUnlocked: true,
+          unlockedLocations: [...new Set([...prev.unlockedLocations, 'portal'])],
+          sanity: Math.max(0, prev.sanity - 10),
+          recentMessages: [...messages.reverse(), ...prev.recentMessages].slice(0, prev.maxLogMessages || 15),
+          notifications: [...(prev.notifications || []), ...newNotifications]
+        };
       }
-    };
-
-    window.addEventListener('message', handleThemeChange);
-    return () => window.removeEventListener('message', handleThemeChange);
-  }, [addMessage]);
+      return prev;
+    });
+  }, [gameState.examinedArchiveItems]);
 
   // Reset upgrade type selection if it becomes unavailable
   useEffect(() => {
