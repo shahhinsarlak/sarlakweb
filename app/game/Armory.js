@@ -618,15 +618,17 @@ export default function Armory({ gameState, setGameState, onExit, notifications,
 
   return (
     <>
-      <EventLog messages={gameState.recentMessages} />
       <Header />
+      <EventLog messages={gameState.recentMessages} />
       <div style={{
         fontFamily: "'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace",
         maxWidth: '1400px',
         margin: '0 auto',
         padding: '60px 40px',
         minHeight: '100vh',
-        fontSize: '14px'
+        fontSize: '14px',
+        position: 'relative',
+        zIndex: 1
       }}>
         <div style={{
           display: 'flex',
