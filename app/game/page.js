@@ -31,6 +31,9 @@ import { getDistortionStyle, distortText, getClockTime, createLevelUpParticles, 
 import { saveGame, loadGame, exportToClipboard, importFromClipboard } from './saveSystem';
 import { addExperience, purchaseSkill, getActiveSkillEffects, getModifiedPortalCooldown, getModifiedCapacity, applyPPMultiplier, applyPPSMultiplier, getMaxSanity, getPrestigePathBonus } from './skillSystemHelpers';
 import { SKILLS, LEVEL_SYSTEM, XP_REWARDS } from './skillTreeConstants';
+import { WEAPONS, ARMOR, ANOMALIES } from './equipmentConstants';
+import { calculateFinalStats, rollPrefix, rollImbuements } from './lootGenerationHelpers';
+import { BASE_LOOT_ITEMS } from './lootConstants';
 import { DIMENSIONAL_MATERIALS } from './dimensionalConstants';
 import { getSanityTierDisplay, isSanityDrainPaused, calculatePaperQuality, applySanityPPModifier, getActiveBuffPPMultiplier, getActiveBuffXPMultiplier, getActiveBuffEnergyCostMultiplier, getActiveBuffPPPerSecondMultiplier } from './sanityPaperHelpers';
 import {
@@ -314,6 +317,60 @@ export default function Game() {
         if (upgrade.value === 'armory') {
           newState.unlockedLocations = [...new Set([...prev.unlockedLocations, 'armory'])];
           newState.recentMessages = ['The bottom drawer opens. Impossibly deep. An arsenal awaits.', 'NEW LOCATION: The Armory', ...prev.recentMessages].slice(0, prev.maxLogMessages || 15);
+        } else {
+          // Check if this unlock corresponds to equipment crafting
+          const allEquipment = [
+            ...Object.values(WEAPONS).map(w => ({ ...w, type: 'weapon' })),
+            ...Object.values(ARMOR).map(a => ({ ...a, type: 'armor' })),
+            ...Object.values(ANOMALIES).map(a => ({ ...a, type: 'anomaly' }))
+          ];
+          const matchedEquipment = allEquipment.find(eq => eq.dimensionalUpgrade === upgrade.id);
+
+          if (matchedEquipment) {
+            const baseLootItems = matchedEquipment.type === 'weapon' ? BASE_LOOT_ITEMS.weapons
+              : matchedEquipment.type === 'armor' ? BASE_LOOT_ITEMS.armor
+              : BASE_LOOT_ITEMS.anomalies;
+            const baseItem = baseLootItems.find(b => b.id === matchedEquipment.id);
+
+            if (baseItem) {
+              const rarity = matchedEquipment.rarity;
+              const prefix = rollPrefix();
+              const imbuements = rollImbuements(rarity);
+              const levelScaling = 1 + (((prev.playerLevel || 1) - 1) * 0.25);
+              const finalStats = calculateFinalStats(baseItem, rarity, prefix, imbuements, levelScaling);
+              const itemId = `${baseItem.id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+              let displayName = baseItem.name;
+              if (prefix && prefix.name) {
+                displayName = `${prefix.name} ${displayName}`;
+              }
+
+              const craftedItem = {
+                id: itemId,
+                baseItemId: baseItem.id,
+                type: baseItem.type,
+                slot: baseItem.slot,
+                displayName,
+                baseName: baseItem.name,
+                rarity,
+                prefix,
+                imbuements,
+                finalStats,
+                ascii: baseItem.ascii,
+                lore: baseItem.lore,
+                isEquipped: false,
+                generatedAt: Date.now(),
+                itemLevel: prev.playerLevel || 1,
+                levelScaling
+              };
+
+              newState.lootInventory = [...(prev.lootInventory || []), craftedItem];
+              newState.recentMessages = [
+                `Crafted: ${displayName} (${rarity.name}). Available in the Armory.`,
+                ...prev.recentMessages
+              ].slice(0, prev.maxLogMessages || 15);
+            }
+          }
         }
       } else if (upgrade.effect === 'equipment') {
         // Equipment is unlocked via dimensional upgrades, message added
@@ -603,6 +660,7 @@ export default function Game() {
           newState.energy = Math.max(0, newState.energy - baseEnergyCost);
           newState.pp = newState.pp + (newState.ppPerClick || 1);
           newState.sortCount = (newState.sortCount || 0) + 1;
+          setTimeout(() => grantXP(XP_REWARDS.sortPapers), 0);
         }
 
         // autoPrint — rate limited to once per 3 seconds, tier 1 only
