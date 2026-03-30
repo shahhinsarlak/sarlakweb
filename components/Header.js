@@ -17,6 +17,9 @@ export default function Header() {
         <Link href="/apps" className={`nav-link ${pathname === '/apps' ? 'active' : ''}`}>
           Apps
         </Link>
+        <Link href="/log" className={`nav-link ${pathname.startsWith('/log') ? 'active' : ''}`}>
+          Log
+        </Link>
         <Link href="/game" className={`nav-link ${pathname === '/game' ? 'active' : ''}`}>
           Incremental
         </Link>

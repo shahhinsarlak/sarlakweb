@@ -71,6 +71,16 @@ export default function Home() {
                   <span style={{ fontSize: '10px', padding: '2px 6px', border: '1px solid var(--accent-color)' }}>WebGL</span>
                 </div>
               </Link>
+              <Link href="/log" className="card">
+                <div className="card-title">Dev Log</div>
+                <div className="card-description">
+                  Notes on what I&apos;m building, breaking, and figuring out. No schedule &mdash; just whenever something&apos;s worth writing down.
+                </div>
+                <div style={{ marginTop: '12px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: '10px', padding: '2px 6px', border: '1px solid var(--accent-color)' }}>Writing</span>
+                  <span style={{ fontSize: '10px', padding: '2px 6px', border: '1px solid var(--accent-color)' }}>Updates</span>
+                </div>
+              </Link>
             </div>
           </section>
 
