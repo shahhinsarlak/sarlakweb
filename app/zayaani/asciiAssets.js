@@ -83,14 +83,13 @@ export const HEADS = [
     name: 'Scene Queen',
     traits: ['backcombed poof', 'star eyes', 'raccoon liner'],
     compact:
-`((((((((((((((((
-(( [==========]
-   [==========]
-   |[*]    [*]|
-   | ^      ^ |
-   |     .    |
-   |  [o___o] |
-   [==========]`,
+`  /\\ /\\ /\\ /\\
+  [==========]
+  |((  *  (( |
+  |  )   )   |
+  |    .      |
+  | [_______] |
+  [==========]`,
     detailed:
 `(((((((((((((((((((((
 ((((((((((((((((((((((
@@ -296,12 +295,12 @@ export const SHOES = [
 ];
 
 export const FURNITURE = [
-  { id: 'desk',      name: 'Desk',         cost: 200, slot: 'back_left',    ascii: '[___DESK___]' },
-  { id: 'lamp',      name: 'Floor Lamp',   cost: 80,  slot: 'back_right',   ascii: '  (\\ /)\n   |||' },
-  { id: 'plant',     name: 'Potted Plant', cost: 60,  slot: 'front_right',  ascii: ' @@@\n |||' },
-  { id: 'rug',       name: 'Rug',          cost: 150, slot: 'floor_centre', ascii: '[~~~~~~~~~]' },
-  { id: 'poster',    name: 'Poster',       cost: 40,  slot: 'back_wall',    ascii: '[POSTER]' },
-  { id: 'bookshelf', name: 'Bookshelf',    cost: 300, slot: 'back_right',   ascii: '[|||||||||]' },
+  { id: 'desk',      name: 'Desk',         cost: 200, slot: 'back-left',      ascii: '[___DESK___]' },
+  { id: 'lamp',      name: 'Floor Lamp',   cost: 80,  slot: 'back-right corner', ascii: '  (\\ /)\n   |||' },
+  { id: 'plant',     name: 'Potted Plant', cost: 60,  slot: 'front-right',    ascii: ' @@@\n |||' },
+  { id: 'rug',       name: 'Rug',          cost: 150, slot: 'floor centre',   ascii: '[~~~~~~~~~]' },
+  { id: 'poster',    name: 'Poster',       cost: 40,  slot: 'back wall',      ascii: '[POSTER]' },
+  { id: 'bookshelf', name: 'Bookshelf',    cost: 300, slot: 'back-right',     ascii: '[|||||||||]' },
 ];
 
 export const JOBS = [
