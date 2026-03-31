@@ -1,0 +1,255 @@
+/* app/zayaani/zayaani.module.css */
+
+/* ── Root & layout ───────────────────────────────────── */
+.root {
+  width: 100vw;
+  height: 100vh;
+  background: var(--bg-color);
+  color: var(--text-color);
+  font-family: var(--font-mono);
+  display: flex;
+  overflow: hidden;
+}
+
+.gameLayout {
+  display: flex;
+  width: 100%;
+  height: 100%;
+}
+
+/* ── Left sidebar ────────────────────────────────────── */
+.sidebar {
+  width: 220px;
+  min-width: 220px;
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.sideSection {
+  border-bottom: 1px solid var(--border-color);
+  padding: 14px;
+}
+
+.sideLabel {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  color: var(--accent-color);
+  margin-bottom: 10px;
+}
+
+/* ── Shop items ──────────────────────────────────────── */
+.shopItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 8px;
+  border: 1px solid var(--border-color);
+  margin-bottom: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: var(--font-mono);
+  transition: var(--transition);
+  background: transparent;
+  color: var(--text-color);
+  width: 100%;
+  text-align: left;
+}
+
+.shopItem:hover:not(:disabled) {
+  border-color: var(--accent-color);
+  box-shadow: 0 0 8px var(--accent-glow);
+}
+
+.shopItem:disabled { opacity: 0.4; cursor: default; }
+.shopItemCost { color: var(--accent-color); font-size: 11px; }
+
+/* ── Active jobs ─────────────────────────────────────── */
+.jobEntry {
+  font-size: 11px;
+  padding: 4px 0;
+  display: flex;
+  justify-content: space-between;
+  color: #22c55e;
+}
+
+/* ── Room area ───────────────────────────────────────── */
+.roomArea {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.creditsOverlay {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  font-size: 12px;
+  color: var(--accent-color);
+  border: 1px solid var(--border-color);
+  background: var(--bg-elevated);
+  padding: 5px 10px;
+  z-index: 10;
+}
+
+/* ── ASCII shared ────────────────────────────────────── */
+.ascii {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: pre;
+  color: var(--text-color);
+  margin: 0;
+}
+
+.asciiAccent { color: var(--accent-color); }
+
+/* ── Job toast ───────────────────────────────────────── */
+.toast {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  width: 280px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--accent-color);
+  box-shadow: 0 0 20px var(--accent-glow);
+  padding: 16px;
+  z-index: 200;
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from { transform: translateX(320px); opacity: 0; }
+  to   { transform: translateX(0);     opacity: 1; }
+}
+
+.toastTitle   { font-size: 13px; color: var(--accent-color); margin-bottom: 4px; }
+.toastFlavour { font-size: 11px; color: var(--text-muted);   margin-bottom: 4px; }
+.toastCps     { font-size: 11px; color: #22c55e;             margin-bottom: 12px; }
+.toastActions { display: flex; gap: 8px; }
+
+.toastBtn {
+  flex: 1;
+  padding: 6px;
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-color);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.toastBtn:hover            { border-color: var(--accent-color); color: var(--accent-color); }
+.toastBtnAccept:hover      { background: var(--accent-glow); }
+
+/* ── Character creator ───────────────────────────────── */
+.creatorRoot {
+  width: 100vw;
+  height: 100vh;
+  background: var(--bg-color);
+  font-family: var(--font-mono);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.creatorTitle {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 4px;
+  color: var(--accent-color);
+  padding: 20px 24px 12px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.creatorBody {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  overflow: hidden;
+}
+
+.creatorLeft {
+  border-right: 1px solid var(--border-color);
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.creatorRight {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  gap: 10px;
+  overflow: hidden;
+}
+
+.partLabel {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  color: var(--accent-color);
+  margin-bottom: 8px;
+}
+
+.partOptions { display: flex; flex-direction: column; gap: 6px; }
+
+.partOption {
+  border: 1px solid var(--border-color);
+  padding: 8px 10px;
+  cursor: pointer;
+  transition: var(--transition);
+  background: transparent;
+  text-align: left;
+  width: 100%;
+  font-family: var(--font-mono);
+}
+
+.partOption:hover              { border-color: var(--accent-color); }
+.partOptionSelected            { border-color: var(--accent-color); background: var(--bg-elevated); box-shadow: 0 0 8px var(--accent-glow); }
+.partOptionName                { font-size: 12px; color: var(--text-color); margin-bottom: 2px; }
+.partOptionTraits              { font-size: 10px; color: var(--text-muted); }
+
+.detailName   { font-size: 14px; color: var(--accent-color); }
+.detailTraits { font-size: 11px; color: var(--text-muted); text-align: center; }
+
+.creatorFooter {
+  border-top: 1px solid var(--border-color);
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.confirmBtn {
+  padding: 10px 32px;
+  border: 1px solid var(--accent-color);
+  background: transparent;
+  color: var(--accent-color);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  cursor: pointer;
+  transition: var(--transition);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.confirmBtn:hover { background: var(--accent-glow); box-shadow: 0 0 16px var(--accent-glow); }
+
+/* ── Mobile ──────────────────────────────────────────── */
+@media (max-width: 700px) {
+  .sidebar    { display: none; }
+  .creatorBody { grid-template-columns: 1fr; }
+  .creatorRight { display: none; }
+}
