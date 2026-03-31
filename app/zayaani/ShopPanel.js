@@ -2,7 +2,7 @@
 import styles from './zayaani.module.css';
 import { FURNITURE } from './asciiAssets';
 
-export default function ShopPanel({ credits, creditsPerSecond, activeJobs, ownedFurniture, onPurchase }) {
+export default function ShopPanel({ credits, creditsPerSecond, activeJobs, ownedFurniture, onPurchase, onReset }) {
   return (
     <div className={styles.sidebar}>
       {/* Credits display */}
@@ -49,6 +49,25 @@ export default function ShopPanel({ credits, creditsPerSecond, activeJobs, owned
             </button>
           );
         })}
+      </div>
+
+      {/* Reset */}
+      <div style={{ padding: '14px', marginTop: 'auto' }}>
+        <button
+          onClick={onReset}
+          style={{
+            background: 'transparent',
+            border: 'none',
+            color: 'var(--text-muted)',
+            fontSize: '10px',
+            cursor: 'pointer',
+            fontFamily: 'var(--font-mono)',
+            textDecoration: 'underline',
+            padding: 0,
+          }}
+        >
+          reset game
+        </button>
       </div>
     </div>
   );

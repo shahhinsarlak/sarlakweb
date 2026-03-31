@@ -47,9 +47,7 @@ export default function ZayaaniRoom({ character, ownedFurniture, credits, credit
 
       <div style={{ position: 'relative', display: 'inline-block' }}>
         {/* Room walls */}
-        <pre className={styles.ascii} style={{ opacity: 0.45 }}>
-          {BASE_ROOM}
-        </pre>
+        <pre className={styles.ascii} style={{ opacity: 0.45 }}>{BASE_ROOM}</pre>
 
         {/* Furniture overlays */}
         {ownedFurniture.map(id => {
@@ -61,9 +59,7 @@ export default function ZayaaniRoom({ character, ownedFurniture, credits, credit
               key={id}
               className={styles.ascii}
               style={{ position: 'absolute', fontSize: '11px', margin: 0, ...pos }}
-            >
-              {item.ascii}
-            </pre>
+            >{item.ascii}</pre>
           );
         })}
 
@@ -72,15 +68,13 @@ export default function ZayaaniRoom({ character, ownedFurniture, credits, credit
           className={`${styles.ascii} ${styles.asciiAccent}`}
           style={{
             position: 'absolute',
-            bottom: '52px',
+            bottom: '20px',
             left: '50%',
             transform: `translateX(-50%) translateY(${sway ? '-3px' : '0px'})`,
             transition: 'transform 0.6s ease-in-out',
             margin: 0,
           }}
-        >
-          {characterArt}
-        </pre>
+        >{characterArt}</pre>
       </div>
     </div>
   );

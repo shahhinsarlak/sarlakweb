@@ -67,6 +67,10 @@ function reducer(state, action) {
     case 'DECLINE_JOB':
       return { ...state, pendingJobOffer: null };
 
+    case 'RESET_GAME':
+      try { localStorage.removeItem(SAVE_KEY); } catch {}
+      return { ...INITIAL_STATE, stats: { ...INITIAL_STATE.stats, sessionStart: Date.now() } };
+
     default:
       return state;
   }

@@ -14,6 +14,7 @@ export default function ZayaaniGame() {
   const handlePurchase   = (item)      => dispatch({ type: 'PURCHASE_FURNITURE', item });
   const handleAcceptJob  = ()          => dispatch({ type: 'ACCEPT_JOB' });
   const handleDeclineJob = ()          => dispatch({ type: 'DECLINE_JOB' });
+  const handleReset      = ()          => { if (window.confirm('Reset all progress? This cannot be undone.')) dispatch({ type: 'RESET_GAME' }); };
 
   if (state.phase === 'creation') {
     return (
@@ -34,6 +35,7 @@ export default function ZayaaniGame() {
           activeJobs={state.activeJobs}
           ownedFurniture={state.ownedFurniture}
           onPurchase={handlePurchase}
+          onReset={handleReset}
         />
         <ZayaaniRoom
           character={state.character}
