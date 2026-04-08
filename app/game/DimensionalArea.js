@@ -7,10 +7,6 @@ import {
 } from './dimensionalConstants';
 import { getModifiedCapacity, getActiveSkillEffects, applySkillsToMaterialCollection } from './skillSystemHelpers';
 import { XP_REWARDS } from './skillTreeConstants';
-import { TEAR_CONFIG } from './lootConstants';
-import { generateLootItem } from './lootGenerationHelpers';
-import CrystalOpeningModal from './CrystalOpeningModal';
-import { discoverEquipmentFromLoot } from './journalHelpers';
 import NotificationPopup from './NotificationPopup';
 
 
@@ -18,8 +14,6 @@ export default function DimensionalArea({ gameState, setGameState, onExit, grant
   const [collectedNodes, setCollectedNodes] = useState([]);
   const [currentInventory, setCurrentInventory] = useState({});
   const [hoveredNode, setHoveredNode] = useState(null);
-  const [showCrystalModal, setShowCrystalModal] = useState(false);
-  const [currentLootItem, setCurrentLootItem] = useState(null);
   const [tearCollected, setTearCollected] = useState(false);
   const [glitchOverlays, setGlitchOverlays] = useState([]);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
@@ -45,6 +39,12 @@ export default function DimensionalArea({ gameState, setGameState, onExit, grant
   // Check if armory is unlocked (bottom drawer opened)
   const armoryUnlocked = gameState.unlockedLocations?.includes('armory') || false;
 
+  // Tear visual config (inline - loot system removed)
+  const TEAR_GLOW_COLORS = ['#9b59b6', '#e74c3c', '#3498db', '#2ecc71'];
+  const TEAR_MIN_SIZE = 3;
+  const TEAR_MAX_SIZE = 5;
+  const TEAR_SPAWN_CHANCE = 0.4;
+
   // Generate dimensional tear (if armory unlocked and random chance)
   const dimensionalTear = useMemo(() => {
     if (!armoryUnlocked) return null;
@@ -53,21 +53,21 @@ export default function DimensionalArea({ gameState, setGameState, onExit, grant
     const forceTearSpawn = gameState.debugForceTearSpawn || false;
 
     const spawnRoll = Math.random();
-    if (!forceTearSpawn && spawnRoll > TEAR_CONFIG.spawnChance) return null;
+    if (!forceTearSpawn && spawnRoll > TEAR_SPAWN_CHANCE) return null;
 
     // Random position in the text
     const position = Math.floor(Math.random() * (encryptedText.length - 1000)) + 500;
 
     // Random visual properties
-    const colorIndex = Math.floor(Math.random() * TEAR_CONFIG.glowColors.length);
+    const colorIndex = Math.floor(Math.random() * TEAR_GLOW_COLORS.length);
     const size = Math.floor(
-      Math.random() * (TEAR_CONFIG.maxSize - TEAR_CONFIG.minSize + 1)
-    ) + TEAR_CONFIG.minSize;
+      Math.random() * (TEAR_MAX_SIZE - TEAR_MIN_SIZE + 1)
+    ) + TEAR_MIN_SIZE;
 
     return {
       id: 'tear_' + Date.now(),
       position,
-      color: TEAR_CONFIG.glowColors[colorIndex],
+      color: TEAR_GLOW_COLORS[colorIndex],
       size
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -161,60 +161,16 @@ export default function DimensionalArea({ gameState, setGameState, onExit, grant
   };
 
   /**
-   * Handle tear click - generate loot and show crystal opening modal
+   * Handle tear click - collect the material node and grant XP
    */
   const handleTearClick = () => {
     if (tearCollected) return;
 
-    // Generate random loot item at player's current level
-    const lootItem = generateLootItem(null, gameState.playerLevel || 1);
-    if (!lootItem) return;
-
-    setCurrentLootItem(lootItem);
-    setShowCrystalModal(true);
     setTearCollected(true);
 
     // Grant XP for finding a tear
     if (grantXP) {
       grantXP(50); // Base XP for finding tear
-    }
-  };
-
-  /**
-   * Handle loot item claim - add to inventory
-   */
-  const handleLootClaim = (lootItem) => {
-    setGameState(prev => {
-      const newLootInventory = [...(prev.lootInventory || []), lootItem];
-
-      // Track equipment discovery for journal
-      const equipmentDiscoveries = discoverEquipmentFromLoot(prev, lootItem);
-
-      return {
-        ...prev,
-        lootInventory: newLootInventory,
-        discoveredBaseWeapons: equipmentDiscoveries.weapons,
-        discoveredBaseArmor: equipmentDiscoveries.armor,
-        discoveredBaseAnomalies: equipmentDiscoveries.anomalies,
-        recentMessages: [
-          `Found: ${lootItem.displayName} [${lootItem.rarity.name}]`,
-          ...prev.recentMessages
-        ].slice(0, prev.maxLogMessages || 15)
-      };
-    });
-
-    // Grant XP based on rarity
-    const rarityXP = {
-      common: 25,
-      uncommon: 50,
-      rare: 100,
-      epic: 200,
-      legendary: 400,
-      mythic: 1000
-    };
-
-    if (grantXP) {
-      grantXP(rarityXP[lootItem.rarity.id] || 25);
     }
   };
 
@@ -732,17 +688,6 @@ export default function DimensionalArea({ gameState, setGameState, onExit, grant
         })}
       </div>
     </div>
-
-    {/* Crystal Opening Modal */}
-    {showCrystalModal && currentLootItem && (
-      <CrystalOpeningModal
-        lootItem={currentLootItem}
-        onComplete={handleLootClaim}
-        onClose={() => setShowCrystalModal(false)}
-        notifications={notifications}
-        onDismissNotification={onDismissNotification}
-      />
-    )}
 
     {/* Notification Popup System */}
     <NotificationPopup
