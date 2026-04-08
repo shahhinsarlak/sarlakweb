@@ -613,12 +613,6 @@ export default function DebugPanel({ gameState, setGameState, addMessage, onClos
             ARCHIVE
           </button>
           <button onClick={() => {
-            setGameState(prev => ({ ...prev, unlockedLocations: [...new Set([...prev.unlockedLocations, 'armory'])] }));
-            addMessage('The Armory unlocked');
-          }} style={buttonStyle}>
-            ARMORY
-          </button>
-          <button onClick={() => {
             setGameState(prev => ({ ...prev, debugMode: true }));
             addMessage('Debug mode enabled');
           }} style={buttonStyle}>

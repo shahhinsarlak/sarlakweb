@@ -390,8 +390,6 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
           return { ...prev, inDimensionalArea: true, discoveredLocations };
         } else if (loc === 'printerroom') {
           return { ...prev, inPrinterRoom: true, discoveredLocations };
-        } else if (loc === 'armory') {
-          return { ...prev, inArmory: true, discoveredLocations };
         }
       }
 
