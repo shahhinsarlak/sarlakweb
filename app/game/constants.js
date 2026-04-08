@@ -90,25 +90,6 @@ export const INITIAL_GAME_STATE = {
   shownHelpPopups: [], // Array of popup IDs that have been shown
   currentHelpPopup: null, // Current popup to display (object with id, title, content)
   meditationUnlocked: false, // Meditation button only appears after reaching 25% sanity
-  // Equipment System
-  equippedWeapon: 'stapler_shiv', // Default starting weapon (legacy system)
-  equippedArmor: {
-    head: 'standard_headset',
-    chest: 'dress_shirt',
-    accessory: 'id_badge'
-  },
-  equippedAnomalies: [], // Can equip up to 3
-  inArmory: false,
-  // Loot System (Added 2025-10-23)
-  // Stores randomly generated items from dimensional tears
-  lootInventory: [], // Array of generated loot items with random stats
-  equippedLootWeapon: null, // ID of equipped loot weapon
-  equippedLootArmor: {
-    head: null,
-    chest: null,
-    accessory: null
-  },
-  equippedLootAnomalies: [], // Array of equipped loot anomaly IDs (max 3)
   // Mystery & Path System (Added 2025-11-05)
   // Tracks player's investigation progress and narrative path choices
   mysteryProgress: 0, // 0-100 tracking how much truth player has uncovered
@@ -127,11 +108,8 @@ export const INITIAL_GAME_STATE = {
   // Journal System (Added 2025-10-31, Revised 2025-11-01)
   // Tracks discoveries for the player's journal
   journalOpen: false,              // Is journal UI visible
-  journalTab: 'locations',         // Current tab: locations, equipment, mechanics
+  journalTab: 'locations',         // Current tab: locations, mechanics
   discoveredLocations: ['cubicle'], // Location IDs that have been visited
-  discoveredBaseWeapons: ['stapler_shiv'], // Base weapon types found (starts with default weapon)
-  discoveredBaseArmor: ['standard_headset', 'dress_shirt', 'id_badge'], // Base armor types found (starts with default armor)
-  discoveredBaseAnomalies: [],     // Base anomaly types found
   discoveredMechanics: [],         // Mechanic IDs learned from help popups
   // Notification System (Added 2025-11-20)
   // Displays temporary popups in top-left corner
@@ -571,16 +549,6 @@ export const DIMENSIONAL_UPGRADES = [
     desc: 'Harness the void itself. +50 PP/sec. Unlock The Void.' 
   },
 
-  // Weapons - Obtained through dimensional tears
-  {
-    id: 'drawer_key',
-    name: 'Bottom Drawer Key',
-    materials: { void_fragment: 10, static_crystal: 5 },
-    effect: 'unlock',
-    value: 'armory',
-    desc: 'You find a key in your pocket. It was always there. The Armory awaits.'
-  },
-
   // Research
   { 
     id: 'temporal_rewind', 
@@ -615,100 +583,6 @@ export const DIMENSIONAL_UPGRADES = [
     desc: 'See between the lines. Messages reveal themselves.' 
   },
   
-  // Armory Equipment Unlocks — Weapons
-  {
-    id: 'shard_weapon',
-    name: 'Shard Blade Schematic',
-    materials: { void_fragment: 20, glitch_shard: 10 },
-    effect: 'unlock',
-    value: 'shard_weapon',
-    desc: 'Forge the Glitch Shard Blade. Reality bleeds where this blade passes.'
-  },
-  {
-    id: 'void_cleaver_craft',
-    name: 'Void Cleaver Forge',
-    materials: { void_fragment: 30, dimensional_essence: 1 },
-    effect: 'unlock',
-    value: 'void_cleaver_craft',
-    desc: 'Carve a weapon from pure absence. Targets cease to have been.'
-  },
-  {
-    id: 'temporal_blade_craft',
-    name: 'Temporal Blade Schematic',
-    materials: { temporal_core: 5, void_fragment: 20 },
-    effect: 'unlock',
-    value: 'temporal_blade_craft',
-    desc: 'Forge a blade that exists in multiple timelines simultaneously.'
-  },
-  {
-    id: 'reality_weapon_craft',
-    name: 'Reality Render Schematic',
-    materials: { singularity_node: 1, dimensional_essence: 2 },
-    effect: 'unlock',
-    value: 'reality_weapon_craft',
-    desc: 'The office\'s final secret. It doesn\'t destroy — it removes from narrative.'
-  },
-
-  // Armory Equipment Unlocks — Armor
-  {
-    id: 'crystal_armor_craft',
-    name: 'Crystalline Suit Weave',
-    materials: { static_crystal: 20, glitch_shard: 15 },
-    effect: 'unlock',
-    value: 'crystal_armor_craft',
-    desc: 'Weave armor from static crystals. Reality bends around you.'
-  },
-  {
-    id: 'void_visor_craft',
-    name: 'Void Visor Lens',
-    materials: { void_fragment: 15, reality_dust: 5 },
-    effect: 'unlock',
-    value: 'void_visor_craft',
-    desc: 'See through the veil between realities. The truth is worse than you imagined.'
-  },
-  {
-    id: 'temporal_accessory_craft',
-    name: 'Temporal Watch Assembly',
-    materials: { temporal_core: 3, reality_dust: 8 },
-    effect: 'unlock',
-    value: 'temporal_accessory_craft',
-    desc: 'Assemble a watch that bends time. Hours compress into minutes.'
-  },
-
-  // Armory Equipment Unlocks — Anomalies
-  {
-    id: 'forgotten_memo_find',
-    name: 'Retrieve Forgotten Memo',
-    materials: { void_fragment: 15, reality_dust: 5 },
-    effect: 'unlock',
-    value: 'forgotten_memo_find',
-    desc: 'Retrieve the memo from the archive\'s deepest drawer. Knowledge seeps in.'
-  },
-  {
-    id: 'glitched_keycard_find',
-    name: 'Recover Glitched Keycard',
-    materials: { glitch_shard: 20, static_crystal: 10 },
-    effect: 'unlock',
-    value: 'glitched_keycard_find',
-    desc: 'Recover a keycard phasing between dimensions. Opens doors that don\'t exist.'
-  },
-  {
-    id: 'void_shard_collect',
-    name: 'Collect Void Shard',
-    materials: { void_fragment: 40 },
-    effect: 'unlock',
-    value: 'void_shard_collect',
-    desc: 'Extract a shard of pure nothing. It weighs impossibly heavy.'
-  },
-  {
-    id: 'singularity_core_extract',
-    name: 'Extract Singularity Core',
-    materials: { singularity_node: 1, dimensional_essence: 1 },
-    effect: 'unlock',
-    value: 'singularity_core_extract',
-    desc: 'Extract a fragment of the office\'s heart. It consumes everything.'
-  },
-
   // Endgame
   {
     id: 'singularity_collapse',
@@ -717,6 +591,26 @@ export const DIMENSIONAL_UPGRADES = [
     effect: 'unlock',
     value: 'ending',
     desc: 'ESCAPE. TRANSCEND. ASCEND. LEAVE.'
+  },
+
+  // Breakthrough
+  {
+    id: 'tear_the_veil',
+    name: 'Tear the Veil',
+    ppCost: 5000000,
+    materials: {
+      void_fragment: 10,
+      static_crystal: 5,
+      glitch_shard: 3,
+      reality_dust: 2,
+      temporal_core: 1,
+      dimensional_essence: 1,
+      singularity_node: 1
+    },
+    effect: 'breakthrough',
+    value: 'survival',
+    requiresUpgrade: 'singularity_collapse',
+    desc: 'There is something beyond this office. Beyond this reality. You can feel it pulling.'
   }
 ];
 
@@ -865,7 +759,6 @@ export const ACHIEVEMENTS = [
   { id: 'essence_collector', name: 'Essence Collector', desc: 'Collect Dimensional Essence', check: (state) => (state.dimensionalInventory?.dimensional_essence || 0) > 0 },
   { id: 'singularity_hunter', name: 'Singularity Hunter', desc: 'Find a Singularity Node', check: (state) => (state.dimensionalInventory?.singularity_node || 0) > 0 },
   { id: 'first_dimensional_upgrade', name: 'Dimensional Crafter', desc: 'Purchase first dimensional upgrade', check: (state) => Object.keys(state.dimensionalUpgrades || {}).length > 0 },
-  { id: 'arsenal', name: 'Arsenal', desc: 'Unlock The Armory', check: (state) => state.unlockedLocations.includes('armory') },
   { id: 'reality_hacker', name: 'Reality Hacker', desc: 'Unlock all portal upgrades', check: (state) => state.dimensionalUpgrades?.dimensional_anchor && state.dimensionalUpgrades?.reality_stabilizer && state.dimensionalUpgrades?.temporal_accelerator, reward: { type: 'portalCooldownReduction', value: 0.08 } },
   { id: 'enlightened', name: 'Enlightened', desc: 'Unlock Void Sight', check: (state) => state.dimensionalUpgrades?.void_sight, reward: { type: 'ppMultiplier', value: 0.10 } },
   { id: 'time_lord', name: 'Time Lord', desc: 'Use Temporal Rewind', check: (state) => state.timeRewindUsed },
@@ -1452,10 +1345,8 @@ export const HELP_TRIGGERS = {
   },
   debug: (state, prevState) => state.debugMode && (!prevState || !prevState.debugMode),
   dimensionalTear: (state, prevState) => {
-    // Check for new loot items
-    const currentLootCount = state.lootInventory?.length || 0;
-    const prevLootCount = prevState?.lootInventory?.length || 0;
-    return currentLootCount > prevLootCount;
+    // Check for dimensional tear discovery via portal unlock
+    return state.portalUnlocked && (!prevState || !prevState.portalUnlocked);
   },
   firstAutomation: (state, prevState) =>
     state.upgrades?.robotic_assistant && (!prevState || !prevState.upgrades?.robotic_assistant),
@@ -1766,25 +1657,17 @@ The bugs are features. The features are bugs.`
   },
   dimensionalTear: {
     id: 'dimensionalTear',
-    title: 'Dimensional Tears & Loot',
+    title: 'Dimensional Tears',
     category: 'Advanced Mechanics',
-    summary: 'Rifts containing powerful equipment.',
+    summary: 'Rifts containing dimensional materials.',
     details: `Tears spawn randomly during your work (chance-based).
 
-Clicking a tear generates RANDOMIZED LOOT:
-• Weapons
-• Armor (head/chest/accessory)
-• Anomalies (special effects)
+Clicking a tear generates dimensional materials that can be crafted into upgrades at the portal shop.
 
 RARITY TIERS:
 Common → Uncommon → Rare → Epic → Legendary → Mythic
 
-Higher rarities have:
-• Better stat ranges
-• More imbuement effects
-• Stronger bonuses
-
-Loot is stored in inventory and can be equipped in the Armory.`
+Higher rarities yield rarer materials.`
   },
   archive: {
     id: 'archive',
