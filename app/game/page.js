@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import MeditationModal from './MeditationModal';
@@ -11,7 +12,6 @@ import DimensionalUpgradesDisplay from './DimensionalUpgradesDisplay';
 import VoidContractsDisplay from './VoidContractsDisplay';
 import SkillTreeModal from './SkillTreeModal';
 import PrinterRoom from './PrinterRoom';
-import Armory from './Armory';
 import FileDrawer from './FileDrawer';
 import HelpPopup from './HelpPopup';
 import AchievementsModal from './AchievementsModal';
@@ -31,9 +31,6 @@ import { getDistortionStyle, distortText, getClockTime, createLevelUpParticles, 
 import { saveGame, loadGame, exportToClipboard, importFromClipboard } from './saveSystem';
 import { addExperience, purchaseSkill, getActiveSkillEffects, getModifiedPortalCooldown, getModifiedCapacity, applyPPMultiplier, applyPPSMultiplier, getMaxSanity, getPrestigePathBonus } from './skillSystemHelpers';
 import { SKILLS, LEVEL_SYSTEM, XP_REWARDS } from './skillTreeConstants';
-import { WEAPONS, ARMOR, ANOMALIES } from './equipmentConstants';
-import { calculateFinalStats, rollPrefix, rollImbuements } from './lootGenerationHelpers';
-import { BASE_LOOT_ITEMS } from './lootConstants';
 import { DIMENSIONAL_MATERIALS } from './dimensionalConstants';
 import { getSanityTierDisplay, isSanityDrainPaused, calculatePaperQuality, applySanityPPModifier, getActiveBuffPPMultiplier, getActiveBuffXPMultiplier, getActiveBuffEnergyCostMultiplier, getActiveBuffPPPerSecondMultiplier } from './sanityPaperHelpers';
 import {
@@ -55,7 +52,9 @@ import {
 const PORTAL_UNLOCK_ENTRIES = ['glitched', 'maintenance', 'encrypted_lights'];
 
 export default function Game() {
+  const router = useRouter();
   const [isMobile, setIsMobile] = useState(false);
+  const [veilTransition, setVeilTransition] = useState(false);
   const [gameState, setGameState] = useState(INITIAL_GAME_STATE);
   const [showSaveMenu, setShowSaveMenu] = useState(false);
   const [showDebugPanel, setShowDebugPanel] = useState(false);
@@ -293,11 +292,11 @@ export default function Game() {
         return prev;
       }
 
-      const canAfford = Object.entries(upgrade.materials).every(([materialId, required]) => {
-        return (prev.dimensionalInventory?.[materialId] || 0) >= required;
-      });
-
-      if (!canAfford || prev.dimensionalUpgrades?.[upgrade.id]) return prev;
+      const materialAfford = Object.entries(upgrade.materials).every(
+        ([id, req]) => (prev.dimensionalInventory?.[id] || 0) >= req
+      );
+      const ppAfford = !upgrade.ppCost || (prev.pp || 0) >= upgrade.ppCost;
+      if (!materialAfford || !ppAfford || prev.dimensionalUpgrades?.[upgrade.id]) return prev;
 
       const newInventory = { ...prev.dimensionalInventory };
       Object.entries(upgrade.materials).forEach(([materialId, required]) => {
@@ -313,71 +312,9 @@ export default function Game() {
 
       if (upgrade.effect === 'ppPerSecond') {
         newState.ppPerSecond = (prev.ppPerSecond || 0) + upgrade.value;
-      } else if (upgrade.effect === 'unlock') {
-        if (upgrade.value === 'armory') {
-          newState.unlockedLocations = [...new Set([...prev.unlockedLocations, 'armory'])];
-          newState.recentMessages = ['The bottom drawer opens. Impossibly deep. An arsenal awaits.', 'NEW LOCATION: The Armory', ...prev.recentMessages].slice(0, prev.maxLogMessages || 15);
-        } else {
-          // Check if this unlock corresponds to equipment crafting
-          const allEquipment = [
-            ...Object.values(WEAPONS).map(w => ({ ...w, type: 'weapon' })),
-            ...Object.values(ARMOR).map(a => ({ ...a, type: 'armor' })),
-            ...Object.values(ANOMALIES).map(a => ({ ...a, type: 'anomaly' }))
-          ];
-          const matchedEquipment = allEquipment.find(eq => eq.dimensionalUpgrade === upgrade.id);
-
-          if (matchedEquipment) {
-            const baseLootItems = matchedEquipment.type === 'weapon' ? BASE_LOOT_ITEMS.weapons
-              : matchedEquipment.type === 'armor' ? BASE_LOOT_ITEMS.armor
-              : BASE_LOOT_ITEMS.anomalies;
-            const baseItem = baseLootItems.find(b => b.id === matchedEquipment.id);
-
-            if (baseItem) {
-              const rarity = matchedEquipment.rarity;
-              const prefix = rollPrefix();
-              const imbuements = rollImbuements(rarity);
-              const levelScaling = 1 + (((prev.playerLevel || 1) - 1) * 0.25);
-              const finalStats = calculateFinalStats(baseItem, rarity, prefix, imbuements, levelScaling);
-              const itemId = `${baseItem.id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-              let displayName = baseItem.name;
-              if (prefix && prefix.name) {
-                displayName = `${prefix.name} ${displayName}`;
-              }
-
-              const craftedItem = {
-                id: itemId,
-                baseItemId: baseItem.id,
-                type: baseItem.type,
-                slot: baseItem.slot,
-                displayName,
-                baseName: baseItem.name,
-                rarity,
-                prefix,
-                imbuements,
-                finalStats,
-                ascii: baseItem.ascii,
-                lore: baseItem.lore,
-                isEquipped: false,
-                generatedAt: Date.now(),
-                itemLevel: prev.playerLevel || 1,
-                levelScaling
-              };
-
-              newState.lootInventory = [...(prev.lootInventory || []), craftedItem];
-              newState.recentMessages = [
-                `Crafted: ${displayName} (${rarity.name}). Available in the Armory.`,
-                ...prev.recentMessages
-              ].slice(0, prev.maxLogMessages || 15);
-            }
-          }
-        }
-      } else if (upgrade.effect === 'equipment') {
-        // Equipment is unlocked via dimensional upgrades, message added
-        newState.recentMessages = [`Crafted: ${upgrade.name}. Available in the Armory.`, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15);
+      } else if (upgrade.effect === 'breakthrough') {
+        // Handled outside setGameState — see below
       } else if (upgrade.effect === 'portalCooldown' || upgrade.effect === 'portalRespawn') {
-        // Cap current portal cooldown to new maximum if it's higher
-        // Handles both dimensional_anchor (portalCooldown) and temporal_accelerator (portalRespawn)
         const newMaxCooldown = getModifiedPortalCooldown(60, newState);
         if (prev.portalCooldown > newMaxCooldown) {
           newState.portalCooldown = newMaxCooldown;
@@ -385,10 +322,21 @@ export default function Game() {
         }
       }
 
+      if (upgrade.ppCost) {
+        newState.pp = (prev.pp || 0) - upgrade.ppCost;
+      }
+
       grantXP(XP_REWARDS.purchaseDimensionalUpgrade);
       setTimeout(() => checkAchievements(), 50);
       return newState;
     });
+
+    if (upgrade.effect === 'breakthrough') {
+      setVeilTransition(true);
+      setTimeout(() => {
+        router.push('/survival');
+      }, 3500);
+    }
   };
 
   const getPrinterUpgradeTooltip = (upgrade) => {
@@ -422,7 +370,6 @@ export default function Game() {
       const unlockMap = {
         'debug': 'Unlocks Debug challenges',
         'archive': 'Unlocks The Archive',
-        'armory': 'Unlocks The Armory',
         'converter': 'Unlocks Material Converter',
         'imbuing': 'Unlocks Weapon Imbuing',
         'lore': 'Unlocks Dimensional Codex',
@@ -1033,18 +980,6 @@ export default function Game() {
     );
   }
 
-  if (gameState.inArmory) {
-    return (
-      <Armory
-        gameState={gameState}
-        setGameState={setGameState}
-        onExit={() => setGameState(prev => ({ ...prev, inArmory: false }))}
-        notifications={gameState.notifications}
-        onDismissNotification={dismissNotification}
-      />
-    );
-  }
-
   if (gameState.fileDrawerOpen) {
     return (
       <FileDrawer
@@ -1114,6 +1049,44 @@ export default function Game() {
 
   return (
     <>
+      {veilTransition && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: '#000',
+          zIndex: 9999,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexDirection: 'column',
+          animation: 'veilFadeIn 0.8s ease forwards'
+        }}>
+          <style>{`
+            @keyframes veilFadeIn {
+              from { opacity: 0; }
+              to { opacity: 1; }
+            }
+            @keyframes veilTextReveal {
+              from { opacity: 0; transform: translateY(10px); }
+              to { opacity: 1; transform: translateY(0); }
+            }
+          `}</style>
+          <p style={{
+            color: '#e0e0e0',
+            fontFamily: "'SF Mono', Monaco, monospace",
+            fontSize: '16px',
+            lineHeight: '2.2',
+            textAlign: 'center',
+            maxWidth: '400px',
+            animation: 'veilTextReveal 1.2s ease 0.6s both'
+          }}>
+            The fluorescent lights flicker.<br />
+            Then go out.<br />
+            For the first time in years, you feel wind.<br />
+            You don&apos;t look back.
+          </p>
+        </div>
+      )}
       <div className="game-header-wrapper">
         <Header />
       </div>
