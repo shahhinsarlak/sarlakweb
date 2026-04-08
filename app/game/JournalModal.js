@@ -14,7 +14,6 @@
 
 import { useEffect } from 'react';
 import { JOURNAL_ENTRIES, LOCATIONS, MECHANICS_ENTRIES } from './constants';
-import { WEAPONS, ARMOR, ANOMALIES } from './equipmentConstants';
 import NotificationPopup from './NotificationPopup';
 
 export default function JournalModal({ gameState, onClose, onSwitchTab, notifications, onDismissNotification }) {
@@ -34,11 +33,6 @@ export default function JournalModal({ gameState, onClose, onSwitchTab, notifica
 
   // Get all location IDs
   const allLocationIds = Object.keys(LOCATIONS);
-
-  // Get all equipment IDs
-  const allWeaponIds = Object.keys(WEAPONS);
-  const allArmorIds = Object.keys(ARMOR);
-  const allAnomalyIds = Object.keys(ANOMALIES);
 
   // Render location tab
   const renderLocationsTab = () => {
@@ -183,201 +177,6 @@ export default function JournalModal({ gameState, onClose, onSwitchTab, notifica
     );
   };
 
-  // Render equipment tab
-  const renderEquipmentTab = () => {
-    const discoveredWeapons = gameState.discoveredBaseWeapons || [];
-    const discoveredArmor = gameState.discoveredBaseArmor || [];
-    const discoveredAnomalies = gameState.discoveredBaseAnomalies || [];
-
-    // Categorize armor by slot
-    const armorBySlot = {
-      head: allArmorIds.filter(id => ARMOR[id].slot === 'head'),
-      chest: allArmorIds.filter(id => ARMOR[id].slot === 'chest'),
-      accessory: allArmorIds.filter(id => ARMOR[id].slot === 'accessory')
-    };
-
-    const renderEquipmentItem = (equipmentId, equipmentData, isDiscovered, category) => {
-      const entry = JOURNAL_ENTRIES.equipment[equipmentId];
-
-      // Check if equipped
-      let isEquipped = false;
-      if (category === 'weapon') {
-        isEquipped = gameState.equippedWeapon === equipmentId;
-      } else if (category === 'armor') {
-        isEquipped = Object.values(gameState.equippedArmor || {}).includes(equipmentId);
-      } else if (category === 'anomaly') {
-        isEquipped = (gameState.equippedAnomalies || []).includes(equipmentId);
-      }
-
-      if (!isDiscovered) {
-        return (
-          <div
-            key={equipmentId}
-            style={{
-              marginBottom: '15px',
-              padding: '12px',
-              border: '1px dashed var(--border-color)',
-              opacity: 0.3
-            }}
-          >
-            <div style={{ fontSize: '13px', fontWeight: 'bold' }}>??? UNKNOWN</div>
-            <div style={{ fontSize: '11px', marginTop: '5px', fontStyle: 'italic' }}>
-              Not yet discovered
-            </div>
-          </div>
-        );
-      }
-
-      const rarityColor = equipmentData.rarity?.color || '#888888';
-
-      return (
-        <div
-          key={equipmentId}
-          style={{
-            marginBottom: '15px',
-            padding: '12px',
-            border: `1px solid ${rarityColor}`,
-            backgroundColor: isEquipped ? 'rgba(255, 255, 255, 0.05)' : 'transparent',
-            boxShadow: isEquipped ? `0 0 10px ${rarityColor}40` : 'none'
-          }}
-        >
-          {/* Name and rarity */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-            <div style={{ fontSize: '13px', fontWeight: 'bold', color: rarityColor }}>
-              {equipmentData.name}
-              {isEquipped && <span style={{ marginLeft: '8px', fontSize: '11px' }}>[EQUIPPED]</span>}
-            </div>
-            <div style={{ fontSize: '10px', opacity: 0.7 }}>
-              {equipmentData.rarity?.name}
-            </div>
-          </div>
-
-          {/* Category */}
-          <div style={{ fontSize: '11px', opacity: 0.7, fontStyle: 'italic', marginBottom: '8px' }}>
-            {entry?.category}
-          </div>
-
-          {/* ASCII art */}
-          {equipmentData.ascii && (
-            <pre style={{
-              fontSize: '9px',
-              margin: '8px 0',
-              padding: '8px',
-              backgroundColor: 'rgba(0, 0, 0, 0.2)',
-              border: '1px solid var(--border-color)',
-              overflow: 'hidden'
-            }}>
-              {equipmentData.ascii}
-            </pre>
-          )}
-
-          {/* Stats */}
-          <div style={{ fontSize: '11px', marginBottom: '8px' }}>
-            {equipmentData.damage && <div>[DAMAGE] Damage: {equipmentData.damage}</div>}
-            {equipmentData.defense !== undefined && equipmentData.defense > 0 && <div>[DEFENSE] Defense: {equipmentData.defense}</div>}
-            {equipmentData.critChance && <div>[CRIT] Crit Chance: {(equipmentData.critChance * 100).toFixed(0)}%</div>}
-            {equipmentData.effect && <div>[EFFECT] Effect: {equipmentData.effect.replace('_', ' ')}</div>}
-            {equipmentData.specialEffect && <div>[EFFECT] Special: {equipmentData.specialEffect.replace('_', ' ')}</div>}
-          </div>
-
-          {/* Lore */}
-          <div style={{ fontSize: '11px', lineHeight: '1.5', marginBottom: '8px', borderTop: '1px dotted var(--border-color)', paddingTop: '8px' }}>
-            {entry?.lore}
-          </div>
-
-          {/* Discovery note */}
-          <div style={{ fontSize: '10px', fontStyle: 'italic', opacity: 0.7 }}>
-            {entry?.discoveryNote}
-          </div>
-        </div>
-      );
-    };
-
-    return (
-      <div>
-        <h3 style={{ marginTop: 0, marginBottom: '15px', fontSize: '16px' }}>
-          DISCOVERED EQUIPMENT ({discoveredWeapons.length + discoveredArmor.length + discoveredAnomalies.length}/{allWeaponIds.length + allArmorIds.length + allAnomalyIds.length})
-        </h3>
-
-        {/* Weapons */}
-        <div style={{ marginBottom: '25px' }}>
-          <h4 style={{ fontSize: '14px', marginBottom: '12px', borderBottom: '1px solid var(--border-color)', paddingBottom: '5px' }}>
-            WEAPONS ({discoveredWeapons.length}/{allWeaponIds.length})
-          </h4>
-          {allWeaponIds.map(weaponId =>
-            renderEquipmentItem(
-              weaponId,
-              WEAPONS[weaponId],
-              discoveredWeapons.includes(weaponId),
-              'weapon'
-            )
-          )}
-        </div>
-
-        {/* Armor */}
-        <div style={{ marginBottom: '25px' }}>
-          <h4 style={{ fontSize: '14px', marginBottom: '12px', borderBottom: '1px solid var(--border-color)', paddingBottom: '5px' }}>
-            ARMOR ({discoveredArmor.length}/{allArmorIds.length})
-          </h4>
-
-          {/* Head armor */}
-          <div style={{ marginBottom: '15px' }}>
-            <div style={{ fontSize: '12px', fontWeight: 'bold', marginBottom: '8px', opacity: 0.8 }}>Head Slot</div>
-            {armorBySlot.head.map(armorId =>
-              renderEquipmentItem(
-                armorId,
-                ARMOR[armorId],
-                discoveredArmor.includes(armorId),
-                'armor'
-              )
-            )}
-          </div>
-
-          {/* Chest armor */}
-          <div style={{ marginBottom: '15px' }}>
-            <div style={{ fontSize: '12px', fontWeight: 'bold', marginBottom: '8px', opacity: 0.8 }}>Chest Slot</div>
-            {armorBySlot.chest.map(armorId =>
-              renderEquipmentItem(
-                armorId,
-                ARMOR[armorId],
-                discoveredArmor.includes(armorId),
-                'armor'
-              )
-            )}
-          </div>
-
-          {/* Accessory armor */}
-          <div style={{ marginBottom: '15px' }}>
-            <div style={{ fontSize: '12px', fontWeight: 'bold', marginBottom: '8px', opacity: 0.8 }}>Accessory Slot</div>
-            {armorBySlot.accessory.map(armorId =>
-              renderEquipmentItem(
-                armorId,
-                ARMOR[armorId],
-                discoveredArmor.includes(armorId),
-                'armor'
-              )
-            )}
-          </div>
-        </div>
-
-        {/* Anomalies */}
-        <div style={{ marginBottom: '25px' }}>
-          <h4 style={{ fontSize: '14px', marginBottom: '12px', borderBottom: '1px solid var(--border-color)', paddingBottom: '5px' }}>
-            ANOMALIES ({discoveredAnomalies.length}/{allAnomalyIds.length})
-          </h4>
-          {allAnomalyIds.map(anomalyId =>
-            renderEquipmentItem(
-              anomalyId,
-              ANOMALIES[anomalyId],
-              discoveredAnomalies.includes(anomalyId),
-              'anomaly'
-            )
-          )}
-        </div>
-      </div>
-    );
-  };
-
   return (
     <>
     <div
@@ -444,7 +243,6 @@ export default function JournalModal({ gameState, onClose, onSwitchTab, notifica
         }}>
           {[
             { id: 'locations', label: 'Locations' },
-            { id: 'equipment', label: 'Equipment' },
             { id: 'mechanics', label: 'Mechanics' }
           ].map(tab => (
             <button
@@ -476,7 +274,6 @@ export default function JournalModal({ gameState, onClose, onSwitchTab, notifica
           padding: '20px'
         }}>
           {currentTab === 'locations' && renderLocationsTab()}
-          {currentTab === 'equipment' && renderEquipmentTab()}
           {currentTab === 'mechanics' && renderMechanicsTab()}
         </div>
       </div>

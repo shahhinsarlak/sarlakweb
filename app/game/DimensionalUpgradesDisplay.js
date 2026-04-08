@@ -3,15 +3,12 @@ import { DIMENSIONAL_UPGRADES } from './constants';
 
 export default function DimensionalUpgradesDisplay({ gameState, onPurchase }) {
   const canAfford = (upgrade) => {
-    // Safety check: ensure materials exists and is an object
-    if (!upgrade.materials || typeof upgrade.materials !== 'object') {
-      console.warn(`[DIMENSIONAL_UPGRADES] Invalid materials for upgrade "${upgrade.id || upgrade.name}"`, upgrade);
-      return false;
-    }
-
-    return Object.entries(upgrade.materials).every(([materialId, required]) => {
-      return (gameState.dimensionalInventory?.[materialId] || 0) >= required;
-    });
+    if (!upgrade.materials || typeof upgrade.materials !== 'object') return false;
+    const materialsOk = Object.entries(upgrade.materials).every(
+      ([materialId, required]) => (gameState.dimensionalInventory?.[materialId] || 0) >= required
+    );
+    const ppOk = !upgrade.ppCost || (gameState.pp || 0) >= upgrade.ppCost;
+    return materialsOk && ppOk;
   };
 
   // Portal-specific upgrades that should be hidden until portal is unlocked
@@ -23,12 +20,9 @@ export default function DimensionalUpgradesDisplay({ gameState, onPurchase }) {
   ];
 
   const availableUpgrades = DIMENSIONAL_UPGRADES.filter(u => {
-    // Filter out already purchased upgrades
     if (gameState.dimensionalUpgrades?.[u.id]) return false;
-
-    // Hide portal upgrades until portal is unlocked
     if (portalUpgradeIds.includes(u.id) && !gameState.portalUnlocked) return false;
-
+    if (u.requiresUpgrade && !gameState.dimensionalUpgrades?.[u.requiresUpgrade]) return false;
     return true;
   });
 
@@ -74,7 +68,6 @@ export default function DimensionalUpgradesDisplay({ gameState, onPurchase }) {
                   const owned = gameState.dimensionalInventory?.[materialId] || 0;
                   const hasEnough = owned >= required;
 
-                  // Safety check: if material not found, skip rendering
                   if (!material) {
                     console.warn(`[DIMENSIONAL_UPGRADES] Material ID "${materialId}" not found in DIMENSIONAL_MATERIALS`);
                     return null;
@@ -97,6 +90,16 @@ export default function DimensionalUpgradesDisplay({ gameState, onPurchase }) {
                     </span>
                   );
                 })}
+                {upgrade.ppCost && (
+                  <span style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    color: (gameState.pp || 0) >= upgrade.ppCost ? 'var(--accent-color)' : '#ff6b6b'
+                  }}>
+                    PP: {Math.floor(gameState.pp || 0).toLocaleString()}/{upgrade.ppCost.toLocaleString()}
+                  </span>
+                )}
               </div>
             </button>
           );
