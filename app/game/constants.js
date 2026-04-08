@@ -444,16 +444,6 @@ export const LOCATIONS = {
     name: 'PRINTER ROOM',
     description: 'The machines hum in unison. Paper feeds endlessly.',
     isDirect: true // Goes straight to printer room
-  },
-  armory: {
-    name: 'THE ARMORY',
-    description: 'Bottom drawer revealed. Weapons that shouldn\'t exist. But they do.',
-    atmosphere: [
-      'Each weapon whispers its own madness.',
-      'The metal is cold. Impossibly cold.',
-      'You hear echoes of battles that haven\'t happened yet.'
-    ],
-    isDirect: true // Goes straight to armory
   }
 };
 
@@ -1304,15 +1294,11 @@ The bugs are not bugs. They are features of this reality.`,
   dimensionalTear: {
     id: 'dimensionalTear',
     title: 'DIMENSIONAL TEAR',
-    content: `A tear in reality has appeared!
+    content: `Dimensional tears appear in the portal space.
 
-These rare rifts contain powerful loot:
-• Weapons with random stats
-• Armor pieces
-• Anomalies
+Click a tear to collect the dimensional material inside.
 
-Tears contain powerful equipment.
-The void is generous to explorers.`,
+Materials are used to craft powerful dimensional upgrades. Rarer materials yield more powerful effects.`,
     category: 'mechanics'
   },
   firstAutomation: {
@@ -1344,9 +1330,10 @@ export const HELP_TRIGGERS = {
     return currentQuality < 50 && prevQuality >= 50;
   },
   debug: (state, prevState) => state.debugMode && (!prevState || !prevState.debugMode),
-  dimensionalTear: (state, prevState) => {
-    // Check for dimensional tear discovery via portal unlock
-    return state.portalUnlocked && (!prevState || !prevState.portalUnlocked);
+  dimensionalTear: (gameState, prevState) => {
+    const hasAny = Object.values(gameState.dimensionalInventory || {}).some(v => v > 0);
+    const hadNone = !Object.values(prevState?.dimensionalInventory || {}).some(v => v > 0);
+    return hasAny && hadNone;
   },
   firstAutomation: (state, prevState) =>
     state.upgrades?.robotic_assistant && (!prevState || !prevState.upgrades?.robotic_assistant),
@@ -1385,124 +1372,9 @@ export const JOURNAL_ENTRIES = {
       unlockHint: 'Purchase Printer Room Access upgrade',
       lore: 'The machines hum in perfect unison. Paper feeds endlessly from sources unknown. The ink is always fresh, always ready. Reality is malleable here. Words printed on paper can reshape truth itself.',
       notes: 'The printers never jam. They never stop. Never.'
-    },
-    armory: {
-      name: 'The Armory',
-      unlockHint: 'Discover what\'s hidden in your desk drawer',
-      lore: 'Your bottom desk drawer, revealed for what it truly is. Weapons forged from office supplies and existential dread. Armor woven from static and forgotten memos. Each piece whispers its own madness. The metal is impossibly cold.',
-      notes: 'You hear echoes of battles that haven\'t happened yet.'
     }
   },
 
-
-  // Equipment Lore (base types only, not loot instances)
-  equipment: {
-    // Weapons
-    stapler_shiv: {
-      name: 'Stapler Shiv',
-      category: 'Weapon',
-      lore: 'Your first weapon, improvised from office supplies. The stapler\'s spring provides just enough force. The metal edge, sharpened on the underside of your desk, gleams with possibility. A tool of productivity, repurposed for survival.',
-      discoveryNote: 'Found: In your desk drawer, beneath the TPS reports.'
-    },
-    shard_blade: {
-      name: 'Glitch Shard Blade',
-      category: 'Weapon',
-      lore: 'Forged from the broken edges of reality itself. Glitch shards, harvested from dimensional tears, bound together with static and determination. It cuts through matter and meaning alike. Reality bleeds where this blade passes.',
-      discoveryNote: 'Crafted: From dimensional materials. The void approves.'
-    },
-    void_cleaver: {
-      name: 'Void Cleaver',
-      category: 'Weapon',
-      lore: 'Carved from pure absence. A weapon that shouldn\'t exist, made from the spaces between things. Where it strikes, existence ceases retroactively. Targets don\'t die - they cease to have been. The void smiles through its edge.',
-      discoveryNote: 'Manifested: From the depths of the dimensional portal.'
-    },
-    temporal_edge: {
-      name: 'Temporal Edge',
-      category: 'Weapon',
-      lore: 'A blade that exists in multiple timelines simultaneously. Each swing creates branching realities where your enemy is already defeated. Time itself bends around this weapon. Your enemies fall before you strike.',
-      discoveryNote: 'Discovered: In a timeline that hasn\'t happened yet.'
-    },
-    reality_render: {
-      name: 'Reality Render',
-      category: 'Weapon',
-      lore: 'The office\'s final secret. The ultimate expression of corporate violence. It doesn\'t destroy - it removes. Targets are excised from the narrative of reality itself. They never were. They never will be. The office forgets them.',
-      discoveryNote: 'Acquired: Through means that can\'t be written down.'
-    },
-
-    // Armor - Head
-    standard_headset: {
-      name: 'Standard Headset',
-      category: 'Armor (Head)',
-      lore: 'Company-issued noise-cancelling headset. Blocks out the screaming. Both the screaming of colleagues and the screaming of reality as it tears. The cushions are worn from use. They remember every horror you\'ve heard.',
-      discoveryNote: 'Issued: On your first day. Or was it always there?'
-    },
-    void_visor: {
-      name: 'Void Visor',
-      category: 'Armor (Head)',
-      lore: 'See through the veil between realities. The lenses are made from crystallized void-stuff. Through them, you perceive the truth. The truth is worse than you imagined. The truth is better than ignorance.',
-      discoveryNote: 'Crafted: From dimensional void crystals.'
-    },
-
-    // Armor - Chest
-    dress_shirt: {
-      name: 'Dress Shirt',
-      category: 'Armor (Chest)',
-      lore: 'Business casual. The uniform of corporate servitude. Wrinkle-resistant fabric that never stains. The collar is always too tight. The buttons are all the same size. You\'ve worn this shirt every day. You\'ve never washed it.',
-      discoveryNote: 'Provided: Standard office dress code compliance.'
-    },
-    crystalline_suit: {
-      name: 'Crystalline Suit',
-      category: 'Armor (Chest)',
-      lore: 'Woven from static crystals harvested from dimensional tears. The fabric shifts and refracts light in impossible ways. Reality bends around you when you wear it. Attacks slide off like water on glass. Like truth on bureaucracy.',
-      discoveryNote: 'Assembled: From fragments of broken realities.'
-    },
-
-    // Armor - Accessory
-    id_badge: {
-      name: 'Employee ID Badge',
-      category: 'Armor (Accessory)',
-      lore: 'Your identity. Or someone\'s identity. The photo doesn\'t quite look like you. The employee number changes when you\'re not looking. But it grants you access. It proves you belong. You belong here. You\'ve always belonged here.',
-      discoveryNote: 'Assigned: On a day you don\'t remember.'
-    },
-    temporal_watch: {
-      name: 'Temporal Watch',
-      category: 'Armor (Accessory)',
-      lore: 'Time moves differently when you wear this watch. Hours compress into minutes. Minutes expand into hours. The hands move backwards and forwards simultaneously. You have more time. You have all the time. Time has you.',
-      discoveryNote: 'Found: In the archive, dated to next Tuesday.'
-    },
-
-    // Anomalies
-    coffee_stain: {
-      name: 'Eternal Coffee Stain',
-      category: 'Anomaly',
-      lore: 'From your first day at the office. The stain has never dried, never faded. It pulses with forgotten caffeine and broken dreams. When you carry it, you feel the energy of a thousand overtime shifts. It remembers when you still had hope.',
-      discoveryNote: 'Preserved: A relic of your first morning here.'
-    },
-    forgotten_memo: {
-      name: 'Forgotten Memo',
-      category: 'Anomaly',
-      lore: 'You can\'t read it. The text shifts every time you look, rearranging itself into new configurations. But somehow, you learn from it. Knowledge seeps into your mind through osmosis. The memo remembers things you\'ve forgotten.',
-      discoveryNote: 'Retrieved: From the archive\'s deepest drawer.'
-    },
-    glitched_keycard: {
-      name: 'G̷l̷i̷t̷c̷h̷e̷d̷ Keycard',
-      category: 'Anomaly',
-      lore: 'Opens doors that don\'t exist. Closes doors that do. The magnetic strip contains impossible data. Swipe it and reality negotiates. Access is granted to spaces between spaces. The keycard glitches. Reality glitches with it.',
-      discoveryNote: 'Discovered: Phasing between dimensions in the portal.'
-    },
-    void_fragment_shard: {
-      name: 'Void Fragment Shard',
-      category: 'Anomaly',
-      lore: 'A piece of pure nothing, crystallized into something. It weighs impossibly heavy for its size. Carry it and feel the weight of absence. The void gives strength through negation. You are stronger because you hold emptiness.',
-      discoveryNote: 'Extracted: From the heart of a dimensional tear.'
-    },
-    singularity_core: {
-      name: 'Singularity Core Fragment',
-      category: 'Anomaly',
-      lore: 'The office\'s heart. The center around which all reality orbits. It consumes everything - light, hope, time. But somehow you hold it. It makes you stronger. It makes you worse. The singularity holds you back.',
-      discoveryNote: 'Acquired: By reaching the center of everything.'
-    }
-  }
 };
 
 /**
