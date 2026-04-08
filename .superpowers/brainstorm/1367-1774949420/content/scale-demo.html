@@ -1,0 +1,172 @@
+<style>
+  .demo-wrap {
+    display: flex;
+    gap: 40px;
+    align-items: flex-start;
+    margin-top: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .panel {
+    border: 1px solid #2a2a2a;
+    background: #0c0a09;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+  .panel-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: rgba(240,240,240,0.35);
+    font-family: monospace;
+  }
+  pre {
+    font-family: 'Courier New', Courier, monospace;
+    line-height: 1.5;
+    color: #f0f0f0;
+    margin: 0;
+    letter-spacing: 0;
+  }
+  .original pre  { font-size: 13px; }
+  .zoomed pre    { font-size: 52px; color: #f97316; }
+
+  .ui-mockup {
+    width: 100%;
+    max-width: 680px;
+    margin-top: 32px;
+  }
+  .ui-mockup h3 { margin-bottom: 12px; font-size: 13px; color: rgba(240,240,240,0.6); font-family: monospace; font-weight: normal; }
+  .creator-layout {
+    display: grid;
+    grid-template-columns: 1fr 1.6fr;
+    gap: 1px;
+    background: #2a2a2a;
+    border: 1px solid #2a2a2a;
+  }
+  .creator-left {
+    background: #0c0a09;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .creator-right {
+    background: #1c1917;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  .mini-option {
+    border: 1px solid #2a2a2a;
+    padding: 6px 10px;
+    cursor: pointer;
+    font-family: 'Courier New', monospace;
+    font-size: 9px;
+    color: rgba(240,240,240,0.6);
+    line-height: 1.3;
+  }
+  .mini-option.active {
+    border-color: #f97316;
+    color: #f0f0f0;
+  }
+  .section-label {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: #f97316;
+    font-family: monospace;
+    margin-top: 4px;
+  }
+  .big-preview pre {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 40px;
+    line-height: 1.45;
+    color: #f97316;
+    margin: 0;
+    letter-spacing: 0;
+  }
+  .preview-label {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: rgba(240,240,240,0.3);
+    font-family: monospace;
+  }
+</style>
+
+<h2>4× zoom — same ASCII, bigger render</h2>
+<p class="subtitle">The standard ASCII art scaled up via font-size, not redrawn. Left = game view. Right = selection panel zoom.</p>
+
+<div class="demo-wrap">
+  <div class="panel original">
+    <div class="panel-label">In-game size (1×)</div>
+    <pre>  ////////////
+  [==========]
+  |/////  [O]|
+  | /   ~    |
+  |     .    |
+  | [_*___]  |
+  [==========]</pre>
+  </div>
+
+  <div class="panel zoomed">
+    <div class="panel-label" style="color:rgba(240,240,240,0.35);font-size:10px;text-transform:uppercase;letter-spacing:2px;font-family:monospace;">4× zoom panel</div>
+    <pre>  ////////////
+  [==========]
+  |/////  [O]|
+  | /   ~    |
+  |     .    |
+  | [_*___]  |
+  [==========]</pre>
+  </div>
+</div>
+
+<div class="ui-mockup">
+  <h3>// how it fits in character creation:</h3>
+  <div class="creator-layout">
+    <div class="creator-left">
+      <div class="section-label">— Select Head —</div>
+      <div class="mini-option active">  ////
+  [====]
+  |///[O]|
+  |[_*__]|
+  [====]
+  ▶ Emo Boy</div>
+      <div class="mini-option">  [####]
+  [====]
+  |[-][-]|
+  |[___]|
+  [====]
+  Skater</div>
+      <div class="mini-option">  | || |
+  [|||||]
+  |[>][<]|
+  |[===]|
+  [====]
+  Punk Girl</div>
+      <div class="mini-option">((((((((
+  [====]
+  |[*][*]|
+  |[o__o]|
+  [====]
+  Scene Queen</div>
+    </div>
+    <div class="creator-right">
+      <div class="preview-label">selected — click to confirm</div>
+      <div class="big-preview">
+        <pre>  ////////////
+  [==========]
+  |/////  [O]|
+  | /   ~    |
+  |     .    |
+  | [_*___]  |
+  [==========]</pre>
+      </div>
+    </div>
+  </div>
+</div>

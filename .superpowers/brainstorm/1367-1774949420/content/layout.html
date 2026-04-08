@@ -1,0 +1,135 @@
+<style>
+  .layout-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-top: 16px; }
+  .layout-card { border: 1px solid #2a2a2a; background: #1c1917; padding: 0; overflow: hidden; cursor: pointer; transition: border-color 0.2s; }
+  .layout-card:hover { border-color: #f97316; }
+  .layout-card.selected { border-color: #f97316; box-shadow: 0 0 0 1px #f97316, 0 4px 20px rgba(249,115,22,0.25); }
+  .layout-card h3 { font-family: 'Space Grotesk', sans-serif; font-size: 13px; font-weight: 600; color: #f97316; padding: 10px 12px 6px; margin: 0; }
+  .layout-card p { font-size: 11px; color: rgba(240,240,240,0.6); padding: 0 12px 10px; margin: 0; line-height: 1.4; }
+  .mockup-screen { background: #0c0a09; border-bottom: 1px solid #2a2a2a; font-family: monospace; font-size: 9px; color: rgba(240,240,240,0.7); padding: 8px; height: 180px; display: flex; flex-direction: column; gap: 3px; position: relative; overflow: hidden; }
+
+  /* Layout A styles */
+  .la-topbar { background: #1c1917; border-bottom: 1px solid #2a2a2a; padding: 3px 6px; display: flex; justify-content: space-between; font-size: 9px; flex-shrink: 0; }
+  .la-body { display: flex; flex: 1; gap: 3px; overflow: hidden; }
+  .la-sidebar { background: #1c1917; border: 1px solid #2a2a2a; width: 52px; flex-shrink: 0; font-size: 8px; padding: 4px; display: flex; flex-direction: column; gap: 3px; }
+  .la-room { flex: 1; border: 1px solid #2a2a2a; display: flex; align-items: center; justify-content: center; }
+  .la-sideitem { background: #0c0a09; border: 1px solid #2a2a2a; padding: 2px 3px; font-size: 7px; }
+
+  /* Layout B styles */
+  .lb-topbar { background: #1c1917; border-bottom: 1px solid #f97316; padding: 3px 6px; display: flex; justify-content: space-between; font-size: 9px; flex-shrink: 0; }
+  .lb-room { flex: 1; border: 1px solid #2a2a2a; display: flex; align-items: center; justify-content: center; margin: 3px; }
+  .lb-bottom { background: #1c1917; border-top: 1px solid #2a2a2a; padding: 3px 6px; display: flex; gap: 6px; font-size: 8px; flex-shrink: 0; }
+  .lb-shopitem { background: #0c0a09; border: 1px solid #2a2a2a; padding: 2px 5px; font-size: 7px; }
+  .lb-toast { position: absolute; top: 20px; right: 4px; background: #1c1917; border: 1px solid #f97316; padding: 3px 5px; font-size: 7px; color: #f97316; }
+
+  /* Layout C styles */
+  .lc-body { display: flex; flex: 1; gap: 0; overflow: hidden; }
+  .lc-room { flex: 1; border-right: 1px solid #2a2a2a; display: flex; align-items: center; justify-content: center; position: relative; }
+  .lc-credits { position: absolute; top: 3px; left: 4px; background: rgba(28,25,23,0.9); border: 1px solid #f97316; padding: 2px 4px; font-size: 7px; color: #f97316; }
+  .lc-panel { width: 70px; flex-shrink: 0; background: #1c1917; display: flex; flex-direction: column; overflow: hidden; }
+  .lc-paneltab { background: #0c0a09; border-bottom: 1px solid #2a2a2a; padding: 3px; font-size: 7px; color: #f97316; text-align: center; }
+  .lc-panelitem { border-bottom: 1px solid #2a2a2a; padding: 3px 4px; font-size: 7px; }
+
+  .ascii-room { color: rgba(240,240,240,0.5); font-size: 8px; line-height: 1.2; text-align: center; }
+  .ascii-char { color: #f97316; }
+</style>
+
+<h2>Main game screen layout</h2>
+<p class="subtitle">How should the room, credits, shop, and notifications be arranged?</p>
+
+<div class="layout-grid">
+
+  <!-- Option A -->
+  <div class="layout-card option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter" style="position:absolute;top:8px;right:8px;background:#1c1917;border:1px solid #2a2a2a;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:11px;z-index:2">A</div>
+    <div class="mockup-screen" style="position:relative;">
+      <div class="la-topbar"><span style="color:#f97316">ZAYAANI</span><span>💳 42 cr/s</span></div>
+      <div class="la-body">
+        <div class="la-sidebar">
+          <div style="font-size:7px;color:#f97316;margin-bottom:2px">JOBS</div>
+          <div class="la-sideitem">YT Chan</div>
+          <div class="la-sideitem">Freelance</div>
+          <div style="font-size:7px;color:#f97316;margin-top:4px;margin-bottom:2px">SHOP</div>
+          <div class="la-sideitem">Desk</div>
+          <div class="la-sideitem">Lamp</div>
+          <div class="la-sideitem">Plant</div>
+        </div>
+        <div class="la-room">
+          <div class="ascii-room">
+╔══════════════╗<br/>
+║  ╲          ╱ ║<br/>
+║   ╲        ╱  ║<br/>
+║    <span class="ascii-char">( ◕ ◕ )</span>   ║<br/>
+║    <span class="ascii-char">[ shirt ]</span>  ║<br/>
+║    <span class="ascii-char">[ pants ]</span>  ║<br/>
+╚══════════════╝
+          </div>
+        </div>
+      </div>
+    </div>
+    <h3>A — Side Panel</h3>
+    <p>Left sidebar holds jobs + shop. Room is the main focus. Always visible.</p>
+  </div>
+
+  <!-- Option B -->
+  <div class="layout-card option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter" style="position:absolute;top:8px;right:8px;background:#1c1917;border:1px solid #2a2a2a;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:11px;z-index:2">B</div>
+    <div class="mockup-screen" style="position:relative;">
+      <div class="lb-topbar">
+        <span style="color:#f97316">✦ 1,240 credits</span>
+        <span>42 cr/s ▲</span>
+      </div>
+      <div class="lb-room">
+        <div class="ascii-room">
+╔════════════╗<br/>
+║ ╲        ╱ ║<br/>
+║  <span class="ascii-char">( ◕ ◕ )</span> ║<br/>
+║  <span class="ascii-char">[ shirt ]</span>║<br/>
+║  <span class="ascii-char">[ pants ]</span>║<br/>
+╚════════════╝
+        </div>
+      </div>
+      <div class="lb-bottom">
+        <span style="color:rgba(240,240,240,0.4);font-size:7px">SHOP:</span>
+        <div class="lb-shopitem">Desk 200cr</div>
+        <div class="lb-shopitem">Lamp 80cr</div>
+        <div class="lb-shopitem">Plant 60cr</div>
+        <div class="lb-shopitem">Rug 150cr</div>
+      </div>
+      <div class="lb-toast">⚡ New job offer!</div>
+    </div>
+    <h3>B — Top + Bottom Bars</h3>
+    <p>Credits top, shop scrolls horizontally at bottom. Toasts for job offers. Room fills center.</p>
+  </div>
+
+  <!-- Option C -->
+  <div class="layout-card option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter" style="position:absolute;top:8px;right:8px;background:#1c1917;border:1px solid #2a2a2a;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:11px;z-index:2">C</div>
+    <div class="mockup-screen" style="position:relative;">
+      <div class="lc-body">
+        <div class="lc-room">
+          <div class="lc-credits">✦ 1,240 cr</div>
+          <div class="ascii-room" style="margin-top:8px">
+╔══════════╗<br/>
+║╲        ╱║<br/>
+║ <span class="ascii-char">(◕ ◕)</span> ║<br/>
+║ <span class="ascii-char">[shirt]</span> ║<br/>
+║ <span class="ascii-char">[pants]</span> ║<br/>
+╚══════════╝
+          </div>
+        </div>
+        <div class="lc-panel">
+          <div class="lc-paneltab">SHOP</div>
+          <div class="lc-panelitem">🪑 Desk<br/><span style="color:#f97316">200cr</span></div>
+          <div class="lc-panelitem">💡 Lamp<br/><span style="color:#f97316">80cr</span></div>
+          <div class="lc-panelitem">🌿 Plant<br/><span style="color:#f97316">60cr</span></div>
+          <div class="lc-paneltab" style="margin-top:auto">JOBS</div>
+          <div class="lc-panelitem" style="color:#22c55e">▶ YT Chan</div>
+          <div class="lc-panelitem" style="color:#22c55e">▶ Freelance</div>
+        </div>
+      </div>
+    </div>
+    <h3>C — Room + Side Panel</h3>
+    <p>Room left, scrollable panel right with shop + active jobs. Credits overlaid on room.</p>
+  </div>
+
+</div>

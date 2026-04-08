@@ -1,0 +1,110 @@
+<style>
+  .head-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-top: 20px;
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .head-card {
+    border: 1px solid #2a2a2a;
+    background: #0c0a09;
+    padding: 20px;
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    text-align: center;
+  }
+  .head-card:hover { border-color: #f97316; }
+  .head-card.selected {
+    border-color: #f97316;
+    box-shadow: 0 0 0 1px #f97316, 0 0 20px rgba(249,115,22,0.2);
+  }
+  pre {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 14px;
+    line-height: 1.5;
+    color: #f97316;
+    margin: 0 0 12px 0;
+    display: inline-block;
+    text-align: left;
+  }
+  .head-name {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: #f97316;
+    margin-bottom: 4px;
+    font-family: monospace;
+  }
+  .head-vibe {
+    font-size: 11px;
+    color: rgba(240,240,240,0.45);
+    line-height: 1.4;
+  }
+  .gender-tag {
+    display: inline-block;
+    font-size: 9px;
+    padding: 1px 6px;
+    border: 1px solid #2a2a2a;
+    color: rgba(240,240,240,0.4);
+    margin-bottom: 8px;
+    font-family: monospace;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+</style>
+
+<h2>Head options — 2000s grunge</h2>
+<p class="subtitle">Click your favourites. Each will be a swappable option in character creation.</p>
+
+<div class="head-grid">
+
+  <!-- EMO BOY -->
+  <div class="head-card option" data-choice="emo-boy" onclick="toggleSelect(this)">
+    <div class="gender-tag">male</div>
+    <pre>   //==========
+   |[/]   [O] |
+   |  [_____] |
+   [==========]</pre>
+    <div class="head-name">Emo Boy</div>
+    <div class="head-vibe">Bang covers one eye. Dead stare. Perpetual scowl.</div>
+  </div>
+
+  <!-- PUNK GIRL -->
+  <div class="head-card option" data-choice="punk-girl" onclick="toggleSelect(this)">
+    <div class="gender-tag">female</div>
+    <pre>    |||  |||
+   [==========]
+   |[>]    [<]|
+   |  [=====] |
+   [==========]</pre>
+    <div class="head-name">Punk Girl</div>
+    <div class="head-vibe">Twin spikes. Intense glare. Tight-lipped smirk.</div>
+  </div>
+
+  <!-- SKATER DUDE -->
+  <div class="head-card option" data-choice="skater" onclick="toggleSelect(this)">
+    <div class="gender-tag">male</div>
+    <pre>   [##########]
+   |[-]    [-]|
+   |   [___]  |
+   [==========]</pre>
+    <div class="head-name">Skater Dude</div>
+    <div class="head-vibe">Beanie pulled low. Half-lidded. Doesn't care.</div>
+  </div>
+
+  <!-- SCENE QUEEN -->
+  <div class="head-card option" data-choice="scene-queen" onclick="toggleSelect(this)">
+    <div class="gender-tag">female</div>
+    <pre>  (((((((((((((
+   [==========]
+   |[*]    [*]|
+   |  [o___o] |
+   [==========]</pre>
+    <div class="head-name">Scene Queen</div>
+    <div class="head-vibe">Giant back-combed poof. Raccoon eyes. Permanent pout.</div>
+  </div>
+
+</div>

@@ -1,0 +1,81 @@
+<style>
+  .outfit-wrap { display: flex; gap: 40px; align-items: flex-start; margin-top: 16px; flex-wrap: wrap; }
+  .ascii-frame { font-family: 'SF Mono', 'Inconsolata', 'Roboto Mono', monospace; font-size: 15px; line-height: 1.55; background: #0c0a09; border: 1px solid #2a2a2a; padding: 24px 32px; display: inline-block; white-space: pre; }
+  .legend { flex: 1; min-width: 220px; }
+  .legend-item { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 14px; border-left: 2px solid #2a2a2a; padding-left: 12px; }
+  .legend-item.active { border-color: #f97316; }
+  .legend-label { font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: #f97316; font-family: monospace; margin-bottom: 2px; }
+  .legend-desc { font-size: 12px; color: rgba(240,240,240,0.6); line-height: 1.4; }
+  .legend-ascii { font-family: monospace; font-size: 11px; color: rgba(240,240,240,0.4); margin-top: 2px; }
+  .note { margin-top: 20px; font-size: 12px; color: rgba(240,240,240,0.5); border: 1px solid #2a2a2a; padding: 12px 16px; line-height: 1.5; }
+  .note strong { color: #f97316; }
+
+  .c-head   { color: #f97316; }
+  .c-shirt  { color: #60a5fa; }
+  .c-pants  { color: #a78bfa; }
+  .c-shoes  { color: #34d399; }
+  .c-body   { color: rgba(240,240,240,0.45); }
+</style>
+
+<h2>Complete outfit — line art style</h2>
+<p class="subtitle">Each layer (head, hoodie, pants, shoes) is a swappable ASCII art block</p>
+
+<div class="outfit-wrap">
+
+  <div class="ascii-frame"><span class="c-head">    ╭──────╮
+    │ ◉  ◉ │
+    │  ──  │
+    ╰──────╯</span>
+<span class="c-shirt">  ╭──╮────╭──╮
+  │╲ ╰────╯ ╱│
+  │ ╰──────╯ │
+  │  ╭────╮  │
+  │  │    │  │
+  ╰──┴────┴──╯</span>
+<span class="c-pants">   ╭──────╮
+   │ ╭──╮ │
+   ╰─┤  ├─╯
+     │  │
+   ╭─╯  ╰─╮
+   │       │
+   ╰──╮ ╭──╯</span>
+<span class="c-shoes">    ╭──╯ ╰──╮
+    │▔▔▔ ▔▔▔│
+    ╰───╯╰───╯</span></div>
+
+  <div class="legend">
+    <div class="legend-item active">
+      <div>
+        <div class="legend-label">Head</div>
+        <div class="legend-desc">Swap face designs — expressions, glasses, different eye shapes</div>
+        <div class="legend-ascii">╭──────╮ │ ◉  ◉ │</div>
+      </div>
+    </div>
+    <div class="legend-item active">
+      <div>
+        <div class="legend-label">Hoodie / T-Shirt</div>
+        <div class="legend-desc">Hood collar, kangaroo pocket visible. Other options: plain tee, striped shirt, zip-up</div>
+        <div class="legend-ascii">╭──╮────╭──╮ / │  ╭────╮  │</div>
+      </div>
+    </div>
+    <div class="legend-item active">
+      <div>
+        <div class="legend-label">Pants</div>
+        <div class="legend-desc">Belt line at top, two legs visible. Other options: shorts, wide-leg, cargo</div>
+        <div class="legend-ascii">╭──────╮ / ╰─┤  ├─╯</div>
+      </div>
+    </div>
+    <div class="legend-item active">
+      <div>
+        <div class="legend-label">Shoes</div>
+        <div class="legend-desc">Chunky sole shape. Other options: boots, loafers, bare feet</div>
+        <div class="legend-ascii">│▔▔▔ ▔▔▔│ / ╰───╯╰───╯</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="note">
+  <strong>How it works:</strong> each section is an independent multi-line string. During character creation, swapping a body part replaces just that block — the rest stays the same. The live preview re-renders the full stack in real time.
+</div>

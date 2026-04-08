@@ -1,0 +1,98 @@
+<style>
+  .compare {
+    display: flex;
+    gap: 48px;
+    align-items: flex-start;
+    margin-top: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+  .col-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: rgba(240,240,240,0.35);
+    font-family: monospace;
+  }
+  pre {
+    font-family: 'Courier New', Courier, monospace;
+    line-height: 1.5;
+    margin: 0;
+    letter-spacing: 0;
+    background: #0c0a09;
+    border: 1px solid #2a2a2a;
+    padding: 20px 24px;
+  }
+  .small pre { font-size: 13px; color: #f97316; }
+  .large pre { font-size: 13px; color: #f97316; }
+
+  .divider {
+    width: 1px;
+    background: #2a2a2a;
+    align-self: stretch;
+    margin: 0 8px;
+  }
+
+  .note {
+    margin-top: 28px;
+    max-width: 760px;
+    margin-left: auto;
+    margin-right: auto;
+    border: 1px solid #2a2a2a;
+    padding: 14px 18px;
+    font-size: 12px;
+    color: rgba(240,240,240,0.5);
+    line-height: 1.6;
+  }
+  .note strong { color: #f97316; }
+</style>
+
+<h2>1× vs 4× — same feature, more ASCII density</h2>
+<p class="subtitle">The 4× version is a fully redrawn, denser art piece. Same character — far more detail.</p>
+
+<div class="compare">
+
+  <div class="col small">
+    <div class="col-label">1× — in-game</div>
+    <pre>  ////////////
+  [==========]
+  |/////  [O]|
+  | /   ~    |
+  |     .    |
+  | [_*___]  |
+  [==========]</pre>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="col large">
+    <div class="col-label">4× — character creator zoom</div>
+    <pre>          //////////////////  ///
+         ////////////////////  ///
+        ///////////////////  /////
+       //[==============================]
+      ///|//////////////////////////     |
+     ////|/////  ////////////////        |
+    /////|////   //////////////   [( )]  |
+   //////|///    ////////////     [~-~]  |
+   //////|//     //////////               |
+         |/      ////////    .   .        |
+         |        //////      . .         |
+         |         ////        .          |
+         |          //                    |
+         |           /    [ _ * _ _ _ ]   |
+         |               [_ _ * _ _ _ _]  |
+         [==============================]</pre>
+  </div>
+
+</div>
+
+<div class="note">
+  <strong>How this works in the game:</strong> each customisation slot has two ASCII art definitions — a compact version (rendered in the room at normal font size) and a dense version (rendered in the character creator selection panel at the same font size but far more lines/characters). Same ASCII renderer, different art assets. The dense version makes the creator feel like a proper character sheet.
+</div>
