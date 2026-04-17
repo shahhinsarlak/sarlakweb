@@ -3,7 +3,7 @@ import { useRef, useEffect, useState } from 'react';
 import { getCachedWords, setCachedWords } from './wheelCache';
 import styles from './page.module.css';
 
-const SEGMENT_COUNT = 128;
+const SEGMENT_COUNT = 32;
 const SEGMENT_ANGLE = (2 * Math.PI) / SEGMENT_COUNT;
 const CANVAS_SIZE = 500; // px — square canvas
 

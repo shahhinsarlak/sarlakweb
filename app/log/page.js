@@ -25,7 +25,7 @@ export default function LogPage() {
         <section className="section">
           <h2 className="section-title">Dev Log</h2>
           <p style={{ fontFamily: 'var(--font-display)', fontSize: '14px', color: 'var(--text-muted)', marginBottom: '40px' }}>
-            Notes on what I&apos;m building, breaking, and figuring out.
+            Notes on what I&apos;m building, breaking and figuring out.
           </p>
           <div className="log-list">
             {posts.length === 0 && (

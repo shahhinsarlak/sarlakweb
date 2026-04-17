@@ -34,8 +34,7 @@ export default function Apps() {
         <section className="section">
           <h1 className="page-title">Web Applications</h1>
           <p className="intro-text">
-            A collection of experimental web applications and demos. 
-            Click on any app to explore its functionality.
+            A collection of experimental web applications. Each one is interactive.
           </p>
         </section>
 
@@ -80,7 +79,7 @@ export default function Apps() {
               <div className="app-info">
                 <h3 className="app-title">Spin Wheel</h3>
                 <p className="app-description">
-                  Daily-refreshed spin wheel powered by Claude AI &mdash; spin for a word and caption, regenerated each morning at Sydney midnight.
+                  Spin wheel powered by Claude AI. Refreshed each day at Sydney midnight. Spin for a word and caption.
                 </p>
                 <div className="app-tech">
                   <span className="tech-tag">Next.js</span>
@@ -103,8 +102,7 @@ export default function Apps() {
             <div className="info-card">
               <div className="info-title">Experimental</div>
               <div className="info-description">
-                These applications serve as testing grounds for new technologies, 
-                frameworks, and development approaches.
+                These applications are testing grounds for new technologies, frameworks and approaches.
               </div>
             </div>
             <div className="info-card">
@@ -117,8 +115,7 @@ export default function Apps() {
             <div className="info-card">
               <div className="info-title">Live Demos</div>
               <div className="info-description">
-                Fully functional demonstrations that you can interact with 
-                and explore in real-time.
+                Fully functional demonstrations you can interact with and explore in real time.
               </div>
             </div>
           </div>

@@ -41,7 +41,7 @@ export default function Home() {
               Available for work
             </div>
             <p className="intro-text">
-              Student developer building real working software &mdash; games, tools, and experiments.
+              Student developer building real working software. Games, tools and experiments.
               Curious about what&apos;s possible, shipping things to find out.
             </p>
           </section>
@@ -52,7 +52,7 @@ export default function Home() {
               <Link href="/game" className="card">
                 <div className="card-title">Office Horror</div>
                 <div className="card-description">
-                  Browser-based incremental game with loot drops, a skill tree, sanity mechanics, and dimensional exploration.
+                  Browser-based incremental game with loot drops, a skill tree, sanity mechanics and dimensional exploration.
                 </div>
                 <div style={{ marginTop: '12px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                   <span style={{ fontSize: '10px', padding: '2px 6px', border: '1px solid var(--accent-color)' }}>Next.js</span>
@@ -63,7 +63,7 @@ export default function Home() {
 <Link href="/apps/particles" className="card">
                 <div className="card-title">Particles 3D</div>
                 <div className="card-description">
-                  Interactive 3D particle system — particles move through space and form connections when nearby.
+                  Interactive 3D particle system. Particles move through space and form connections when nearby.
                 </div>
                 <div style={{ marginTop: '12px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                   <span style={{ fontSize: '10px', padding: '2px 6px', border: '1px solid var(--accent-color)' }}>React</span>
@@ -74,7 +74,7 @@ export default function Home() {
               <Link href="/log" className="card">
                 <div className="card-title">Dev Log</div>
                 <div className="card-description">
-                  Notes on what I&apos;m building, breaking, and figuring out. No schedule &mdash; just whenever something&apos;s worth writing down.
+                  Notes on what I&apos;m building, breaking and figuring out. No schedule. Just whenever something&apos;s worth writing down.
                 </div>
                 <div style={{ marginTop: '12px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                   <span style={{ fontSize: '10px', padding: '2px 6px', border: '1px solid var(--accent-color)' }}>Writing</span>
