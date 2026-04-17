@@ -1,5 +1,5 @@
 ---
-title: Me Find Token-Cutting Skill
+title: Me Find Skill. Cut Token.
 date: '2026-04-17'
 tags: [meta, tools, ai]
 ---
@@ -24,12 +24,10 @@ Efficient tool for efficient human. Me keep using.
 
 ### Translation
 
-I've been experimenting with a Claude Code skill called [Caveman](https://github.com/JuliusBrussee/caveman) that compresses how I communicate with the AI during coding sessions.
+I spend a lot of time in long Claude Code sessions. Every message costs tokens and long sessions fill context windows fast. At some point you start paying for filler.
 
-The premise is simple: drop articles, filler phrases, hedging language, and pleasantries. Keep the technical precision. A response like *"Sure! I'd be happy to help you implement a solution for that issue"* becomes *"Bug. Fix:"*. The information survives; the padding dies.
+I found a skill called [Caveman](https://github.com/JuliusBrussee/caveman) that changes how I write to the AI. It drops articles, filler and pleasantries. It keeps the technical meaning. A sentence like "Sure, I'd be happy to help you implement a solution for that" becomes "Bug. Fix:". The result is the same. The padding is gone.
 
-This matters because context windows fill up over long sessions. More tokens in = more cost, slower responses, earlier context cutoff. Caveman mode counteracts this by expressing the same ideas in roughly 60–75% fewer tokens without losing meaning.
+Caveman cuts roughly 60 to 75 percent of token count without losing meaning. I tested it on code reviews, debugging sessions and planning runs. No precision lost.
 
-I've been using it across real work — code reviews, debugging, planning — and it holds up. No loss of technical accuracy, just less noise to wade through.
-
-Small optimisation, but it compounds.
+As a developer trying to get more done with less friction, it fits. I will keep using it.
