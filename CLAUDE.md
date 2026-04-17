@@ -6,6 +6,23 @@
 
 ---
 
+## Writing Voice (Dev Log Posts)
+
+When writing any dev log post in `content/posts/`, follow Shahhin's voice exactly:
+
+- State context before action
+- Specific humanising details over generic phrases
+- No action-verb bullet openers
+- Short declarative sentences for results
+- Simple vocabulary over impressive
+- Stop when the point lands
+- No hyphenated words
+- No em dashes
+- No Oxford commas
+- Close the loop back to the role explicitly
+
+---
+
 ## Git Workflow (MANDATORY)
 
 Automatically commit and push ALL changes immediately after making them. No exceptions.
