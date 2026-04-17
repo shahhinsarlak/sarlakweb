@@ -58,11 +58,9 @@ export default function VoidContractsDisplay({ gameState, onPurchase }) {
             <div
               key={contract.id}
               style={{
-                border: '1px solid var(--border-color)',
+                border: isActive ? '1px solid var(--accent-color)' : '1px solid var(--border-color)',
                 padding: '16px',
-                background: 'none',
-                opacity: isActive ? 0.4 : 1,
-                pointerEvents: isActive ? 'none' : 'auto',
+                background: isActive ? 'rgba(249, 115, 22, 0.05)' : 'none',
               }}
             >
               <div style={{ fontWeight: 600, marginBottom: '8px', fontSize: '14px' }}>

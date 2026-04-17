@@ -158,6 +158,19 @@ export default function GameStatsPanel({
               </div>
             );
           })()}
+          {gameState.pp >= 15 && gameState.phase === 1 && gameState.sanity >= 80 && (
+            <div style={{
+              fontSize: '10px',
+              marginBottom: '16px',
+              padding: '6px 8px',
+              backgroundColor: 'var(--bg-color)',
+              border: '1px solid rgba(255, 107, 107, 0.4)',
+              borderRadius: '2px',
+              color: 'rgba(255, 107, 107, 0.8)'
+            }}>
+              Sanity drain begins at 20 PP.
+            </div>
+          )}
           {gameState.ppPerSecond > 0 && (
             <div style={{
               fontSize: '11px',

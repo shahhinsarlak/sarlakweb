@@ -13,7 +13,7 @@
  * - upgrades: Purchase permanent improvements
  * - printer: Paper generation system
  */
-import { LOCATIONS, UPGRADES, DEBUG_CHALLENGES, PRINTER_UPGRADES, DOCUMENT_TYPES, TIER_MASTERY_WEIGHTS, PP_MULTIPLIER_TIERS, PRESTIGE_PATHS, INITIAL_GAME_STATE } from './constants';
+import { LOCATIONS, UPGRADES, DEBUG_CHALLENGES, PRINTER_UPGRADES, DOCUMENT_TYPES, TIER_MASTERY_WEIGHTS, PP_MULTIPLIER_TIERS, PRESTIGE_PATHS, INITIAL_GAME_STATE, LORE_SNIPPETS } from './constants';
 import {
   applyEnergyCostReduction,
   applyPPMultiplier,
@@ -367,18 +367,6 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       // Track location discovery for journal
       const discoveredLocations = discoverLocation(prev, loc);
 
-      // Break Room - Interactive exploration hub
-      if (loc === 'breakroom') {
-        return {
-          ...prev,
-          location: loc,
-          inBreakRoom: true,
-          energy: Math.max(0, prev.energy - 5),
-          discoveredLocations,
-          lastBreakRoomVisitDay: prev.day
-        };
-      }
-
       // Handle direct locations
       if (locationData.isDirect) {
         if (loc === 'portal') {
@@ -506,9 +494,6 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
         } else if (upgrade.value === 'archive') {
           newState.unlockedLocations = [...new Set([...prev.unlockedLocations, 'archive'])];
           messages.push('The Archive opens. Files from impossible years await.');
-        } else if (upgrade.value === 'breakroom') {
-          newState.unlockedLocations = [...new Set([...prev.unlockedLocations, 'breakroom'])];
-          messages.push('Break Room unlocked. Time to meet your colleagues.');
         } else if (upgrade.value === 'autoSort') {
           messages.push('Robotic Assistant installed. It sorts while you watch.');
         } else if (upgrade.value === 'autoPrint') {
@@ -926,14 +911,13 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
           const duration = Math.floor(buff.duration / 60);
           messages.push(`BUFF: ${buffParts.join(', ')} for ${duration}min`);
         } else {
-          // At max capacity - trigger replacement modal
-          newState.pendingBuff = buff;
-          newState.pendingBuffDocument = doc;
-          messages.push('Buff limit reached. Choose a buff to replace.');
-
-          // Don't remove the document yet - it will be removed when replacement happens
-          // So we need to add it back to stored documents
-          newState.storedDocuments = [...prev.storedDocuments, doc];
+          // At max capacity - auto-replace shortest remaining buff
+          const currentBuffs = prev.activeReportBuffs || [];
+          const shortest = currentBuffs.reduce((min, b) => b.expiresAt < min.expiresAt ? b : min, currentBuffs[0]);
+          const replaced = currentBuffs.filter(b => b.id !== shortest.id);
+          newState.activeReportBuffs = [...replaced, buff];
+          const duration = Math.floor(buff.duration / 60);
+          messages.push(`BUFF replaced ${shortest.name}: ${buffParts.join(', ')} for ${duration}min`);
         }
       }
 
@@ -964,14 +948,13 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
           const duration = Math.floor(debuff.duration / 60);
           messages.push(`DEBUFF: ${debuffParts.join(', ')} for ${duration}min`);
         } else {
-          // At max capacity - trigger replacement modal
-          newState.pendingBuff = debuff;
-          newState.pendingBuffDocument = doc;
-          messages.push('Buff limit reached. Choose a buff to replace.');
-
-          // Don't remove the document yet - it will be removed when replacement happens
-          // So we need to add it back to stored documents
-          newState.storedDocuments = [...prev.storedDocuments, doc];
+          // At max capacity - auto-replace shortest remaining buff
+          const currentBuffs = prev.activeReportBuffs || [];
+          const shortest = currentBuffs.reduce((min, b) => b.expiresAt < min.expiresAt ? b : min, currentBuffs[0]);
+          const replaced = currentBuffs.filter(b => b.id !== shortest.id);
+          newState.activeReportBuffs = [...replaced, debuff];
+          const duration = Math.floor(debuff.duration / 60);
+          messages.push(`DEBUFF replaced ${shortest.name}: ${debuffParts.join(', ')} for ${duration}min`);
         }
       }
 
@@ -981,10 +964,12 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
         messages.push(`PERMANENT +${outcome.permanentPPPerSec} PP/sec`);
       }
 
-      // Handle lore (prophecy removed from game)
+      // Handle prophecy lore
       if (outcome.lore) {
-        if (outcome.lore === 'static') {
-          messages.push(outcome.desc);
+        const snippets = LORE_SNIPPETS[outcome.lore];
+        if (snippets && snippets.length > 0) {
+          const lore = snippets[Math.floor(Math.random() * snippets.length)];
+          messages.push(`PROPHECY: "${lore}"`);
         }
       }
 

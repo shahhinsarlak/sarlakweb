@@ -43,7 +43,6 @@ import {
   DIMENSIONAL_UPGRADES,
   HELP_POPUPS,
   HELP_TRIGGERS,
-  ARCHIVE_CASES,
   PP_MULTIPLIER_TIERS,
   DOCUMENT_TYPES,
   PRESTIGE_PATHS
@@ -886,7 +885,7 @@ export default function Game() {
   const exitDimensionalArea = () => {
     setGameState(prev => {
       const effects = getActiveSkillEffects(prev);
-      const cooldownTime = getModifiedPortalCooldown(60, prev);
+      const cooldownTime = getModifiedPortalCooldown(35, prev);
       
       const newDimensionalInventory = { ...(prev.dimensionalInventory || {}) };
       

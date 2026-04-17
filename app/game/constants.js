@@ -30,7 +30,6 @@ export const INITIAL_GAME_STATE = {
   currentBug: null,
   debugAttempts: 0,
   restCooldown: 0,
-  disagreementCount: 0,
   achievements: [],
   examiningItem: null,
   archiveOpen: false,
@@ -82,29 +81,13 @@ export const INITIAL_GAME_STATE = {
   maxActiveBuffs: 3,  // Maximum number of buffs that can be active simultaneously
   pendingBuff: null,  // Buff waiting to be added (when at capacity, triggers replacement modal)
   pendingBuffDocument: null,  // Document that created the pending buff (for context)
-  // Paper trail for tracking patterns (for secrets/achievements)
-  paperTrail: [],
   // Help System (Added 2025-10-26)
   // Tracks which help popups have been shown to avoid repetition
   helpEnabled: true, // Can be toggled by player
   shownHelpPopups: [], // Array of popup IDs that have been shown
   currentHelpPopup: null, // Current popup to display (object with id, title, content)
   meditationUnlocked: false, // Meditation button only appears after reaching 25% sanity
-  // Mystery & Path System (Added 2025-11-05)
-  // Tracks player's investigation progress and narrative path choices
-  mysteryProgress: 0, // 0-100 tracking how much truth player has uncovered
-  playerPath: null, // Current dominant path: 'seeker', 'rationalist', 'protector', 'convert', 'rebel'
-  pathScores: { // Cumulative scores for each path to determine ending
-    seeker: 0,      // Investigates the truth, forms alliances
-    rationalist: 0, // Denies the horror, seeks logical explanations
-    protector: 0,   // Confronts threats to protect others
-    convert: 0,     // Embraces the madness, gains dark powers
-    rebel: 0        // Actively tries to break the system/loop
-  },
-  investigation: { // Case file/detective system
-    clues: [],      // Array of clue objects: { id, source, text, category, collectedOn }
-    theories: []    // Array of theory objects: { id, name, cluesUsed, confidence, status }
-  },
+  playerPath: null,
   // Journal System (Added 2025-10-31, Revised 2025-11-01)
   // Tracks discoveries for the player's journal
   journalOpen: false,              // Is journal UI visible
@@ -114,8 +97,6 @@ export const INITIAL_GAME_STATE = {
   // Notification System (Added 2025-11-20)
   // Displays temporary popups in top-left corner
   notifications: [],  // Array of notification objects: { id, message, timestamp }
-  // Debug flags
-  debugForceTearSpawn: false, // Force 100% tear spawn rate for testing
   // PP Tier Multiplier System
   ppMultiplierTier: 0, // Current tier index (0 = no tier unlocked yet)
   // Automation System (Added Phase 18)
@@ -143,6 +124,43 @@ export const INITIAL_GAME_STATE = {
   lastSavedAt: 0,               // Unix ms timestamp of last save
 };
 
+
+export const LORE_SNIPPETS = {
+  hint: [
+    'The lights remember every face. Yours included.',
+    'Somewhere in the building, a clock runs backwards. You\'ve heard it.',
+    'Your coffee cup has been empty since before you arrived.',
+    'The exit signs point inward.',
+    'There is a floor between 3 and 4. No one talks about it.',
+  ],
+  secret: [
+    'The performance reviews were written before the company existed.',
+    'MEMO TO SELF: do not open the filing cabinet in room 7. MEMO TO SELF: you already did.',
+    'Employee #0000 has never clocked out. Employee #0000 is you.',
+    'The building was constructed around the people inside it.',
+    'Your contract expires the day after it ends.',
+  ],
+  major: [
+    'You have prestige\'d before. You will prestige again. It does not matter.',
+    'The dimensional portal does not lead out. It leads further in.',
+    'The fluorescent lights are not lights. They are observers.',
+    'Every document you print is a message to yourself from a future you cannot reach.',
+    'The office has no outside. There is only more office.',
+  ],
+  location: [
+    'The archive smells like a room that has been sealed for years. You visit it daily.',
+    'The printer room hums at a frequency that feels like a word you almost remember.',
+    'The portal was here before the building. The building grew around it.',
+    'Cubicle 4B has been assigned to the same person for forty years. Different people.',
+  ],
+  ending: [
+    'You will see this again. From the other side.',
+    'When the loop closes, you will have forgotten this. That is the point.',
+    'The ending is not an ending. It is a different beginning with the same furniture.',
+    'You sorted enough papers. The building noticed.',
+    'Prestige is not escape. Prestige is understanding that escape was never the question.',
+  ],
+};
 
 export const DEBUG_CHALLENGES = [
   { 
@@ -824,10 +842,10 @@ export const PRESTIGE_PATHS = [
  *
  * Each document type has 5 tiers that unlock based on mastery (total prints):
  * - Tier 1: 0 prints (always available)
- * - Tier 2: 5 prints
- * - Tier 3: 15 prints
- * - Tier 4: 30 prints
- * - Tier 5: 50 prints
+ * - Tier 2: 3 prints
+ * - Tier 3: 8 prints
+ * - Tier 4: 18 prints
+ * - Tier 5: 30 prints
  *
  * Each tier has 4 quality outcomes based on paper quality roll:
  * - Corrupted (0-30%): Negative or weak effects
@@ -856,7 +874,7 @@ export const DOCUMENT_TYPES = {
       {
         tier: 2,
         name: 'Formal Memo',
-        unlockAt: 5,
+        unlockAt: 3,
         cost: { paper: 10, energy: 6 },
         outcomes: {
           corrupted: { desc: 'Coffee-stained', sanity: 10, pp: -20 },
@@ -868,7 +886,7 @@ export const DOCUMENT_TYPES = {
       {
         tier: 3,
         name: 'Executive Memo',
-        unlockAt: 15,
+        unlockAt: 8,
         cost: { paper: 20, energy: 10 },
         outcomes: {
           corrupted: { desc: 'Contradictory directives', sanity: 15, pp: -30, energy: -5 },
@@ -880,7 +898,7 @@ export const DOCUMENT_TYPES = {
       {
         tier: 4,
         name: "Director's Memo",
-        unlockAt: 30,
+        unlockAt: 18,
         cost: { paper: 35, energy: 15 },
         outcomes: {
           corrupted: { desc: 'Ominous undertones', sanity: 20, pp: -50, energy: -10 },
@@ -892,7 +910,7 @@ export const DOCUMENT_TYPES = {
       {
         tier: 5,
         name: 'CEO Mandate',
-        unlockAt: 50,
+        unlockAt: 30,
         cost: { paper: 50, energy: 25 },
         outcomes: {
           corrupted: { desc: 'Reality-warping typos', sanity: 30, pp: -100, energy: -20 },
@@ -923,7 +941,7 @@ export const DOCUMENT_TYPES = {
       {
         tier: 2,
         name: 'Quarterly Report',
-        unlockAt: 5,
+        unlockAt: 3,
         cost: { paper: 25, energy: 12 },
         outcomes: {
           corrupted: { desc: 'Audit flags raised', sanity: -30, debuff: { energyCostMult: 1.50, duration: 180 } },
@@ -935,7 +953,7 @@ export const DOCUMENT_TYPES = {
       {
         tier: 3,
         name: 'Annual Report',
-        unlockAt: 15,
+        unlockAt: 8,
         cost: { paper: 40, energy: 20 },
         outcomes: {
           corrupted: { desc: 'Cooked books detected', sanity: -40, debuff: { ppMult: 0.50, duration: 180 } },
@@ -947,7 +965,7 @@ export const DOCUMENT_TYPES = {
       {
         tier: 4,
         name: 'Strategic Analysis',
-        unlockAt: 30,
+        unlockAt: 18,
         cost: { paper: 60, energy: 30 },
         outcomes: {
           corrupted: { desc: 'Flawed methodology', sanity: -50, debuff: { ppMult: 0.25, xpMult: 0.25, duration: 240 } },
@@ -959,7 +977,7 @@ export const DOCUMENT_TYPES = {
       {
         tier: 5,
         name: 'Reality Audit',
-        unlockAt: 50,
+        unlockAt: 30,
         cost: { paper: 100, energy: 50 },
         outcomes: {
           corrupted: { desc: 'AUDIT FAILURE', sanity: -60, debuff: { ppMult: 0.25, xpMult: 0.25, duration: 300, cannotRest: true } },
@@ -990,7 +1008,7 @@ export const DOCUMENT_TYPES = {
       {
         tier: 2,
         name: 'Standard Contract',
-        unlockAt: 5,
+        unlockAt: 3,
         cost: { paper: 45, energy: 20, sanity: 15 },
         outcomes: {
           corrupted: { desc: 'Penalty clause invoked', pp: -100, sanity: -30, portalLock: 180 },
@@ -1002,7 +1020,7 @@ export const DOCUMENT_TYPES = {
       {
         tier: 3,
         name: 'Binding Agreement',
-        unlockAt: 15,
+        unlockAt: 8,
         cost: { paper: 65, energy: 30, sanity: 20 },
         outcomes: {
           corrupted: { desc: 'VOID REJECTS', pp: -200, sanity: -40, allLocks: 60 },
@@ -1014,7 +1032,7 @@ export const DOCUMENT_TYPES = {
       {
         tier: 4,
         name: 'Soul Contract',
-        unlockAt: 30,
+        unlockAt: 18,
         cost: { paper: 90, energy: 45, sanity: 30 },
         outcomes: {
           corrupted: { desc: 'SOUL REJECTED', pp: -999, sanity: -50, dimensionalLock: 300 },
@@ -1026,7 +1044,7 @@ export const DOCUMENT_TYPES = {
       {
         tier: 5,
         name: 'Void Bargain',
-        unlockAt: 50,
+        unlockAt: 30,
         cost: { paper: 150, energy: 80, sanity: 50 },
         outcomes: {
           corrupted: { desc: 'THE VOID CONSUMES', pp: -9999, sanity: -80, allDebuffs: true },
@@ -1058,7 +1076,7 @@ export const DOCUMENT_TYPES = {
       {
         tier: 2,
         name: 'Vision',
-        unlockAt: 5,
+        unlockAt: 3,
         maxSanity: 30,
         cost: { paper: 40, energy: 30 },
         outcomes: {
@@ -1071,7 +1089,7 @@ export const DOCUMENT_TYPES = {
       {
         tier: 3,
         name: 'Revelation',
-        unlockAt: 15,
+        unlockAt: 8,
         maxSanity: 20,
         cost: { paper: 60, energy: 45 },
         outcomes: {
@@ -1084,7 +1102,7 @@ export const DOCUMENT_TYPES = {
       {
         tier: 4,
         name: 'Epiphany',
-        unlockAt: 30,
+        unlockAt: 18,
         maxSanity: 15,
         cost: { paper: 85, energy: 60 },
         outcomes: {
@@ -1097,7 +1115,7 @@ export const DOCUMENT_TYPES = {
       {
         tier: 5,
         name: 'APOTHEOSIS',
-        unlockAt: 50,
+        unlockAt: 30,
         maxSanity: 10,
         cost: { paper: 120, energy: 100 },
         outcomes: {
@@ -1469,10 +1487,10 @@ Paper is used for:
     summary: 'Paper transformed into power.',
     details: `Documents have 5 TIERS each, unlocked by printing:
 • Tier 1: 0 prints (always available)
-• Tier 2: 5 prints
-• Tier 3: 15 prints
-• Tier 4: 30 prints
-• Tier 5: 50 prints
+• Tier 2: 3 prints
+• Tier 3: 8 prints
+• Tier 4: 18 prints
+• Tier 5: 30 prints
 
 Every print ROLLS for QUALITY OUTCOME:
 💀 Corrupted (0-30%): Negative effects

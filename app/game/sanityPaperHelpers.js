@@ -164,26 +164,13 @@ export const canPrintDocument = (docType, gameState) => {
  * @returns {string} Material ID
  */
 export const getRandomDimensionalMaterial = () => {
-  const materials = Object.keys(DIMENSIONAL_MATERIALS);
-  // Weight towards more common materials
-  const weights = materials.map(id => {
-    const rarity = DIMENSIONAL_MATERIALS[id].rarity;
-    if (rarity === 'common') return 10;
-    if (rarity === 'uncommon') return 5;
-    if (rarity === 'rare') return 2;
-    if (rarity === 'epic') return 0.5;
-    return 0.1; // legendary
-  });
-
-  const totalWeight = weights.reduce((sum, w) => sum + w, 0);
+  const totalWeight = DIMENSIONAL_MATERIALS.reduce((sum, m) => sum + m.rarity, 0);
   let random = Math.random() * totalWeight;
-
-  for (let i = 0; i < materials.length; i++) {
-    random -= weights[i];
-    if (random <= 0) return materials[i];
+  for (const material of DIMENSIONAL_MATERIALS) {
+    random -= material.rarity;
+    if (random <= 0) return material.id;
   }
-
-  return materials[0]; // Fallback
+  return DIMENSIONAL_MATERIALS[0].id;
 };
 
 /**
