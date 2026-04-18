@@ -43,7 +43,10 @@ export default async function PostPage({ params }) {
           <div className="post-header">
             <h1 className="post-title">{post.title}</h1>
             <div className="post-meta">
-              <span className="log-date">{formatDate(post.date)}</span>
+              <span className="log-date">
+                {formatDate(post.date)}
+                {post.readingTime ? ` \u00b7 ${post.readingTime} min read` : ''}
+              </span>
               <div className="log-tags">
                 {post.tags.map(tag => (
                   <span key={tag} className="log-tag">{tag}</span>
