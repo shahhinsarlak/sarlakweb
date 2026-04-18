@@ -52,6 +52,13 @@
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  background: none;
+  cursor: pointer;
+}
+
+.log-tag--active {
+  border-color: var(--accent-color);
+  color: var(--accent-color);
 }
 
 .log-title {
