@@ -1,4 +1,5 @@
 import './globals.css';
+import BootSequence from '../components/BootSequence';
 
 export const metadata = {
   title: 'SARLAK',
@@ -17,6 +18,7 @@ export default function RootLayout({ children }) {
         />
       </head>
       <body>
+        <BootSequence />
         {children}
       </body>
     </html>

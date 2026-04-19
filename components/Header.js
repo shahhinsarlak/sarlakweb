@@ -8,7 +8,12 @@ export default function Header() {
   return (
     <header className="header">
       <div className="logo">
-        <Link href="/">SARLAK</Link>
+        <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'inherit' }}>
+          <span style={{ color: 'var(--accent-color)', fontWeight: 400 }}>[</span>
+          <span style={{ letterSpacing: '2px' }}>SARLAK</span>
+          <span style={{ color: 'var(--accent-color)', fontWeight: 400 }}>]</span>
+          <span style={{ display: 'inline-block', width: 6, height: 6, background: 'var(--accent-color)', marginLeft: 4, flexShrink: 0 }}></span>
+        </Link>
       </div>
       <nav className="nav">
         <Link href="/" className={`nav-link ${pathname === '/' ? 'active' : ''}`}>
