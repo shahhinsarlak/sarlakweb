@@ -3,10 +3,11 @@ import { notFound } from 'next/navigation';
 import Header from '../../../components/Header';
 import Footer from '../../../components/Footer';
 import { getPostBySlug, getAllSlugs } from '../../../lib/posts';
+import styles from '../../editorial.module.css';
 import '../log.css';
 
 export async function generateStaticParams() {
-  return getAllSlugs().map(slug => ({ slug }));
+  return getAllSlugs().map((slug) => ({ slug }));
 }
 
 export async function generateMetadata({ params }) {
@@ -33,34 +34,34 @@ export default async function PostPage({ params }) {
   }
 
   return (
-    <div className="container">
-      <Header />
-      <main className="main-content">
-        <section className="section">
-          <Link href="/log" className="back-link">
-            &larr; Dev Log
-          </Link>
-          <div className="post-header">
-            <h1 className="post-title">{post.title}</h1>
-            <div className="post-meta">
-              <span className="log-date">
-                {formatDate(post.date)}
-                {post.readingTime ? ` \u00b7 ${post.readingTime} min read` : ''}
-              </span>
-              <div className="log-tags">
-                {post.tags.map(tag => (
-                  <span key={tag} className="log-tag">{tag}</span>
-                ))}
+    <div className={styles.page}>
+      <div className={styles.inner}>
+        <Header />
+        <main className={styles.main}>
+          <article className={styles.reading}>
+            <Link href="/log" className={styles.backLink}>← Dev Log</Link>
+            <div className="post-header">
+              <h1 className="post-title">{post.title}</h1>
+              <div className="post-meta">
+                <span className="log-date">
+                  {formatDate(post.date)}
+                  {post.readingTime ? ` · ${post.readingTime} min read` : ''}
+                </span>
+                <div className="log-tags">
+                  {post.tags.map((tag) => (
+                    <span key={tag} className="log-tag">{tag}</span>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
-          <div
-            className="post-body"
-            dangerouslySetInnerHTML={{ __html: post.contentHtml }}
-          />
-        </section>
-      </main>
-      <Footer />
+            <div
+              className="post-body"
+              dangerouslySetInnerHTML={{ __html: post.contentHtml }}
+            />
+          </article>
+        </main>
+        <Footer />
+      </div>
     </div>
   );
 }

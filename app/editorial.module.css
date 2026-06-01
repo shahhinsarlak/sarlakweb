@@ -1,7 +1,105 @@
-/* Editorial index homepage */
+/* Shared editorial layout — homepage and inner pages */
 
 .page {
   min-height: 100vh;
+}
+
+/* Inner-page header (Apps, Log) */
+.pageHead {
+  margin-bottom: 8px;
+}
+
+.pageTitle {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 4.5vw, 3.25rem);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.04;
+  margin: 12px 0 18px;
+}
+
+.lede {
+  font-family: var(--font-body);
+  font-size: clamp(15px, 1.3vw, 18px);
+  line-height: 1.55;
+  color: var(--text-muted);
+  max-width: 54ch;
+}
+
+/* Reading column for a single post */
+.reading {
+  max-width: 720px;
+}
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  transition: var(--transition);
+  margin-bottom: 36px;
+}
+.backLink:hover { color: var(--accent-color); }
+
+/* Live status marker (semantic green, kept) */
+.live {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #22c55e;
+  white-space: nowrap;
+}
+.statusDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #22c55e;
+  animation: pulse 2s infinite;
+}
+
+/* Trailing arrow on launchable rows */
+.go {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-muted);
+  transition: var(--transition);
+}
+.row:hover .go { color: var(--accent-color); transform: translateX(2px); }
+
+/* Tag filter bar (Log) */
+.tagBar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 28px;
+}
+.tagBtn {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid var(--border-color);
+  padding: 5px 12px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.tagBtn:hover { border-color: var(--accent-color); color: var(--text-color); }
+.tagBtnActive { border-color: var(--accent-color); color: var(--accent-color); }
+
+.empty {
+  font-family: var(--font-body);
+  color: var(--text-muted);
+  padding: 24px 0;
 }
 
 .inner {

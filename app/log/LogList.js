@@ -2,11 +2,13 @@
 
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import styles from '../editorial.module.css';
 
 function formatDate(dateStr) {
   if (!dateStr) return '';
   const d = new Date(dateStr);
-  return d.toLocaleDateString('en-AU', { year: 'numeric', month: 'long', day: 'numeric' });
+  if (Number.isNaN(d.getTime())) return dateStr;
+  return d.toLocaleDateString('en-AU', { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
 export default function LogList({ posts }) {
@@ -14,47 +16,44 @@ export default function LogList({ posts }) {
   const router = useRouter();
   const activeTag = searchParams.get('tag');
 
-  const filtered = activeTag
-    ? posts.filter(p => p.tags.includes(activeTag))
-    : posts;
+  const allTags = [...new Set(posts.flatMap((p) => p.tags))].sort();
+  const filtered = activeTag ? posts.filter((p) => p.tags.includes(activeTag)) : posts;
 
-  function handleTagClick(e, tag) {
-    e.preventDefault();
-    if (tag === activeTag) {
-      router.push('/log');
-    } else {
-      router.push(`/log?tag=${encodeURIComponent(tag)}`);
-    }
-  }
+  const setTag = (tag) => router.push(tag ? `/log?tag=${encodeURIComponent(tag)}` : '/log');
 
   return (
-    <div className="log-list">
-      {filtered.length === 0 && (
-        <p style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-display)' }}>No posts.</p>
-      )}
-      {filtered.map(post => (
-        <Link key={post.slug} href={`/log/${post.slug}`} className="log-entry">
-          <div className="log-entry-meta">
-            <span className="log-date">
+    <>
+      <div className={styles.tagBar}>
+        <button
+          className={`${styles.tagBtn} ${!activeTag ? styles.tagBtnActive : ''}`}
+          onClick={() => setTag(null)}
+        >
+          All
+        </button>
+        {allTags.map((tag) => (
+          <button
+            key={tag}
+            className={`${styles.tagBtn} ${tag === activeTag ? styles.tagBtnActive : ''}`}
+            onClick={() => setTag(tag === activeTag ? null : tag)}
+          >
+            {tag}
+          </button>
+        ))}
+      </div>
+
+      <div className={styles.index}>
+        {filtered.length === 0 && <p className={styles.empty}>No posts.</p>}
+        {filtered.map((post) => (
+          <Link key={post.slug} href={`/log/${post.slug}`} className={styles.postRow}>
+            <span className={styles.postTitle}>{post.title}</span>
+            <span className={styles.postExcerpt}>{post.excerpt}</span>
+            <span className={styles.postDate}>
               {formatDate(post.date)}
-              {post.readingTime ? ` \u00b7 ${post.readingTime} min read` : ''}
+              {post.readingTime ? ` · ${post.readingTime} min` : ''}
             </span>
-            <div className="log-tags">
-              {post.tags.map(tag => (
-                <button
-                  key={tag}
-                  className={`log-tag${tag === activeTag ? ' log-tag--active' : ''}`}
-                  onClick={(e) => handleTagClick(e, tag)}
-                >
-                  {tag}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="log-title">{post.title}</div>
-          {post.excerpt && <div className="log-excerpt">{post.excerpt}</div>}
-        </Link>
-      ))}
-    </div>
+          </Link>
+        ))}
+      </div>
+    </>
   );
 }
