@@ -105,7 +105,7 @@ export default function GameStatsPanel({
             {gameState.focusModeExpiry > Date.now() && (
               <div style={{
                 fontSize: '11px',
-                color: '#f97316',
+                color: 'var(--accent-color)',
                 fontWeight: 600,
                 marginTop: '4px',
               }}>

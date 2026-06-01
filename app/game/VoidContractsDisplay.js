@@ -60,7 +60,7 @@ export default function VoidContractsDisplay({ gameState, onPurchase }) {
               style={{
                 border: isActive ? '1px solid var(--accent-color)' : '1px solid var(--border-color)',
                 padding: '16px',
-                background: isActive ? 'rgba(249, 115, 22, 0.05)' : 'none',
+                background: isActive ? 'rgba(122, 134, 107, 0.05)' : 'none',
               }}
             >
               <div style={{ fontWeight: 600, marginBottom: '8px', fontSize: '14px' }}>
