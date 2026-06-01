@@ -1,128 +1,77 @@
-'use client';
-import { useEffect } from 'react';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import Link from 'next/link';
-import '../apps.css';
+import styles from '../editorial.module.css';
+
+export const metadata = {
+  title: 'Apps — SARLAK',
+  description: 'Interactive web apps and experiments by Shahhin Sarlak.',
+};
+
+const APPS = [
+  {
+    title: 'Office Horror',
+    kind: 'Incremental game with loot drops, a skill tree and sanity mechanics',
+    tags: ['Next.js', 'React'],
+    href: '/game',
+  },
+  {
+    title: 'Particles 3D',
+    kind: 'Interactive WebGL particle field that connects nearby points',
+    tags: ['Three.js', 'WebGL'],
+    href: '/apps/particles',
+  },
+  {
+    title: 'Spin Wheel',
+    kind: 'A word and caption generator that refreshes every Sydney midnight, powered by Claude',
+    tags: ['Next.js', 'Claude API'],
+    href: '/wheel',
+  },
+];
 
 export default function Apps() {
-  useEffect(() => {
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.style.opacity = '1';
-          entry.target.style.transform = 'translateY(0)';
-        }
-      });
-    });
-
-    document.querySelectorAll('.section').forEach((section, index) => {
-      section.style.opacity = '0';
-      section.style.transform = 'translateY(20px)';
-      section.style.transition = `opacity 0.6s ease ${index * 0.1}s, transform 0.6s ease ${index * 0.1}s`;
-      observer.observe(section);
-    });
-
-    return () => observer.disconnect();
-  }, []);
-
   return (
-    <>
-      <div className="container">
+    <div className={styles.page}>
+      <div className={styles.inner}>
         <Header />
-        <main className="main-content">
-        <section className="section">
-          <h1 className="page-title">Web Applications</h1>
-          <p className="intro-text">
-            A collection of experimental web applications. Each one is interactive.
-          </p>
-        </section>
 
-        <section className="section">
-          <div className="apps-grid">
+        <main className={styles.main}>
+          <section className={styles.pageHead}>
+            <div className={styles.kicker}>Apps</div>
+            <h1 className={styles.pageTitle}>Things that run in the browser</h1>
+            <p className={styles.lede}>
+              Interactive pieces I have made. Open any of them and it works straight away,
+              nothing to install.
+            </p>
+          </section>
 
-            {/* Particles App */}
-            <div className="app-card">
-              <div className="app-header">
-                <div className="app-status live">
-                  <span className="status-indicator"></span>
-                  Live Demo
-                </div>
-              </div>
-              <div className="app-info">
-                <h3 className="app-title">Particles 3D</h3>
-                <p className="app-description">
-                  Interactive 3D particle system with dynamic connections.
-                  Particles move through space and form links when nearby.
-                </p>
-                <div className="app-tech">
-                  <span className="tech-tag">React</span>
-                  <span className="tech-tag">Three.js</span>
-                  <span className="tech-tag">WebGL</span>
-                </div>
-              </div>
-              <div className="app-actions">
-                <Link href="/apps/particles" className="app-button primary">
-                  Launch Demo
+          <section>
+            <div className={styles.sectionHead}>
+              <span className={styles.label}>All Apps</span>
+              <span className={styles.rule} />
+            </div>
+            <div className={styles.index}>
+              {APPS.map((app) => (
+                <Link key={app.href} href={app.href} className={styles.row}>
+                  <span className={styles.num}>
+                    <span className={styles.statusDot} title="Live" />
+                  </span>
+                  <span className={styles.rowTitle}>{app.title}</span>
+                  <span className={styles.rowKind}>{app.kind}</span>
+                  <span className={styles.rowTags}>
+                    {app.tags.map((tag) => (
+                      <span key={tag} className={styles.tag}>{tag}</span>
+                    ))}
+                    <span className={styles.go}>↗</span>
+                  </span>
                 </Link>
-              </div>
+              ))}
             </div>
-
-            {/* Spin Wheel App */}
-            <div className="app-card">
-              <div className="app-header">
-                <div className="app-status live">
-                  <span className="status-indicator"></span>
-                  Live Demo
-                </div>
-              </div>
-              <div className="app-info">
-                <h3 className="app-title">Spin Wheel</h3>
-                <p className="app-description">
-                  Spin wheel powered by Claude AI. Refreshed each day at Sydney midnight. Spin for a word and caption.
-                </p>
-                <div className="app-tech">
-                  <span className="tech-tag">Next.js</span>
-                  <span className="tech-tag">Claude API</span>
-                </div>
-              </div>
-              <div className="app-actions">
-                <Link href="/wheel" className="app-button primary">
-                  Launch Demo
-                </Link>
-              </div>
-            </div>
-
-          </div>
-        </section>
-
-        <section className="section">
-          <h2 className="section-title">About These Applications</h2>
-          <div className="info-grid">
-            <div className="info-card">
-              <div className="info-title">Experimental</div>
-              <div className="info-description">
-                These applications are testing grounds for new technologies, frameworks and approaches.
-              </div>
-            </div>
-            <div className="info-card">
-              <div className="info-title">Open Source</div>
-              <div className="info-description">
-                Most applications include source code access for learning 
-                and collaboration purposes.
-              </div>
-            </div>
-            <div className="info-card">
-              <div className="info-title">Live Demos</div>
-              <div className="info-description">
-                Fully functional demonstrations you can interact with and explore in real time.
-              </div>
-            </div>
-          </div>
-        </section>
+          </section>
         </main>
+
         <Footer />
       </div>
-    </>
+    </div>
   );
 }

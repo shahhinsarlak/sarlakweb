@@ -2,7 +2,7 @@ import Header from '../components/Header';
 import Footer from '../components/Footer';
 import Link from 'next/link';
 import { getAllPosts } from '../lib/posts';
-import styles from './home.module.css';
+import styles from './editorial.module.css';
 
 export const metadata = {
   description:
