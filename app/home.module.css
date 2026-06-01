@@ -1,0 +1,286 @@
+/* Editorial index homepage */
+
+.page {
+  min-height: 100vh;
+}
+
+.inner {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 40px 40px 72px;
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
+  gap: 64px;
+}
+
+/* Entrance — staggered, motion-safe */
+.main > section {
+  animation: rise 0.6s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+.main > section:nth-child(1) { animation-delay: 0.02s; }
+.main > section:nth-child(2) { animation-delay: 0.10s; }
+.main > section:nth-child(3) { animation-delay: 0.18s; }
+.main > section:nth-child(4) { animation-delay: 0.26s; }
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .main > section { animation: none; }
+}
+
+/* ── Hero ─────────────────────────────────────────────── */
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  gap: 56px;
+  align-items: start;
+  padding-top: 8px;
+}
+
+.name {
+  font-family: var(--font-display);
+  font-size: clamp(2.75rem, 6vw, 4.75rem);
+  font-weight: 600;
+  line-height: 1.0;
+  letter-spacing: -0.02em;
+  margin-bottom: 24px;
+}
+
+.intro {
+  font-family: var(--font-body);
+  font-size: clamp(16px, 1.4vw, 19px);
+  line-height: 1.55;
+  color: var(--text-color);
+  max-width: 46ch;
+  opacity: 0.92;
+}
+
+.currently {
+  border-left: 1px solid var(--border-color);
+  padding-left: 28px;
+  padding-top: 6px;
+}
+
+.kicker {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--accent-color);
+  margin-bottom: 18px;
+}
+
+.cList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 0;
+}
+
+.cRow {
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  gap: 12px;
+  align-items: baseline;
+}
+
+.cRow dt {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+}
+
+.cRow dd {
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--text-color);
+  margin: 0;
+}
+
+/* ── Section heading with trailing rule ───────────────── */
+.sectionHead {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 4px;
+}
+
+.sectionHead .label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--accent-color);
+  white-space: nowrap;
+}
+
+.rule {
+  flex: 1;
+  height: 1px;
+  background: var(--border-color);
+}
+
+.seeAll {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  transition: var(--transition);
+  white-space: nowrap;
+}
+.seeAll:hover { color: var(--accent-color); }
+
+/* ── Index rows (work + writing share the pattern) ────── */
+.index {
+  display: flex;
+  flex-direction: column;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 40px minmax(140px, 1.1fr) minmax(0, 2fr) auto;
+  grid-template-areas: "num title kind tags";
+  gap: 24px;
+  align-items: baseline;
+  padding: 22px 12px;
+  border-bottom: 1px solid var(--border-color);
+  transition: var(--transition);
+  color: inherit;
+}
+.row:hover { background: var(--bg-elevated); }
+
+.num { grid-area: num; font-family: var(--font-mono); font-size: 12px; color: var(--text-muted); }
+.rowTitle {
+  grid-area: title;
+  font-family: var(--font-display);
+  font-size: 21px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  transition: var(--transition);
+}
+.row:hover .rowTitle { color: var(--accent-color); }
+.rowKind {
+  grid-area: kind;
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+.rowTags { grid-area: tags; display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.tag {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  border: 1px solid var(--border-color);
+  padding: 3px 8px;
+  white-space: nowrap;
+}
+
+/* Writing rows */
+.postRow {
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) minmax(0, 2fr) auto;
+  grid-template-areas: "title excerpt date";
+  gap: 24px;
+  align-items: baseline;
+  padding: 20px 12px;
+  border-bottom: 1px solid var(--border-color);
+  transition: var(--transition);
+  color: inherit;
+}
+.postRow:hover { background: var(--bg-elevated); }
+.postTitle {
+  grid-area: title;
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 600;
+  transition: var(--transition);
+}
+.postRow:hover .postTitle { color: var(--accent-color); }
+.postExcerpt {
+  grid-area: excerpt;
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+.postDate {
+  grid-area: date;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  text-align: right;
+}
+
+/* ── Connect ──────────────────────────────────────────── */
+.links {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+.link {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 11px 20px;
+  border: 1px solid var(--border-color);
+  color: var(--text-color);
+  transition: var(--transition);
+}
+.link:hover {
+  border-color: var(--accent-color);
+  color: var(--accent-bright);
+  box-shadow: 0 0 12px var(--accent-glow);
+}
+
+/* ── Responsive ───────────────────────────────────────── */
+@media (max-width: 820px) {
+  .hero {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+  .currently {
+    border-left: none;
+    padding-left: 0;
+    padding-top: 24px;
+    border-top: 1px solid var(--border-color);
+  }
+  .row {
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "title tags"
+      "kind kind";
+    row-gap: 8px;
+    column-gap: 16px;
+  }
+  .num { display: none; }
+  .rowTags { justify-content: flex-start; }
+  .postRow {
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "title date"
+      "excerpt excerpt";
+    row-gap: 6px;
+  }
+}
+
+@media (max-width: 600px) {
+  .inner { padding: 28px 22px 56px; }
+  .main { gap: 52px; }
+}
