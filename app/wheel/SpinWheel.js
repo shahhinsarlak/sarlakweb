@@ -9,10 +9,10 @@ const CANVAS_SIZE = 500; // px — square canvas
 
 // Design tokens for Canvas 2D (CSS vars not accessible in canvas context)
 const COLORS = {
-  accent: '#f97316',
-  accentDim: '#ea580c',
-  bg: '#0c0a09',
-  bgElevated: '#1c1917',
+  accent: '#78866b',
+  accentDim: '#5a6650',
+  bg: '#0a0c0a',
+  bgElevated: '#141813',
 };
 
 function drawWheel(canvas, rotationAngle) {

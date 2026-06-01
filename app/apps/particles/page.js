@@ -7,8 +7,8 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 const MAX_PARTICLES = 200;
 const SPAWN_BOUNDS = 15;
 const PROXIMITY_THRESHOLD_SQ = 11 * 11; // 121 — distanceToSquared, no sqrt cost
-const AMBER = 0xf97316;
-const BG_COLOR = 0x0c0a09;
+const SAGE = 0x78866b;
+const BG_COLOR = 0x0a0c0a;
 
 export default function Particles() {
   const canvasRef = useRef(null);
@@ -62,7 +62,7 @@ export default function Particles() {
 
     // 5. InstancedMesh setup
     const geometry = new THREE.SphereGeometry(0.3, 8, 8);
-    const material = new THREE.MeshBasicMaterial({ color: AMBER });
+    const material = new THREE.MeshBasicMaterial({ color: SAGE });
     const instancedMesh = new THREE.InstancedMesh(geometry, material, MAX_PARTICLES);
     instancedMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     instancedMesh.count = 0;
@@ -75,7 +75,7 @@ export default function Particles() {
     const lineGeometry = new THREE.BufferGeometry();
     lineGeometry.setAttribute('position', new THREE.BufferAttribute(linePositions, 3));
     lineGeometry.setDrawRange(0, 0);
-    const lineMaterial = new THREE.LineBasicMaterial({ color: AMBER, transparent: true, opacity: 0.3 });
+    const lineMaterial = new THREE.LineBasicMaterial({ color: SAGE, transparent: true, opacity: 0.3 });
     const lineSegments = new THREE.LineSegments(lineGeometry, lineMaterial);
     scene.add(lineSegments);
 
@@ -115,7 +115,7 @@ export default function Particles() {
       for (let i = 0; i < 5; i++) {
         const geo = new THREE.SphereGeometry(0.15, 4, 4);
         const mat = new THREE.MeshBasicMaterial({
-          color: AMBER,
+          color: SAGE,
           transparent: true,
           opacity: 1,
         });
@@ -303,7 +303,7 @@ export default function Particles() {
           max={20}
           value={sliderValue}
           onChange={(e) => setSliderValue(Number(e.target.value))}
-          style={{ accentColor: '#f97316', width: 100 }}
+          style={{ accentColor: 'var(--accent-color)', width: 100 }}
         />
         <button
           onClick={() => {
@@ -312,9 +312,9 @@ export default function Particles() {
             }
           }}
           style={{
-            border: '1px solid #f97316',
+            border: '1px solid var(--accent-color)',
             background: 'transparent',
-            color: '#f97316',
+            color: 'var(--accent-color)',
             padding: '6px 14px',
             borderRadius: 6,
             cursor: 'pointer',

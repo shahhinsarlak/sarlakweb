@@ -100,7 +100,7 @@ export default function PrestigeSurviveModal({ gameState, onPrestige, onClose })
                     ? '2px solid var(--accent-color)'
                     : '1px solid var(--border-color)',
                   backgroundColor: isSelected
-                    ? 'rgba(249, 115, 22, 0.1)'
+                    ? 'rgba(122, 134, 107, 0.1)'
                     : 'transparent',
                   padding: '16px',
                   cursor: 'pointer',
@@ -132,7 +132,7 @@ export default function PrestigeSurviveModal({ gameState, onPrestige, onClose })
                 {/* Bonus description */}
                 <div style={{
                   fontSize: '11px',
-                  color: '#f97316',
+                  color: 'var(--accent-color)',
                   marginBottom: '6px',
                 }}>
                   +{Math.abs(path.bonus.value * 100)}% {path.bonus.type}

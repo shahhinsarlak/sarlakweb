@@ -1222,7 +1222,7 @@ export default function Game() {
               onClick={() => setShowAutomationPanel(!showAutomationPanel)}
               style={{
                 padding: '8px 12px',
-                backgroundColor: showAutomationPanel ? 'var(--accent-color, #f97316)' : 'var(--bg-color, #1a1a2e)',
+                backgroundColor: showAutomationPanel ? 'var(--accent-color, #78866b)' : 'var(--bg-color, #0a0c0a)',
                 color: 'var(--text-color, #e0e0e0)',
                 border: '1px solid var(--border-color, #333)',
                 borderRadius: '4px',
@@ -1238,8 +1238,8 @@ export default function Game() {
                 onClick={() => setShowPrestigeModal(true)}
                 style={{
                   background: 'none',
-                  border: '1px solid var(--accent-color, #f97316)',
-                  color: 'var(--accent-color, #f97316)',
+                  border: '1px solid var(--accent-color, #78866b)',
+                  color: 'var(--accent-color, #78866b)',
                   padding: '8px 16px',
                   cursor: 'pointer',
                   fontSize: '11px',

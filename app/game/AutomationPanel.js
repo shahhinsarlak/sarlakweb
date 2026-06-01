@@ -49,13 +49,13 @@ export default function AutomationPanel({ gameState, setGameState, onClose }) {
   const checkboxStyle = {
     marginRight: '8px',
     cursor: 'pointer',
-    accentColor: 'var(--accent-color, #f97316)',
+    accentColor: 'var(--accent-color, #78866b)',
   };
 
   const sliderStyle = {
     width: '100%',
     marginTop: '6px',
-    accentColor: 'var(--accent-color, #f97316)',
+    accentColor: 'var(--accent-color, #78866b)',
     cursor: 'pointer',
   };
 
