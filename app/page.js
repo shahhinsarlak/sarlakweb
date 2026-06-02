@@ -47,9 +47,8 @@ export default function Home() {
 
   return (
     <div className={styles.page}>
+      <Header />
       <div className={styles.inner}>
-        <Header />
-
         <main className={styles.main}>
           {/* Hero */}
           <section className={styles.hero}>

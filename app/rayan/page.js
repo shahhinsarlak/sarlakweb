@@ -4,12 +4,14 @@ import RayanClient from './RayanClient';
 
 export default function RayanPage() {
   return (
-    <div className="container">
+    <>
       <Header />
-      <main className="main-content">
-        <RayanClient />
-      </main>
-      <Footer />
-    </div>
+      <div className="container">
+        <main className="main-content">
+          <RayanClient />
+        </main>
+        <Footer />
+      </div>
+    </>
   );
 }

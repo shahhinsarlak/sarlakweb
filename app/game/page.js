@@ -8,7 +8,6 @@ import DebugModal from './DebugModal';
 import DebugPanel from './DebugPanel';
 import ExamineModal from './ExamineModal';
 import DimensionalArea from './DimensionalArea';
-import DimensionalUpgradesDisplay from './DimensionalUpgradesDisplay';
 import VoidContractsDisplay from './VoidContractsDisplay';
 import SkillTreeModal from './SkillTreeModal';
 import PrinterRoom from './PrinterRoom';
@@ -1086,9 +1085,7 @@ export default function Game() {
           </p>
         </div>
       )}
-      <div className="game-header-wrapper">
-        <Header />
-      </div>
+      <Header />
       <div
         data-game-container
         style={{

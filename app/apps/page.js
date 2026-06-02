@@ -32,9 +32,8 @@ const APPS = [
 export default function Apps() {
   return (
     <div className={styles.page}>
+      <Header />
       <div className={styles.inner}>
-        <Header />
-
         <main className={styles.main}>
           <section className={styles.pageHead}>
             <div className={styles.kicker}>Apps</div>

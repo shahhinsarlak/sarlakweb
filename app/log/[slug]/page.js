@@ -35,8 +35,8 @@ export default async function PostPage({ params }) {
 
   return (
     <div className={styles.page}>
+      <Header />
       <div className={styles.inner}>
-        <Header />
         <main className={styles.main}>
           <article className={styles.reading}>
             <Link href="/log" className={styles.backLink}>← Dev Log</Link>

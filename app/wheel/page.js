@@ -4,12 +4,14 @@ import SpinWheel from './SpinWheel';
 
 export default function WheelPage() {
   return (
-    <div className="container">
+    <>
       <Header />
-      <main className="main-content">
-        <SpinWheel />
-      </main>
-      <Footer />
-    </div>
+      <div className="container">
+        <main className="main-content">
+          <SpinWheel />
+        </main>
+        <Footer />
+      </div>
+    </>
   );
 }
