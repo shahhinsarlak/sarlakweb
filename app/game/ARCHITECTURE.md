@@ -1,0 +1,292 @@
+# Office Horror — Master Architecture Document
+
+**Location:** `app/game/`
+**Stack:** Next.js 15.5.6, React 19.1.0, JavaScript (ES6+)
+**Purpose:** This is the authoritative reference for the incremental horror game. Read this before
+modifying any game system. It replaces reading the full source for understanding, and it documents
+the real current state of the code including known divergences and tech debt. Keep it accurate: when
+you change a system, update the matching section here.
+
+> History note: an earlier loot/armory/equipment/combat system was **removed**. Only vestigial
+> references remain (see "Dead code & vestiges"). The end-game "Tear the Veil" routes to a separate
+> app at `/survival`, not an in-game screen. Treat any mention of weapons, imbuements, attack/health,
+> or an Armory as dead unless you are deliberately reviving it.
+
+---
+
+## 1. Mental model
+
+The whole game is **one client component** (`page.js`) holding **one fat state object** (`gameState`)
+in a single `useState`. There is no engine and no per-entity loop — a single `setInterval` at 100 ms
+in `page.js` is the only tick. All logic lives in:
+
+- **Pure helpers** (`*Helpers.js`) that take `gameState` and return values, never mutating.
+- **An action factory** (`gameActions.js`) that returns ~35 handlers, each doing
+  *validate → calculate → build next state → defer side effects*.
+- **Data/constants** (`constants.js`, `skillTreeConstants.js`, `dimensionalConstants.js`).
+
+UI is **modal-as-route**: `page.js` returns early into a full-screen sub-view (skill tree, dimensional
+area, printer room, file drawer, meditation, debug, archive, journal, buff replacement) based on a
+state flag. Only one renders at a time. The default render is the main office screen (panels).
+
+---
+
+## 2. File map
+
+### Data / constants
+- `constants.js` (~1580 lines) — master data file. `INITIAL_GAME_STATE`, `LOCATIONS`, `UPGRADES`,
+  `DIMENSIONAL_UPGRADES`, `PRINTER_UPGRADES`, `EVENTS`, `ACHIEVEMENTS`, `DOCUMENT_TYPES`
+  (4 types × 5 tiers × 4 outcomes), `SANITY_TIERS`, `PP_MULTIPLIER_TIERS`, `PRESTIGE_PATHS`,
+  `TIER_MASTERY_WEIGHTS`, `HELP_POPUPS`, `HELP_TRIGGERS`, `JOURNAL_ENTRIES`, `MECHANICS_ENTRIES`,
+  `LORE_SNIPPETS`, `DEBUG_CHALLENGES`.
+- `skillTreeConstants.js` — `SKILL_BRANCHES` (5), `SKILLS` (21, each with an `effect(level)` closure),
+  `LEVEL_SYSTEM` (XP curve, max level 50), `XP_REWARDS`.
+- `dimensionalConstants.js` — `DIMENSIONAL_MATERIALS` (7 weighted rarities), `SIZE_RANGES`,
+  `DIMENSIONAL_CAPACITY` (20), `generateEncryptedText`, `generateMaterialNodes`.
+
+### Logic / helpers (pure)
+- `gameActions.js` (~1220) — `createGameActions(setGameState, addMessage, checkAchievements, grantXP)`.
+- `skillSystemHelpers.js` — XP/leveling (`addExperience`), `purchaseSkill`, `getActiveSkillEffects`,
+  and the skill/achievement/prestige modifier appliers.
+- `sanityPaperHelpers.js` — sanity tiers, paper-quality formula, document tier gating, quality→outcome
+  roll, buff stacking, material RNG.
+- `journalHelpers.js` — `discoverLocation`, `isLocationDiscovered`.
+- `saveSystem.js` — file/clipboard save+load, shallow merge migration, offline-PP accrual.
+- `gameUtils.js` — text distortion, clock, `formatPP`, DOM particle/screenshake effects.
+
+### Orchestrator
+- `page.js` (~1580) — the entire main UI shell, the 100 ms tick, all `useEffect` triggers, save menu,
+  debug buttons, modal routing, and the wiring of every panel/action.
+
+### Panels (main screen)
+- `GameActionsPanel.js` — SORT PAPERS / REST / MEDITATE / location nav.
+- `GameUpgradesPanel.js` — tabbed PP / printer / dimensional upgrades; renders `VoidContractsDisplay`.
+- `GameStatsPanel.js` — resource readouts, active buffs, level bar, prestige info.
+- `GameSidebarExtras.js` — event log / misc sidebar.
+
+### Modals / sub-screens
+- `DimensionalArea.js` — portal mining minigame (local session inventory, commits on exit).
+- `PrinterRoom.js` — printer minigame (has its **own** print logic, separate from `printPaper`).
+- `FileDrawer.js` — stored-document management.
+- `SkillTreeModal.js` — 5-branch skill tree UI.
+- `ArchiveModal.js` / `ExamineModal.js` — archive document reading.
+- `MeditationModal.js` — breathing-rhythm sanity minigame.
+- `DebugModal.js` — code-fixing minigame.
+- `JournalModal.js` — locations + mechanics tabs.
+- `AchievementsModal.js`.
+- `BuffReplacementModal.js` — at-buff-cap replacement prompt.
+- `PrestigeSurviveModal.js` — "Survive Another Day" path selection.
+- `TierUnlockModal.js` — PP-tier celebration.
+- `AutomationPanel.js` — 3 automation toggles + thresholds.
+- `DebugPanel.js` — developer cheat panel (ships in prod — see tech debt).
+
+### Small components
+- `HelpPopup.js`, `NotificationPopup.js`, `EventLog.js`, `VoidContractsDisplay.js` (defines
+  `VOID_CONTRACTS` inline).
+
+### Sibling docs
+- `DEBUG_SYSTEM.md` — the debug minigame. `PLAYTIME_AND_BALANCE.md` (repo root) — balance analysis.
+
+---
+
+## 3. State model (`INITIAL_GAME_STATE`, constants.js)
+
+Single source of truth, loaded via `useState(INITIAL_GAME_STATE)`. Canonical names — **do not rename**
+(the save system has no real migration, so renames silently break old saves):
+
+- **Resources:** `pp` (float), `energy` (max 100, +20 with `energydrink`), `sanity`, `maxSanity`,
+  `ppPerClick`, `ppPerSecond`.
+- **Time/phase:** `day`, `timeInOffice`, `phase` (1→2 when `pp > 100`).
+- **Progression:** `playerLevel`, `playerXP`, `skillPoints`, `skills` ({id:level}), `playerPath`,
+  `pathScores`.
+- **Ownership maps ({id:true}):** `upgrades`, `printerUpgrades`, `dimensionalUpgrades`.
+- **Arrays:** `unlockedLocations` (['cubicle']), `discoveredLocations`, `discoveredEvents`,
+  `achievements`, `examinedArchiveItems`, `recentMessages`, `discoveredMechanics`, `storedDocuments`,
+  `activeReportBuffs`, `notifications`, `activePathBonuses`.
+- **Counters/flags:** `sortCount`, `printCount`, `breathCount`, `debugAttempts`, `restCooldown`,
+  `portalCooldown`, plus the modal flags (`inDimensionalArea`, `inPrinterRoom`, `archiveOpen`,
+  `journalOpen`, `fileDrawerOpen`, `meditating`, `debugMode`, …).
+- **Printer/paper:** `paper`, `paperPerPrint`, `paperPerSecond`, `printerQuality`, `printerUnlocked`,
+  `paperQuality`, `documentMastery` ({memos, reports, contracts, prophecies}).
+- **Portal/dimensional:** `portalUnlocked`, `dimensionalInventory` ({materialId:count}),
+  `timeRewindUsed`.
+- **Buffs:** `maxActiveBuffs` (3) — **overloaded, see gotchas**; `pendingBuff`, `pendingBuffDocument`.
+- **Automation:** `automation` { `autoSort`, `autoSortThreshold` (80), `autoPrint`, `autoPrintDocType`,
+  `autoPrintThreshold` (50), `autoPortal`, `lastAutoPrint` }.
+- **Prestige:** `prestigeCount`, `prestigeMultiplier` (= `1 + 0.1 * count`), `activePathBonuses`.
+- **Void/late:** `temporalPactActive`, `voidBargainActive`, `sanityErosionActive`, `focusModeExpiry`,
+  `lastSavedAt`, `ppMultiplierTier`.
+- **Help:** `helpEnabled`, `shownHelpPopups`, `currentHelpPopup`.
+
+### Save/load (`saveSystem.js`)
+- Format: `{ version: '1.0', timestamp, state }`. **`version` is written but never read.** Migration is
+  a shallow `{ ...INITIAL_GAME_STATE, ...saved.state }`, so new keys get defaults but renamed or
+  restructured keys are **not** migrated.
+- Entry points: `saveGame` (download), `loadGame` (file), `exportToClipboard`, `importFromClipboard`.
+  **No autosave / no localStorage** — closing the tab loses progress unless manually saved.
+- Offline PP: on load, `min(elapsed, 4h)`; if `>60s` and `ppPerSecond>0`, grants
+  `floor(ppPerSecond * 0.5 * elapsedSeconds)`. This block is **duplicated** in `loadGame` and
+  `importFromClipboard`.
+
+---
+
+## 4. Systems
+
+**Clicking / PP (`sortPapers`, gameActions.js).** Per click: energy cost (base 2 → skill reduction →
+buff modifier, floored at 0.1× base; `checkFreeAction` may skip it) then PP = `ppPerClick`
+→ `applyPPMultiplier` (skills) → `applySanityPPModifier` (sanity tier × stacked buffs)
+→ × PP-tier mult (`PP_MULTIPLIER_TIERS`: 2× at 10K, 5× at 1M, 25× at 1B) → × chaos bonus
+→ × (1 + achievement ppMultiplier) → × `prestigeMultiplier` → × 1.5 if Focus Mode
+→ × 3 if `sanityErosionActive && sanity<30`.
+
+**Energy.** Max 100 (+20 energydrink). Only refilled by `rest` (full, 30 s cooldown, reduced by Power
+Napping). No passive regen.
+
+**Sanity-Paper (`sanityPaperHelpers.js`, `SANITY_TIERS`).** Four tiers by sanity: high 80-100 (×1.0),
+medium 40-79 (×1.15), low 10-39 (×1.35), critical 0-9 (×1.5) — applied to both PP and XP (lower sanity =
+more output = the core risk/reward lever). Drain runs in the tick (phase-gated; paused by any
+`noSanityDrain` buff; floored by `reality_anchor`). Paper quality =
+`floor(printerQuality*w1 + sanity*w2)`, weights shifting toward sanity at low/critical tiers.
+
+**Skill tree (`skillTreeConstants.js` / `skillSystemHelpers.js`).** 21 skills across Efficiency, Admin,
+Survival, Occult, Forbidden. Each `effect(level)` returns partial effects; `getActiveSkillEffects` sums
+them into one aggregate (booleans OR'd, numbers summed). 1 point/level (3 every 10th), max level 50,
+XP curve `100 * 1.3^(level-1)`. Forbidden skills gate on level 20/25/40.
+
+**Buffs.** `activeReportBuffs[]`, each `{id, expiresAt, ppMult?, xpMult?, energyCostMult?,
+ppPerSecondMult?, noSanityDrain?, materialMult?, …}`. Cap = `maxActiveBuffs`. Stacking is **additive on
+the bonus portion** (three 2.5× → `1 + 1.5*3 = 5.5×`). Expired buffs cleaned lazily on each sort.
+
+**File Drawer (`storedDocuments`, FileDrawer.js).** `printDocument` creates and **stores** a document
+(no effect yet); `consumeDocument` applies its `outcome` (pp/sanity/energy/xp/skillPoint/materials/buff/
+debuff/permanentPPPerSec/lore/locks). `shredDocument` returns paper by quality.
+
+**Locations / dimensional.** `LOCATIONS`: cubicle, archive (29 lore items), portal (→ DimensionalArea),
+printerroom (→ PrinterRoom). `DimensionalArea` generates encrypted text + weighted material nodes per
+entry, mines into a **local** inventory, commits to `dimensionalInventory` on exit, then sets
+`portalCooldown`. (There is **no** colleague/break-room mechanic — only lore references it.)
+
+**Dimensional upgrades / void contracts.** `dimensionalUpgrades` crafted from materials in
+`GameUpgradesPanel`. `VOID_CONTRACTS` (Temporal Pact, Void Bargain, Sanity Erosion) are **permanent,
+irreversible** trade-offs. End-game items: `singularity_collapse` (ending) and `tear_the_veil`
+(→ `/survival`).
+
+**Prestige ("Survive Another Day").** Unlocked once `upgrades.promotion` (Senior Analyst, 12K PP) is
+owned. `prestige(path)` resets to `INITIAL_GAME_STATE` but preserves `achievements`, `playerPath`,
+`pathScores`, `discoveredEvents`; increments `prestigeCount`; recomputes `prestigeMultiplier`; appends a
++15% path bonus to `activePathBonuses`. The loop is currently shallow (+10% PP/prestige).
+
+**Automation.** Three toggles, each gated on an unlock upgrade: autoSort (robotic_assistant, 5K),
+autoPrint (document_automaton, 15K, 1/3s, tier-1 only), autoPortal (void_protocol, 50K).
+
+**Achievements / XP / Meditation / Archive / Help.** `ACHIEVEMENTS[].check(state)` scanned by
+`checkAchievements` (+50 XP each). `grantXP` applies Seeker path bonus → `addExperience`. Meditation is
+a 3-breath rhythm game restoring sanity (unlocks at sanity ≤25). Archive: reading three specific lore
+entries + day ≥7 unlocks the Portal. Help popups (`HELP_POPUPS`/`HELP_TRIGGERS`) record into
+`shownHelpPopups` and teach the matching `MECHANICS_ENTRIES` journal entry on dismissal.
+
+---
+
+## 5. Progression curve
+
+First clicks (SORT PAPERS) → early PP upgrades (stapler 50 → coffee 150 first passive → printerroom 200
+→ … archive 400 → debugger 500). **Phase 2 at pp>100**: real sanity drain begins. Printer/document loop
+(print → printer upgrades → document tiers gated by mastery 0/3/8/18/30 → File Drawer → consume).
+**Portal unlock** (3 archive entries + day ≥7) → dimensional mining → dimensional upgrades / Occult
+skills. **PP-tier explosions** at 10K/1M/1B are the main payoff. Automation at 5K/15K/50K shifts active →
+idle. Senior Analyst (12K) unlocks Prestige. Void Contracts are late, material-gated, build-defining.
+End-game: `singularity_collapse` then `tear_the_veil` (5M PP + one of every material) → `/survival`;
+parallel loop is repeated prestige for stacking path bonuses.
+
+Gating mixes PP cost, day count, mastery counts, player level, and materials.
+
+---
+
+## 6. Conventions (follow these)
+
+- **Functional setState only:** `setGameState(prev => ({ ...prev, ... }))`. Never reference `gameState`
+  directly inside an update.
+- **Actions go through the factory:** add new handlers inside `createGameActions`, following
+  validate → calculate → build → side-effects. Side effects (XP, achievements, particles) are deferred
+  with `setTimeout(..., 0/50/100)` so they run after the state commit.
+- **Helpers are pure:** take `gameState`, return values, no mutation. Aggregate via
+  `getActiveSkillEffects` / `getAchievementBonuses` / `getPrestigePathBonus`.
+- **Messages:** prepend via `addMessage`, always
+  `recentMessages: [msg, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)`.
+- **New state property:** add to `INITIAL_GAME_STATE` with a comment and correct type; reference the
+  canonical name everywhere.
+- **JSX:** escape `'` `"` `>` `}` in text (`&apos;` etc.) — `react/no-unescaped-entities` is enforced by
+  the Amplify build. Run `npm run build` before pushing.
+
+### Cascading-change checklist (game)
+When you touch a system, verify: `INITIAL_GAME_STATE` · `HELP_POPUPS`/`HELP_TRIGGERS` ·
+`MECHANICS_ENTRIES` · `ACHIEVEMENTS` checks · `gameActions.js` handlers · the panels showing the values ·
+the tick in `page.js` · both light/dark rendering · this document.
+
+---
+
+## 7. Known issues, gotchas & optimization roadmap
+
+These are real and worth fixing before building large new features on top.
+
+### Gotchas that will bite you
+- **`maxActiveBuffs` is overloaded.** The tick repurposes it as File-Drawer document capacity
+  (`3 + maxStoredDocuments` skill), which silently changes the buff cap when Executive Authority is
+  bought. Separate these two concepts before touching either.
+- **Three divergent PP pipelines.** Manual `sortPapers` (full chain, additive `ppPerSecondMult`), the
+  passive tick (subset, uses **max** of `ppPerSecondMult`), and autoSort (raw `ppPerClick`, no chain)
+  all compute PP differently. The display calculator `calculateEffectivePPPerClick` omits
+  chaos/achievement/prestige/focus/erosion, so the shown click value is wrong once those are active.
+  Unify into one applier used everywhere.
+- **Two print implementations.** `gameActions.printPaper` and `PrinterRoom.handlePrint` give different
+  rewards and only one updates `paperQuality`.
+- **Save migration is fake.** `version` is never read; migration is a shallow spread. Renaming or
+  restructuring any key corrupts old saves. There is no autosave.
+
+### Optimization roadmap (prioritized)
+1. **(HIGH) Tick + re-render cost.** The 100 ms tick copies the entire `gameState` and re-renders the
+   ~1580-line component and every panel 10×/sec; no panel is memoized; `actions` is rebuilt every render
+   (page.js). Memoize `actions` (`useMemo`/`useCallback`), wrap panels in `React.memo`, split the tick
+   into independent effects (cooldowns vs passive-gen vs events), and `useMemo` the display calculators.
+   Consider per-second accrual with `dt` scaling instead of 100 ms.
+2. **(HIGH) Unify the PP pipeline** (above) and fix the display calculators to match reality.
+3. **(HIGH) Separate buff cap from drawer capacity** (the `maxActiveBuffs` overload).
+4. **(HIGH) Real save system:** read `version`, add ordered migration steps, schema-validate, and add
+   localStorage autosave.
+5. **(MEDIUM) Collapse PrinterRoom print into `printPaper`; extract the duplicated offline-PP block;
+   centralize scattered magic-number costs** (sort 2, print 3, examine 25, rest 30, tier paper-return
+   arrays) into constants.
+6. **(MEDIUM) Decompose `page.js`:** a `useGameLoop` hook, a save-menu component, one data-driven
+   help-trigger effect (replacing ~8 near-identical effects), and a context/reducer to kill prop
+   drilling. Gate `DebugPanel` and the `+100K PP`/`+1 DAY` dev buttons behind an env flag — they
+   currently ship in production.
+
+### Dead code & vestiges (safe to remove, or revive deliberately)
+- `enterDimensionalArea` (page.js) — defined, never called.
+- `pathScores` — preserved on prestige and read in `PrestigeSurviveModal`, but never initialized or
+  written (always 0/undefined). Either implement or remove.
+- `playerPath` — set on prestige, never read for logic.
+- `documentsCreated` — written by autoPrint, never initialized, never read.
+- **Armory/loot vestiges:** `armoryUnlocked` and the dimensional-tear feature in `DimensionalArea.js`
+  are unreachable (nothing adds `'armory'` to `unlockedLocations`); stray `loot`/`weapon`/`imbuing`
+  strings linger in tooltips, `JournalModal`, `DebugPanel`, and `LORE_SNIPPETS`.
+- `skillSystemHelpers` carries a "Legacy effects" block (`attackDamage`, `maxHealth`, `critChance`, …)
+  from the removed combat system — unused.
+- `canPrintDocument` superseded by `canPrintDocumentTier`; some `getActiveBuff*Multiplier` helpers are
+  duplicated by inline tick logic.
+
+*(Already removed during cleanup: `DimensionalUpgradesDisplay.js` — was imported but never rendered.)*
+
+---
+
+## 8. Where to start for common tasks
+
+- **Add an upgrade:** `UPGRADES` (constants.js) → purchase handler in `gameActions.js` → display in
+  `GameUpgradesPanel.js` → effect applied wherever relevant → achievement/help/journal if warranted.
+- **Add a skill:** `SKILLS` (skillTreeConstants.js) with an `effect(level)` → ensure
+  `getActiveSkillEffects` aggregates it → consume the aggregate in the relevant applier.
+- **Tune balance:** PP costs in `UPGRADES`/tiers, `PP_MULTIPLIER_TIERS`, `LEVEL_SYSTEM` curve,
+  `SANITY_TIERS` multipliers, `DOCUMENT_TYPES` outcomes, `DIMENSIONAL_MATERIALS` weights.
+- **Add a document outcome:** `DOCUMENT_TYPES` (constants.js) → handle the outcome key in
+  `consumeDocument` (gameActions.js).
+- **Touch the loop:** the single `setInterval` lives in `page.js`; respect the memoization notes above.

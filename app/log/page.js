@@ -15,8 +15,8 @@ export default function LogPage() {
 
   return (
     <div className={styles.page}>
+      <Header />
       <div className={styles.inner}>
-        <Header />
         <main className={styles.main}>
           <section className={styles.pageHead}>
             <div className={styles.kicker}>Dev Log</div>

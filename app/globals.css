@@ -71,13 +71,6 @@ h1, h2, h3, h4, h5, h6 {
     flex-direction: column;
 }
 
-/* Game page header wrapper - centered without excessive padding */
-.game-header-wrapper {
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 40px 40px 0 40px;
-}
-
 /* Custom scrollbar styling for better aesthetics */
 ::-webkit-scrollbar {
     width: 8px;
@@ -105,9 +98,15 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .header {
+    width: 100%;
     border-bottom: 1px solid var(--border-color);
-    padding: 4px 0 20px;
-    margin-bottom: 56px;
+    margin-bottom: 0;
+}
+
+.header-inner {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 16px 40px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -366,21 +365,20 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 @media (max-width: 600px) {
-    .header {
-        flex-direction: column !important;
+    .header-inner {
+        flex-direction: column;
         gap: 18px;
-        align-items: center !important;
+        align-items: center;
+        padding: 16px 22px;
     }
 
     .nav {
-        order: 1;
         width: 100%;
         justify-content: center;
         flex-wrap: wrap;
     }
 
     .nav-right {
-        order: 1;
         flex-direction: column;
         gap: 18px;
     }
