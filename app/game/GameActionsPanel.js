@@ -1,4 +1,6 @@
-export default function GameActionsPanel({
+import React from 'react';
+
+function GameActionsPanel({
   gameState,
   isMobile,
   currentLocation,
@@ -186,3 +188,6 @@ export default function GameActionsPanel({
     </div>
   );
 }
+
+GameActionsPanel.displayName = 'GameActionsPanel';
+export default React.memo(GameActionsPanel);

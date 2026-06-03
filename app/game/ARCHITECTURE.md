@@ -119,14 +119,15 @@ Single source of truth, loaded via `useState(INITIAL_GAME_STATE)`. Canonical nam
 - **Help:** `helpEnabled`, `shownHelpPopups`, `currentHelpPopup`.
 
 ### Save/load (`saveSystem.js`)
-- Format: `{ version: '1.0', timestamp, state }`. **`version` is written but never read.** Migration is
-  a shallow `{ ...INITIAL_GAME_STATE, ...saved.state }`, so new keys get defaults but renamed or
-  restructured keys are **not** migrated.
-- Entry points: `saveGame` (download), `loadGame` (file), `exportToClipboard`, `importFromClipboard`.
-  **No autosave / no localStorage** — closing the tab loses progress unless manually saved.
-- Offline PP: on load, `min(elapsed, 4h)`; if `>60s` and `ppPerSecond>0`, grants
-  `floor(ppPerSecond * 0.5 * elapsedSeconds)`. This block is **duplicated** in `loadGame` and
-  `importFromClipboard`.
+- Format: `{ version: <number>, timestamp, state }`. `CURRENT_SAVE_VERSION` is read on load and a real
+  `migrateState` runs ordered `MIGRATIONS` (keyed by the version migrating FROM) before merging over
+  `INITIAL_GAME_STATE`. To change state shape: bump `CURRENT_SAVE_VERSION` and add a migration.
+- Entry points: `saveGame` (download), `loadGame` (file), `exportToClipboard`, `importFromClipboard`,
+  plus **localStorage autosave** — `saveToLocalStorage` / `loadFromLocalStorage` / `hasLocalSave` /
+  `clearLocalSave`. `page.js` loads the autosave on mount and saves every 15s and on `beforeunload`.
+- Offline PP: `applyOfflineProgress` (single shared helper) grants `floor(ppPerSecond*0.5*elapsed)` capped
+  at 4h, measured from `state.lastSavedAt`. All save writers stamp `lastSavedAt` so active play is not
+  miscounted as offline.
 
 ---
 
@@ -230,52 +231,54 @@ the tick in `page.js` · both light/dark rendering · this document.
 These are real and worth fixing before building large new features on top.
 
 ### Gotchas that will bite you
-- **`maxActiveBuffs` is overloaded.** The tick repurposes it as File-Drawer document capacity
-  (`3 + maxStoredDocuments` skill), which silently changes the buff cap when Executive Authority is
-  bought. Separate these two concepts before touching either.
-- **Three divergent PP pipelines.** Manual `sortPapers` (full chain, additive `ppPerSecondMult`), the
-  passive tick (subset, uses **max** of `ppPerSecondMult`), and autoSort (raw `ppPerClick`, no chain)
-  all compute PP differently. The display calculator `calculateEffectivePPPerClick` omits
-  chaos/achievement/prestige/focus/erosion, so the shown click value is wrong once those are active.
-  Unify into one applier used everywhere.
-- **Two print implementations.** `gameActions.printPaper` and `PrinterRoom.handlePrint` give different
-  rewards and only one updates `paperQuality`.
-- **Save migration is fake.** `version` is never read; migration is a shallow spread. Renaming or
-  restructuring any key corrupts old saves. There is no autosave.
+- **PP is now one pipeline.** `ppHelpers.js` (`computeClickPP`, `computePassivePPPerSecond`) is the single
+  source used by `sortPapers`, the passive tick, auto-sort, and both display calculators. Change PP math
+  there, not in four places. (Auto-sort and the displays now match real output.)
+- **Buff cap vs drawer capacity are separate now.** `gameState.maxActiveBuffs` is purely the buff cap (3).
+  File-drawer capacity is `getMaxStoredDocuments` (base 10 + Executive Authority skill), enforced in
+  `printDocument`. The tick no longer mutates `maxActiveBuffs`.
+- **Two print implementations remain.** `gameActions.printPaper` and `PrinterRoom.handlePrint` still give
+  different rewards and only one updates `paperQuality` — deliberately left (the printer room is a separate
+  minigame); merge carefully if you touch it.
 
-### Optimization roadmap (prioritized)
-1. **(HIGH) Tick + re-render cost.** The 100 ms tick copies the entire `gameState` and re-renders the
-   ~1580-line component and every panel 10×/sec; no panel is memoized; `actions` is rebuilt every render
-   (page.js). Memoize `actions` (`useMemo`/`useCallback`), wrap panels in `React.memo`, split the tick
-   into independent effects (cooldowns vs passive-gen vs events), and `useMemo` the display calculators.
-   Consider per-second accrual with `dt` scaling instead of 100 ms.
-2. **(HIGH) Unify the PP pipeline** (above) and fix the display calculators to match reality.
-3. **(HIGH) Separate buff cap from drawer capacity** (the `maxActiveBuffs` overload).
-4. **(HIGH) Real save system:** read `version`, add ordered migration steps, schema-validate, and add
-   localStorage autosave.
-5. **(MEDIUM) Collapse PrinterRoom print into `printPaper`; extract the duplicated offline-PP block;
-   centralize scattered magic-number costs** (sort 2, print 3, examine 25, rest 30, tier paper-return
-   arrays) into constants.
-6. **(MEDIUM) Decompose `page.js`:** a `useGameLoop` hook, a save-menu component, one data-driven
-   help-trigger effect (replacing ~8 near-identical effects), and a context/reducer to kill prop
-   drilling. Gate `DebugPanel` and the `+100K PP`/`+1 DAY` dev buttons behind an env flag — they
-   currently ship in production.
+### Behaviour changes to be aware of (from the optimization pass)
+- Executive Authority no longer raises the buff cap (that was the old overload bug); it now raises
+  document capacity, its real purpose. Buff cap stays 3.
+- The File Drawer now has a real cap (10 + skill); printing is blocked when full.
 
-### Dead code & vestiges (safe to remove, or revive deliberately)
-- `enterDimensionalArea` (page.js) — defined, never called.
+### Optimization roadmap (status)
+1. **(HIGH) Tick + re-render cost.** PARTIAL. `actions` is now `useMemo`'d and all panels/modals are
+   `React.memo`'d; display calculators route through the canonical helpers. STILL OPEN: the 100 ms tick
+   still copies all of `gameState` (so memo'd panels still re-render each tick because `gameState`
+   identity changes), and the tick is not split into independent effects. The real remaining win is
+   state-slicing / a reducer + context so panels subscribe to narrow slices.
+2. **(HIGH) Unify the PP pipeline.** DONE — `ppHelpers.js`; displays match reality; auto-sort uses the
+   full chain.
+3. **(HIGH) Separate buff cap from drawer capacity.** DONE — `getMaxStoredDocuments` + `printDocument`
+   enforcement; tick no longer mutates `maxActiveBuffs`.
+4. **(HIGH) Real save system.** DONE — versioned `migrateState`, shared `applyOfflineProgress`,
+   localStorage autosave wired in `page.js`.
+5. **(MEDIUM) PrinterRoom/printPaper + magic numbers.** PARTIAL — offline-PP block de-duplicated. STILL
+   OPEN: merging the two print implementations and centralizing scattered cost literals (sort 2, print 3,
+   examine 25, rest 30, tier paper-return arrays). Deferred as behaviour-risky/low-value without tests.
+6. **(MEDIUM) Decompose `page.js`.** PARTIAL — dev tools (`DebugPanel`, `+100K PP`, `+1 DAY`) gated behind
+   `SHOW_DEV_TOOLS` (dev-only). STILL OPEN: extracting a `useGameLoop` hook, a save-menu component, a
+   data-driven help-trigger effect, and a context/reducer to kill prop drilling — deferred as a high-risk
+   structural rewrite to do under test coverage.
+
+### Dead code & vestiges
+Removed in the optimization pass: `enterDimensionalArea` and `documentsCreated` (page.js), and the
+unreachable armory / dimensional-tear feature in `DimensionalArea.js`. `DimensionalUpgradesDisplay.js`
+was removed earlier.
+
+Still outstanding (low priority):
 - `pathScores` — preserved on prestige and read in `PrestigeSurviveModal`, but never initialized or
-  written (always 0/undefined). Either implement or remove.
-- `playerPath` — set on prestige, never read for logic.
-- `documentsCreated` — written by autoPrint, never initialized, never read.
-- **Armory/loot vestiges:** `armoryUnlocked` and the dimensional-tear feature in `DimensionalArea.js`
-  are unreachable (nothing adds `'armory'` to `unlockedLocations`); stray `loot`/`weapon`/`imbuing`
-  strings linger in tooltips, `JournalModal`, `DebugPanel`, and `LORE_SNIPPETS`.
-- `skillSystemHelpers` carries a "Legacy effects" block (`attackDamage`, `maxHealth`, `critChance`, …)
-  from the removed combat system — unused.
-- `canPrintDocument` superseded by `canPrintDocumentTier`; some `getActiveBuff*Multiplier` helpers are
-  duplicated by inline tick logic.
-
-*(Already removed during cleanup: `DimensionalUpgradesDisplay.js` — was imported but never rendered.)*
+  written (always 0). Either implement or remove. `playerPath` — set on prestige, never read for logic.
+- `skillSystemHelpers` keeps a "Legacy effects" block (`attackDamage`, `maxHealth`, `critChance`, …) from
+  the removed combat system. **Do not blind-delete** — some keys in it (`rarityBonus`, `energyEfficiency`,
+  `sanityResistance`) are still read as fallbacks; removing them risks `NaN`.
+- A `debugForceTearSpawn` flag may linger in constants/DebugPanel after the tear removal.
+- `canPrintDocument` superseded by `canPrintDocumentTier`.
 
 ---
 

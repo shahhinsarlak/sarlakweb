@@ -1,7 +1,8 @@
+import React from 'react';
 import VoidContractsDisplay from './VoidContractsDisplay';
 import { DIMENSIONAL_MATERIALS } from './dimensionalConstants';
 
-export default function GameUpgradesPanel({
+function GameUpgradesPanel({
   gameState,
   selectedUpgradeType,
   setSelectedUpgradeType,
@@ -333,3 +334,6 @@ export default function GameUpgradesPanel({
     </div>
   );
 }
+
+GameUpgradesPanel.displayName = 'GameUpgradesPanel';
+export default React.memo(GameUpgradesPanel);

@@ -1,7 +1,7 @@
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import NotificationPopup from './NotificationPopup';
 
-export default function DebugModal({ gameState, submitDebug, updateDebugCode, cancelDebug, notifications, onDismissNotification }) {
+function DebugModal({ gameState, submitDebug, updateDebugCode, cancelDebug, notifications, onDismissNotification }) {
   // Handle escape key to close modal
   useEffect(() => {
     const handleEscape = (e) => {
@@ -224,3 +224,5 @@ export default function DebugModal({ gameState, submitDebug, updateDebugCode, ca
     </>
   );
 }
+DebugModal.displayName = 'DebugModal';
+export default React.memo(DebugModal);

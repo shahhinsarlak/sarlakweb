@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 
 /**
  * Notification Popup Component
@@ -9,7 +9,7 @@ import { useState, useEffect } from 'react';
  * @param {Array} notifications - Array of notification objects: { id, message, timestamp }
  * @param {Function} onDismiss - Callback to dismiss a notification by ID
  */
-export default function NotificationPopup({ notifications, onDismiss }) {
+function NotificationPopup({ notifications, onDismiss }) {
   if (!notifications || notifications.length === 0) return null;
 
   return (
@@ -96,3 +96,6 @@ function NotificationItem({ notification, index, onDismiss }) {
     </div>
   );
 }
+
+NotificationPopup.displayName = 'NotificationPopup';
+export default React.memo(NotificationPopup);

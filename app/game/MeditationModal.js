@@ -1,8 +1,8 @@
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import EventLog from './EventLog';
 import NotificationPopup from './NotificationPopup';
 
-export default function MeditationModal({ gameState, breatheAction, cancelMeditation, notifications, onDismissNotification }) {
+function MeditationModal({ gameState, breatheAction, cancelMeditation, notifications, onDismissNotification }) {
   // Handle escape key to close modal
   useEffect(() => {
     const handleEscape = (e) => {
@@ -217,3 +217,5 @@ export default function MeditationModal({ gameState, breatheAction, cancelMedita
     </>
   );
 }
+MeditationModal.displayName = 'MeditationModal';
+export default React.memo(MeditationModal);

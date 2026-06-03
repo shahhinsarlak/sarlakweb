@@ -12,11 +12,11 @@
 
 'use client';
 
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { JOURNAL_ENTRIES, LOCATIONS, MECHANICS_ENTRIES } from './constants';
 import NotificationPopup from './NotificationPopup';
 
-export default function JournalModal({ gameState, onClose, onSwitchTab, notifications, onDismissNotification }) {
+function JournalModal({ gameState, onClose, onSwitchTab, notifications, onDismissNotification }) {
   const currentTab = gameState.journalTab || 'locations';
 
   // Handle ESC key to close
@@ -287,3 +287,6 @@ export default function JournalModal({ gameState, onClose, onSwitchTab, notifica
     </>
   );
 }
+
+JournalModal.displayName = 'JournalModal';
+export default React.memo(JournalModal);

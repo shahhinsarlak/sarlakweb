@@ -10,10 +10,10 @@
  * @param {Function} onReplace - Callback when player chooses to replace a buff (buffId)
  * @param {Function} onCancel - Callback when player cancels the operation
  */
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import NotificationPopup from './NotificationPopup';
 
-export default function BuffReplacementModal({ gameState, pendingBuff, onReplace, onCancel, notifications, onDismissNotification }) {
+function BuffReplacementModal({ gameState, pendingBuff, onReplace, onCancel, notifications, onDismissNotification }) {
   // Handle escape key to cancel
   useEffect(() => {
     const handleEscape = (e) => {
@@ -240,3 +240,6 @@ export default function BuffReplacementModal({ gameState, pendingBuff, onReplace
     </>
   );
 }
+
+BuffReplacementModal.displayName = 'BuffReplacementModal';
+export default React.memo(BuffReplacementModal);

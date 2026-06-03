@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { DIMENSIONAL_MATERIALS } from './dimensionalConstants';
 
 const VOID_CONTRACTS = [
@@ -29,7 +29,7 @@ const VOID_CONTRACTS = [
   },
 ];
 
-export default function VoidContractsDisplay({ gameState, onPurchase }) {
+function VoidContractsDisplay({ gameState, onPurchase }) {
   const [confirmingId, setConfirmingId] = useState(null);
 
   const canAfford = (contract) => {
@@ -179,3 +179,6 @@ export default function VoidContractsDisplay({ gameState, onPurchase }) {
     </div>
   );
 }
+
+VoidContractsDisplay.displayName = 'VoidContractsDisplay';
+export default React.memo(VoidContractsDisplay);

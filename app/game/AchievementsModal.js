@@ -5,10 +5,10 @@
  * Shows achievement name, description, and unlock status
  */
 
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import NotificationPopup from './NotificationPopup';
 
-export default function AchievementsModal({ gameState, achievements, onClose, notifications, onDismissNotification }) {
+function AchievementsModal({ gameState, achievements, onClose, notifications, onDismissNotification }) {
   const unlockedAchievements = gameState.achievements || [];
 
   // Handle escape key to close modal
@@ -202,3 +202,6 @@ export default function AchievementsModal({ gameState, achievements, onClose, no
     </>
   );
 }
+
+AchievementsModal.displayName = 'AchievementsModal';
+export default React.memo(AchievementsModal);

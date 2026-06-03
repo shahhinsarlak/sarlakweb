@@ -5,7 +5,9 @@
  * Provides guidance on new mechanics as they're introduced
  */
 
-export default function HelpPopup({ popup, onDismiss }) {
+import React from 'react';
+
+function HelpPopup({ popup, onDismiss }) {
   if (!popup) return null;
 
   return (
@@ -141,3 +143,6 @@ export default function HelpPopup({ popup, onDismiss }) {
     </div>
   );
 }
+
+HelpPopup.displayName = 'HelpPopup';
+export default React.memo(HelpPopup);
