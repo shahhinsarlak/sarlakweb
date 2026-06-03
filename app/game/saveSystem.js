@@ -171,7 +171,8 @@ export const loadGame = (file, setGameState, addMessage) => {
         try {
           const saveData = JSON.parse(e.target.result);
 
-          if (!saveData.version || !saveData.state) {
+          // Let migrateState normalize the version (it handles missing/legacy/0).
+          if (!saveData || !saveData.state) {
             throw new Error('Invalid save file format');
           }
 
@@ -232,7 +233,7 @@ export const importFromClipboard = (setGameState, addMessage) => {
       return navigator.clipboard.readText()
         .then(text => {
           const saveData = JSON.parse(text);
-          if (!saveData.version || !saveData.state) {
+          if (!saveData || !saveData.state) {
             throw new Error('Invalid save data');
           }
 
