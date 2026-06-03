@@ -1,6 +1,7 @@
 import React from 'react';
 import { getActiveSkillEffects } from './skillSystemHelpers';
 import { getSanityTierDisplay, getActiveBuffPPMultiplier, getActiveBuffPPPerSecondMultiplier } from './sanityPaperHelpers';
+import { computeClickPP, computePassivePPPerSecond } from './ppHelpers';
 
 function GameStatsPanel({
   gameState,
@@ -100,7 +101,11 @@ function GameStatsPanel({
                 const tierMult = tierData ? tierData.multiplier : 1;
                 const tierBonus = tierMult !== 1 ? `${tierMult}x` : 'none';
 
-                return `Base: ${gameState.ppPerClick} \u2022 Skills: ${skillBonus} \u2022 Sanity: ${sanityBonus} \u2022 Buffs: ${buffBonus} \u2022 Tier: ${tierBonus} (${tierName})`;
+                // Authoritative combined multiplier (also folds in prestige,
+                // chaos, achievements, focus and erosion) so it matches the headline.
+                const base = gameState.ppPerClick || 1;
+                const totalMult = computeClickPP(gameState) / base;
+                return `Base: ${gameState.ppPerClick} \u2022 Skills: ${skillBonus} \u2022 Sanity: ${sanityBonus} \u2022 Buffs: ${buffBonus} \u2022 Tier: ${tierBonus} (${tierName}) \u2022 = \u00d7${totalMult.toFixed(2)}`;
               })()}
             </div>
             {gameState.focusModeExpiry > Date.now() && (
@@ -197,7 +202,11 @@ function GameStatsPanel({
                   const ppBuffBonus = ppMult !== 1 ? `+${((ppMult - 1) * 100).toFixed(0)}%` : 'none';
                   const ppSecBuffBonus = ppSecMult !== 1 ? `+${((ppSecMult - 1) * 100).toFixed(0)}%` : 'none';
 
-                  return `Base: ${gameState.ppPerSecond} \u2022 Skills: ${skillBonus} \u2022 Sanity: ${sanityBonus} \u2022 PP Buffs: ${ppBuffBonus} \u2022 Void Buffs: ${ppSecBuffBonus}`;
+                  // Authoritative combined multiplier (folds in tier, prestige,
+                  // Rationalist path and Temporal Pact) so it matches the headline.
+                  const base = gameState.ppPerSecond || 1;
+                  const totalMult = computePassivePPPerSecond(gameState) / base;
+                  return `Base: ${gameState.ppPerSecond} \u2022 Skills: ${skillBonus} \u2022 Sanity: ${sanityBonus} \u2022 PP Buffs: ${ppBuffBonus} \u2022 Void Buffs: ${ppSecBuffBonus} \u2022 = \u00d7${totalMult.toFixed(2)}`;
                 })()}
               </div>
             </div>

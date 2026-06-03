@@ -327,6 +327,30 @@ export const getTierData = (docType, tierNumber) => {
 };
 
 /**
+ * Build a stored-document object for a printed tier, rolling its quality
+ * outcome. Shared by manual printing and auto-print so they stay consistent.
+ * @returns {Object|null} The document, or null if the tier is invalid.
+ */
+export const buildPrintedDocument = (docType, tierNumber, gameState) => {
+  const tierData = getTierData(docType, tierNumber);
+  if (!tierData) return null;
+
+  const paperQuality = calculatePaperQuality(gameState);
+  const qualityOutcome = rollQualityOutcome(paperQuality);
+
+  return {
+    id: `${docType}_${tierNumber}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    type: docType,
+    tier: tierNumber,
+    tierName: tierData.name,
+    quality: qualityOutcome,
+    outcome: tierData.outcomes[qualityOutcome],
+    createdAt: Date.now(),
+    important: false,
+  };
+};
+
+/**
  * Check if a specific tier is unlocked
  * @param {string} docType - Document type ID
  * @param {number} tierNumber - Tier number (1-5)

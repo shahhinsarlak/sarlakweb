@@ -32,7 +32,8 @@ import { computeClickPP, computePassivePPPerSecond } from './ppHelpers';
 import { addExperience, purchaseSkill, getActiveSkillEffects, getModifiedPortalCooldown, getMaxSanity, getPrestigePathBonus } from './skillSystemHelpers';
 import { SKILLS, LEVEL_SYSTEM, XP_REWARDS } from './skillTreeConstants';
 import { DIMENSIONAL_MATERIALS } from './dimensionalConstants';
-import { getSanityTierDisplay, isSanityDrainPaused, calculatePaperQuality } from './sanityPaperHelpers';
+import { getSanityTierDisplay, isSanityDrainPaused, calculatePaperQuality, buildPrintedDocument } from './sanityPaperHelpers';
+import { getMaxStoredDocuments } from './skillSystemHelpers';
 import {
   INITIAL_GAME_STATE,
   LOCATIONS,
@@ -45,6 +46,7 @@ import {
   HELP_TRIGGERS,
   PP_MULTIPLIER_TIERS,
   DOCUMENT_TYPES,
+  TIER_MASTERY_WEIGHTS,
   PRESTIGE_PATHS
 } from './constants';
 
@@ -234,7 +236,7 @@ export default function Game() {
   useEffect(() => {
     const saved = loadFromLocalStorage();
     if (saved) {
-      setGameState(saved);
+      setGameState(prev => ({ ...prev, ...saved }));
       setTimeout(() => addMessage('Progress restored from autosave.'), 0);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -591,13 +593,25 @@ export default function Game() {
           const docType = newState.automation.autoPrintDocType || 'memo';
           const docDef = DOCUMENT_TYPES[docType];
           const tier1Cost = docDef?.tiers?.[0]?.cost || { paper: 5, energy: 3 };
-          newState.paper = Math.max(0, newState.paper - (tier1Cost.paper || 5));
-          newState.energy = Math.max(0, newState.energy - (tier1Cost.energy || 3));
-          if (tier1Cost.sanity) {
-            newState.sanity = Math.max(0, newState.sanity - tier1Cost.sanity);
+          // Respect the file-drawer cap and actually store the document, matching
+          // the manual printDocument path (no silent resource waste).
+          const drawerFull = (newState.storedDocuments?.length || 0) >= getMaxStoredDocuments(newState);
+          const document = drawerFull ? null : buildPrintedDocument(docType, 1, newState);
+          if (document) {
+            newState.paper = Math.max(0, newState.paper - (tier1Cost.paper || 5));
+            newState.energy = Math.max(0, newState.energy - (tier1Cost.energy || 3));
+            if (tier1Cost.sanity) {
+              newState.sanity = Math.max(0, newState.sanity - tier1Cost.sanity);
+            }
+            newState.storedDocuments = [...(newState.storedDocuments || []), document];
+            const masteryGain = TIER_MASTERY_WEIGHTS[1] || 1;
+            newState.documentMastery = {
+              ...newState.documentMastery,
+              [`${docType}s`]: (newState.documentMastery?.[`${docType}s`] || 0) + masteryGain,
+            };
+            newState.automation = { ...newState.automation, lastAutoPrint: Date.now() };
+            setTimeout(() => addMessage(`[AUTO] Printed ${docType} (tier 1)`), 0);
           }
-          newState.automation = { ...newState.automation, lastAutoPrint: Date.now() };
-          setTimeout(() => addMessage(`[AUTO] Printed ${docType} (tier 1)`), 0);
         }
 
         // autoPortal — silent entry, no confirmation
