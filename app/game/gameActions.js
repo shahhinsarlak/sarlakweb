@@ -864,32 +864,31 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
           duration: adjustedDuration  // Override duration from spread with adjusted value
         };
 
+        // Build the description once so both the add and replace paths can use it.
+        const buffParts = [];
+        if (buff.ppMult) buffParts.push(`${((buff.ppMult - 1) * 100).toFixed(0)}% more PP`);
+        if (buff.ppPerSecondMult) buffParts.push(`${buff.ppPerSecondMult}x PP/sec`);
+        if (buff.xpMult) buffParts.push(`${((buff.xpMult - 1) * 100).toFixed(0)}% more XP`);
+        if (buff.energyCostMult) {
+          const reduction = ((1 - buff.energyCostMult) * 100).toFixed(0);
+          buffParts.push(`${reduction}% less energy cost`);
+        }
+        if (buff.noSanityDrain) buffParts.push('sanity drain paused');
+        if (buff.materialMult) buffParts.push(`${buff.materialMult}x materials`);
+        const buffDuration = Math.floor(buff.duration / 60);
+
         // Check if player has room for more buffs
         if (canAddMoreBuffs(prev)) {
           // Add buff normally
           newState.activeReportBuffs = [...(prev.activeReportBuffs || []), buff];
-
-          const buffParts = [];
-          if (buff.ppMult) buffParts.push(`${((buff.ppMult - 1) * 100).toFixed(0)}% more PP`);
-          if (buff.ppPerSecondMult) buffParts.push(`${buff.ppPerSecondMult}x PP/sec`);
-          if (buff.xpMult) buffParts.push(`${((buff.xpMult - 1) * 100).toFixed(0)}% more XP`);
-          if (buff.energyCostMult) {
-            const reduction = ((1 - buff.energyCostMult) * 100).toFixed(0);
-            buffParts.push(`${reduction}% less energy cost`);
-          }
-          if (buff.noSanityDrain) buffParts.push('sanity drain paused');
-          if (buff.materialMult) buffParts.push(`${buff.materialMult}x materials`);
-
-          const duration = Math.floor(buff.duration / 60);
-          messages.push(`BUFF: ${buffParts.join(', ')} for ${duration}min`);
+          messages.push(`BUFF: ${buffParts.join(', ')} for ${buffDuration}min`);
         } else {
           // At max capacity - auto-replace shortest remaining buff
           const currentBuffs = prev.activeReportBuffs || [];
           const shortest = currentBuffs.reduce((min, b) => b.expiresAt < min.expiresAt ? b : min, currentBuffs[0]);
           const replaced = currentBuffs.filter(b => b.id !== shortest.id);
           newState.activeReportBuffs = [...replaced, buff];
-          const duration = Math.floor(buff.duration / 60);
-          messages.push(`BUFF replaced ${shortest.name}: ${buffParts.join(', ')} for ${duration}min`);
+          messages.push(`BUFF replaced ${shortest.name}: ${buffParts.join(', ')} for ${buffDuration}min`);
         }
       }
 
@@ -904,29 +903,28 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
           ...outcome.debuff
         };
 
+        // Build the description once so both the add and replace paths can use it.
+        const debuffParts = [];
+        if (debuff.ppMult && debuff.ppMult < 1) {
+          debuffParts.push(`${((1 - debuff.ppMult) * 100).toFixed(0)}% LESS PP`);
+        }
+        if (debuff.energyCostMult && debuff.energyCostMult > 1) {
+          debuffParts.push(`${((debuff.energyCostMult - 1) * 100).toFixed(0)}% MORE energy cost`);
+        }
+        const debuffDuration = Math.floor(debuff.duration / 60);
+
         // Check if player has room for more buffs (debuffs count against limit too)
         if (canAddMoreBuffs(prev)) {
           // Add debuff normally
           newState.activeReportBuffs = [...(prev.activeReportBuffs || []), debuff];
-
-          const debuffParts = [];
-          if (debuff.ppMult && debuff.ppMult < 1) {
-            debuffParts.push(`${((1 - debuff.ppMult) * 100).toFixed(0)}% LESS PP`);
-          }
-          if (debuff.energyCostMult && debuff.energyCostMult > 1) {
-            debuffParts.push(`${((debuff.energyCostMult - 1) * 100).toFixed(0)}% MORE energy cost`);
-          }
-
-          const duration = Math.floor(debuff.duration / 60);
-          messages.push(`DEBUFF: ${debuffParts.join(', ')} for ${duration}min`);
+          messages.push(`DEBUFF: ${debuffParts.join(', ')} for ${debuffDuration}min`);
         } else {
           // At max capacity - auto-replace shortest remaining buff
           const currentBuffs = prev.activeReportBuffs || [];
           const shortest = currentBuffs.reduce((min, b) => b.expiresAt < min.expiresAt ? b : min, currentBuffs[0]);
           const replaced = currentBuffs.filter(b => b.id !== shortest.id);
           newState.activeReportBuffs = [...replaced, debuff];
-          const duration = Math.floor(debuff.duration / 60);
-          messages.push(`DEBUFF replaced ${shortest.name}: ${debuffParts.join(', ')} for ${duration}min`);
+          messages.push(`DEBUFF replaced ${shortest.name}: ${debuffParts.join(', ')} for ${debuffDuration}min`);
         }
       }
 
