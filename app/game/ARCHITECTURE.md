@@ -77,8 +77,7 @@ state flag. Only one renders at a time. The default render is the main office sc
 - `BuffReplacementModal.js` — at-buff-cap replacement prompt.
 - `PrestigeSurviveModal.js` — "Survive Another Day" path selection.
 - `TierUnlockModal.js` — PP-tier celebration.
-- `AutomationPanel.js` — 3 automation toggles + thresholds.
-- `DebugPanel.js` — developer cheat panel (ships in prod — see tech debt).
+- `DebugPanel.js` — developer cheat panel (dev-only via `SHOW_DEV_TOOLS`).
 
 ### Small components
 - `HelpPopup.js`, `NotificationPopup.js`, `EventLog.js`, `VoidContractsDisplay.js` (defines
@@ -111,8 +110,6 @@ Single source of truth, loaded via `useState(INITIAL_GAME_STATE)`. Canonical nam
 - **Portal/dimensional:** `portalUnlocked`, `dimensionalInventory` ({materialId:count}),
   `timeRewindUsed`.
 - **Buffs:** `maxActiveBuffs` (3) — **overloaded, see gotchas**; `pendingBuff`, `pendingBuffDocument`.
-- **Automation:** `automation` { `autoSort`, `autoSortThreshold` (80), `autoPrint`, `autoPrintDocType`,
-  `autoPrintThreshold` (50), `autoPortal`, `lastAutoPrint` }.
 - **Prestige:** `prestigeCount`, `prestigeMultiplier` (= `1 + 0.1 * count`), `activePathBonuses`.
 - **Void/late:** `temporalPactActive`, `voidBargainActive`, `sanityErosionActive`, `focusModeExpiry`,
   `lastSavedAt`, `ppMultiplierTier`.
@@ -177,9 +174,6 @@ owned. `prestige(path)` resets to `INITIAL_GAME_STATE` but preserves `achievemen
 `pathScores`, `discoveredEvents`; increments `prestigeCount`; recomputes `prestigeMultiplier`; appends a
 +15% path bonus to `activePathBonuses`. The loop is currently shallow (+10% PP/prestige).
 
-**Automation.** Three toggles, each gated on an unlock upgrade: autoSort (robotic_assistant, 5K),
-autoPrint (document_automaton, 15K, 1/3s, tier-1 only), autoPortal (void_protocol, 50K).
-
 **Achievements / XP / Meditation / Archive / Help.** `ACHIEVEMENTS[].check(state)` scanned by
 `checkAchievements` (+50 XP each). `grantXP` applies Seeker path bonus → `addExperience`. Meditation is
 a 3-breath rhythm game restoring sanity (unlocks at sanity ≤25). Archive: reading three specific lore
@@ -194,8 +188,9 @@ First clicks (SORT PAPERS) → early PP upgrades (stapler 50 → coffee 150 firs
 → … archive 400 → debugger 500). **Phase 2 at pp>100**: real sanity drain begins. Printer/document loop
 (print → printer upgrades → document tiers gated by mastery 0/3/8/18/30 → File Drawer → consume).
 **Portal unlock** (3 archive entries + day ≥7) → dimensional mining → dimensional upgrades / Occult
-skills. **PP-tier explosions** at 10K/1M/1B are the main payoff. Automation at 5K/15K/50K shifts active →
-idle. Senior Analyst (12K) unlocks Prestige. Void Contracts are late, material-gated, build-defining.
+skills. **PP-tier explosions** at 10K/1M/1B are the main payoff. Senior Analyst (12K) unlocks Prestige.
+Void Contracts are late, material-gated, build-defining. (Passive income comes from `ppPerSecond`
+upgrades/skills — there is no auto-clicker/automation toggle system; it was removed as unfun.)
 End-game: `singularity_collapse` then `tear_the_veil` (5M PP + one of every material) → `/survival`;
 parallel loop is repeated prestige for stacking path bonuses.
 
@@ -232,8 +227,8 @@ These are real and worth fixing before building large new features on top.
 
 ### Gotchas that will bite you
 - **PP is now one pipeline.** `ppHelpers.js` (`computeClickPP`, `computePassivePPPerSecond`) is the single
-  source used by `sortPapers`, the passive tick, auto-sort, and both display calculators. Change PP math
-  there, not in four places. (Auto-sort and the displays now match real output.)
+  source used by `sortPapers`, the passive tick, and both display calculators. Change PP math
+  there, not in several places. (The displays now match real output.)
 - **Buff cap vs drawer capacity are separate now.** `gameState.maxActiveBuffs` is purely the buff cap (3).
   File-drawer capacity is `getMaxStoredDocuments` (base 10 + Executive Authority skill), enforced in
   `printDocument`. The tick no longer mutates `maxActiveBuffs`.
@@ -252,8 +247,7 @@ These are real and worth fixing before building large new features on top.
    still copies all of `gameState` (so memo'd panels still re-render each tick because `gameState`
    identity changes), and the tick is not split into independent effects. The real remaining win is
    state-slicing / a reducer + context so panels subscribe to narrow slices.
-2. **(HIGH) Unify the PP pipeline.** DONE — `ppHelpers.js`; displays match reality; auto-sort uses the
-   full chain.
+2. **(HIGH) Unify the PP pipeline.** DONE — `ppHelpers.js`; displays match reality.
 3. **(HIGH) Separate buff cap from drawer capacity.** DONE — `getMaxStoredDocuments` + `printDocument`
    enforcement; tick no longer mutates `maxActiveBuffs`.
 4. **(HIGH) Real save system.** DONE — versioned `migrateState`, shared `applyOfflineProgress`,

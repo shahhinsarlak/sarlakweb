@@ -19,7 +19,6 @@ import JournalModal from './JournalModal';
 import BuffReplacementModal from './BuffReplacementModal';
 import NotificationPopup from './NotificationPopup';
 import TierUnlockModal from './TierUnlockModal';
-import AutomationPanel from './AutomationPanel';
 import PrestigeSurviveModal from './PrestigeSurviveModal';
 import GameActionsPanel from './GameActionsPanel';
 import GameUpgradesPanel from './GameUpgradesPanel';
@@ -32,8 +31,7 @@ import { computeClickPP, computePassivePPPerSecond } from './ppHelpers';
 import { addExperience, purchaseSkill, getActiveSkillEffects, getModifiedPortalCooldown, getMaxSanity, getPrestigePathBonus } from './skillSystemHelpers';
 import { SKILLS, LEVEL_SYSTEM, XP_REWARDS } from './skillTreeConstants';
 import { DIMENSIONAL_MATERIALS } from './dimensionalConstants';
-import { getSanityTierDisplay, isSanityDrainPaused, calculatePaperQuality, buildPrintedDocument } from './sanityPaperHelpers';
-import { getMaxStoredDocuments } from './skillSystemHelpers';
+import { getSanityTierDisplay, isSanityDrainPaused, calculatePaperQuality } from './sanityPaperHelpers';
 import {
   INITIAL_GAME_STATE,
   LOCATIONS,
@@ -45,8 +43,6 @@ import {
   HELP_POPUPS,
   HELP_TRIGGERS,
   PP_MULTIPLIER_TIERS,
-  DOCUMENT_TYPES,
-  TIER_MASTERY_WEIGHTS,
   PRESTIGE_PATHS
 } from './constants';
 
@@ -62,7 +58,6 @@ export default function Game() {
   const [gameState, setGameState] = useState(INITIAL_GAME_STATE);
   const [showSaveMenu, setShowSaveMenu] = useState(false);
   const [showDebugPanel, setShowDebugPanel] = useState(false);
-  const [showAutomationPanel, setShowAutomationPanel] = useState(false);
   const [hoveredUpgrade, setHoveredUpgrade] = useState(null);
   const [showAchievements, setShowAchievements] = useState(false);
   const [selectedUpgradeType, setSelectedUpgradeType] = useState('pp'); // 'pp', 'printer', 'dimensional'
@@ -569,58 +564,6 @@ export default function Game() {
             setTierUnlock({ name: nextTierData.name, multiplier: nextTierData.multiplier, desc: nextTierData.desc });
             addMessage(`TIER UNLOCKED: ${nextTierData.name}. PP multiplier is now ${nextTierData.multiplier}x. ${nextTierData.desc}`);
           }, 0);
-        }
-
-        // === AUTOMATION BLOCKS ===
-
-        // autoSort — same energy cost and PP as a manual sort (canonical chain)
-        if (newState.automation?.autoSort &&
-            newState.upgrades?.robotic_assistant &&
-            newState.energy >= (newState.automation.autoSortThreshold ?? 80)) {
-          const baseEnergyCost = 2;
-          newState.energy = Math.max(0, newState.energy - baseEnergyCost);
-          newState.pp = newState.pp + computeClickPP(newState);
-          newState.sortCount = (newState.sortCount || 0) + 1;
-          setTimeout(() => grantXP(XP_REWARDS.sortPapers), 0);
-        }
-
-        // autoPrint — rate limited to once per 3 seconds, tier 1 only
-        if (newState.automation?.autoPrint &&
-            newState.upgrades?.document_automaton &&
-            newState.paper >= (newState.automation.autoPrintThreshold ?? 50) &&
-            newState.printerUnlocked &&
-            Date.now() - (newState.automation.lastAutoPrint || 0) > 3000) {
-          const docType = newState.automation.autoPrintDocType || 'memo';
-          const docDef = DOCUMENT_TYPES[docType];
-          const tier1Cost = docDef?.tiers?.[0]?.cost || { paper: 5, energy: 3 };
-          // Respect the file-drawer cap and actually store the document, matching
-          // the manual printDocument path (no silent resource waste).
-          const drawerFull = (newState.storedDocuments?.length || 0) >= getMaxStoredDocuments(newState);
-          const document = drawerFull ? null : buildPrintedDocument(docType, 1, newState);
-          if (document) {
-            newState.paper = Math.max(0, newState.paper - (tier1Cost.paper || 5));
-            newState.energy = Math.max(0, newState.energy - (tier1Cost.energy || 3));
-            if (tier1Cost.sanity) {
-              newState.sanity = Math.max(0, newState.sanity - tier1Cost.sanity);
-            }
-            newState.storedDocuments = [...(newState.storedDocuments || []), document];
-            const masteryGain = TIER_MASTERY_WEIGHTS[1] || 1;
-            newState.documentMastery = {
-              ...newState.documentMastery,
-              [`${docType}s`]: (newState.documentMastery?.[`${docType}s`] || 0) + masteryGain,
-            };
-            newState.automation = { ...newState.automation, lastAutoPrint: Date.now() };
-            setTimeout(() => addMessage(`[AUTO] Printed ${docType} (tier 1)`), 0);
-          }
-        }
-
-        // autoPortal — silent entry, no confirmation
-        if (newState.automation?.autoPortal &&
-            newState.upgrades?.void_protocol &&
-            newState.portalCooldown === 0 &&
-            !newState.inDimensionalArea) {
-          newState.inDimensionalArea = true;
-          setTimeout(() => addMessage('[AUTO] Void Protocol activated. Entering portal.'), 0);
         }
 
         // Focus Mode expiry check — clear buff once timestamp has passed
@@ -1187,21 +1130,6 @@ export default function Game() {
                 DEBUG
               </button>
             )}
-            <button
-              onClick={() => setShowAutomationPanel(!showAutomationPanel)}
-              style={{
-                padding: '8px 12px',
-                backgroundColor: showAutomationPanel ? 'var(--accent-color, #78866b)' : 'var(--bg-color, #0a0c0a)',
-                color: 'var(--text-color, #e0e0e0)',
-                border: '1px solid var(--border-color, #333)',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontFamily: "'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace",
-                fontSize: '12px',
-              }}
-            >
-              AUTO
-            </button>
             {gameState.upgrades?.promotion && (
               <button
                 onClick={() => setShowPrestigeModal(true)}
@@ -1326,14 +1254,6 @@ export default function Game() {
             setGameState={setGameState}
             addMessage={addMessage}
             onClose={() => setShowDebugPanel(false)}
-          />
-        )}
-
-        {showAutomationPanel && (
-          <AutomationPanel
-            gameState={gameState}
-            setGameState={setGameState}
-            onClose={() => setShowAutomationPanel(false)}
           />
         )}
 

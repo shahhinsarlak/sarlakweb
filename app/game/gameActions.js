@@ -459,12 +459,6 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
         } else if (upgrade.value === 'archive') {
           newState.unlockedLocations = [...new Set([...prev.unlockedLocations, 'archive'])];
           messages.push('The Archive opens. Files from impossible years await.');
-        } else if (upgrade.value === 'autoSort') {
-          messages.push('Robotic Assistant installed. It sorts while you watch.');
-        } else if (upgrade.value === 'autoPrint') {
-          messages.push('Document Automaton online. The queue processes itself.');
-        } else if (upgrade.value === 'autoPortal') {
-          messages.push('Void Protocol activated. The portal adheres to schedule.');
         }
       }
 
