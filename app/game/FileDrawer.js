@@ -8,10 +8,10 @@
  */
 
 'use client';
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import NotificationPopup from './NotificationPopup';
 
-export default function FileDrawer({ gameState, onClose, actions, notifications, onDismissNotification }) {
+function FileDrawer({ gameState, onClose, actions, notifications, onDismissNotification }) {
   // Escape key handler
   useEffect(() => {
     const handleEscape = (e) => {
@@ -352,3 +352,6 @@ export default function FileDrawer({ gameState, onClose, actions, notifications,
     </>
   );
 }
+
+FileDrawer.displayName = 'FileDrawer';
+export default React.memo(FileDrawer);

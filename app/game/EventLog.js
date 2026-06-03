@@ -1,4 +1,6 @@
-export default function EventLog({ messages, isVisible = true }) {
+import React from 'react';
+
+function EventLog({ messages, isVisible = true }) {
   if (!isVisible) return null;
 
   return (
@@ -79,3 +81,5 @@ export default function EventLog({ messages, isVisible = true }) {
     </>
   );
 }
+EventLog.displayName = 'EventLog';
+export default React.memo(EventLog);

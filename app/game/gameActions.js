@@ -13,15 +13,12 @@
  * - upgrades: Purchase permanent improvements
  * - printer: Paper generation system
  */
-import { LOCATIONS, UPGRADES, DEBUG_CHALLENGES, PRINTER_UPGRADES, DOCUMENT_TYPES, TIER_MASTERY_WEIGHTS, PP_MULTIPLIER_TIERS, PRESTIGE_PATHS, INITIAL_GAME_STATE, LORE_SNIPPETS } from './constants';
+import { LOCATIONS, UPGRADES, DEBUG_CHALLENGES, PRINTER_UPGRADES, DOCUMENT_TYPES, TIER_MASTERY_WEIGHTS, PRESTIGE_PATHS, INITIAL_GAME_STATE, LORE_SNIPPETS } from './constants';
 import {
   applyEnergyCostReduction,
-  applyPPMultiplier,
   getModifiedRestCooldown,
   checkFreeAction,
-  getChaosBonus,
-  getActiveSkillEffects,
-  getAchievementBonuses
+  getActiveSkillEffects
 } from './skillSystemHelpers';
 import { XP_REWARDS } from './skillTreeConstants';
 import {
@@ -44,6 +41,8 @@ import {
 import {
   createScreenShake
 } from './gameUtils';
+import { computeClickPP } from './ppHelpers';
+import { getMaxStoredDocuments } from './skillSystemHelpers';
 
 
 
@@ -67,43 +66,9 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
         return prev;
       }
 
-      // Apply skill effects to PP gain, then sanity-based modifier
-      const basePP = prev.ppPerClick;
-      const ppWithSkills = applyPPMultiplier(basePP, prev);
-      let ppGain = applySanityPPModifier(ppWithSkills, prev);
-
-      // Apply PP tier multiplier
-      const currentTier = prev.ppMultiplierTier || 0;
-      const tierData = PP_MULTIPLIER_TIERS.find(t => t.tier === currentTier);
-      const tierMult = tierData ? tierData.multiplier : 1;
-      ppGain = ppGain * tierMult;
-
-      // Sanity Sacrifice: chaos bonus adds PP per 10 sanity lost
-      const chaosBonus = getChaosBonus(prev);
-      if (chaosBonus > 0) {
-        ppGain = ppGain * (1 + chaosBonus);
-      }
-
-      // Apply achievement bonus
-      const achievementBonuses = getAchievementBonuses(prev);
-      if (achievementBonuses.ppMultiplier > 0) {
-        ppGain = ppGain * (1 + achievementBonuses.ppMultiplier);
-      }
-
-      // Apply prestige multiplier (per user decision: applied to all PP gain)
-      if (prev.prestigeMultiplier && prev.prestigeMultiplier > 1) {
-        ppGain *= prev.prestigeMultiplier;
-      }
-
-      // Focus Mode: +50% ppPerClick when active
-      if (prev.focusModeExpiry > Date.now()) {
-        ppGain *= 1.5;
-      }
-
-      // Sanity Erosion: 3x ppPerClick when sanity below 30
-      if (prev.sanityErosionActive && prev.sanity < 30) {
-        ppGain *= 3;
-      }
+      // Canonical PP chain (skills, sanity, tier, chaos, achievements, prestige,
+      // focus, erosion) — shared with the passive tick, auto-sort and the display.
+      const ppGain = computeClickPP(prev);
 
       // Clean expired buffs
       const activeBuffs = cleanExpiredBuffs(prev);
@@ -626,6 +591,13 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       const checkResult = canPrintDocumentTier(docType, tierNumber, prev);
       if (!checkResult.canPrint) {
         addMessage(checkResult.reason);
+        return prev;
+      }
+
+      // File-drawer capacity (separate from the buff cap)
+      const drawerCapacity = getMaxStoredDocuments(prev);
+      if ((prev.storedDocuments?.length || 0) >= drawerCapacity) {
+        addMessage(`File drawer full (${drawerCapacity}). Consume or shred a document first.`);
         return prev;
       }
 

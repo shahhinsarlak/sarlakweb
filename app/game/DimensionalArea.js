@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   DIMENSIONAL_MATERIALS,
   DIMENSIONAL_CAPACITY,
@@ -10,11 +10,10 @@ import { XP_REWARDS } from './skillTreeConstants';
 import NotificationPopup from './NotificationPopup';
 
 
-export default function DimensionalArea({ gameState, setGameState, onExit, grantXP, notifications, onDismissNotification }) {
+function DimensionalArea({ gameState, setGameState, onExit, grantXP, notifications, onDismissNotification }) {
   const [collectedNodes, setCollectedNodes] = useState([]);
   const [currentInventory, setCurrentInventory] = useState({});
   const [hoveredNode, setHoveredNode] = useState(null);
-  const [tearCollected, setTearCollected] = useState(false);
   const [glitchOverlays, setGlitchOverlays] = useState([]);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
@@ -35,43 +34,6 @@ export default function DimensionalArea({ gameState, setGameState, onExit, grant
     return generateMaterialNodes(encryptedText.length, {}, effects);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  // Check if armory is unlocked (bottom drawer opened)
-  const armoryUnlocked = gameState.unlockedLocations?.includes('armory') || false;
-
-  // Tear visual config (inline - loot system removed)
-  const TEAR_GLOW_COLORS = ['#9b59b6', '#e74c3c', '#3498db', '#2ecc71'];
-  const TEAR_MIN_SIZE = 3;
-  const TEAR_MAX_SIZE = 5;
-  const TEAR_SPAWN_CHANCE = 0.4;
-
-  // Generate dimensional tear (if armory unlocked and random chance)
-  const dimensionalTear = useMemo(() => {
-    if (!armoryUnlocked) return null;
-
-    // Debug mode: force spawn
-    const forceTearSpawn = gameState.debugForceTearSpawn || false;
-
-    const spawnRoll = Math.random();
-    if (!forceTearSpawn && spawnRoll > TEAR_SPAWN_CHANCE) return null;
-
-    // Random position in the text
-    const position = Math.floor(Math.random() * (encryptedText.length - 1000)) + 500;
-
-    // Random visual properties
-    const colorIndex = Math.floor(Math.random() * TEAR_GLOW_COLORS.length);
-    const size = Math.floor(
-      Math.random() * (TEAR_MAX_SIZE - TEAR_MIN_SIZE + 1)
-    ) + TEAR_MIN_SIZE;
-
-    return {
-      id: 'tear_' + Date.now(),
-      position,
-      color: TEAR_GLOW_COLORS[colorIndex],
-      size
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [armoryUnlocked, gameState.debugForceTearSpawn]); // Regenerate when armory unlocked or debug flag changes
 
   // Generate random particles for background
   const particles = useMemo(() => {
@@ -160,20 +122,6 @@ export default function DimensionalArea({ gameState, setGameState, onExit, grant
     }
   };
 
-  /**
-   * Handle tear click - collect the material node and grant XP
-   */
-  const handleTearClick = () => {
-    if (tearCollected) return;
-
-    setTearCollected(true);
-
-    // Grant XP for finding a tear
-    if (grantXP) {
-      grantXP(50); // Base XP for finding tear
-    }
-  };
-
   const handleExit = useCallback(() => {
     setGameState(prev => {
       const newDimensionalInventory = { ...(prev.dimensionalInventory || {}) };
@@ -232,18 +180,13 @@ export default function DimensionalArea({ gameState, setGameState, onExit, grant
     const elements = [];
     let lastIndex = 0;
 
-    // Combine material nodes and tear into a single sorted array
+    // Sort material nodes by position
     const allNodes = [...materialNodes];
-    if (dimensionalTear && !tearCollected) {
-      allNodes.push({ ...dimensionalTear, isTear: true });
-    }
-
-    // Sort by position
     allNodes.sort((a, b) => a.position - b.position);
 
     allNodes.forEach((node, idx) => {
       // Skip collected material nodes
-      if (!node.isTear && collectedNodes.includes(node.id)) return;
+      if (collectedNodes.includes(node.id)) return;
 
       // Add text before this node
       elements.push(
@@ -252,108 +195,56 @@ export default function DimensionalArea({ gameState, setGameState, onExit, grant
         </span>
       );
 
-      if (node.isTear) {
-        // Render dimensional tear
-        elements.push(
-          <span
-            key={node.id}
-            onClick={handleTearClick}
-            onMouseEnter={() => setHoveredNode(node)}
-            onMouseLeave={() => setHoveredNode(null)}
-            style={{
-              display: 'inline-block',
-              width: `${node.size}px`,
-              height: `${node.size}px`,
-              backgroundColor: 'transparent',
-              cursor: 'pointer',
-              transition: 'all 0.3s',
-              verticalAlign: 'middle',
-              margin: '0 4px',
-              border: `2px solid ${node.color}`,
-              borderRadius: '50%',
-              boxShadow: `0 0 ${node.size}px ${node.color}, inset 0 0 ${node.size/2}px ${node.color}`,
-              transform: hoveredNode?.id === node.id ? 'scale(1.3)' : 'scale(1)',
-              position: 'relative',
-              animation: 'tearPulse 2s ease-in-out infinite'
-            }}
-          >
-            {hoveredNode?.id === node.id && (
-              <span style={{
-                position: 'absolute',
-                bottom: '100%',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                backgroundColor: '#000000',
-                border: `2px solid ${node.color}`,
-                padding: '6px 12px',
-                fontSize: '11px',
-                fontFamily: "'SF Mono', monospace",
-                color: node.color,
-                whiteSpace: 'nowrap',
-                marginBottom: '8px',
-                pointerEvents: 'none',
-                zIndex: 1000,
-                boxShadow: `0 0 16px ${node.color}`,
-                fontWeight: '500',
-                letterSpacing: '1px'
-              }}>
-                DIMENSIONAL TEAR
-              </span>
-            )}
-          </span>
-        );
-      } else {
-        // Render material node
-        const material = DIMENSIONAL_MATERIALS.find(m => m.id === node.materialId);
+      // Render material node
+      const material = DIMENSIONAL_MATERIALS.find(m => m.id === node.materialId);
 
-        elements.push(
-          <span
-            key={node.id}
-            onClick={() => collectMaterial(node)}
-            onMouseEnter={() => setHoveredNode(node)}
-            onMouseLeave={() => setHoveredNode(null)}
-            style={{
-              display: 'inline-block',
-              width: `${node.size}px`,
-              height: `${node.size}px`,
-              backgroundColor: node.color,
-              cursor: remainingCapacity > 0 ? 'pointer' : 'not-allowed',
-              opacity: remainingCapacity > 0 ? 1 : 0.5,
-              transition: 'all 0.2s',
-              verticalAlign: 'middle',
-              margin: '0 2px',
-              border: '1px solid rgba(255,255,255,0.1)',
-              boxShadow: hoveredNode?.id === node.id && remainingCapacity > 0
-                ? `0 0 ${node.size * (node.glowIntensity || 1)}px ${node.color}`
-                : `0 0 ${(node.size/2) * (node.glowIntensity || 1)}px ${node.color}`,
-              transform: hoveredNode?.id === node.id && remainingCapacity > 0 ? 'scale(1.2)' : 'scale(1)',
-              position: 'relative'
-            }}
-          >
-            {hoveredNode?.id === node.id && (
-              <span style={{
-                position: 'absolute',
-                bottom: '100%',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                backgroundColor: '#000000',
-                border: '1px solid #444444',
-                padding: '4px 8px',
-                fontSize: '10px',
-                fontFamily: "'SF Mono', monospace",
-                color: '#ffffff',
-                whiteSpace: 'nowrap',
-                marginBottom: '4px',
-                pointerEvents: 'none',
-                zIndex: 1000,
-                boxShadow: `0 0 8px ${node.color}`
-              }}>
-                {material?.name}
-              </span>
-            )}
-          </span>
-        );
-      }
+      elements.push(
+        <span
+          key={node.id}
+          onClick={() => collectMaterial(node)}
+          onMouseEnter={() => setHoveredNode(node)}
+          onMouseLeave={() => setHoveredNode(null)}
+          style={{
+            display: 'inline-block',
+            width: `${node.size}px`,
+            height: `${node.size}px`,
+            backgroundColor: node.color,
+            cursor: remainingCapacity > 0 ? 'pointer' : 'not-allowed',
+            opacity: remainingCapacity > 0 ? 1 : 0.5,
+            transition: 'all 0.2s',
+            verticalAlign: 'middle',
+            margin: '0 2px',
+            border: '1px solid rgba(255,255,255,0.1)',
+            boxShadow: hoveredNode?.id === node.id && remainingCapacity > 0
+              ? `0 0 ${node.size * (node.glowIntensity || 1)}px ${node.color}`
+              : `0 0 ${(node.size/2) * (node.glowIntensity || 1)}px ${node.color}`,
+            transform: hoveredNode?.id === node.id && remainingCapacity > 0 ? 'scale(1.2)' : 'scale(1)',
+            position: 'relative'
+          }}
+        >
+          {hoveredNode?.id === node.id && (
+            <span style={{
+              position: 'absolute',
+              bottom: '100%',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              backgroundColor: '#000000',
+              border: '1px solid #444444',
+              padding: '4px 8px',
+              fontSize: '10px',
+              fontFamily: "'SF Mono', monospace",
+              color: '#ffffff',
+              whiteSpace: 'nowrap',
+              marginBottom: '4px',
+              pointerEvents: 'none',
+              zIndex: 1000,
+              boxShadow: `0 0 8px ${node.color}`
+            }}>
+              {material?.name}
+            </span>
+          )}
+        </span>
+      );
 
       lastIndex = node.position;
     });
@@ -374,17 +265,6 @@ export default function DimensionalArea({ gameState, setGameState, onExit, grant
           margin: 0 !important;
           padding: 0 !important;
           overflow-x: hidden;
-        }
-
-        @keyframes tearPulse {
-          0%, 100% {
-            opacity: 0.8;
-            transform: scale(1);
-          }
-          50% {
-            opacity: 1;
-            transform: scale(1.1);
-          }
         }
 
         @keyframes glitchFlicker {
@@ -697,3 +577,5 @@ export default function DimensionalArea({ gameState, setGameState, onExit, grant
     </>
   );
 }
+DimensionalArea.displayName = 'DimensionalArea';
+export default React.memo(DimensionalArea);

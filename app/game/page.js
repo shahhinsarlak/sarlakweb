@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
@@ -27,11 +27,12 @@ import GameStatsPanel from './GameStatsPanel';
 import GameSidebarExtras from './GameSidebarExtras';
 import { createGameActions } from './gameActions';
 import { getDistortionStyle, distortText, getClockTime, createLevelUpParticles, createSkillPurchaseParticles, createScreenShake, formatPP } from './gameUtils';
-import { saveGame, loadGame, exportToClipboard, importFromClipboard } from './saveSystem';
-import { addExperience, purchaseSkill, getActiveSkillEffects, getModifiedPortalCooldown, getModifiedCapacity, applyPPMultiplier, applyPPSMultiplier, getMaxSanity, getPrestigePathBonus } from './skillSystemHelpers';
+import { saveGame, loadGame, exportToClipboard, importFromClipboard, saveToLocalStorage, loadFromLocalStorage } from './saveSystem';
+import { computeClickPP, computePassivePPPerSecond } from './ppHelpers';
+import { addExperience, purchaseSkill, getActiveSkillEffects, getModifiedPortalCooldown, getMaxSanity, getPrestigePathBonus } from './skillSystemHelpers';
 import { SKILLS, LEVEL_SYSTEM, XP_REWARDS } from './skillTreeConstants';
 import { DIMENSIONAL_MATERIALS } from './dimensionalConstants';
-import { getSanityTierDisplay, isSanityDrainPaused, calculatePaperQuality, applySanityPPModifier, getActiveBuffPPMultiplier, getActiveBuffXPMultiplier, getActiveBuffEnergyCostMultiplier, getActiveBuffPPPerSecondMultiplier } from './sanityPaperHelpers';
+import { getSanityTierDisplay, isSanityDrainPaused, calculatePaperQuality } from './sanityPaperHelpers';
 import {
   INITIAL_GAME_STATE,
   LOCATIONS,
@@ -48,6 +49,9 @@ import {
 } from './constants';
 
 const PORTAL_UNLOCK_ENTRIES = ['glitched', 'maintenance', 'encrypted_lights'];
+
+// Dev cheats (DebugPanel, +PP / +DAY buttons) only render outside production.
+const SHOW_DEV_TOOLS = process.env.NODE_ENV !== 'production';
 
 export default function Game() {
   const router = useRouter();
@@ -215,7 +219,39 @@ export default function Game() {
     }
   }, [selectedUpgradeType, gameState.printerUnlocked, gameState.portalUnlocked]);
 
-  const actions = createGameActions(setGameState, addMessage, checkAchievements, grantXP);
+  const actions = useMemo(
+    () => createGameActions(setGameState, addMessage, checkAchievements, grantXP),
+    [setGameState, addMessage, checkAchievements, grantXP]
+  );
+
+  // Keep a ref to the latest state for save-on-unload.
+  const gameStateRef = useRef(gameState);
+  useEffect(() => {
+    gameStateRef.current = gameState;
+  });
+
+  // Restore the autosave on mount (migrated + offline progress applied).
+  useEffect(() => {
+    const saved = loadFromLocalStorage();
+    if (saved) {
+      setGameState(saved);
+      setTimeout(() => addMessage('Progress restored from autosave.'), 0);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Autosave to localStorage every 15s and on tab close.
+  useEffect(() => {
+    const id = setInterval(() => {
+      saveToLocalStorage(gameStateRef.current);
+    }, 15000);
+    const onUnload = () => saveToLocalStorage(gameStateRef.current);
+    window.addEventListener('beforeunload', onUnload);
+    return () => {
+      clearInterval(id);
+      window.removeEventListener('beforeunload', onUnload);
+    };
+  }, []);
 
   const handlePurchaseSkill = (skillId) => {
     setGameState(prev => {
@@ -402,24 +438,7 @@ export default function Game() {
   };
 
   // Calculate effective PP/s with all buffs applied (for display)
-  const getEffectivePPPerSecond = () => {
-    if (gameState.ppPerSecond <= 0) return 0;
-
-    let effectivePPS = gameState.ppPerSecond;
-
-    // 1. Apply skill multipliers (PP/sec specific multipliers)
-    effectivePPS = applyPPSMultiplier(effectivePPS, gameState);
-
-    // 2. Apply sanity tier multipliers + efficiency report buffs
-    effectivePPS = applySanityPPModifier(effectivePPS, gameState);
-
-    // 3. Apply void contract multipliers (ppPerSecondMult from contracts)
-    // Use the helper function to get stacked multiplier
-    const ppSecMult = getActiveBuffPPPerSecondMultiplier(gameState);
-    effectivePPS *= ppSecMult;
-
-    return effectivePPS;
-  };
+  const getEffectivePPPerSecond = () => computePassivePPPerSecond(gameState);
 
   // Calculate multiplier percentage for display
   const getPPPerSecondMultiplier = () => {
@@ -443,49 +462,9 @@ export default function Game() {
         }
         
         if (prev.ppPerSecond > 0) {
-          // Base passive gain (divide by 10 since interval runs 10x per second)
-          let passiveGain = prev.ppPerSecond / 10;
-
-          // Apply the same buff chain as ppPerClick:
-          // 1. Skill multipliers (from purchased skills) - use PP/sec specific multiplier
-          passiveGain = applyPPSMultiplier(passiveGain, prev);
-
-          // 2. Sanity tier multipliers + efficiency report buffs
-          passiveGain = applySanityPPModifier(passiveGain, prev);
-
-          // Apply PP tier multiplier to passive gain
-          const currentTier = prev.ppMultiplierTier || 0;
-          const tierData = PP_MULTIPLIER_TIERS.find(t => t.tier === currentTier);
-          const passiveTierMult = tierData ? tierData.multiplier : 1;
-          passiveGain = passiveGain * passiveTierMult;
-
-          // 3. Void contract multipliers (ppPerSecondMult from contracts)
-          const activeBuffs = prev.activeReportBuffs || [];
-          const now = Date.now();
-          const ppSecBuffs = activeBuffs.filter(b => b.expiresAt > now && b.ppPerSecondMult);
-
-          if (ppSecBuffs.length > 0) {
-            const maxMult = Math.max(...ppSecBuffs.map(b => b.ppPerSecondMult));
-            passiveGain *= maxMult;
-          }
-
-          // Apply prestige multiplier (applied to all PP gain after tier multiplier)
-          if (prev.prestigeMultiplier && prev.prestigeMultiplier > 1) {
-            passiveGain *= prev.prestigeMultiplier;
-          }
-
-          // Apply Rationalist path bonus to passive PP
-          const ppSecBonus = getPrestigePathBonus(prev, 'ppPerSecond');
-          if (ppSecBonus > 0) {
-            passiveGain *= (1 + ppSecBonus);
-          }
-
-          // Temporal Pact: ppPerSecond 2x permanently
-          if (prev.temporalPactActive) {
-            passiveGain *= 2;
-          }
-
-          newState.pp = prev.pp + passiveGain;
+          // Canonical passive chain (shared with the PP/sec display).
+          // Divide by 10 because the interval runs 10x per second.
+          newState.pp = prev.pp + computePassivePPPerSecond(prev) / 10;
         }
 
         if (prev.paperPerSecond > 0) {
@@ -554,13 +533,8 @@ export default function Game() {
           newState.sanity = maxSanityCap;
         }
 
-        // Executive Authority skill raises max stored documents (file drawer capacity)
-        const skillEffectsForState = getActiveSkillEffects(prev);
-        const baseMaxDocs = 3;
-        const maxDocsFromSkills = baseMaxDocs + (skillEffectsForState.maxStoredDocuments || 0);
-        if (newState.maxActiveBuffs !== maxDocsFromSkills) {
-          newState.maxActiveBuffs = maxDocsFromSkills;
-        }
+        // (File-drawer capacity is derived via getMaxStoredDocuments and enforced
+        // in printDocument. The buff cap, gameState.maxActiveBuffs, is left alone.)
 
         if (Math.random() < 0.02) {
           const availableEvents = EVENTS.filter(e => 
@@ -597,13 +571,13 @@ export default function Game() {
 
         // === AUTOMATION BLOCKS ===
 
-        // autoSort — same energy cost as manual sort, simplified PP gain (no skill chain)
+        // autoSort — same energy cost and PP as a manual sort (canonical chain)
         if (newState.automation?.autoSort &&
             newState.upgrades?.robotic_assistant &&
             newState.energy >= (newState.automation.autoSortThreshold ?? 80)) {
           const baseEnergyCost = 2;
           newState.energy = Math.max(0, newState.energy - baseEnergyCost);
-          newState.pp = newState.pp + (newState.ppPerClick || 1);
+          newState.pp = newState.pp + computeClickPP(newState);
           newState.sortCount = (newState.sortCount || 0) + 1;
           setTimeout(() => grantXP(XP_REWARDS.sortPapers), 0);
         }
@@ -622,7 +596,6 @@ export default function Game() {
           if (tier1Cost.sanity) {
             newState.sanity = Math.max(0, newState.sanity - tier1Cost.sanity);
           }
-          newState.documentsCreated = (newState.documentsCreated || 0) + 1;
           newState.automation = { ...newState.automation, lastAutoPrint: Date.now() };
           setTimeout(() => addMessage(`[AUTO] Printed ${docType} (tier 1)`), 0);
         }
@@ -837,20 +810,7 @@ export default function Game() {
   };
 
   // Calculate effective PP per click with all modifiers - MATCHES ACTUAL GAME LOGIC
-  const calculateEffectivePPPerClick = () => {
-    const basePP = gameState.ppPerClick;
-    const ppWithSkills = applyPPMultiplier(basePP, gameState);
-
-    // Use the same logic as the actual sortPapers action
-    const ppGain = applySanityPPModifier(ppWithSkills, gameState);
-
-    // Apply tier multiplier
-    const currentTier = gameState.ppMultiplierTier || 0;
-    const tierData = PP_MULTIPLIER_TIERS.find(t => t.tier === currentTier);
-    const tierMult = tierData ? tierData.multiplier : 1;
-    const finalGain = ppGain * tierMult;
-    return formatPP(finalGain);
-  };
+  const calculateEffectivePPPerClick = () => formatPP(computeClickPP(gameState));
 
   const handleSortPapers = () => {
     const now = Date.now();
@@ -876,10 +836,6 @@ export default function Game() {
     (!u.dayRequirement || gameState.day >= u.dayRequirement) &&
     (!u.requiresUpgrade || gameState.upgrades[u.requiresUpgrade])
   );
-
-  const enterDimensionalArea = () => {
-    setGameState(prev => ({ ...prev, inDimensionalArea: true }));
-  };
 
   const exitDimensionalArea = () => {
     setGameState(prev => {
@@ -1200,21 +1156,23 @@ export default function Game() {
             >
               {gameState.helpEnabled ? 'HELP' : 'HELP'}
             </button>
-            <button
-              onClick={() => setShowDebugPanel(!showDebugPanel)}
-              style={{
-                background: 'none',
-                border: '1px solid #00ff00',
-                color: '#00ff00',
-                padding: '4px 8px',
-                cursor: 'pointer',
-                fontSize: '10px',
-                fontFamily: 'inherit',
-                opacity: 0.5
-              }}
-            >
-              DEBUG
-            </button>
+            {SHOW_DEV_TOOLS && (
+              <button
+                onClick={() => setShowDebugPanel(!showDebugPanel)}
+                style={{
+                  background: 'none',
+                  border: '1px solid #00ff00',
+                  color: '#00ff00',
+                  padding: '4px 8px',
+                  cursor: 'pointer',
+                  fontSize: '10px',
+                  fontFamily: 'inherit',
+                  opacity: 0.5
+                }}
+              >
+                DEBUG
+              </button>
+            )}
             <button
               onClick={() => setShowAutomationPanel(!showAutomationPanel)}
               style={{
@@ -1247,36 +1205,40 @@ export default function Game() {
                 SURVIVE ANOTHER DAY
               </button>
             )}
-            <button
-              onClick={() => setGameState(prev => ({ ...prev, pp: prev.pp + 100000 }))}
-              style={{
-                background: 'none',
-                border: '1px solid #ff00ff',
-                color: '#ff00ff',
-                padding: '4px 8px',
-                cursor: 'pointer',
-                fontSize: '10px',
-                fontFamily: 'inherit',
-                opacity: 0.5
-              }}
-            >
-              +100K PP
-            </button>
-            <button
-              onClick={() => setGameState(prev => ({ ...prev, day: prev.day + 1, timeInOffice: prev.day * 60 }))}
-              style={{
-                background: 'none',
-                border: '1px solid #00ffff',
-                color: '#00ffff',
-                padding: '4px 8px',
-                cursor: 'pointer',
-                fontSize: '10px',
-                fontFamily: 'inherit',
-                opacity: 0.5
-              }}
-            >
-              +1 DAY
-            </button>
+            {SHOW_DEV_TOOLS && (
+              <>
+                <button
+                  onClick={() => setGameState(prev => ({ ...prev, pp: prev.pp + 100000 }))}
+                  style={{
+                    background: 'none',
+                    border: '1px solid #ff00ff',
+                    color: '#ff00ff',
+                    padding: '4px 8px',
+                    cursor: 'pointer',
+                    fontSize: '10px',
+                    fontFamily: 'inherit',
+                    opacity: 0.5
+                  }}
+                >
+                  +100K PP
+                </button>
+                <button
+                  onClick={() => setGameState(prev => ({ ...prev, day: prev.day + 1, timeInOffice: prev.day * 60 }))}
+                  style={{
+                    background: 'none',
+                    border: '1px solid #00ffff',
+                    color: '#00ffff',
+                    padding: '4px 8px',
+                    cursor: 'pointer',
+                    fontSize: '10px',
+                    fontFamily: 'inherit',
+                    opacity: 0.5
+                  }}
+                >
+                  +1 DAY
+                </button>
+              </>
+            )}
             <div style={{ fontSize: '12px', textAlign: 'right', opacity: 0.7 }}>
               <div>{getClockTime(gameState.timeInOffice)}</div>
               <div style={{ marginTop: '4px' }}>DAY {Math.floor(gameState.day)}</div>
@@ -1344,7 +1306,7 @@ export default function Game() {
           </div>
         </div>
 
-        {showDebugPanel && (
+        {SHOW_DEV_TOOLS && showDebugPanel && (
           <DebugPanel
             gameState={gameState}
             setGameState={setGameState}

@@ -1,8 +1,8 @@
 'use client';
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import NotificationPopup from './NotificationPopup';
 
-export default function ExamineModal({ item, closeExamine, notifications, onDismissNotification }) {
+function ExamineModal({ item, closeExamine, notifications, onDismissNotification }) {
   // Handle escape key to close modal
   useEffect(() => {
     const handleEscape = (e) => {
@@ -83,3 +83,6 @@ export default function ExamineModal({ item, closeExamine, notifications, onDism
     </>
   );
 }
+
+ExamineModal.displayName = 'ExamineModal';
+export default React.memo(ExamineModal);

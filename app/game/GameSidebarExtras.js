@@ -1,6 +1,7 @@
+import React from 'react';
 import { DIMENSIONAL_MATERIALS } from './dimensionalConstants';
 
-export default function GameSidebarExtras({ gameState }) {
+function GameSidebarExtras({ gameState }) {
   return (
     <>
       {Object.keys(gameState.dimensionalInventory || {}).length > 0 && (
@@ -63,3 +64,6 @@ export default function GameSidebarExtras({ gameState }) {
     </>
   );
 }
+
+GameSidebarExtras.displayName = 'GameSidebarExtras';
+export default React.memo(GameSidebarExtras);

@@ -7,10 +7,10 @@
  * Closing without choosing does nothing.
  */
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PRESTIGE_PATHS } from './constants';
 
-export default function PrestigeSurviveModal({ gameState, onPrestige, onClose }) {
+function PrestigeSurviveModal({ gameState, onPrestige, onClose }) {
   const [selectedPath, setSelectedPath] = useState(null);
 
   // ESC key closes without resetting
@@ -187,3 +187,6 @@ export default function PrestigeSurviveModal({ gameState, onPrestige, onClose })
     </div>
   );
 }
+
+PrestigeSurviveModal.displayName = 'PrestigeSurviveModal';
+export default React.memo(PrestigeSurviveModal);

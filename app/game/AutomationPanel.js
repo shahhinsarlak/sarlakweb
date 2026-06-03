@@ -1,7 +1,7 @@
 'use client';
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 
-export default function AutomationPanel({ gameState, setGameState, onClose }) {
+function AutomationPanel({ gameState, setGameState, onClose }) {
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') onClose();
@@ -220,3 +220,6 @@ export default function AutomationPanel({ gameState, setGameState, onClose }) {
     </div>
   );
 }
+
+AutomationPanel.displayName = 'AutomationPanel';
+export default React.memo(AutomationPanel);

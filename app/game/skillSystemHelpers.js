@@ -445,3 +445,13 @@ export const getPrestigePathBonus = (gameState, bonusType) => {
     .filter(b => b.type === bonusType)
     .reduce((sum, b) => sum + b.value, 0);
 };
+
+/**
+ * File-drawer capacity — how many documents can be stored at once.
+ * Base 10, raised by the Executive Authority skill (maxStoredDocuments).
+ * Intentionally separate from the buff cap (gameState.maxActiveBuffs).
+ */
+export const getMaxStoredDocuments = (gameState) => {
+  const effects = getActiveSkillEffects(gameState);
+  return 10 + (effects.maxStoredDocuments || 0);
+};

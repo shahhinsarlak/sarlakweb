@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SKILLS, SKILL_BRANCHES, LEVEL_SYSTEM } from './skillTreeConstants';
 import NotificationPopup from './NotificationPopup';
 
-export default function SkillTreeModal({ gameState, onClose, onPurchaseSkill, notifications, onDismissNotification }) {
+function SkillTreeModal({ gameState, onClose, onPurchaseSkill, notifications, onDismissNotification }) {
   const [activeTab, setActiveTab] = useState('efficiency');
   const [hoveredSkill, setHoveredSkill] = useState(null);
 
@@ -535,3 +535,5 @@ export default function SkillTreeModal({ gameState, onClose, onPurchaseSkill, no
     </>
   );
 }
+SkillTreeModal.displayName = 'SkillTreeModal';
+export default React.memo(SkillTreeModal);

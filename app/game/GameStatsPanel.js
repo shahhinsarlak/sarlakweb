@@ -1,7 +1,8 @@
+import React from 'react';
 import { getActiveSkillEffects } from './skillSystemHelpers';
 import { getSanityTierDisplay, getActiveBuffPPMultiplier, getActiveBuffPPPerSecondMultiplier } from './sanityPaperHelpers';
 
-export default function GameStatsPanel({
+function GameStatsPanel({
   gameState,
   calculateEffectivePPPerClick,
   getEffectivePPPerSecond,
@@ -329,3 +330,6 @@ export default function GameStatsPanel({
     </div>
   );
 }
+
+GameStatsPanel.displayName = 'GameStatsPanel';
+export default React.memo(GameStatsPanel);

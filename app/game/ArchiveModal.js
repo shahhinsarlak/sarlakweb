@@ -1,5 +1,5 @@
 'use client';
-import { useMemo, useEffect } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import NotificationPopup from './NotificationPopup';
 
 /**
@@ -17,7 +17,7 @@ import NotificationPopup from './NotificationPopup';
  * @param {number} examinedCount - Number of items already examined
  * @param {Array} examinedItems - Array of item IDs that have been examined
  */
-export default function ArchiveModal({
+function ArchiveModal({
   items,
   onClose,
   onExamineItem,
@@ -408,3 +408,6 @@ export default function ArchiveModal({
     </>
   );
 }
+
+ArchiveModal.displayName = 'ArchiveModal';
+export default React.memo(ArchiveModal);

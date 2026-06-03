@@ -6,10 +6,10 @@
  * Auto-dismisses after 3 seconds. Fires particle effects on mount.
  */
 
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { createLevelUpParticles } from './gameUtils';
 
-export default function TierUnlockModal({ tierName, multiplier, tierDesc, onClose }) {
+function TierUnlockModal({ tierName, multiplier, tierDesc, onClose }) {
   // Auto-dismiss after 3 seconds
   useEffect(() => {
     const t = setTimeout(onClose, 3000);
@@ -110,3 +110,6 @@ export default function TierUnlockModal({ tierName, multiplier, tierDesc, onClos
     </div>
   );
 }
+
+TierUnlockModal.displayName = 'TierUnlockModal';
+export default React.memo(TierUnlockModal);
