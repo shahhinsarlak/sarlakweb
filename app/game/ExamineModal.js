@@ -1,8 +1,15 @@
 'use client';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import NotificationPopup from './NotificationPopup';
 
 function ExamineModal({ item, closeExamine, notifications, onDismissNotification }) {
+  const [imageOk, setImageOk] = useState(true);
+
+  // Reset image state when the examined item changes.
+  useEffect(() => {
+    setImageOk(true);
+  }, [item?.id]);
+
   // Handle escape key to close modal
   useEffect(() => {
     const handleEscape = (e) => {
@@ -47,6 +54,39 @@ function ExamineModal({ item, closeExamine, notifications, onDismissNotification
               marginBottom: '20px'
             }}>
               EXAMINING: {item.name}
+            </div>
+
+            {/* Document scan (graceful fallback: hidden if the asset is missing) */}
+            {imageOk && (
+              <div style={{
+                marginBottom: '28px',
+                padding: '10px',
+                backgroundColor: '#0a0a0a',
+                border: '1px solid var(--border-color)',
+                boxShadow: '0 10px 30px rgba(0,0,0,0.6)'
+              }}>
+                <img
+                  src={`/archive/${item.id}.png`}
+                  alt={item.name}
+                  onError={() => setImageOk(false)}
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    height: 'auto',
+                    filter: 'grayscale(0.25) contrast(1.05)'
+                  }}
+                />
+              </div>
+            )}
+
+            <div style={{
+              fontSize: '10px',
+              textTransform: 'uppercase',
+              letterSpacing: '1px',
+              opacity: 0.4,
+              marginBottom: '10px'
+            }}>
+              Transcription
             </div>
             <div style={{
               fontSize: '15px',
