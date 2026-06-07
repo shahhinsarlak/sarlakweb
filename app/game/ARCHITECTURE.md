@@ -176,8 +176,11 @@ just a normal +10 `ppPerSecond` purchase.)*
 **Achievements / XP / Meditation / Archive / Help.** `ACHIEVEMENTS[].check(state)` scanned by
 `checkAchievements` (+50 XP each). `grantXP` → `addExperience`. Meditation is
 a 3-breath rhythm game restoring sanity (unlocks at sanity ≤25). Archive: reading three specific lore
-entries + day ≥7 unlocks the Portal. Help popups (`HELP_POPUPS`/`HELP_TRIGGERS`) record into
-`shownHelpPopups` and teach the matching `MECHANICS_ENTRIES` journal entry on dismissal.
+entries + day ≥7 unlocks the Portal. Help popups: a single effect surfaces the first `HELP_POPUPS[id]`
+whose **state-based** `HELP_TRIGGERS[id](state)` predicate is true and that the player has not seen;
+dismissing it adds `id` to `shownHelpPopups` AND `discoveredMechanics` (which reveals the matching
+`MECHANICS_ENTRIES` journal entry). Keep `HELP_TRIGGERS`, `HELP_POPUPS` and `MECHANICS_ENTRIES` in
+sync by id — a missing `HELP_POPUPS` entry means that journal mechanic can never be discovered.
 
 ---
 
@@ -252,10 +255,10 @@ These are real and worth fixing before building large new features on top.
 5. **(MEDIUM) PrinterRoom/printPaper + magic numbers.** PARTIAL — offline-PP block de-duplicated. STILL
    OPEN: merging the two print implementations and centralizing scattered cost literals (sort 2, print 3,
    examine 25, rest 30, tier paper-return arrays). Deferred as behaviour-risky/low-value without tests.
-6. **(MEDIUM) Decompose `page.js`.** PARTIAL — dev tools (`DebugPanel`, `+100K PP`, `+1 DAY`) gated behind
-   `SHOW_DEV_TOOLS` (dev-only). STILL OPEN: extracting a `useGameLoop` hook, a save-menu component, a
-   data-driven help-trigger effect, and a context/reducer to kill prop drilling — deferred as a high-risk
-   structural rewrite to do under test coverage.
+6. **(MEDIUM) Decompose `page.js`.** PARTIAL — dev tools gated behind `SHOW_DEV_TOOLS` (dev-only), and
+   the help-trigger logic is now a single data-driven effect over `HELP_TRIGGERS` (was ~6 near-identical
+   effects). STILL OPEN: extracting a `useGameLoop` hook, a save-menu component, and a context/reducer to
+   kill prop drilling — deferred as a high-risk structural rewrite to do under test coverage.
 
 ### Dead code & vestiges
 Removed in the optimization pass: `enterDimensionalArea` and `documentsCreated` (page.js), and the

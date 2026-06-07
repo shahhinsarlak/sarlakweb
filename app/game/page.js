@@ -594,122 +594,29 @@ export default function Game() {
     }
   }, [gameState.sanity, gameState.meditationUnlocked]);
 
-  // Help system: Check for triggered popups on specific state changes
-  useEffect(() => {
-    if (!gameState.helpEnabled || gameState.currentHelpPopup) return;
-
-    // Check welcome trigger - delay to avoid blocking sortPapers state update
-    if (!gameState.shownHelpPopups.includes('welcome') && gameState.sortCount === 1) {
-      setTimeout(() => {
-        setGameState(prev => {
-          // Double-check conditions in case they changed
-          if (prev.currentHelpPopup || prev.shownHelpPopups.includes('welcome')) return prev;
-          return {
-            ...prev,
-            currentHelpPopup: HELP_POPUPS.welcome
-          };
-        });
-      }, 100);
-    }
-  }, [gameState.sortCount, gameState.helpEnabled, gameState.currentHelpPopup, gameState.shownHelpPopups]);
+  // Help system: surface the first help popup whose state-based condition is met
+  // and that the player has not seen, then record it in the journal on dismiss
+  // (see dismissHelpPopup). State-based, so milestones already passed on an
+  // imported save still surface.
+  const pendingHelpId = (gameState.helpEnabled && !gameState.currentHelpPopup)
+    ? (Object.keys(HELP_TRIGGERS).find(
+        (key) =>
+          HELP_POPUPS[key] &&
+          !gameState.shownHelpPopups.includes(key) &&
+          HELP_TRIGGERS[key](gameState)
+      ) || null)
+    : null;
 
   useEffect(() => {
-    if (!gameState.helpEnabled || gameState.currentHelpPopup) return;
-
-    // Check firstPassiveIncome trigger
-    if (!gameState.shownHelpPopups.includes('firstPassiveIncome') && gameState.ppPerSecond > 0) {
-      setTimeout(() => {
-        setGameState(prev => {
-          if (prev.currentHelpPopup || prev.shownHelpPopups.includes('firstPassiveIncome') || prev.ppPerSecond === 0) return prev;
-          return { ...prev, currentHelpPopup: HELP_POPUPS.firstPassiveIncome };
-        });
-      }, 100);
-    }
-  }, [gameState.ppPerSecond, gameState.helpEnabled, gameState.currentHelpPopup, gameState.shownHelpPopups]);
-
-  useEffect(() => {
-    if (!gameState.helpEnabled || gameState.currentHelpPopup || gameState.meditationUnlocked) return;
-
-    // Check lowSanity trigger
-    if (!gameState.shownHelpPopups.includes('lowSanity') && gameState.sanity <= 25) {
-      setTimeout(() => {
-        setGameState(prev => {
-          if (prev.currentHelpPopup || prev.shownHelpPopups.includes('lowSanity')) return prev;
-          return { ...prev, currentHelpPopup: HELP_POPUPS.lowSanity };
-        });
-      }, 100);
-    }
-  }, [gameState.sanity, gameState.helpEnabled, gameState.currentHelpPopup, gameState.shownHelpPopups, gameState.meditationUnlocked]);
-
-  useEffect(() => {
-    if (!gameState.helpEnabled || gameState.currentHelpPopup) return;
-
-    // Check sanityTiers trigger
-    if (!gameState.shownHelpPopups.includes('sanityTiers') && gameState.sanity <= 39) {
-      setTimeout(() => {
-        setGameState(prev => {
-          if (prev.currentHelpPopup || prev.shownHelpPopups.includes('sanityTiers')) return prev;
-          return { ...prev, currentHelpPopup: HELP_POPUPS.sanityTiers };
-        });
-      }, 100);
-    }
-  }, [gameState.sanity, gameState.helpEnabled, gameState.currentHelpPopup, gameState.shownHelpPopups]);
-
-  useEffect(() => {
-    if (!gameState.helpEnabled || gameState.currentHelpPopup) return;
-
-    // Check skillTree trigger
-    if (!gameState.shownHelpPopups.includes('skillTree') && gameState.skillPoints > 0) {
-      setTimeout(() => {
-        setGameState(prev => {
-          if (prev.currentHelpPopup || prev.shownHelpPopups.includes('skillTree')) return prev;
-          return { ...prev, currentHelpPopup: HELP_POPUPS.skillTree };
-        });
-      }, 100);
-    }
-  }, [gameState.skillPoints, gameState.helpEnabled, gameState.currentHelpPopup, gameState.shownHelpPopups]);
-
-  useEffect(() => {
-    if (!gameState.helpEnabled || gameState.currentHelpPopup) return;
-
-    // Check other unlocks
-    if (!gameState.shownHelpPopups.includes('archive') && gameState.unlockedLocations.includes('archive')) {
-      setTimeout(() => {
-        setGameState(prev => {
-          if (prev.currentHelpPopup || prev.shownHelpPopups.includes('archive')) return prev;
-          return { ...prev, currentHelpPopup: HELP_POPUPS.archive };
-        });
-      }, 100);
-    } else if (!gameState.shownHelpPopups.includes('printerRoom') && gameState.printerUnlocked) {
-      setTimeout(() => {
-        setGameState(prev => {
-          if (prev.currentHelpPopup || prev.shownHelpPopups.includes('printerRoom')) return prev;
-          return { ...prev, currentHelpPopup: HELP_POPUPS.printerRoom };
-        });
-      }, 100);
-    } else if (!gameState.shownHelpPopups.includes('portal') && gameState.portalUnlocked) {
-      setTimeout(() => {
-        setGameState(prev => {
-          if (prev.currentHelpPopup || prev.shownHelpPopups.includes('portal')) return prev;
-          return { ...prev, currentHelpPopup: HELP_POPUPS.portal };
-        });
-      }, 100);
-    }
-  }, [gameState.unlockedLocations, gameState.printerUnlocked, gameState.portalUnlocked, gameState.helpEnabled, gameState.currentHelpPopup, gameState.shownHelpPopups]);
-
-  useEffect(() => {
-    if (!gameState.helpEnabled || gameState.currentHelpPopup) return;
-
-    // Check documentSystem trigger
-    if (!gameState.shownHelpPopups.includes('documentSystem') && gameState.paper >= 5 && gameState.printerUnlocked) {
-      setTimeout(() => {
-        setGameState(prev => {
-          if (prev.currentHelpPopup || prev.shownHelpPopups.includes('documentSystem')) return prev;
-          return { ...prev, currentHelpPopup: HELP_POPUPS.documentSystem };
-        });
-      }, 100);
-    }
-  }, [gameState.paper, gameState.printerUnlocked, gameState.helpEnabled, gameState.currentHelpPopup, gameState.shownHelpPopups]);
+    if (!pendingHelpId) return;
+    const timer = setTimeout(() => {
+      setGameState(prev => {
+        if (prev.currentHelpPopup || prev.shownHelpPopups.includes(pendingHelpId)) return prev;
+        return { ...prev, currentHelpPopup: HELP_POPUPS[pendingHelpId] };
+      });
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [pendingHelpId]);
 
 
   const dismissHelpPopup = () => {
