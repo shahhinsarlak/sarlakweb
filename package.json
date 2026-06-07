@@ -6,7 +6,8 @@
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "generate:archive": "node scripts/generate-archive-images.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
