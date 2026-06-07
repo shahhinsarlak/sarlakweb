@@ -1208,6 +1208,36 @@ Failure costs sanity.
 The bugs are not bugs. They are features of this reality.`,
     category: 'mechanics'
   },
+  printerRoom: {
+    id: 'printerRoom',
+    title: 'PRINTER ROOM',
+    content: `You found the Printer Room.
+
+PRINT PAPERS turns energy into paper. Paper quality follows your printer quality and your sanity.
+
+Paper buys printer upgrades, prints documents, and crafts dimensional upgrades. The machine never stops.`,
+    category: 'mechanics'
+  },
+  documentSystem: {
+    id: 'documentSystem',
+    title: 'DOCUMENT CREATION',
+    content: `Paper can be printed into documents.
+
+Each document has five tiers, unlocked by printing. Every print rolls a quality outcome from Corrupted to Perfect.
+
+Better paper quality means better outcomes. Documents wait in your File Drawer until you consume them.`,
+    category: 'mechanics'
+  },
+  portal: {
+    id: 'portal',
+    title: 'THE PORTAL',
+    content: `A tear in reality has opened.
+
+Enter to collect dimensional materials from the floating nodes. Watch your capacity, then exit to keep what you gathered.
+
+Materials craft powerful dimensional upgrades. The portal has a cooldown between visits.`,
+    category: 'mechanics'
+  },
 };
 
 /**
@@ -1215,22 +1245,21 @@ The bugs are not bugs. They are features of this reality.`,
  * Defines when each popup should appear
  */
 export const HELP_TRIGGERS = {
-  welcome: (state, prevState) => state.sortCount === 1 && !prevState,
-  firstPassiveIncome: (state, prevState) => state.ppPerSecond > 0 && (!prevState || prevState.ppPerSecond === 0),
-  lowSanity: (state, prevState) => state.sanity <= 25 && (!prevState || prevState.sanity > 25) && !state.meditationUnlocked,
-  sanityTiers: (state, prevState) => state.sanity <= 39 && (!prevState || prevState.sanity > 39),
-  skillTree: (state, prevState) => state.skillPoints > 0 && (!prevState || prevState.skillPoints === 0),
-  archive: (state, prevState) => state.unlockedLocations.includes('archive') && (!prevState || !prevState.unlockedLocations.includes('archive')),
-  printerRoom: (state, prevState) => state.printerUnlocked && (!prevState || !prevState.printerUnlocked),
-  documentSystem: (state, prevState) => state.paper >= 5 && state.printerUnlocked && (!prevState || prevState.paper < 5),
-  portal: (state, prevState) => state.portalUnlocked && (!prevState || !prevState.portalUnlocked),
-  paperQuality: (state, prevState) => {
-    // Trigger when paper quality drops below 50 for first time
-    const currentQuality = (state.paperQuality || 100);
-    const prevQuality = prevState ? (prevState.paperQuality || 100) : 100;
-    return currentQuality < 50 && prevQuality >= 50;
-  },
-  debug: (state, prevState) => state.debugMode && (!prevState || !prevState.debugMode),
+  // State-based predicates: "has this mechanic become relevant yet?" (not a
+  // one-time transition), so a popup still surfaces on an imported save where
+  // the milestone was already passed. The help system shows the first match
+  // whose popup the player has not seen; dismissing it adds it to the journal.
+  welcome: (state) => (state.sortCount || 0) >= 1,
+  firstPassiveIncome: (state) => (state.ppPerSecond || 0) > 0,
+  lowSanity: (state) => state.sanity <= 25,
+  sanityTiers: (state) => state.sanity <= 39,
+  skillTree: (state) => (state.skillPoints || 0) > 0 || Object.keys(state.skills || {}).length > 0,
+  archive: (state) => state.unlockedLocations.includes('archive'),
+  printerRoom: (state) => !!state.printerUnlocked,
+  documentSystem: (state) => !!state.printerUnlocked && (state.paper || 0) >= 5,
+  portal: (state) => !!state.portalUnlocked,
+  paperQuality: (state) => !!state.printerUnlocked && (state.paperQuality ?? 100) <= 50,
+  debug: (state) => !!state.upgrades?.debugger,
 };
 
 /**
