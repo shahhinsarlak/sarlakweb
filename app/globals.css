@@ -71,6 +71,19 @@ h1, h2, h3, h4, h5, h6 {
     flex-direction: column;
 }
 
+/* Enlarge the dense game UI on larger displays so the small inline text stays
+   readable. The main game screen is normal flow (no viewport units), so zoom is
+   safe here; full-screen game modals use 100vw/100vh and are left alone. */
+@media (min-width: 1500px) {
+    [data-game-container] { zoom: 1.12; }
+}
+@media (min-width: 1920px) {
+    [data-game-container] { zoom: 1.22; }
+}
+@media (min-width: 2560px) {
+    [data-game-container] { zoom: 1.32; }
+}
+
 /* Custom scrollbar styling for better aesthetics */
 ::-webkit-scrollbar {
     width: 8px;
