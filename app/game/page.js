@@ -19,7 +19,6 @@ import JournalModal from './JournalModal';
 import BuffReplacementModal from './BuffReplacementModal';
 import NotificationPopup from './NotificationPopup';
 import TierUnlockModal from './TierUnlockModal';
-import PrestigeSurviveModal from './PrestigeSurviveModal';
 import GameActionsPanel from './GameActionsPanel';
 import GameUpgradesPanel from './GameUpgradesPanel';
 import GameStatsPanel from './GameStatsPanel';
@@ -28,7 +27,7 @@ import { createGameActions } from './gameActions';
 import { getDistortionStyle, distortText, getClockTime, createLevelUpParticles, createSkillPurchaseParticles, createScreenShake, formatPP } from './gameUtils';
 import { saveGame, loadGame, exportToClipboard, importFromClipboard, saveToLocalStorage, loadFromLocalStorage } from './saveSystem';
 import { computeClickPP, computePassivePPPerSecond } from './ppHelpers';
-import { addExperience, purchaseSkill, getActiveSkillEffects, getModifiedPortalCooldown, getMaxSanity, getPrestigePathBonus } from './skillSystemHelpers';
+import { addExperience, purchaseSkill, getActiveSkillEffects, getModifiedPortalCooldown, getMaxSanity } from './skillSystemHelpers';
 import { SKILLS, LEVEL_SYSTEM, XP_REWARDS } from './skillTreeConstants';
 import { DIMENSIONAL_MATERIALS } from './dimensionalConstants';
 import { getSanityTierDisplay, isSanityDrainPaused, calculatePaperQuality } from './sanityPaperHelpers';
@@ -42,8 +41,7 @@ import {
   DIMENSIONAL_UPGRADES,
   HELP_POPUPS,
   HELP_TRIGGERS,
-  PP_MULTIPLIER_TIERS,
-  PRESTIGE_PATHS
+  PP_MULTIPLIER_TIERS
 } from './constants';
 
 const PORTAL_UNLOCK_ENTRIES = ['glitched', 'maintenance', 'encrypted_lights'];
@@ -64,7 +62,6 @@ export default function Game() {
   const [buffTooltip, setBuffTooltip] = useState(null); // { buff, x, y }
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [tierUnlock, setTierUnlock] = useState(null); // { name, multiplier, desc } when tier crossed
-  const [showPrestigeModal, setShowPrestigeModal] = useState(false);
   const clickTimestampsRef = useRef([]);
 
   const addMessage = useCallback((msg) => {
@@ -96,11 +93,8 @@ export default function Game() {
 
   const grantXP = useCallback((amount, showParticles = true) => {
     setGameState(prev => {
-      // Apply Seeker path bonus to XP gain
-      const seekerBonus = getPrestigePathBonus(prev, 'xpGain');
-      const adjustedAmount = seekerBonus > 0 ? amount * (1 + seekerBonus) : amount;
       // Pass empty function to prevent addExperience from adding messages
-      const xpResult = addExperience(prev, adjustedAmount, () => {});
+      const xpResult = addExperience(prev, amount, () => {});
 
       // Manually add level-up message here to avoid duplicates
       const messages = [];
@@ -465,13 +459,7 @@ export default function Game() {
         }
 
         if (prev.paperPerSecond > 0) {
-          let paperGain = prev.paperPerSecond / 10;
-          // Apply Convert path bonus to paper production
-          const paperBonus = getPrestigePathBonus(prev, 'paperRate');
-          if (paperBonus > 0) {
-            paperGain *= (1 + paperBonus);
-          }
-          newState.paper = prev.paper + paperGain;
+          newState.paper = prev.paper + prev.paperPerSecond / 10;
         }
 
         newState.timeInOffice = prev.timeInOffice + 0.1;
@@ -501,12 +489,6 @@ export default function Game() {
             // Void Shield reduces drain by additional 50%
             if (prev.dimensionalUpgrades?.void_shield) {
               sanityDrainRate *= 0.5;
-            }
-
-            // Apply Protector path bonus (reduces sanity drain rate)
-            const sanityBonus = getPrestigePathBonus(prev, 'sanityRegen');
-            if (sanityBonus > 0) {
-              sanityDrainRate *= (1 - sanityBonus);
             }
 
             // Mental Fortitude skill slows sanity loss
@@ -1136,23 +1118,6 @@ export default function Game() {
                 DEBUG
               </button>
             )}
-            {gameState.upgrades?.promotion && (
-              <button
-                onClick={() => setShowPrestigeModal(true)}
-                style={{
-                  background: 'none',
-                  border: '1px solid var(--accent-color, #78866b)',
-                  color: 'var(--accent-color, #78866b)',
-                  padding: '8px 16px',
-                  cursor: 'pointer',
-                  fontSize: '11px',
-                  fontFamily: 'inherit',
-                  letterSpacing: '2px',
-                }}
-              >
-                SURVIVE ANOTHER DAY
-              </button>
-            )}
             {SHOW_DEV_TOOLS && (
               <>
                 <button
@@ -1245,7 +1210,6 @@ export default function Game() {
               actions={actions}
               LEVEL_SYSTEM={LEVEL_SYSTEM}
               PP_MULTIPLIER_TIERS={PP_MULTIPLIER_TIERS}
-              PRESTIGE_PATHS={PRESTIGE_PATHS}
             />
 
             <GameSidebarExtras
@@ -1421,18 +1385,6 @@ export default function Game() {
           multiplier={tierUnlock.multiplier}
           tierDesc={tierUnlock.desc}
           onClose={() => setTierUnlock(null)}
-        />
-      )}
-
-      {/* Prestige Modal */}
-      {showPrestigeModal && (
-        <PrestigeSurviveModal
-          gameState={gameState}
-          onPrestige={(path) => {
-            actions.prestige(path);
-            setShowPrestigeModal(false);
-          }}
-          onClose={() => setShowPrestigeModal(false)}
         />
       )}
 
