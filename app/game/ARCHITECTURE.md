@@ -36,7 +36,7 @@ state flag. Only one renders at a time. The default render is the main office sc
 ### Data / constants
 - `constants.js` (~1580 lines) — master data file. `INITIAL_GAME_STATE`, `LOCATIONS`, `UPGRADES`,
   `DIMENSIONAL_UPGRADES`, `PRINTER_UPGRADES`, `EVENTS`, `ACHIEVEMENTS`, `DOCUMENT_TYPES`
-  (4 types × 5 tiers × 4 outcomes), `SANITY_TIERS`, `PP_MULTIPLIER_TIERS`, `PRESTIGE_PATHS`,
+  (4 types × 5 tiers × 4 outcomes), `SANITY_TIERS`, `PP_MULTIPLIER_TIERS`,
   `TIER_MASTERY_WEIGHTS`, `HELP_POPUPS`, `HELP_TRIGGERS`, `JOURNAL_ENTRIES`, `MECHANICS_ENTRIES`,
   `LORE_SNIPPETS`, `DEBUG_CHALLENGES`.
 - `skillTreeConstants.js` — `SKILLS` (a flat list of 8 standalone skills, each with an `effect(level)`
@@ -47,7 +47,7 @@ state flag. Only one renders at a time. The default render is the main office sc
 ### Logic / helpers (pure)
 - `gameActions.js` (~1220) — `createGameActions(setGameState, addMessage, checkAchievements, grantXP)`.
 - `skillSystemHelpers.js` — XP/leveling (`addExperience`), `purchaseSkill`, `getActiveSkillEffects`,
-  and the skill/achievement/prestige modifier appliers.
+  and the skill/achievement modifier appliers.
 - `sanityPaperHelpers.js` — sanity tiers, paper-quality formula, document tier gating, quality→outcome
   roll, buff stacking, material RNG.
 - `journalHelpers.js` — `discoverLocation`, `isLocationDiscovered`.
@@ -61,7 +61,7 @@ state flag. Only one renders at a time. The default render is the main office sc
 ### Panels (main screen)
 - `GameActionsPanel.js` — SORT PAPERS / REST / MEDITATE / location nav.
 - `GameUpgradesPanel.js` — tabbed PP / printer / dimensional upgrades; renders `VoidContractsDisplay`.
-- `GameStatsPanel.js` — resource readouts, active buffs, level bar, prestige info.
+- `GameStatsPanel.js` — resource readouts, active buffs, level bar.
 - `GameSidebarExtras.js` — event log / misc sidebar.
 
 ### Modals / sub-screens
@@ -75,7 +75,6 @@ state flag. Only one renders at a time. The default render is the main office sc
 - `JournalModal.js` — locations + mechanics tabs.
 - `AchievementsModal.js`.
 - `BuffReplacementModal.js` — at-buff-cap replacement prompt.
-- `PrestigeSurviveModal.js` — "Survive Another Day" path selection.
 - `TierUnlockModal.js` — PP-tier celebration.
 - `DebugPanel.js` — developer cheat panel (dev-only via `SHOW_DEV_TOOLS`).
 
@@ -96,8 +95,7 @@ Single source of truth, loaded via `useState(INITIAL_GAME_STATE)`. Canonical nam
 - **Resources:** `pp` (float), `energy` (max 100, +20 with `energydrink`), `sanity`, `maxSanity`,
   `ppPerClick`, `ppPerSecond`.
 - **Time/phase:** `day`, `timeInOffice`, `phase` (1→2 when `pp > 100`).
-- **Progression:** `playerLevel`, `playerXP`, `skillPoints`, `skills` ({id:level}), `playerPath`,
-  `pathScores`.
+- **Progression:** `playerLevel`, `playerXP`, `skillPoints`, `skills` ({id:level}).
 - **Ownership maps ({id:true}):** `upgrades`, `printerUpgrades`, `dimensionalUpgrades`.
 - **Arrays:** `unlockedLocations` (['cubicle']), `discoveredLocations`, `discoveredEvents`,
   `achievements`, `examinedArchiveItems`, `recentMessages`, `discoveredMechanics`, `storedDocuments`,
@@ -110,7 +108,6 @@ Single source of truth, loaded via `useState(INITIAL_GAME_STATE)`. Canonical nam
 - **Portal/dimensional:** `portalUnlocked`, `dimensionalInventory` ({materialId:count}),
   `timeRewindUsed`.
 - **Buffs:** `maxActiveBuffs` (3) — **overloaded, see gotchas**; `pendingBuff`, `pendingBuffDocument`.
-- **Prestige:** `prestigeCount`, `prestigeMultiplier` (= `1 + 0.1 * count`), `activePathBonuses`.
 - **Void/late:** `temporalPactActive`, `voidBargainActive`, `sanityErosionActive`, `focusModeExpiry`,
   `lastSavedAt`, `ppMultiplierTier`.
 - **Help:** `helpEnabled`, `shownHelpPopups`, `currentHelpPopup`.
@@ -134,7 +131,7 @@ Single source of truth, loaded via `useState(INITIAL_GAME_STATE)`. Canonical nam
 buff modifier, floored at 0.1× base; `checkFreeAction` may skip it) then PP = `ppPerClick`
 → `applyPPMultiplier` (skills) → `applySanityPPModifier` (sanity tier × stacked buffs)
 → × PP-tier mult (`PP_MULTIPLIER_TIERS`: 2× at 10K, 5× at 1M, 25× at 1B) → × chaos bonus
-→ × (1 + achievement ppMultiplier) → × `prestigeMultiplier` → × 1.5 if Focus Mode
+→ × (1 + achievement ppMultiplier) → × 1.5 if Focus Mode
 → × 3 if `sanityErosionActive && sanity<30`.
 
 **Energy.** Max 100 (+20 energydrink). Only refilled by `rest` (full, 30 s cooldown, reduced by Power
@@ -175,13 +172,11 @@ entry, mines into a **local** inventory, commits to `dimensionalInventory` on ex
 irreversible** trade-offs. End-game items: `singularity_collapse` (ending) and `tear_the_veil`
 (→ `/survival`).
 
-**Prestige ("Survive Another Day").** Unlocked once `upgrades.promotion` (Senior Analyst, 12K PP) is
-owned. `prestige(path)` resets to `INITIAL_GAME_STATE` but preserves `achievements`, `playerPath`,
-`pathScores`, `discoveredEvents`; increments `prestigeCount`; recomputes `prestigeMultiplier`; appends a
-+15% path bonus to `activePathBonuses`. The loop is currently shallow (+10% PP/prestige).
+*(There is no prestige / "Survive Another Day" loop — it was removed. The `promotion` upgrade is now
+just a normal +10 `ppPerSecond` purchase.)*
 
 **Achievements / XP / Meditation / Archive / Help.** `ACHIEVEMENTS[].check(state)` scanned by
-`checkAchievements` (+50 XP each). `grantXP` applies Seeker path bonus → `addExperience`. Meditation is
+`checkAchievements` (+50 XP each). `grantXP` → `addExperience`. Meditation is
 a 3-breath rhythm game restoring sanity (unlocks at sanity ≤25). Archive: reading three specific lore
 entries + day ≥7 unlocks the Portal. Help popups (`HELP_POPUPS`/`HELP_TRIGGERS`) record into
 `shownHelpPopups` and teach the matching `MECHANICS_ENTRIES` journal entry on dismissal.
@@ -194,11 +189,11 @@ First clicks (SORT PAPERS) → early PP upgrades (stapler 50 → coffee 150 firs
 → … archive 400 → debugger 500). **Phase 2 at pp>100**: real sanity drain begins. Printer/document loop
 (print → printer upgrades → document tiers gated by mastery 0/3/8/18/30 → File Drawer → consume).
 **Portal unlock** (3 archive entries + day ≥7) → dimensional mining → dimensional upgrades / Occult
-skills. **PP-tier explosions** at 10K/1M/1B are the main payoff. Senior Analyst (12K) unlocks Prestige.
+skills. **PP-tier explosions** at 10K/1M/1B are the main payoff.
 Void Contracts are late, material-gated, build-defining. (Passive income comes from `ppPerSecond`
-upgrades/skills — there is no auto-clicker/automation toggle system; it was removed as unfun.)
-End-game: `singularity_collapse` then `tear_the_veil` (5M PP + one of every material) → `/survival`;
-parallel loop is repeated prestige for stacking path bonuses.
+upgrades/skills — there is no auto-clicker/automation toggle system, and no prestige loop; both were
+removed.) End-game: `singularity_collapse` then `tear_the_veil` (5M PP + one of every material) →
+`/survival`.
 
 Gating mixes PP cost, day count, mastery counts, player level, and materials.
 
@@ -212,7 +207,7 @@ Gating mixes PP cost, day count, mastery counts, player level, and materials.
   validate → calculate → build → side-effects. Side effects (XP, achievements, particles) are deferred
   with `setTimeout(..., 0/50/100)` so they run after the state commit.
 - **Helpers are pure:** take `gameState`, return values, no mutation. Aggregate via
-  `getActiveSkillEffects` / `getAchievementBonuses` / `getPrestigePathBonus`.
+  `getActiveSkillEffects` / `getAchievementBonuses`.
 - **Messages:** prepend via `addMessage`, always
   `recentMessages: [msg, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)`.
 - **New state property:** add to `INITIAL_GAME_STATE` with a comment and correct type; reference the
@@ -272,8 +267,6 @@ unreachable armory / dimensional-tear feature in `DimensionalArea.js`. `Dimensio
 was removed earlier.
 
 Still outstanding (low priority):
-- `pathScores` — preserved on prestige and read in `PrestigeSurviveModal`, but never initialized or
-  written (always 0). Either implement or remove. `playerPath` — set on prestige, never read for logic.
 - `skillSystemHelpers` keeps a "Legacy effects" block (`attackDamage`, `maxHealth`, `critChance`, …) from
   the removed combat system. **Do not blind-delete** — some keys in it (`rarityBonus`, `energyEfficiency`,
   `sanityResistance`) are still read as fallbacks; removing them risks `NaN`.

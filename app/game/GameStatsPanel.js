@@ -13,7 +13,6 @@ function GameStatsPanel({
   actions,
   LEVEL_SYSTEM,
   PP_MULTIPLIER_TIERS,
-  PRESTIGE_PATHS,
 }) {
   return (
     <div>
@@ -101,8 +100,8 @@ function GameStatsPanel({
                 const tierMult = tierData ? tierData.multiplier : 1;
                 const tierBonus = tierMult !== 1 ? `${tierMult}x` : 'none';
 
-                // Authoritative combined multiplier (also folds in prestige,
-                // chaos, achievements, focus and erosion) so it matches the headline.
+                // Authoritative combined multiplier (also folds in chaos,
+                // achievements, focus and erosion) so it matches the headline.
                 const base = gameState.ppPerClick || 1;
                 const totalMult = computeClickPP(gameState) / base;
                 return `Base: ${gameState.ppPerClick} \u2022 Skills: ${skillBonus} \u2022 Sanity: ${sanityBonus} \u2022 Buffs: ${buffBonus} \u2022 Tier: ${tierBonus} (${tierName}) \u2022 = \u00d7${totalMult.toFixed(2)}`;
@@ -202,33 +201,13 @@ function GameStatsPanel({
                   const ppBuffBonus = ppMult !== 1 ? `+${((ppMult - 1) * 100).toFixed(0)}%` : 'none';
                   const ppSecBuffBonus = ppSecMult !== 1 ? `+${((ppSecMult - 1) * 100).toFixed(0)}%` : 'none';
 
-                  // Authoritative combined multiplier (folds in tier, prestige,
-                  // Rationalist path and Temporal Pact) so it matches the headline.
+                  // Authoritative combined multiplier (folds in tier and the
+                  // Temporal Pact contract) so it matches the headline.
                   const base = gameState.ppPerSecond || 1;
                   const totalMult = computePassivePPPerSecond(gameState) / base;
                   return `Base: ${gameState.ppPerSecond} \u2022 Skills: ${skillBonus} \u2022 Sanity: ${sanityBonus} \u2022 PP Buffs: ${ppBuffBonus} \u2022 Void Buffs: ${ppSecBuffBonus} \u2022 = \u00d7${totalMult.toFixed(2)}`;
                 })()}
               </div>
-            </div>
-          )}
-          {gameState.prestigeCount > 0 && (
-            <div style={{
-              paddingTop: '16px',
-              borderTop: '1px solid var(--border-color)',
-              marginTop: '16px',
-              fontSize: '11px',
-            }}>
-              <div style={{ opacity: 0.6, marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '1px', fontSize: '10px' }}>
-                PRESTIGE
-              </div>
-              <div style={{ marginBottom: '4px' }}>
-                Run #{gameState.prestigeCount + 1} &bull; <span style={{ color: 'var(--accent-color)' }}>+{((gameState.prestigeMultiplier - 1) * 100).toFixed(0)}% PP</span>
-              </div>
-              {(gameState.activePathBonuses || []).map((bonus, idx) => (
-                <div key={idx} style={{ fontSize: '10px', opacity: 0.7 }}>
-                  {PRESTIGE_PATHS.find(p => p.id === bonus.path)?.name || bonus.path}: <span style={{ color: 'var(--accent-color)' }}>+{Math.abs(bonus.value * 100).toFixed(0)}% {bonus.type}</span>
-                </div>
-              ))}
             </div>
           )}
           {gameState.paperPerSecond > 0 && (

@@ -87,7 +87,6 @@ export const INITIAL_GAME_STATE = {
   shownHelpPopups: [], // Array of popup IDs that have been shown
   currentHelpPopup: null, // Current popup to display (object with id, title, content)
   meditationUnlocked: false, // Meditation button only appears after reaching 25% sanity
-  playerPath: null,
   // Journal System (Added 2025-10-31, Revised 2025-11-01)
   // Tracks discoveries for the player's journal
   journalOpen: false,              // Is journal UI visible
@@ -99,10 +98,6 @@ export const INITIAL_GAME_STATE = {
   notifications: [],  // Array of notification objects: { id, message, timestamp }
   // PP Tier Multiplier System
   ppMultiplierTier: 0, // Current tier index (0 = no tier unlocked yet)
-  // Prestige System (Added Phase 19)
-  prestigeCount: 0,           // Number of times player has prestiged
-  prestigeMultiplier: 1,      // Applied to all PP gain: 1 + (0.1 * prestigeCount)
-  activePathBonuses: [],      // Array of { path, type, value } persisted across resets
   // Void Contracts (Phase 20)
   temporalPactActive: false,    // CONTRACT 1: ppPerSecond 2x, no time rewind
   voidBargainActive: false,     // CONTRACT 2: 2x material drop rate, portal cooldown doubled
@@ -131,7 +126,6 @@ export const LORE_SNIPPETS = {
     'Your contract expires the day after it ends.',
   ],
   major: [
-    'You have prestige\'d before. You will prestige again. It does not matter.',
     'The dimensional portal does not lead out. It leads further in.',
     'The fluorescent lights are not lights. They are observers.',
     'Every document you print is a message to yourself from a future you cannot reach.',
@@ -148,7 +142,6 @@ export const LORE_SNIPPETS = {
     'When the loop closes, you will have forgotten this. That is the point.',
     'The ending is not an ending. It is a different beginning with the same furniture.',
     'You sorted enough papers. The building noticed.',
-    'Prestige is not escape. Prestige is understanding that escape was never the question.',
   ],
 };
 
@@ -796,21 +789,6 @@ export const PP_MULTIPLIER_TIERS = [
   { tier: 1, threshold: 10000,       multiplier: 2,  name: 'Reality Bonus',         desc: 'Productivity doubles. The office approves.' },
   { tier: 2, threshold: 1000000,     multiplier: 5,  name: 'Void Coefficient',      desc: 'Existence is multiplicative. Not additive.' },
   { tier: 3, threshold: 1000000000,  multiplier: 25, name: 'Singularity Resonance', desc: 'Numbers are no longer real. Neither are you.' }
-];
-
-/**
- * Prestige Paths (Added Phase 19)
- *
- * Five paths a player can choose when prestiging (Survive Another Day).
- * Each path grants a permanent bonus that stacks across multiple prestige runs.
- * Bonuses are stored in activePathBonuses array in game state.
- */
-export const PRESTIGE_PATHS = [
-  { id: 'seeker',      name: 'The Seeker',      bonus: { type: 'xpGain',        value: 0.15  }, desc: 'Truth compounds. Knowledge persists.' },
-  { id: 'rationalist', name: 'The Rationalist',  bonus: { type: 'ppPerSecond',   value: 0.15  }, desc: 'Efficiency is the only constant.' },
-  { id: 'protector',   name: 'The Protector',    bonus: { type: 'sanityRegen',   value: 0.15  }, desc: 'Sanity is a renewable resource.' },
-  { id: 'convert',     name: 'The Convert',      bonus: { type: 'paperRate',     value: 0.15  }, desc: 'The printer remembers.' },
-  { id: 'rebel',       name: 'The Rebel',        bonus: { type: 'portalCooldown', value: -0.15 }, desc: 'The void opens faster for the bold.' },
 ];
 
 /**

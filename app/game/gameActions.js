@@ -13,7 +13,7 @@
  * - upgrades: Purchase permanent improvements
  * - printer: Paper generation system
  */
-import { LOCATIONS, UPGRADES, DEBUG_CHALLENGES, PRINTER_UPGRADES, DOCUMENT_TYPES, TIER_MASTERY_WEIGHTS, PRESTIGE_PATHS, INITIAL_GAME_STATE, LORE_SNIPPETS } from './constants';
+import { LOCATIONS, UPGRADES, DEBUG_CHALLENGES, PRINTER_UPGRADES, DOCUMENT_TYPES, TIER_MASTERY_WEIGHTS, INITIAL_GAME_STATE, LORE_SNIPPETS } from './constants';
 import {
   applyEnergyCostReduction,
   getModifiedRestCooldown,
@@ -66,8 +66,8 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
         return prev;
       }
 
-      // Canonical PP chain (skills, sanity, tier, chaos, achievements, prestige,
-      // focus, erosion) — shared with the passive tick, auto-sort and the display.
+      // Canonical PP chain (skills, sanity, tier, chaos, achievements, focus,
+      // erosion) — shared with the passive tick and the display.
       const ppGain = computeClickPP(prev);
 
       // Clean expired buffs
@@ -1074,38 +1074,6 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
     });
   };
 
-  // Prestige action (Added Phase 19)
-  const prestige = (selectedPath) => {
-    setGameState(prev => {
-      // Must have promotion upgrade (SENIOR ANALYST) to prestige
-      if (!prev.upgrades?.promotion) return prev;
-
-      const newPrestigeCount = prev.prestigeCount + 1;
-      const newMultiplier = 1 + (0.1 * newPrestigeCount);
-      const pathDef = PRESTIGE_PATHS.find(p => p.id === selectedPath);
-      if (!pathDef) return prev;
-
-      const newBonuses = [...(prev.activePathBonuses || []), {
-        path: selectedPath,
-        type: pathDef.bonus.type,
-        value: pathDef.bonus.value,
-      }];
-
-      return {
-        ...INITIAL_GAME_STATE,
-        // Preserve prestige layer:
-        achievements: prev.achievements,
-        playerPath: selectedPath,
-        pathScores: prev.pathScores,
-        discoveredEvents: prev.discoveredEvents,
-        prestigeCount: newPrestigeCount,
-        prestigeMultiplier: newMultiplier,
-        activePathBonuses: newBonuses,
-      };
-    });
-    addMessage('The fluorescent lights flicker. Everything resets. But you remember.');
-  };
-
   // Void Contracts action (Added Phase 20)
   const purchaseVoidContract = (contract) => {
     setGameState(prev => {
@@ -1179,8 +1147,6 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
     openJournal,
     closeJournal,
     switchJournalTab,
-    // Prestige system actions (Added Phase 19)
-    prestige,
     // Void Contracts actions (Added Phase 20)
     purchaseVoidContract,
   };
