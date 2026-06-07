@@ -103,7 +103,7 @@ function ArchiveModal({
         }}>
           {/* Book title (horizontal, more readable) */}
           <div style={{
-            fontSize: '11px',
+            fontSize: '13px',
             color: 'var(--bg-color)',
             fontWeight: 'bold',
             letterSpacing: '0.5px',
@@ -160,7 +160,7 @@ function ArchiveModal({
               bottom: '6px',
               left: '50%',
               transform: 'translateX(-50%)',
-              fontSize: '9px',
+              fontSize: '11px',
               color: 'var(--bg-color)',
               backgroundColor: 'rgba(0,0,0,0.5)',
               padding: '2px 6px',
@@ -247,7 +247,7 @@ function ArchiveModal({
               THE ARCHIVE
             </div>
             <div style={{
-              fontSize: '11px',
+              fontSize: '13px',
               opacity: 0.6,
               letterSpacing: '2px',
               marginBottom: '16px'
@@ -263,7 +263,7 @@ function ArchiveModal({
               ═══════════════════════════════════════
             </div>
             <div style={{
-              fontSize: '12px',
+              fontSize: '14px',
               opacity: 0.7,
               marginTop: '20px',
               letterSpacing: '1px'
@@ -271,7 +271,7 @@ function ArchiveModal({
               EXAMINED: {examinedItems.length} / {items.length}
             </div>
             <div style={{
-              fontSize: '10px',
+              fontSize: '12px',
               opacity: 0.5,
               marginTop: '8px',
               fontStyle: 'italic'
@@ -289,7 +289,7 @@ function ArchiveModal({
           }}>
             {/* Top of bookshelf */}
             <div style={{
-              fontSize: '14px',
+              fontSize: '16px',
               lineHeight: '1',
               marginBottom: '20px',
               opacity: 0.8,
@@ -322,7 +322,7 @@ function ArchiveModal({
                 {/* Shelf divider (except after last row) */}
                 {rowIndex < rows.length - 1 && (
                   <div style={{
-                    fontSize: '14px',
+                    fontSize: '16px',
                     lineHeight: '1',
                     margin: '16px 0',
                     opacity: 0.6,
@@ -338,7 +338,7 @@ function ArchiveModal({
 
             {/* Bottom of bookshelf */}
             <div style={{
-              fontSize: '14px',
+              fontSize: '16px',
               lineHeight: '1',
               marginTop: '20px',
               opacity: 0.8,
@@ -354,14 +354,14 @@ function ArchiveModal({
           <div style={{
             textAlign: 'center',
             marginTop: '32px',
-            fontSize: '11px',
+            fontSize: '13px',
             opacity: 0.6,
             letterSpacing: '1px',
             lineHeight: '2'
           }}>
             <div>Click a book to examine its contents</div>
             <div>First examination costs 25 energy • Re-reading is free</div>
-            <div style={{ fontSize: '10px', marginTop: '8px', opacity: 0.5 }}>
+            <div style={{ fontSize: '12px', marginTop: '8px', opacity: 0.5 }}>
               Most books are encrypted and unreadable
             </div>
           </div>
@@ -379,7 +379,7 @@ function ArchiveModal({
                 color: 'var(--bg-color)',
                 padding: '16px 64px',
                 cursor: 'pointer',
-                fontSize: '13px',
+                fontSize: '15px',
                 fontFamily: 'inherit',
                 letterSpacing: '2px',
                 fontWeight: 'bold',

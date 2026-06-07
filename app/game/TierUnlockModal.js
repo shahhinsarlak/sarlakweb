@@ -57,7 +57,7 @@ function TierUnlockModal({ tierName, multiplier, tierDesc, onClose }) {
         textAlign: 'center'
       }}>
         <div style={{
-          fontSize: '11px',
+          fontSize: '13px',
           textTransform: 'uppercase',
           letterSpacing: '3px',
           opacity: 0.6,
@@ -75,7 +75,7 @@ function TierUnlockModal({ tierName, multiplier, tierDesc, onClose }) {
           {tierName}
         </div>
         <div style={{
-          fontSize: '14px',
+          fontSize: '16px',
           opacity: 0.7,
           marginBottom: '12px',
           lineHeight: '1.6'
@@ -83,7 +83,7 @@ function TierUnlockModal({ tierName, multiplier, tierDesc, onClose }) {
           PP multiplier increased to {multiplier}x
         </div>
         <div style={{
-          fontSize: '11px',
+          fontSize: '13px',
           opacity: 0.5,
           marginBottom: '24px',
           fontStyle: 'italic'
@@ -98,7 +98,7 @@ function TierUnlockModal({ tierName, multiplier, tierDesc, onClose }) {
             color: 'var(--accent-color)',
             padding: '10px 32px',
             cursor: 'pointer',
-            fontSize: '12px',
+            fontSize: '14px',
             fontFamily: 'inherit',
             letterSpacing: '2px',
             transition: 'all 0.2s'

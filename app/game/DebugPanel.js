@@ -809,9 +809,6 @@ export default function DebugPanel({ gameState, setGameState, addMessage, onClos
           <button onClick={() => setGameState(prev => ({ ...prev, examinedItems: 7 }))} style={buttonStyle}>
             EXAMINED: 7
           </button>
-          <button onClick={() => setGameState(prev => ({ ...prev, themeToggleCount: 20 }))} style={buttonStyle}>
-            THEME: 20
-          </button>
           <button onClick={() => setGameState(prev => ({ ...prev, breathCount: 20 }))} style={buttonStyle}>
             BREATH: 20
           </button>

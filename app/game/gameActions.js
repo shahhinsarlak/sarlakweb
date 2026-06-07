@@ -1074,41 +1074,6 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
     });
   };
 
-  // Void Contracts action (Added Phase 20)
-  const purchaseVoidContract = (contract) => {
-    setGameState(prev => {
-      // 1. Validate: not already active
-      if (prev[contract.activeFlag]) return prev;
-
-      // 2. Validate: can afford
-      const canAfford = Object.entries(contract.materials).every(
-        ([id, cost]) => (prev.dimensionalInventory?.[id] || 0) >= cost
-      );
-      if (!canAfford) return prev;
-
-      // 3. Build state: deduct materials, set flag
-      const newInventory = { ...prev.dimensionalInventory };
-      Object.entries(contract.materials).forEach(([id, cost]) => {
-        newInventory[id] = (newInventory[id] || 0) - cost;
-      });
-
-      const newState = {
-        ...prev,
-        dimensionalInventory: newInventory,
-        [contract.activeFlag]: true,
-      };
-
-      // Contract-specific side effects
-      if (contract.id === 'sanity_erosion') {
-        newState.maxSanity = 60;
-        newState.sanity = Math.min(prev.sanity, 60);
-      }
-
-      return newState;
-    });
-    addMessage('Void contract sealed. There is no going back.');
-  };
-
   // Return all action handlers
   return {
     sortPapers,
@@ -1147,7 +1112,5 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
     openJournal,
     closeJournal,
     switchJournalTab,
-    // Void Contracts actions (Added Phase 20)
-    purchaseVoidContract,
   };
 };

@@ -58,7 +58,7 @@ function HelpPopup({ popup, onDismiss }) {
       }}>
         {/* Category badge */}
         <div style={{
-          fontSize: '9px',
+          fontSize: '11px',
           textTransform: 'uppercase',
           letterSpacing: '2px',
           opacity: 0.5,
@@ -86,7 +86,7 @@ function HelpPopup({ popup, onDismiss }) {
 
         {/* Content */}
         <div style={{
-          fontSize: '13px',
+          fontSize: '15px',
           lineHeight: '1.8',
           marginBottom: '32px',
           whiteSpace: 'pre-line',
@@ -108,7 +108,7 @@ function HelpPopup({ popup, onDismiss }) {
               color: 'var(--accent-color)',
               padding: '12px 32px',
               cursor: 'pointer',
-              fontSize: '12px',
+              fontSize: '14px',
               fontFamily: 'inherit',
               letterSpacing: '1px',
               textTransform: 'uppercase',
@@ -132,7 +132,7 @@ function HelpPopup({ popup, onDismiss }) {
           marginTop: '24px',
           paddingTop: '16px',
           borderTop: '1px solid var(--border-color)',
-          fontSize: '9px',
+          fontSize: '11px',
           textAlign: 'center',
           opacity: 0.4,
           letterSpacing: '0.5px'

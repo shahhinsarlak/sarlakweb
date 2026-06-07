@@ -1,5 +1,4 @@
 import React from 'react';
-import VoidContractsDisplay from './VoidContractsDisplay';
 import { DIMENSIONAL_MATERIALS } from './dimensionalConstants';
 
 function GameUpgradesPanel({
@@ -262,14 +261,6 @@ function GameUpgradesPanel({
             })}
           </div>
         </div>
-      )}
-
-      {/* Void Contracts */}
-      {selectedUpgradeType === 'dimensional' && Object.keys(gameState.dimensionalInventory || {}).some(key => gameState.dimensionalInventory[key] > 0) && (
-        <VoidContractsDisplay
-          gameState={gameState}
-          onPurchase={actions.purchaseVoidContract}
-        />
       )}
 
       {/* Dimensional Upgrades */}

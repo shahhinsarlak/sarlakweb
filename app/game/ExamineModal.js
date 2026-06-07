@@ -39,7 +39,7 @@ function ExamineModal({ item, closeExamine, notifications, onDismissNotification
           maxWidth: '700px',
           margin: '0 auto',
           padding: '60px 40px',
-          fontSize: '14px'
+          fontSize: '16px'
         }}>
           <div style={{
             border: '1px solid var(--border-color)',
@@ -47,7 +47,7 @@ function ExamineModal({ item, closeExamine, notifications, onDismissNotification
             backgroundColor: 'var(--hover-color)'
           }}>
             <div style={{
-              fontSize: '11px',
+              fontSize: '13px',
               textTransform: 'uppercase',
               letterSpacing: '1px',
               opacity: 0.6,
@@ -80,7 +80,7 @@ function ExamineModal({ item, closeExamine, notifications, onDismissNotification
             )}
 
             <div style={{
-              fontSize: '10px',
+              fontSize: '12px',
               textTransform: 'uppercase',
               letterSpacing: '1px',
               opacity: 0.4,
@@ -89,7 +89,7 @@ function ExamineModal({ item, closeExamine, notifications, onDismissNotification
               Transcription
             </div>
             <div style={{
-              fontSize: '15px',
+              fontSize: '17px',
               lineHeight: '1.8',
               marginBottom: '32px'
             }}>
@@ -103,7 +103,7 @@ function ExamineModal({ item, closeExamine, notifications, onDismissNotification
                 color: 'var(--bg-color)',
                 padding: '12px 24px',
                 cursor: 'pointer',
-                fontSize: '12px',
+                fontSize: '14px',
                 fontFamily: 'inherit',
                 letterSpacing: '0.5px',
                 width: '100%'

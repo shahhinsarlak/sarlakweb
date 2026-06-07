@@ -65,7 +65,7 @@ function NotificationItem({ notification, index, onDismiss }) {
   return (
     <div style={{
       fontFamily: "'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace",
-      fontSize: '13px',
+      fontSize: '15px',
       padding: '12px 16px',
       backgroundColor: 'var(--bg-color)',
       color: 'var(--text-color)',

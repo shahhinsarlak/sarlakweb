@@ -104,11 +104,6 @@ function DimensionalArea({ gameState, setGameState, onExit, grantXP, notificatio
       amount = Math.floor(amount * maxMult);
     }
 
-    // Void Bargain: material drop rate permanently doubled
-    if (gameState.voidBargainActive) {
-      amount = Math.floor(amount * 2);
-    }
-
     setCurrentInventory(prev => ({
       ...prev,
       [node.materialId]: (prev[node.materialId] || 0) + amount
@@ -231,7 +226,7 @@ function DimensionalArea({ gameState, setGameState, onExit, grantXP, notificatio
               backgroundColor: '#000000',
               border: '1px solid #444444',
               padding: '4px 8px',
-              fontSize: '10px',
+              fontSize: '12px',
               fontFamily: "'SF Mono', monospace",
               color: '#ffffff',
               whiteSpace: 'nowrap',
@@ -328,7 +323,7 @@ function DimensionalArea({ gameState, setGameState, onExit, grantXP, notificatio
         backgroundColor: '#000000',
         color: '#333333',
         fontFamily: 'Times New Roman, serif',
-        fontSize: '12px',
+        fontSize: '14px',
         lineHeight: '1.6',
         padding: '100px 20px 100px 20px',
         overflowY: 'auto',
@@ -509,7 +504,7 @@ function DimensionalArea({ gameState, setGameState, onExit, grantXP, notificatio
             color: '#888888',
             padding: '8px 16px',
             cursor: 'pointer',
-            fontSize: '11px',
+            fontSize: '13px',
             fontFamily: "'SF Mono', monospace",
             letterSpacing: '0.5px'
           }}
@@ -519,7 +514,7 @@ function DimensionalArea({ gameState, setGameState, onExit, grantXP, notificatio
         
         <div style={{
           fontFamily: "'SF Mono', monospace",
-          fontSize: '11px',
+          fontSize: '13px',
           color: '#666666',
           letterSpacing: '1px'
         }}>
@@ -546,7 +541,7 @@ function DimensionalArea({ gameState, setGameState, onExit, grantXP, notificatio
         display: 'flex',
         gap: '24px',
         flexWrap: 'wrap',
-        fontSize: '10px',
+        fontSize: '12px',
         fontFamily: "'SF Mono', monospace",
         color: '#666666',
         zIndex: 1000

@@ -57,8 +57,8 @@ function JournalModal({ gameState, onClose, onSwitchTab, notifications, onDismis
                   opacity: 0.3
                 }}
               >
-                <div style={{ fontSize: '14px', fontWeight: 'bold' }}>??? UNKNOWN LOCATION</div>
-                <div style={{ fontSize: '12px', marginTop: '8px', fontStyle: 'italic' }}>
+                <div style={{ fontSize: '16px', fontWeight: 'bold' }}>??? UNKNOWN LOCATION</div>
+                <div style={{ fontSize: '14px', marginTop: '8px', fontStyle: 'italic' }}>
                   Not yet discovered
                 </div>
               </div>
@@ -75,20 +75,20 @@ function JournalModal({ gameState, onClose, onSwitchTab, notifications, onDismis
                 backgroundColor: gameState.location === locationId ? 'rgba(255, 255, 255, 0.05)' : 'transparent'
               }}
             >
-              <div style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '8px' }}>
+              <div style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '8px' }}>
                 {entry?.name || LOCATIONS[locationId].name}
-                {gameState.location === locationId && <span style={{ marginLeft: '8px', fontSize: '12px' }}>[CURRENT]</span>}
+                {gameState.location === locationId && <span style={{ marginLeft: '8px', fontSize: '14px' }}>[CURRENT]</span>}
               </div>
 
-              <div style={{ fontSize: '11px', marginBottom: '8px', opacity: 0.7, fontStyle: 'italic' }}>
+              <div style={{ fontSize: '13px', marginBottom: '8px', opacity: 0.7, fontStyle: 'italic' }}>
                 {entry?.unlockHint}
               </div>
 
-              <div style={{ fontSize: '12px', marginBottom: '8px', lineHeight: '1.6' }}>
+              <div style={{ fontSize: '14px', marginBottom: '8px', lineHeight: '1.6' }}>
                 {entry?.lore}
               </div>
 
-              <div style={{ fontSize: '11px', fontStyle: 'italic', opacity: 0.8, borderTop: '1px dotted var(--border-color)', paddingTop: '8px', marginTop: '8px' }}>
+              <div style={{ fontSize: '13px', fontStyle: 'italic', opacity: 0.8, borderTop: '1px dotted var(--border-color)', paddingTop: '8px', marginTop: '8px' }}>
                 &ldquo;{entry?.notes}&rdquo;
               </div>
             </div>
@@ -121,7 +121,7 @@ function JournalModal({ gameState, onClose, onSwitchTab, notifications, onDismis
 
         {Object.keys(categories).map(categoryName => (
           <div key={categoryName} style={{ marginBottom: '30px' }}>
-            <h4 style={{ fontSize: '14px', marginBottom: '15px', borderBottom: '1px solid var(--border-color)', paddingBottom: '5px', opacity: 0.9 }}>
+            <h4 style={{ fontSize: '16px', marginBottom: '15px', borderBottom: '1px solid var(--border-color)', paddingBottom: '5px', opacity: 0.9 }}>
               {categoryName}
             </h4>
 
@@ -139,8 +139,8 @@ function JournalModal({ gameState, onClose, onSwitchTab, notifications, onDismis
                       opacity: 0.3
                     }}
                   >
-                    <div style={{ fontSize: '13px', fontWeight: 'bold' }}>??? UNDISCOVERED</div>
-                    <div style={{ fontSize: '11px', marginTop: '5px', fontStyle: 'italic' }}>
+                    <div style={{ fontSize: '15px', fontWeight: 'bold' }}>??? UNDISCOVERED</div>
+                    <div style={{ fontSize: '13px', marginTop: '5px', fontStyle: 'italic' }}>
                       Learn by experiencing this mechanic
                     </div>
                   </div>
@@ -157,15 +157,15 @@ function JournalModal({ gameState, onClose, onSwitchTab, notifications, onDismis
                     backgroundColor: 'rgba(255, 255, 255, 0.02)'
                   }}
                 >
-                  <div style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '6px' }}>
+                  <div style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '6px' }}>
                     {mechanic.title}
                   </div>
 
-                  <div style={{ fontSize: '11px', fontStyle: 'italic', opacity: 0.7, marginBottom: '10px' }}>
+                  <div style={{ fontSize: '13px', fontStyle: 'italic', opacity: 0.7, marginBottom: '10px' }}>
                     {mechanic.summary}
                   </div>
 
-                  <div style={{ fontSize: '12px', lineHeight: '1.6', whiteSpace: 'pre-line' }}>
+                  <div style={{ fontSize: '14px', lineHeight: '1.6', whiteSpace: 'pre-line' }}>
                     {mechanic.details}
                   </div>
                 </div>
@@ -228,7 +228,7 @@ function JournalModal({ gameState, onClose, onSwitchTab, notifications, onDismis
               padding: '5px 15px',
               cursor: 'pointer',
               fontFamily: 'inherit',
-              fontSize: '12px'
+              fontSize: '14px'
             }}
           >
             [ESC] CLOSE
@@ -257,7 +257,7 @@ function JournalModal({ gameState, onClose, onSwitchTab, notifications, onDismis
                 color: currentTab === tab.id ? 'var(--text-color)' : 'rgba(255, 255, 255, 0.5)',
                 cursor: 'pointer',
                 fontFamily: 'inherit',
-                fontSize: '12px',
+                fontSize: '14px',
                 fontWeight: currentTab === tab.id ? 'bold' : 'normal',
                 transition: 'all 0.2s'
               }}

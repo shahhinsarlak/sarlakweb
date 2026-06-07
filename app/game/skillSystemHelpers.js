@@ -237,11 +237,6 @@ export const getModifiedPortalCooldown = (baseCooldown, gameState) => {
     cooldown = cooldown * (1 - achBonuses.portalCooldownReduction);
   }
 
-  // Void Bargain: portal cooldown permanently doubled
-  if (gameState.voidBargainActive) {
-    cooldown = cooldown * 2;
-  }
-
   // Minimum 10 seconds
   return Math.max(10, cooldown);
 };
