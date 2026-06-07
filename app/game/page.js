@@ -1,6 +1,5 @@
 'use client';
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import MeditationModal from './MeditationModal';
@@ -8,7 +7,6 @@ import DebugModal from './DebugModal';
 import DebugPanel from './DebugPanel';
 import ExamineModal from './ExamineModal';
 import DimensionalArea from './DimensionalArea';
-import VoidContractsDisplay from './VoidContractsDisplay';
 import SkillTreeModal from './SkillTreeModal';
 import PrinterRoom from './PrinterRoom';
 import FileDrawer from './FileDrawer';
@@ -50,9 +48,7 @@ const PORTAL_UNLOCK_ENTRIES = ['glitched', 'maintenance', 'encrypted_lights'];
 const SHOW_DEV_TOOLS = process.env.NODE_ENV !== 'production';
 
 export default function Game() {
-  const router = useRouter();
   const [isMobile, setIsMobile] = useState(false);
-  const [veilTransition, setVeilTransition] = useState(false);
   const [gameState, setGameState] = useState(INITIAL_GAME_STATE);
   const [showSaveMenu, setShowSaveMenu] = useState(false);
   const [showDebugPanel, setShowDebugPanel] = useState(false);
@@ -337,8 +333,6 @@ export default function Game() {
 
       if (upgrade.effect === 'ppPerSecond') {
         newState.ppPerSecond = (prev.ppPerSecond || 0) + upgrade.value;
-      } else if (upgrade.effect === 'breakthrough') {
-        // Handled outside setGameState — see below
       } else if (upgrade.effect === 'portalCooldown' || upgrade.effect === 'portalRespawn') {
         const newMaxCooldown = getModifiedPortalCooldown(60, newState);
         if (prev.portalCooldown > newMaxCooldown) {
@@ -355,13 +349,6 @@ export default function Game() {
       setTimeout(() => checkAchievements(), 50);
       return newState;
     });
-
-    if (upgrade.effect === 'breakthrough') {
-      setVeilTransition(true);
-      setTimeout(() => {
-        router.push('/survival');
-      }, 3500);
-    }
   };
 
   const getPrinterUpgradeTooltip = (upgrade) => {
@@ -417,12 +404,8 @@ export default function Game() {
       effects.push(`Meditation grants ×${upgrade.value} sanity`);
     } else if (upgrade.effect === 'minSanity') {
       effects.push(`Sanity cannot drop below ${upgrade.value}%`);
-    } else if (upgrade.effect === 'timeTravel') {
-      effects.push(`Undo the last 5 minutes (once per day)`);
     } else if (upgrade.effect === 'portalScan') {
       effects.push(`Materials glow brighter in dimensional space`);
-    } else if (upgrade.effect === 'hiddenText') {
-      effects.push(`See hidden messages between the lines`);
     }
     
     return effects.length > 0 ? effects.join(' • ') : 'Unknown effect';
@@ -948,44 +931,6 @@ export default function Game() {
 
   return (
     <>
-      {veilTransition && (
-        <div style={{
-          position: 'fixed',
-          inset: 0,
-          backgroundColor: '#000',
-          zIndex: 9999,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexDirection: 'column',
-          animation: 'veilFadeIn 0.8s ease forwards'
-        }}>
-          <style>{`
-            @keyframes veilFadeIn {
-              from { opacity: 0; }
-              to { opacity: 1; }
-            }
-            @keyframes veilTextReveal {
-              from { opacity: 0; transform: translateY(10px); }
-              to { opacity: 1; transform: translateY(0); }
-            }
-          `}</style>
-          <p style={{
-            color: '#e0e0e0',
-            fontFamily: "'SF Mono', Monaco, monospace",
-            fontSize: '16px',
-            lineHeight: '2.2',
-            textAlign: 'center',
-            maxWidth: '400px',
-            animation: 'veilTextReveal 1.2s ease 0.6s both'
-          }}>
-            The fluorescent lights flicker.<br />
-            Then go out.<br />
-            For the first time in years, you feel wind.<br />
-            You don&apos;t look back.
-          </p>
-        </div>
-      )}
       <Header />
       <div
         data-game-container

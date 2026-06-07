@@ -37,7 +37,6 @@ export const computeClickPP = (gameState) => {
   if (ach.ppMultiplier > 0) pp *= 1 + ach.ppMultiplier;
 
   if (gameState.focusModeExpiry > Date.now()) pp *= 1.5; // Focus Mode
-  if (gameState.sanityErosionActive && gameState.sanity < 30) pp *= 3; // Sanity Erosion contract
 
   return pp;
 };
@@ -61,8 +60,6 @@ export const computePassivePPPerSecond = (gameState) => {
   if (ppSecBuffs.length > 0) {
     pps *= Math.max(...ppSecBuffs.map((b) => b.ppPerSecondMult));
   }
-
-  if (gameState.temporalPactActive) pps *= 2; // Temporal Pact contract
 
   return pps;
 };

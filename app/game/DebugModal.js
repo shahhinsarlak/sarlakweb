@@ -36,7 +36,7 @@ function DebugModal({ gameState, submitDebug, updateDebugCode, cancelDebug, noti
         margin: '0 auto',
         padding: '40px 60px',
         minHeight: '100vh',
-        fontSize: '13px',
+        fontSize: '15px',
         lineHeight: '1.6'
       }}>
         <div style={{
@@ -48,10 +48,10 @@ function DebugModal({ gameState, submitDebug, updateDebugCode, cancelDebug, noti
           alignItems: 'center'
         }}>
           <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-            <span style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6 }}>
+            <span style={{ fontSize: '13px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6 }}>
               DEBUG CONSOLE
             </span>
-            <span style={{ fontSize: '11px', color: '#ff6b6b' }}>
+            <span style={{ fontSize: '13px', color: '#ff6b6b' }}>
               ● ERRORS DETECTED
             </span>
           </div>
@@ -63,7 +63,7 @@ function DebugModal({ gameState, submitDebug, updateDebugCode, cancelDebug, noti
               color: 'var(--text-color)',
               padding: '6px 12px',
               cursor: 'pointer',
-              fontSize: '11px',
+              fontSize: '13px',
               fontFamily: 'inherit'
             }}
           >
@@ -82,7 +82,7 @@ function DebugModal({ gameState, submitDebug, updateDebugCode, cancelDebug, noti
             borderTop: '1px solid var(--border-color)',
             borderLeft: '1px solid var(--border-color)',
             borderRight: '1px solid var(--border-color)',
-            fontSize: '12px',
+            fontSize: '14px',
             backgroundColor: 'var(--hover-color)'
           }}>
             index.js
@@ -101,7 +101,7 @@ function DebugModal({ gameState, submitDebug, updateDebugCode, cancelDebug, noti
             borderRight: '1px solid var(--border-color)',
             textAlign: 'right',
             color: '#666',
-            fontSize: '12px',
+            fontSize: '14px',
             userSelect: 'none',
             minWidth: '40px'
           }}>
@@ -116,7 +116,7 @@ function DebugModal({ gameState, submitDebug, updateDebugCode, cancelDebug, noti
             top: '0',
             padding: '12px',
             fontFamily: 'inherit',
-            fontSize: '13px',
+            fontSize: '15px',
             lineHeight: '1.6',
             pointerEvents: 'none',
             whiteSpace: 'pre-wrap',
@@ -152,7 +152,7 @@ function DebugModal({ gameState, submitDebug, updateDebugCode, cancelDebug, noti
               border: 'none',
               color: 'var(--text-color)',
               fontFamily: 'inherit',
-              fontSize: '13px',
+              fontSize: '15px',
               lineHeight: '1.6',
               resize: 'none',
               outline: 'none',
@@ -170,13 +170,13 @@ function DebugModal({ gameState, submitDebug, updateDebugCode, cancelDebug, noti
           marginBottom: '16px',
           minHeight: '80px'
         }}>
-          <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6, marginBottom: '8px' }}>
+          <div style={{ fontSize: '13px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6, marginBottom: '8px' }}>
             CONSOLE OUTPUT
           </div>
-          <div style={{ color: '#ff6b6b', fontSize: '12px' }}>
+          <div style={{ color: '#ff6b6b', fontSize: '14px' }}>
             ⚠ {gameState.currentBug.hint}
           </div>
-          <div style={{ color: '#888', fontSize: '12px', marginTop: '4px' }}>
+          <div style={{ color: '#888', fontSize: '14px', marginTop: '4px' }}>
             Attempts remaining: {3 - gameState.debugAttempts}
           </div>
         </div>
@@ -190,7 +190,7 @@ function DebugModal({ gameState, submitDebug, updateDebugCode, cancelDebug, noti
               color: 'var(--bg-color)',
               padding: '10px 24px',
               cursor: 'pointer',
-              fontSize: '12px',
+              fontSize: '14px',
               fontFamily: 'inherit',
               fontWeight: '500',
               letterSpacing: '0.5px',
@@ -205,7 +205,7 @@ function DebugModal({ gameState, submitDebug, updateDebugCode, cancelDebug, noti
           marginTop: '32px',
           paddingTop: '16px',
           borderTop: '1px solid var(--border-color)',
-          fontSize: '11px',
+          fontSize: '13px',
           opacity: 0.6,
           display: 'flex',
           justifyContent: 'space-between'

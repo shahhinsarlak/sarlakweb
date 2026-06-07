@@ -92,7 +92,7 @@ function BuffReplacementModal({ gameState, pendingBuff, onReplace, onCancel, not
           BUFF LIMIT REACHED
         </div>
 
-        <div style={{ opacity: 0.8, fontSize: '12px', marginBottom: '24px', lineHeight: '1.6' }}>
+        <div style={{ opacity: 0.8, fontSize: '14px', marginBottom: '24px', lineHeight: '1.6' }}>
           You currently have {activeBuffs.length}/{gameState.maxActiveBuffs} active buffs.
           Choose a buff to replace, or cancel to keep your current buffs.
         </div>
@@ -105,7 +105,7 @@ function BuffReplacementModal({ gameState, pendingBuff, onReplace, onCancel, not
           backgroundColor: 'rgba(76, 175, 80, 0.1)'
         }}>
           <div style={{
-            fontSize: '10px',
+            fontSize: '12px',
             textTransform: 'uppercase',
             letterSpacing: '1px',
             opacity: 0.6,
@@ -114,19 +114,19 @@ function BuffReplacementModal({ gameState, pendingBuff, onReplace, onCancel, not
           }}>
             NEW BUFF
           </div>
-          <div style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '6px' }}>
+          <div style={{ fontWeight: 'bold', fontSize: '16px', marginBottom: '6px' }}>
             {pendingBuff.name}
           </div>
-          <div style={{ opacity: 0.9, fontSize: '11px', fontStyle: 'italic', marginBottom: '12px' }}>
+          <div style={{ opacity: 0.9, fontSize: '13px', fontStyle: 'italic', marginBottom: '12px' }}>
             {pendingBuff.desc}
           </div>
-          <div style={{ fontSize: '11px', marginBottom: '8px' }}>
+          <div style={{ fontSize: '13px', marginBottom: '8px' }}>
             <div style={{ fontWeight: 'bold', opacity: 0.7, marginBottom: '4px' }}>EFFECTS:</div>
             {pendingEffects.map((effect, i) => (
               <div key={i} style={{ opacity: 0.9, marginBottom: '2px' }}>• {effect}</div>
             ))}
           </div>
-          <div style={{ opacity: 0.7, fontSize: '10px' }}>
+          <div style={{ opacity: 0.7, fontSize: '12px' }}>
             Duration: {pendingDuration}s
           </div>
         </div>
@@ -134,7 +134,7 @@ function BuffReplacementModal({ gameState, pendingBuff, onReplace, onCancel, not
         {/* Current Active Buffs */}
         <div style={{ marginBottom: '24px' }}>
           <div style={{
-            fontSize: '12px',
+            fontSize: '14px',
             fontWeight: 'bold',
             textTransform: 'uppercase',
             letterSpacing: '1px',
@@ -170,25 +170,25 @@ function BuffReplacementModal({ gameState, pendingBuff, onReplace, onCancel, not
                     e.currentTarget.style.transform = 'translateX(0)';
                   }}
                 >
-                  <div style={{ fontWeight: 'bold', fontSize: '12px', marginBottom: '4px' }}>
+                  <div style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '4px' }}>
                     {buff.name}
                   </div>
-                  <div style={{ opacity: 0.8, fontSize: '10px', fontStyle: 'italic', marginBottom: '8px' }}>
+                  <div style={{ opacity: 0.8, fontSize: '12px', fontStyle: 'italic', marginBottom: '8px' }}>
                     {buff.desc}
                   </div>
-                  <div style={{ fontSize: '10px', marginBottom: '6px' }}>
+                  <div style={{ fontSize: '12px', marginBottom: '6px' }}>
                     {effects.map((effect, i) => (
                       <div key={i} style={{ opacity: 0.8, marginBottom: '2px' }}>• {effect}</div>
                     ))}
                   </div>
-                  <div style={{ opacity: 0.6, fontSize: '9px' }}>
+                  <div style={{ opacity: 0.6, fontSize: '11px' }}>
                     {timeLeft}s remaining
                   </div>
                   <div style={{
                     position: 'absolute',
                     top: '8px',
                     right: '8px',
-                    fontSize: '9px',
+                    fontSize: '11px',
                     opacity: 0.5,
                     textTransform: 'uppercase',
                     letterSpacing: '1px'
@@ -208,7 +208,7 @@ function BuffReplacementModal({ gameState, pendingBuff, onReplace, onCancel, not
             width: '100%',
             padding: '14px',
             fontFamily: "'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace",
-            fontSize: '12px',
+            fontSize: '14px',
             fontWeight: 'bold',
             backgroundColor: 'transparent',
             color: 'var(--text-color)',

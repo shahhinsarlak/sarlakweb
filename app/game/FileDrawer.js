@@ -126,10 +126,10 @@ function FileDrawer({ gameState, onClose, actions, notifications, onDismissNotif
           backgroundColor: 'var(--hover-color)'
         }}>
           <div>
-            <div style={{ fontSize: '14px', fontWeight: 'bold', letterSpacing: '1px' }}>
+            <div style={{ fontSize: '16px', fontWeight: 'bold', letterSpacing: '1px' }}>
               [DRAWER] FILE DRAWER
             </div>
-            <div style={{ fontSize: '10px', opacity: 0.6, marginTop: '4px' }}>
+            <div style={{ fontSize: '12px', opacity: 0.6, marginTop: '4px' }}>
               {documents.length} document{documents.length !== 1 ? 's' : ''} stored
             </div>
           </div>
@@ -141,7 +141,7 @@ function FileDrawer({ gameState, onClose, actions, notifications, onDismissNotif
               color: 'var(--text-color)',
               padding: '8px 16px',
               cursor: 'pointer',
-              fontSize: '11px',
+              fontSize: '13px',
               fontFamily: 'inherit',
               letterSpacing: '0.5px'
             }}
@@ -160,7 +160,7 @@ function FileDrawer({ gameState, onClose, actions, notifications, onDismissNotif
           alignItems: 'center',
           flexWrap: 'wrap'
         }}>
-          <span style={{ fontSize: '10px', opacity: 0.7 }}>SORT BY:</span>
+          <span style={{ fontSize: '12px', opacity: 0.7 }}>SORT BY:</span>
           {['newest', 'oldest', 'quality', 'type'].map(sort => (
             <button
               key={sort}
@@ -171,7 +171,7 @@ function FileDrawer({ gameState, onClose, actions, notifications, onDismissNotif
                 color: gameState.documentSortBy === sort ? 'var(--bg-color)' : 'var(--text-color)',
                 padding: '4px 12px',
                 cursor: 'pointer',
-                fontSize: '9px',
+                fontSize: '11px',
                 fontFamily: 'inherit',
                 textTransform: 'uppercase',
                 letterSpacing: '0.5px'
@@ -181,7 +181,7 @@ function FileDrawer({ gameState, onClose, actions, notifications, onDismissNotif
             </button>
           ))}
           <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <span style={{ fontSize: '10px', opacity: 0.7 }}>BULK:</span>
+            <span style={{ fontSize: '12px', opacity: 0.7 }}>BULK:</span>
             <button
               onClick={() => actions.shredAllNonStarred()}
               style={{
@@ -190,7 +190,7 @@ function FileDrawer({ gameState, onClose, actions, notifications, onDismissNotif
                 color: '#ff6b6b',
                 padding: '4px 12px',
                 cursor: 'pointer',
-                fontSize: '9px',
+                fontSize: '11px',
                 fontFamily: 'inherit',
                 textTransform: 'uppercase',
                 letterSpacing: '0.5px',
@@ -213,7 +213,7 @@ function FileDrawer({ gameState, onClose, actions, notifications, onDismissNotif
             <div style={{
               textAlign: 'center',
               padding: '60px 20px',
-              fontSize: '12px',
+              fontSize: '14px',
               opacity: 0.5
             }}>
               No documents in drawer. Print documents to store them here.
@@ -240,7 +240,7 @@ function FileDrawer({ gameState, onClose, actions, notifications, onDismissNotif
                     alignItems: 'center',
                     padding: '8px 12px',
                     gap: '12px',
-                    fontSize: '11px'
+                    fontSize: '13px'
                   }}
                 >
                   {/* Important Star */}
@@ -260,7 +260,7 @@ function FileDrawer({ gameState, onClose, actions, notifications, onDismissNotif
                   </button>
 
                   {/* Type Icon */}
-                  <div style={{ fontSize: '14px' }}>
+                  <div style={{ fontSize: '16px' }}>
                     {typeIcon}
                   </div>
 
@@ -276,7 +276,7 @@ function FileDrawer({ gameState, onClose, actions, notifications, onDismissNotif
                       {icon} {doc.tierName} [{doc.quality.toUpperCase()}]
                     </div>
                     <div style={{
-                      fontSize: '9px',
+                      fontSize: '11px',
                       opacity: 0.6,
                       marginTop: '2px'
                     }}>
@@ -294,7 +294,7 @@ function FileDrawer({ gameState, onClose, actions, notifications, onDismissNotif
                         color: 'var(--bg-color)',
                         padding: '6px 12px',
                         cursor: 'pointer',
-                        fontSize: '9px',
+                        fontSize: '11px',
                         fontFamily: 'inherit',
                         fontWeight: 'bold',
                         letterSpacing: '0.5px',
@@ -312,7 +312,7 @@ function FileDrawer({ gameState, onClose, actions, notifications, onDismissNotif
                         color: 'var(--text-color)',
                         padding: '6px 12px',
                         cursor: 'pointer',
-                        fontSize: '9px',
+                        fontSize: '11px',
                         fontFamily: 'inherit',
                         letterSpacing: '0.5px',
                         opacity: 0.7,
@@ -334,7 +334,7 @@ function FileDrawer({ gameState, onClose, actions, notifications, onDismissNotif
           padding: '12px 24px',
           borderTop: '1px solid var(--border-color)',
           backgroundColor: 'var(--hover-color)',
-          fontSize: '9px',
+          fontSize: '11px',
           opacity: 0.6,
           lineHeight: '1.5'
         }}>

@@ -48,7 +48,7 @@ function MeditationModal({ gameState, breatheAction, cancelMeditation, notificat
         margin: '0 auto',
         padding: '60px 40px',
         minHeight: '100vh',
-        fontSize: '14px',
+        fontSize: '16px',
         textAlign: 'center'
       }}>
         <div style={{
@@ -57,7 +57,7 @@ function MeditationModal({ gameState, breatheAction, cancelMeditation, notificat
           backgroundColor: 'var(--hover-color)'
         }}>
           <div style={{
-            fontSize: '11px',
+            fontSize: '13px',
             textTransform: 'uppercase',
             letterSpacing: '1px',
             opacity: 0.6,
@@ -127,7 +127,7 @@ function MeditationModal({ gameState, breatheAction, cancelMeditation, notificat
           </div>
 
           <div style={{
-            fontSize: '11px',
+            fontSize: '13px',
             opacity: 0.6,
             marginBottom: '30px'
           }}>
@@ -151,7 +151,7 @@ function MeditationModal({ gameState, breatheAction, cancelMeditation, notificat
                 color: currentAction === 'inhale' && isPerfect ? '#000' : currentAction === 'inhale' ? 'var(--bg-color)' : 'var(--text-color)',
                 padding: '20px 16px',
                 cursor: 'pointer',
-                fontSize: '14px',
+                fontSize: '16px',
                 fontFamily: 'inherit',
                 letterSpacing: '0.5px',
                 fontWeight: '500',
@@ -169,7 +169,7 @@ function MeditationModal({ gameState, breatheAction, cancelMeditation, notificat
                 color: currentAction === 'exhale' && isPerfect ? '#000' : currentAction === 'exhale' ? 'var(--bg-color)' : 'var(--text-color)',
                 padding: '20px 16px',
                 cursor: 'pointer',
-                fontSize: '14px',
+                fontSize: '16px',
                 fontFamily: 'inherit',
                 letterSpacing: '0.5px',
                 fontWeight: '500',
@@ -188,7 +188,7 @@ function MeditationModal({ gameState, breatheAction, cancelMeditation, notificat
               color: 'var(--text-color)',
               padding: '12px 24px',
               cursor: 'pointer',
-              fontSize: '12px',
+              fontSize: '14px',
               fontFamily: 'inherit',
               letterSpacing: '0.5px',
               width: '100%'
@@ -199,7 +199,7 @@ function MeditationModal({ gameState, breatheAction, cancelMeditation, notificat
           
           <div style={{
             marginTop: '30px',
-            fontSize: '10px',
+            fontSize: '12px',
             opacity: 0.5,
             lineHeight: '1.6'
           }}>

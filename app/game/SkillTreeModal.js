@@ -97,21 +97,21 @@ function SkillTreeModal({ gameState, onClose, onPurchaseSkill, notifications, on
         >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
             <span style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <span style={{ color: accent, fontWeight: 700, fontSize: '13px' }}>{prefix}</span>
-              <span style={{ fontWeight: 600, fontSize: '13px', color: accent, letterSpacing: '0.02em' }}>
+              <span style={{ color: accent, fontWeight: 700, fontSize: '15px' }}>{prefix}</span>
+              <span style={{ fontWeight: 600, fontSize: '15px', color: accent, letterSpacing: '0.02em' }}>
                 {skill.name}
               </span>
             </span>
-            <span style={{ fontSize: '11px', opacity: 0.7 }}>
+            <span style={{ fontSize: '13px', opacity: 0.7 }}>
               {lvl}/{skill.maxLevel}
             </span>
           </div>
 
-          <div style={{ fontSize: '11px', opacity: 0.7, marginTop: '6px', paddingLeft: '23px', lineHeight: 1.5 }}>
+          <div style={{ fontSize: '13px', opacity: 0.7, marginTop: '6px', paddingLeft: '23px', lineHeight: 1.5 }}>
             {skill.desc}
           </div>
 
-          <div style={{ fontSize: '10px', marginTop: '8px', paddingLeft: '23px', display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+          <div style={{ fontSize: '12px', marginTop: '8px', paddingLeft: '23px', display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
             {current && <span style={{ color: accent }}>NOW: {current}</span>}
             {status === 'available' && next && <span style={{ color: 'var(--accent-bright)' }}>NEXT: {next} &middot; 1 SP</span>}
             {status === 'locked' && next && <span style={{ opacity: 0.5 }}>NEXT: {next} (need a skill point)</span>}
@@ -143,10 +143,10 @@ function SkillTreeModal({ gameState, onClose, onPurchaseSkill, notifications, on
           alignItems: 'center'
         }}>
           <div>
-            <div style={{ fontSize: '14px', marginBottom: '8px', letterSpacing: '0.05em' }}>
+            <div style={{ fontSize: '16px', marginBottom: '8px', letterSpacing: '0.05em' }}>
               PERSONNEL FILE SYSTEM
             </div>
-            <div style={{ fontSize: '11px', opacity: 0.6 }}>
+            <div style={{ fontSize: '13px', opacity: 0.6 }}>
               Level {playerLevel} &middot; <span style={{ color: 'var(--accent-color)' }}>{availableSkillPoints} Skill Point{availableSkillPoints !== 1 ? 's' : ''}</span> available
             </div>
           </div>
@@ -158,7 +158,7 @@ function SkillTreeModal({ gameState, onClose, onPurchaseSkill, notifications, on
               color: 'var(--text-color)',
               padding: '8px 16px',
               cursor: 'pointer',
-              fontSize: '11px',
+              fontSize: '13px',
               fontFamily: 'inherit'
             }}
           >
@@ -168,7 +168,7 @@ function SkillTreeModal({ gameState, onClose, onPurchaseSkill, notifications, on
 
         {/* XP Bar */}
         <div style={{ padding: '16px 40px', borderBottom: '1px solid var(--border-color)' }}>
-          <div style={{ fontSize: '10px', opacity: 0.5, marginBottom: '8px', letterSpacing: '0.03em' }}>
+          <div style={{ fontSize: '12px', opacity: 0.5, marginBottom: '8px', letterSpacing: '0.03em' }}>
             EXPERIENCE: {Math.floor(currentXP)} / {xpForNextLevel} TO NEXT LEVEL
           </div>
           <div style={{
@@ -190,7 +190,7 @@ function SkillTreeModal({ gameState, onClose, onPurchaseSkill, notifications, on
         {/* Flat skill list */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '24px 40px', maxWidth: '760px', margin: '0 auto', width: '100%' }}>
           {Object.values(SKILLS).map(renderSkill)}
-          <div style={{ fontSize: '10px', opacity: 0.4, marginTop: '8px', lineHeight: 1.6 }}>
+          <div style={{ fontSize: '12px', opacity: 0.4, marginTop: '8px', lineHeight: 1.6 }}>
             Skill points come from leveling up (1 per level, 3 every 5th). Skills are permanent within a
             run. Reality remembers your choices.
           </div>

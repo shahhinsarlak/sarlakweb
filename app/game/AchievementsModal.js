@@ -66,7 +66,7 @@ function AchievementsModal({ gameState, achievements, onClose, notifications, on
             }}>
               ACHIEVEMENTS
             </h2>
-            <div style={{ fontSize: '12px', opacity: 0.6 }}>
+            <div style={{ fontSize: '14px', opacity: 0.6 }}>
               {unlockedAchievements.length} / {achievements.length} Unlocked
             </div>
             {(() => {
@@ -82,7 +82,7 @@ function AchievementsModal({ gameState, achievements, onClose, notifications, on
               if (totalPPMult === 0 && totalCooldown === 0) return null;
               return (
                 <div style={{
-                  fontSize: '11px',
+                  fontSize: '13px',
                   marginTop: '8px',
                   padding: '8px 12px',
                   border: '1px solid var(--border-color)',
@@ -104,7 +104,7 @@ function AchievementsModal({ gameState, achievements, onClose, notifications, on
               color: 'var(--text-color)',
               padding: '8px 16px',
               cursor: 'pointer',
-              fontSize: '11px',
+              fontSize: '13px',
               fontFamily: 'inherit',
               transition: 'all 0.2s'
             }}
@@ -145,7 +145,7 @@ function AchievementsModal({ gameState, achievements, onClose, notifications, on
                   </div>
                   <div style={{ flex: 1 }}>
                     <div style={{
-                      fontSize: '13px',
+                      fontSize: '15px',
                       fontWeight: '500',
                       marginBottom: '6px',
                       color: isUnlocked ? 'var(--accent-color)' : 'var(--text-color)'
@@ -153,7 +153,7 @@ function AchievementsModal({ gameState, achievements, onClose, notifications, on
                       {achievement.name}
                       {achievement.reward && (
                         <span style={{
-                          fontSize: '10px',
+                          fontSize: '12px',
                           marginLeft: '8px',
                           padding: '1px 6px',
                           border: '1px solid var(--accent-color)',
@@ -169,7 +169,7 @@ function AchievementsModal({ gameState, achievements, onClose, notifications, on
                       )}
                     </div>
                     <div style={{
-                      fontSize: '11px',
+                      fontSize: '13px',
                       opacity: 0.8,
                       lineHeight: '1.5'
                     }}>
@@ -177,7 +177,7 @@ function AchievementsModal({ gameState, achievements, onClose, notifications, on
                     </div>
                     {!isUnlocked && (
                       <div style={{
-                        fontSize: '10px',
+                        fontSize: '12px',
                         marginTop: '8px',
                         opacity: 0.5,
                         fontStyle: 'italic'

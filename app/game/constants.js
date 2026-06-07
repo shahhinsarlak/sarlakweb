@@ -39,13 +39,11 @@ export const INITIAL_GAME_STATE = {
   meditating: false,
   breathCount: 0,
   maxLogMessages: 15,
-  themeToggleCount: 0,
   portalUnlocked: false,
   inDimensionalArea: false,
   dimensionalInventory: {},
   portalCooldown: 0,
   dimensionalUpgrades: {},
-  timeRewindUsed: false,
   playerLevel: 1,
   playerXP: 0,
   skillPoints: 0,
@@ -98,11 +96,7 @@ export const INITIAL_GAME_STATE = {
   notifications: [],  // Array of notification objects: { id, message, timestamp }
   // PP Tier Multiplier System
   ppMultiplierTier: 0, // Current tier index (0 = no tier unlocked yet)
-  // Void Contracts (Phase 20)
-  temporalPactActive: false,    // CONTRACT 1: ppPerSecond 2x, no time rewind
-  voidBargainActive: false,     // CONTRACT 2: 2x material drop rate, portal cooldown doubled
-  sanityErosionActive: false,   // CONTRACT 3: sanity<30 gives 3x ppPerClick instead of penalty
-  maxSanity: 100,               // Mutable cap - Sanity Erosion sets to 60
+  maxSanity: 100,               // Mutable sanity cap
   // Focus Mode (Phase 20)
   focusModeExpiry: 0,           // Unix ms timestamp when buff expires (0 = inactive)
   // Offline Accumulation (Phase 20)
@@ -534,14 +528,6 @@ export const DIMENSIONAL_UPGRADES = [
 
   // Research
   { 
-    id: 'temporal_rewind', 
-    name: 'Temporal Rewind', 
-    materials: { temporal_core: 5, dimensional_essence: 2 }, 
-    effect: 'timeTravel', 
-    value: true, 
-    desc: 'Once per day: undo the last 5 minutes.' 
-  },
-  { 
     id: 'material_scanner', 
     name: 'Material Scanner', 
     materials: { reality_dust: 10 }, 
@@ -557,44 +543,8 @@ export const DIMENSIONAL_UPGRADES = [
     value: 'lore', 
     desc: 'Unlock hidden truths. Achievement hints revealed.' 
   },
-  { 
-    id: 'void_sight', 
-    name: 'Void Sight', 
-    materials: { void_fragment: 50, singularity_node: 1 }, 
-    effect: 'hiddenText', 
-    value: true, 
-    desc: 'See between the lines. Messages reveal themselves.' 
-  },
   
-  // Endgame
-  {
-    id: 'singularity_collapse',
-    name: 'Singularity Collapse',
-    materials: { singularity_node: 2 }, // Reduced from 3 to 2 for better balance
-    effect: 'unlock',
-    value: 'ending',
-    desc: 'ESCAPE. TRANSCEND. ASCEND. LEAVE.'
-  },
 
-  // Breakthrough
-  {
-    id: 'tear_the_veil',
-    name: 'Tear the Veil',
-    ppCost: 5000000,
-    materials: {
-      void_fragment: 10,
-      static_crystal: 5,
-      glitch_shard: 3,
-      reality_dust: 2,
-      temporal_core: 1,
-      dimensional_essence: 1,
-      singularity_node: 1
-    },
-    effect: 'breakthrough',
-    value: 'survival',
-    requiresUpgrade: 'singularity_collapse',
-    desc: 'There is something beyond this office. Beyond this reality. You can feel it pulling.'
-  }
 ];
 
 export const PRINTER_UPGRADES = [
@@ -734,7 +684,6 @@ export const ACHIEVEMENTS = [
   { id: 'survivor', name: 'Survivor', desc: 'Reach Day 30', check: (state) => state.day >= 30, reward: { type: 'ppMultiplier', value: 0.05 } },
   { id: 'insane', name: 'Lost Mind', desc: 'Drop sanity below 10%', check: (state) => state.sanity < 10 },
   { id: 'workaholic', name: 'Workaholic', desc: 'Earn 50,000 PP', check: (state) => state.pp >= 50000, reward: { type: 'ppMultiplier', value: 0.05 } },
-  { id: 'reality_bender', name: 'Reality Bender', desc: 'Toggle theme 20 times', check: (state) => state.themeToggleCount >= 20 },
   { id: 'portal_finder', name: 'Between Worlds', desc: 'Discover The Portal', check: (state) => state.portalUnlocked, reward: { type: 'portalCooldownReduction', value: 0.05 } },
   { id: 'first_material', name: 'Dimensional Miner', desc: 'Collect your first dimensional material', check: (state) => Object.values(state.dimensionalInventory || {}).reduce((sum, count) => sum + count, 0) > 0 },
   { id: 'material_hoarder', name: 'Material Hoarder', desc: 'Collect 100 total materials', check: (state) => Object.values(state.dimensionalInventory || {}).reduce((sum, count) => sum + count, 0) >= 100, reward: { type: 'portalCooldownReduction', value: 0.03 } },
@@ -743,16 +692,13 @@ export const ACHIEVEMENTS = [
   { id: 'singularity_hunter', name: 'Singularity Hunter', desc: 'Find a Singularity Node', check: (state) => (state.dimensionalInventory?.singularity_node || 0) > 0 },
   { id: 'first_dimensional_upgrade', name: 'Dimensional Crafter', desc: 'Purchase first dimensional upgrade', check: (state) => Object.keys(state.dimensionalUpgrades || {}).length > 0 },
   { id: 'reality_hacker', name: 'Reality Hacker', desc: 'Unlock all portal upgrades', check: (state) => state.dimensionalUpgrades?.dimensional_anchor && state.dimensionalUpgrades?.reality_stabilizer && state.dimensionalUpgrades?.temporal_accelerator, reward: { type: 'portalCooldownReduction', value: 0.08 } },
-  { id: 'enlightened', name: 'Enlightened', desc: 'Unlock Void Sight', check: (state) => state.dimensionalUpgrades?.void_sight, reward: { type: 'ppMultiplier', value: 0.10 } },
-  { id: 'time_lord', name: 'Time Lord', desc: 'Use Temporal Rewind', check: (state) => state.timeRewindUsed },
-  { id: 'transcendent', name: 'Transcendent', desc: 'Craft Singularity Collapse', check: (state) => state.dimensionalUpgrades?.singularity_collapse },
   // Printer Achievements
   { id: 'printer_access', name: 'Print Run', desc: 'Unlock the Printer Room', check: (state) => state.printerUnlocked },
   { id: 'first_print', name: 'First Print', desc: 'Print your first distorted page', check: (state) => state.printCount >= 1 },
   { id: 'paper_hoarder', name: 'Paper Hoarder', desc: 'Accumulate 100 Paper', check: (state) => state.paper >= 100 },
   { id: 'paper_mogul', name: 'Paper Mogul', desc: 'Accumulate 1000 Paper', check: (state) => state.paper >= 1000 },
   { id: 'quality_control', name: 'Quality Control', desc: 'Reach 100% printer quality', check: (state) => state.printerQuality >= 100 },
-  { id: 'print_master', name: 'Print Master', desc: 'Buy all printer upgrades', check: (state) => Object.keys(state.printerUpgrades || {}).length >= 13, reward: { type: 'ppMultiplier', value: 0.03 } },
+  { id: 'print_master', name: 'Print Master', desc: 'Buy all printer upgrades', check: (state) => Object.keys(state.printerUpgrades || {}).length >= 12, reward: { type: 'ppMultiplier', value: 0.03 } },
   { id: 'reality_manifest', name: 'Reality Manifest', desc: 'Unlock the Reality Printer', check: (state) => state.printerUpgrades?.reality_printer },
   // Paper & Sanity System Achievements
   { id: 'embrace_madness', name: 'Embrace Madness', desc: 'Generate PP at critical sanity (<10%)', check: (state) => state.sortCount >= 1 && state.sanity < 10 },
@@ -1178,7 +1124,7 @@ The fluorescent lights hum at 60Hz. This is normal.`,
 The work continues even when you're not clicking.
 Watch the counter in the bottom-right of the resources panel.
 
-Automation is efficiency. Efficiency is mandatory.`,
+The lights keep working even when you stop. They never stop.`,
     category: 'progression'
   },
   lowSanity: {
@@ -1262,16 +1208,6 @@ Failure costs sanity.
 The bugs are not bugs. They are features of this reality.`,
     category: 'mechanics'
   },
-  dimensionalTear: {
-    id: 'dimensionalTear',
-    title: 'DIMENSIONAL TEAR',
-    content: `Dimensional tears appear in the portal space.
-
-Click a tear to collect the dimensional material inside.
-
-Materials are used to craft powerful dimensional upgrades. Rarer materials yield more powerful effects.`,
-    category: 'mechanics'
-  },
 };
 
 /**
@@ -1295,11 +1231,6 @@ export const HELP_TRIGGERS = {
     return currentQuality < 50 && prevQuality >= 50;
   },
   debug: (state, prevState) => state.debugMode && (!prevState || !prevState.debugMode),
-  dimensionalTear: (gameState, prevState) => {
-    const hasAny = Object.values(gameState.dimensionalInventory || {}).some(v => v > 0);
-    const hadNone = !Object.values(prevState?.dimensionalInventory || {}).some(v => v > 0);
-    return hasAny && hadNone;
-  },
 };
 
 /**
@@ -1359,11 +1290,11 @@ The fluorescent lights provide ambient energy. The hum is constant.`
   firstPassiveIncome: {
     id: 'firstPassiveIncome',
     title: 'Passive Generation',
-    category: 'Automation',
+    category: 'Core Mechanics',
     summary: 'Work continues in your absence.',
-    details: `Certain upgrades grant passive PP generation (PP/sec). This accumulates even when not actively clicking.
+    details: `Certain upgrades and skills grant passive PP generation (PP/sec). This accumulates even when you are not actively clicking.
 
-Automation is the apex of productivity. The system needs no rest.`
+The lights keep working even when you stop. They never stop.`
   },
   lowSanity: {
     id: 'lowSanity',
@@ -1485,20 +1416,6 @@ Find and fix the bug in the code snippet.
 • Failure: Lose sanity
 
 The bugs are features. The features are bugs.`
-  },
-  dimensionalTear: {
-    id: 'dimensionalTear',
-    title: 'Dimensional Tears',
-    category: 'Advanced Mechanics',
-    summary: 'Rifts containing dimensional materials.',
-    details: `Tears spawn randomly during your work (chance-based).
-
-Clicking a tear generates dimensional materials that can be crafted into upgrades at the portal shop.
-
-RARITY TIERS:
-Common → Uncommon → Rare → Epic → Legendary → Mythic
-
-Higher rarities yield rarer materials.`
   },
   archive: {
     id: 'archive',

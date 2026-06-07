@@ -7,10 +7,11 @@ modifying any game system. It replaces reading the full source for understanding
 the real current state of the code including known divergences and tech debt. Keep it accurate: when
 you change a system, update the matching section here.
 
-> History note: an earlier loot/armory/equipment/combat system was **removed**. Only vestigial
-> references remain (see "Dead code & vestiges"). The end-game "Tear the Veil" routes to a separate
-> app at `/survival`, not an in-game screen. Treat any mention of weapons, imbuements, attack/health,
-> or an Armory as dead unless you are deliberately reviving it.
+> History note: several systems were **removed** over time — a loot/armory/equipment/combat system,
+> the automation toggles, the prestige loop, the void contracts, and the end-game dimensional upgrades
+> (Void Sight, Singularity Collapse, Tear the Veil) plus Temporal Rewind. Treat any mention of weapons,
+> imbuements, attack/health, an Armory, prestige paths, void contracts, or "Tear the Veil → /survival"
+> as dead unless you are deliberately reviving it.
 
 ---
 
@@ -60,7 +61,7 @@ state flag. Only one renders at a time. The default render is the main office sc
 
 ### Panels (main screen)
 - `GameActionsPanel.js` — SORT PAPERS / REST / MEDITATE / location nav.
-- `GameUpgradesPanel.js` — tabbed PP / printer / dimensional upgrades; renders `VoidContractsDisplay`.
+- `GameUpgradesPanel.js` — tabbed PP / printer / dimensional upgrades.
 - `GameStatsPanel.js` — resource readouts, active buffs, level bar.
 - `GameSidebarExtras.js` — event log / misc sidebar.
 
@@ -79,8 +80,7 @@ state flag. Only one renders at a time. The default render is the main office sc
 - `DebugPanel.js` — developer cheat panel (dev-only via `SHOW_DEV_TOOLS`).
 
 ### Small components
-- `HelpPopup.js`, `NotificationPopup.js`, `EventLog.js`, `VoidContractsDisplay.js` (defines
-  `VOID_CONTRACTS` inline).
+- `HelpPopup.js`, `NotificationPopup.js`, `EventLog.js`.
 
 ### Sibling docs
 - `DEBUG_SYSTEM.md` — the debug minigame. `PLAYTIME_AND_BALANCE.md` (repo root) — balance analysis.
@@ -108,8 +108,7 @@ Single source of truth, loaded via `useState(INITIAL_GAME_STATE)`. Canonical nam
 - **Portal/dimensional:** `portalUnlocked`, `dimensionalInventory` ({materialId:count}),
   `timeRewindUsed`.
 - **Buffs:** `maxActiveBuffs` (3) — **overloaded, see gotchas**; `pendingBuff`, `pendingBuffDocument`.
-- **Void/late:** `temporalPactActive`, `voidBargainActive`, `sanityErosionActive`, `focusModeExpiry`,
-  `lastSavedAt`, `ppMultiplierTier`.
+- **Late:** `focusModeExpiry`, `lastSavedAt`, `ppMultiplierTier`.
 - **Help:** `helpEnabled`, `shownHelpPopups`, `currentHelpPopup`.
 
 ### Save/load (`saveSystem.js`)
@@ -131,8 +130,7 @@ Single source of truth, loaded via `useState(INITIAL_GAME_STATE)`. Canonical nam
 buff modifier, floored at 0.1× base; `checkFreeAction` may skip it) then PP = `ppPerClick`
 → `applyPPMultiplier` (skills) → `applySanityPPModifier` (sanity tier × stacked buffs)
 → × PP-tier mult (`PP_MULTIPLIER_TIERS`: 2× at 10K, 5× at 1M, 25× at 1B) → × chaos bonus
-→ × (1 + achievement ppMultiplier) → × 1.5 if Focus Mode
-→ × 3 if `sanityErosionActive && sanity<30`.
+→ × (1 + achievement ppMultiplier) → × 1.5 if Focus Mode.
 
 **Energy.** Max 100 (+20 energydrink). Only refilled by `rest` (full, 30 s cooldown, reduced by Power
 Napping). No passive regen.
@@ -167,10 +165,10 @@ printerroom (→ PrinterRoom). `DimensionalArea` generates encrypted text + weig
 entry, mines into a **local** inventory, commits to `dimensionalInventory` on exit, then sets
 `portalCooldown`. (There is **no** colleague/break-room mechanic — only lore references it.)
 
-**Dimensional upgrades / void contracts.** `dimensionalUpgrades` crafted from materials in
-`GameUpgradesPanel`. `VOID_CONTRACTS` (Temporal Pact, Void Bargain, Sanity Erosion) are **permanent,
-irreversible** trade-offs. End-game items: `singularity_collapse` (ending) and `tear_the_veil`
-(→ `/survival`).
+**Dimensional upgrades.** `dimensionalUpgrades` crafted from materials in `GameUpgradesPanel` — portal
+cooldown/capacity, sanity floor/drain, meditation, debug bonus, `singularity_engine` (+50 PP/sec),
+codex/scanner. (Void contracts and the end-game upgrades Void Sight / Singularity Collapse / Tear the
+Veil, plus Temporal Rewind, were removed.)
 
 *(There is no prestige / "Survive Another Day" loop — it was removed. The `promotion` upgrade is now
 just a normal +10 `ppPerSecond` purchase.)*
@@ -188,12 +186,10 @@ entries + day ≥7 unlocks the Portal. Help popups (`HELP_POPUPS`/`HELP_TRIGGERS
 First clicks (SORT PAPERS) → early PP upgrades (stapler 50 → coffee 150 first passive → printerroom 200
 → … archive 400 → debugger 500). **Phase 2 at pp>100**: real sanity drain begins. Printer/document loop
 (print → printer upgrades → document tiers gated by mastery 0/3/8/18/30 → File Drawer → consume).
-**Portal unlock** (3 archive entries + day ≥7) → dimensional mining → dimensional upgrades / Occult
-skills. **PP-tier explosions** at 10K/1M/1B are the main payoff.
-Void Contracts are late, material-gated, build-defining. (Passive income comes from `ppPerSecond`
-upgrades/skills — there is no auto-clicker/automation toggle system, and no prestige loop; both were
-removed.) End-game: `singularity_collapse` then `tear_the_veil` (5M PP + one of every material) →
-`/survival`.
+**Portal unlock** (3 archive entries + day ≥7) → dimensional mining → dimensional upgrades.
+**PP-tier explosions** at 10K/1M/1B are the main payoff. (Passive income comes from `ppPerSecond`
+upgrades/skills — there is no auto-clicker/automation toggle system, no prestige loop, and no void
+contracts; all were removed. There is currently no hard end-game wall beyond the PP tiers.)
 
 Gating mixes PP cost, day count, mastery counts, player level, and materials.
 
