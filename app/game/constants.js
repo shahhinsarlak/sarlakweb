@@ -1234,15 +1234,14 @@ This affects your ability to create documents.`,
     title: 'PERSONNEL FILE SYSTEM UNLOCKED',
     content: `You've gained a skill point!
 
-Access the filing cabinet to view five skill branches:
-• EFFICIENCY: Productivity and PP generation
-• ADMIN: Paperwork quality and document management
-• SURVIVAL: Energy and sanity management
-• OCCULT: Dimensional powers (requires portal)
-• [REDACTED]: Access denied (Level 20+ clearance)
+Open the Personnel File System to spend it. Eight standalone skills, each with a large, clear bonus:
 
-Each branch contains tiered skills. Higher tiers require prerequisites.
-Invest wisely. Reality remembers your choices.`,
+• Productivity: PP per click, passive PP, all PP
+• Resilience: energy cost, sanity loss, rest cooldown
+• The Other Office: portal cooldown, free actions
+
+No branches, no prerequisites. Spend points on whatever your build needs.
+Reality remembers your choices.`,
     category: 'progression'
   },
   archive: {
@@ -1417,20 +1416,16 @@ Lower sanity also degrades paper quality, affecting document creation.`
     id: 'skillTree',
     title: 'Personnel File System',
     category: 'Progression',
-    summary: 'Permanent character advancement via filing cabinet.',
-    details: `Gain skill points by leveling up (1 per level, 3 at level 10/20/30...).
+    summary: 'Permanent character advancement.',
+    details: `Gain skill points by leveling up: 1 per level, plus a bonus 2 every 5th level. The XP each level needs rises in a steady, predictable line, so points keep coming.
 
-FILING CABINET BRANCHES:
-📊 EFFICIENCY: PP generation bonuses (always unlocked)
-📁 ADMIN: Paper quality, document effects (Level 5+)
-🛡️ SURVIVAL: Energy costs, sanity management (Level 5+)
-🌀 OCCULT: Dimensional materials, portal improvements (portal required)
-⬛ [REDACTED]: Forbidden knowledge (Level 20+)
+Eight standalone skills, no branches and no prerequisites. Each levels several times and the bonuses are large:
 
-Each branch has 3-5 tiers. Higher tiers require prerequisites.
-Skills stack multiplicatively. Max 5 levels per skill.
+Efficient Sorting / Passive Systems / Cross-Department Synergy raise PP output.
+Energy Conservation / Mental Fortitude / Power Napping keep you working.
+Portal Attunement / Temporal Distortion are the stranger advantages.
 
-Skills are permanent. Reality remembers your choices.`
+Skills are permanent within a run. Reality remembers your choices.`
   },
   printerRoom: {
     id: 'printerRoom',

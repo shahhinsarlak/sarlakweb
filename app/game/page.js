@@ -509,6 +509,12 @@ export default function Game() {
               sanityDrainRate *= (1 - sanityBonus);
             }
 
+            // Mental Fortitude skill slows sanity loss
+            const sanityLossReduction = Math.min(0.9, getActiveSkillEffects(prev).sanityLossReduction || 0);
+            if (sanityLossReduction > 0) {
+              sanityDrainRate *= (1 - sanityLossReduction);
+            }
+
             // Apply sanity drain
             newState.sanity = Math.max(0, prev.sanity - sanityDrainRate);
           }
@@ -524,7 +530,7 @@ export default function Game() {
           newState.sanity = 20;
         }
 
-        // Resilient Mind skill raises maximum sanity cap (e.g. +10 per level)
+        // Clamp sanity to its current cap (100, or lowered by the Sanity Erosion contract)
         const maxSanityCap = getMaxSanity(100, prev);
         if (newState.sanity > maxSanityCap) {
           newState.sanity = maxSanityCap;

@@ -39,8 +39,8 @@ state flag. Only one renders at a time. The default render is the main office sc
   (4 types × 5 tiers × 4 outcomes), `SANITY_TIERS`, `PP_MULTIPLIER_TIERS`, `PRESTIGE_PATHS`,
   `TIER_MASTERY_WEIGHTS`, `HELP_POPUPS`, `HELP_TRIGGERS`, `JOURNAL_ENTRIES`, `MECHANICS_ENTRIES`,
   `LORE_SNIPPETS`, `DEBUG_CHALLENGES`.
-- `skillTreeConstants.js` — `SKILL_BRANCHES` (5), `SKILLS` (21, each with an `effect(level)` closure),
-  `LEVEL_SYSTEM` (XP curve, max level 50), `XP_REWARDS`.
+- `skillTreeConstants.js` — `SKILLS` (a flat list of 8 standalone skills, each with an `effect(level)`
+  closure), `LEVEL_SYSTEM` (linear XP curve, max level 50), `XP_REWARDS`.
 - `dimensionalConstants.js` — `DIMENSIONAL_MATERIALS` (7 weighted rarities), `SIZE_RANGES`,
   `DIMENSIONAL_CAPACITY` (20), `generateEncryptedText`, `generateMaterialNodes`.
 
@@ -68,7 +68,7 @@ state flag. Only one renders at a time. The default render is the main office sc
 - `DimensionalArea.js` — portal mining minigame (local session inventory, commits on exit).
 - `PrinterRoom.js` — printer minigame (has its **own** print logic, separate from `printPaper`).
 - `FileDrawer.js` — stored-document management.
-- `SkillTreeModal.js` — 5-branch skill tree UI.
+- `SkillTreeModal.js` — flat skill-list UI (no branches/tiers).
 - `ArchiveModal.js` / `ExamineModal.js` — archive document reading.
 - `MeditationModal.js` — breathing-rhythm sanity minigame.
 - `DebugModal.js` — code-fixing minigame.
@@ -146,10 +146,16 @@ more output = the core risk/reward lever). Drain runs in the tick (phase-gated; 
 `noSanityDrain` buff; floored by `reality_anchor`). Paper quality =
 `floor(printerQuality*w1 + sanity*w2)`, weights shifting toward sanity at low/critical tiers.
 
-**Skill tree (`skillTreeConstants.js` / `skillSystemHelpers.js`).** 21 skills across Efficiency, Admin,
-Survival, Occult, Forbidden. Each `effect(level)` returns partial effects; `getActiveSkillEffects` sums
-them into one aggregate (booleans OR'd, numbers summed). 1 point/level (3 every 10th), max level 50,
-XP curve `100 * 1.3^(level-1)`. Forbidden skills gate on level 20/25/40.
+**Skills (`skillTreeConstants.js` / `skillSystemHelpers.js`).** A **flat list of 8 standalone skills**
+(no branches, no prerequisites): Efficient Sorting, Passive Systems, Cross-Department Synergy (PP);
+Energy Conservation, Mental Fortitude, Power Napping (resilience); Portal Attunement, Temporal
+Distortion. Each `effect(level)` returns partial effects; `getActiveSkillEffects` sums them into one
+aggregate. **Every effect key is consumed by a live helper** — no placebo skills (the old tree had
+several whose effects were never read: paper quality, document effect/cost, dimensional material
+bonuses, portal duration). Leveling: 1 skill point/level + 2 every 5th, max level 50, **linear** XP
+curve `50 * level` (replaced the old `100 * 1.3^(level-1)` exponential wall). Note: `getActiveSkillEffects`
+still initializes legacy effect keys to 0 (harmless); the sanity-loss reduction is applied in the tick
+drain, not via the otherwise-uncalled `getModifiedSanityLoss`.
 
 **Buffs.** `activeReportBuffs[]`, each `{id, expiresAt, ppMult?, xpMult?, energyCostMult?,
 ppPerSecondMult?, noSanityDrain?, materialMult?, …}`. Cap = `maxActiveBuffs`. Stacking is **additive on
