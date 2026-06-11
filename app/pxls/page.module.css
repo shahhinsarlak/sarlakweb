@@ -556,6 +556,55 @@
   margin-top: 0.5rem;
 }
 
+.noticeText {
+  color: var(--accent-color);
+  font-size: 0.7rem;
+  margin-top: 0.5rem;
+  line-height: 1.4;
+}
+
+.dropZone {
+  border: 1px dashed var(--border-color);
+  padding: 1.5rem 1rem;
+  text-align: center;
+  font-size: 0.78rem;
+  opacity: 0.85;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.dropZone:hover {
+  border-color: var(--accent-color);
+  background: var(--hover-color);
+}
+
+.dropZoneActive {
+  border-color: var(--pxls-active);
+  background: var(--pxls-active-soft);
+  opacity: 1;
+}
+
+.previewWrap {
+  display: flex;
+  justify-content: center;
+  padding: 0.5rem;
+  border: 1px solid var(--border-color);
+  background:
+    linear-gradient(45deg, #bdbdbd 25%, transparent 25%),
+    linear-gradient(-45deg, #bdbdbd 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #bdbdbd 75%),
+    linear-gradient(-45deg, transparent 75%, #bdbdbd 75%);
+  background-size: 12px 12px;
+  background-position: 0 0, 0 6px, 6px -6px, -6px 0;
+}
+
+.previewCanvas {
+  image-rendering: pixelated;
+  max-width: 100%;
+  width: 180px;
+  height: auto;
+}
+
 /* Gallery */
 .galleryGrid {
   display: grid;

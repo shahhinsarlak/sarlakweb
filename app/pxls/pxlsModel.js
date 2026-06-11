@@ -67,6 +67,20 @@ export const createLayer = (width, height, name = 'Layer 1') => ({
 });
 
 /**
+ * Creates a layer from an existing cells array (e.g. an imported image).
+ * @param {string} name
+ * @param {Object[]} cells
+ * @returns {Object}
+ */
+export const createLayerFromCells = (name, cells) => ({
+  id: makeId(),
+  name,
+  visible: true,
+  opacity: 1,
+  cells,
+});
+
+/**
  * Creates a new project with a single blank layer.
  * @param {Object} [opts]
  * @param {string} [opts.name]

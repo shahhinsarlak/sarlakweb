@@ -15,13 +15,14 @@ import ColorPanel from './ColorPanel';
 import LayersPanel from './LayersPanel';
 import EffectsPanel from './EffectsPanel';
 import ExportModal from './ExportModal';
+import ImageImportModal from './ImageImportModal';
 import ProjectGallery from './ProjectGallery';
 import {
   createHistory, pushHistory as pushHist, undo as undoHist, redo as redoHist,
   canUndo, canRedo,
 } from './historyHelpers';
 import {
-  createProject, createLayer, getActiveLayer, validateProject, cloneCells,
+  createProject, createLayer, createLayerFromCells, getActiveLayer, validateProject, cloneCells,
 } from './pxlsModel';
 import { saveProject, getLastOpenId, listProjects } from './storageHelpers';
 import { TOOLS, TOOL_ORDER, MIRROR_MODES, MIN_BRUSH, MAX_BRUSH } from './constants';
@@ -43,6 +44,7 @@ export default function PxlsEditor() {
   const [history, setHistory] = useState(createHistory());
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
+  const [imageOpen, setImageOpen] = useState(false);
   const [hover, setHover] = useState({ x: -1, y: -1 });
 
   const projectRef = useRef(project);
@@ -182,12 +184,19 @@ export default function PxlsEditor() {
     reader.readAsText(file);
   };
 
+  const handleAddImageLayer = (name, cells) => {
+    setProject((prev) => {
+      const layer = createLayerFromCells(name, cells);
+      return { ...prev, layers: [...prev.layers, layer], activeLayerId: layer.id };
+    });
+  };
+
   // --- Keyboard shortcuts ----------------------------------------------------
 
   useEffect(() => {
     const onKey = (e) => {
       const tag = e.target.tagName;
-      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || exportOpen || galleryOpen) {
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || exportOpen || galleryOpen || imageOpen) {
         return;
       }
       const key = e.key.toLowerCase();
@@ -223,7 +232,7 @@ export default function PxlsEditor() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [handleUndo, handleRedo, exportOpen, galleryOpen]);
+  }, [handleUndo, handleRedo, exportOpen, galleryOpen, imageOpen]);
 
   if (!project) {
     return <div className={styles.pxls}><p className={styles.emptyNote}>Loading editor…</p></div>;
@@ -249,6 +258,9 @@ export default function PxlsEditor() {
         </button>
         <button type="button" className={styles.barBtn} onClick={handleRedo} disabled={!canRedo(history)}>
           Redo
+        </button>
+        <button type="button" className={styles.barBtn} onClick={() => setImageOpen(true)}>
+          Image
         </button>
         <button type="button" className={styles.barBtn} onClick={() => setGalleryOpen(true)}>
           Projects
@@ -315,6 +327,13 @@ export default function PxlsEditor() {
       )}
       {exportOpen && (
         <ExportModal project={project} onClose={() => setExportOpen(false)} />
+      )}
+      {imageOpen && (
+        <ImageImportModal
+          project={project}
+          onAddLayer={handleAddImageLayer}
+          onClose={() => setImageOpen(false)}
+        />
       )}
     </div>
   );
