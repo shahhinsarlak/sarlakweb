@@ -27,6 +27,12 @@ const APPS = [
     tags: ['Next.js', 'Claude API'],
     href: '/wheel',
   },
+  {
+    title: 'PXLS',
+    kind: 'A JSON backed pixel art editor with layers, per cell effects and PNG, SVG and JSON export',
+    tags: ['Next.js', 'Canvas'],
+    href: '/pxls',
+  },
 ];
 
 export default function Apps() {

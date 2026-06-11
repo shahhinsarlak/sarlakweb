@@ -31,6 +31,9 @@ export default function Header() {
             <Link href="/game" className={`nav-link ${pathname === '/game' ? 'active' : ''}`}>
               Game
             </Link>
+            <Link href="/pxls" className={`nav-link ${pathname.startsWith('/pxls') ? 'active' : ''}`}>
+              PXLS
+            </Link>
           </div>
           <ThemeToggle />
         </nav>

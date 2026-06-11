@@ -1,0 +1,621 @@
+/* PXLS editor layout. Uses site theme CSS vars plus a few PXLS scoped accents
+   for active tool highlights. Monospace UI to match the rest of the site. */
+
+.pxls {
+  --pxls-active: #ff004d;
+  --pxls-active-soft: rgba(255, 0, 77, 0.14);
+  --pxls-grid: rgba(127, 127, 127, 0.28);
+  --pxls-panel: var(--bg-color);
+  font-family: var(--font-mono), 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 3rem;
+  box-sizing: border-box;
+}
+
+.topBar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding-bottom: 1rem;
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.brand {
+  font-size: 1.4rem;
+  letter-spacing: 4px;
+  font-weight: 600;
+}
+
+.brandDot {
+  color: var(--pxls-active);
+}
+
+.projectName {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-color);
+  font-family: inherit;
+  font-size: 0.85rem;
+  padding: 0.45rem 0.6rem;
+  min-width: 160px;
+}
+
+.projectName:focus {
+  outline: none;
+  border-color: var(--accent-color);
+}
+
+.spacer {
+  flex: 1;
+}
+
+.barBtn {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-color);
+  font-family: inherit;
+  font-size: 0.8rem;
+  padding: 0.45rem 0.8rem;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.barBtn:hover {
+  background: var(--hover-color);
+  border-color: var(--accent-color);
+}
+
+.barBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.barBtnPrimary {
+  border-color: var(--pxls-active);
+  color: var(--pxls-active);
+}
+
+.workspace {
+  display: grid;
+  grid-template-columns: auto 1fr 240px;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .workspace {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Toolbar */
+.toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+@media (max-width: 900px) {
+  .toolbar {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+}
+
+.toolBtn {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-color);
+  font-family: inherit;
+  font-size: 0.72rem;
+  padding: 0.5rem 0.55rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-width: 118px;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.toolBtn:hover {
+  background: var(--hover-color);
+}
+
+.toolBtnActive {
+  border-color: var(--pxls-active);
+  background: var(--pxls-active-soft);
+  color: var(--pxls-active);
+}
+
+.toolKey {
+  opacity: 0.5;
+  font-size: 0.65rem;
+}
+
+.toolMeta {
+  margin-top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.metaLabel {
+  font-size: 0.65rem;
+  letter-spacing: 1px;
+  opacity: 0.6;
+  text-transform: uppercase;
+}
+
+.rangeRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.72rem;
+}
+
+.rangeRow input[type='range'] {
+  flex: 1;
+  accent-color: var(--pxls-active);
+}
+
+.mirrorRow {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.mirrorBtn {
+  flex: 1;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-color);
+  font-family: inherit;
+  font-size: 0.7rem;
+  padding: 0.35rem 0;
+  cursor: pointer;
+}
+
+.mirrorBtnActive {
+  border-color: var(--pxls-active);
+  color: var(--pxls-active);
+}
+
+/* Canvas area */
+.canvasArea {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.canvasStage {
+  position: relative;
+  line-height: 0;
+  border: 1px solid var(--border-color);
+  max-width: 100%;
+  touch-action: none;
+}
+
+.canvasStage canvas {
+  display: block;
+  image-rendering: pixelated;
+  cursor: crosshair;
+  max-width: 100%;
+  height: auto;
+}
+
+.statusRow {
+  font-size: 0.72rem;
+  opacity: 0.7;
+  display: flex;
+  gap: 1rem;
+}
+
+.sizeRow {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  font-size: 0.72rem;
+}
+
+.sizeBtn {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-color);
+  font-family: inherit;
+  font-size: 0.72rem;
+  padding: 0.3rem 0.55rem;
+  cursor: pointer;
+}
+
+.sizeBtnActive {
+  border-color: var(--pxls-active);
+  color: var(--pxls-active);
+}
+
+/* Right column panels */
+.panels {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.panel {
+  border: 1px solid var(--border-color);
+  padding: 0.85rem;
+}
+
+.panelTitle {
+  font-size: 0.68rem;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  opacity: 0.6;
+  margin-bottom: 0.7rem;
+}
+
+/* Colour panel */
+.colorRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
+}
+
+.colorPreview {
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.hexInput {
+  flex: 1;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-color);
+  font-family: inherit;
+  font-size: 0.8rem;
+  padding: 0.4rem 0.5rem;
+  text-transform: uppercase;
+  min-width: 0;
+}
+
+.hexInput:focus {
+  outline: none;
+  border-color: var(--accent-color);
+}
+
+.nativePicker {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid var(--border-color);
+  background: transparent;
+  cursor: pointer;
+}
+
+.swatchGrid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 3px;
+  margin-top: 0.5rem;
+}
+
+.swatch {
+  aspect-ratio: 1;
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  padding: 0;
+}
+
+.swatchActive {
+  outline: 2px solid var(--pxls-active);
+  outline-offset: -1px;
+}
+
+.swatchEmpty {
+  background:
+    linear-gradient(45deg, var(--hover-color) 25%, transparent 25%),
+    linear-gradient(-45deg, var(--hover-color) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, var(--hover-color) 75%),
+    linear-gradient(-45deg, transparent 75%, var(--hover-color) 75%);
+  background-size: 8px 8px;
+  background-position: 0 0, 0 4px, 4px -4px, -4px 0;
+}
+
+.subLabel {
+  font-size: 0.62rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin: 0.75rem 0 0.35rem;
+}
+
+/* Layers panel */
+.layerList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-bottom: 0.6rem;
+}
+
+.layerRow {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1px solid var(--border-color);
+  padding: 0.35rem 0.4rem;
+  cursor: pointer;
+  font-size: 0.72rem;
+}
+
+.layerRowActive {
+  border-color: var(--pxls-active);
+  background: var(--pxls-active-soft);
+}
+
+.layerVis {
+  background: transparent;
+  border: none;
+  color: var(--text-color);
+  cursor: pointer;
+  font-size: 0.8rem;
+  padding: 0 0.2rem;
+  opacity: 0.85;
+}
+
+.layerNameInput {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-color);
+  font-family: inherit;
+  font-size: 0.72rem;
+  min-width: 0;
+}
+
+.layerNameInput:focus {
+  outline: 1px solid var(--accent-color);
+}
+
+.iconBtn {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-color);
+  font-family: inherit;
+  font-size: 0.72rem;
+  padding: 0.25rem 0.45rem;
+  cursor: pointer;
+}
+
+.iconBtn:hover {
+  background: var(--hover-color);
+}
+
+.iconBtn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.layerActions {
+  display: flex;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+}
+
+.opacityRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.7rem;
+  margin-top: 0.6rem;
+}
+
+.opacityRow input[type='range'] {
+  flex: 1;
+  accent-color: var(--pxls-active);
+}
+
+/* Effects panel */
+.effectBtnRow {
+  display: flex;
+  gap: 0.3rem;
+  margin-bottom: 0.6rem;
+}
+
+.effectBtn {
+  flex: 1;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-color);
+  font-family: inherit;
+  font-size: 0.68rem;
+  padding: 0.4rem 0;
+  cursor: pointer;
+}
+
+.effectBtnActive {
+  border-color: var(--pxls-active);
+  background: var(--pxls-active-soft);
+  color: var(--pxls-active);
+}
+
+.effectDesc {
+  font-size: 0.68rem;
+  opacity: 0.6;
+  line-height: 1.4;
+  min-height: 2.4em;
+}
+
+/* Modal */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.modal {
+  background: var(--bg-color);
+  border: 1px solid var(--border-color);
+  color: var(--text-color);
+  width: 100%;
+  max-width: 460px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 1.5rem;
+  font-family: inherit;
+}
+
+.modalTitle {
+  font-size: 1rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin: 0 0 1.2rem;
+}
+
+.field {
+  margin-bottom: 1rem;
+}
+
+.field label {
+  display: block;
+  font-size: 0.68rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  opacity: 0.6;
+  margin-bottom: 0.4rem;
+}
+
+.field input[type='text'],
+.field select {
+  width: 100%;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-color);
+  font-family: inherit;
+  font-size: 0.85rem;
+  padding: 0.5rem;
+  box-sizing: border-box;
+}
+
+.field input:focus,
+.field select:focus {
+  outline: none;
+  border-color: var(--accent-color);
+}
+
+.segmented {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.segmented button {
+  flex: 1;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-color);
+  font-family: inherit;
+  font-size: 0.75rem;
+  padding: 0.45rem 0;
+  cursor: pointer;
+}
+
+.segmentedActive {
+  border-color: var(--pxls-active) !important;
+  color: var(--pxls-active);
+  background: var(--pxls-active-soft);
+}
+
+.checkRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  margin-bottom: 1rem;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+}
+
+.errorText {
+  color: var(--pxls-active);
+  font-size: 0.72rem;
+  margin-top: 0.5rem;
+}
+
+/* Gallery */
+.galleryGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.galleryCard {
+  border: 1px solid var(--border-color);
+  padding: 0.5rem;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.galleryCard:hover {
+  border-color: var(--accent-color);
+}
+
+.galleryThumb {
+  width: 100%;
+  aspect-ratio: 1;
+  image-rendering: pixelated;
+  border: 1px solid var(--border-color);
+  background-size: 10px 10px;
+}
+
+.galleryName {
+  font-size: 0.72rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.galleryMeta {
+  font-size: 0.62rem;
+  opacity: 0.55;
+  display: flex;
+  justify-content: space-between;
+}
+
+.galleryDelete {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-color);
+  font-family: inherit;
+  font-size: 0.62rem;
+  padding: 0.2rem 0;
+  cursor: pointer;
+}
+
+.galleryDelete:hover {
+  border-color: var(--pxls-active);
+  color: var(--pxls-active);
+}
+
+.emptyNote {
+  font-size: 0.78rem;
+  opacity: 0.6;
+  margin: 1rem 0;
+}
