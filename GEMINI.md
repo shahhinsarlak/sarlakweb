@@ -84,7 +84,7 @@
     CrystalOpeningModal.js # Loot reveal UI
     
     # Documentation
-    DEBUG_SYSTEM.md        # Documentation for debug challenges
+    GAME_CONTEXT.md        # Consolidated context for all game systems
 
   /apps                    # Apps showcase page
   page.js                  # Home page
