@@ -88,7 +88,7 @@ export const buildSVG = (project, opts) => {
         const cell = cells[idx];
         if (isEmptyCell(cell)) continue;
         const right = x + 1 < width ? cells[idx + 1] : null;
-        const { r, g, b } = resolveRgb(cell, right, seed, idx, includeEffects);
+        const { r, g, b } = resolveRgb(cell, right, seed, idx, width, includeEffects);
         const a = +(cell.alpha * opacity).toFixed(3);
         rects.push(
           `<rect x="${x * scale}" y="${y * scale}" width="${scale}" height="${scale}" `

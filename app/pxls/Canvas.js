@@ -20,7 +20,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import {
   applyBrush, floodFill, linePoints, rectPoints, ellipsePoints, stampPoints,
-  extractBlock, clearRegion, pasteBlock,
+  extractBlock, clearRegion, pasteBlock, mirrorPoints,
 } from './drawHelpers';
 import { compositeToCanvas, drawGrid, drawCheckerboard } from './renderHelpers';
 import { getActiveLayer } from './pxlsModel';
@@ -43,6 +43,7 @@ export default function Canvas({ project, brush, onPushHistory, onSetCells, onEy
   const drag = useRef(null);
   const [selection, setSelection] = useState(null); // { x, y, w, h }
   const float = useRef(null); // { block, bw, bh, baseCells, ox, oy }
+  const hoverRef = useRef({ x: -1, y: -1 });
 
   const activeLayer = getActiveLayer(project);
 
@@ -68,7 +69,7 @@ export default function Canvas({ project, brush, onPushHistory, onSetCells, onEy
     compositeToCanvas(artRef.current, project, internalCell, { includeEffects: true });
   }, [project, internalCell]);
 
-  // Draw grid + selection overlay.
+  // Draws grid, mirror axes, brush cursor, selection, and an optional preview.
   const renderOverlay = useCallback((previewPoints) => {
     const overlay = overlayRef.current;
     if (overlay.width !== pxW) overlay.width = pxW;
@@ -78,12 +79,56 @@ export default function Canvas({ project, brush, onPushHistory, onSetCells, onEy
     if (internalCell >= 4) {
       drawGrid(ctx, { width, height }, internalCell, 'rgba(127,127,127,0.28)');
     }
+
+    // Mirror / symmetry axes: green lines showing where reflection happens.
+    if (brush.mirror !== 'none') {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(46, 204, 113, 0.9)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      if (brush.mirror === 'x' || brush.mirror === 'both') {
+        const mid = (width / 2) * internalCell;
+        ctx.moveTo(mid, 0);
+        ctx.lineTo(mid, pxH);
+      }
+      if (brush.mirror === 'y' || brush.mirror === 'both') {
+        const mid = (height / 2) * internalCell;
+        ctx.moveTo(0, mid);
+        ctx.lineTo(pxW, mid);
+      }
+      ctx.stroke();
+      ctx.restore();
+    }
+
     if (previewPoints) {
       ctx.fillStyle = 'rgba(255,0,77,0.6)';
       for (const [x, y] of previewPoints) {
         ctx.fillRect(x * internalCell, y * internalCell, internalCell, internalCell);
       }
     }
+
+    // Brush cursor: outline of the footprint about to be painted, mirrored.
+    const hov = hoverRef.current;
+    if (!drag.current && hov.x >= 0 && hov.y >= 0 && brush.tool !== 'move') {
+      const sized = brush.tool === 'pencil' || brush.tool === 'eraser' || brush.tool === 'effects';
+      const footSize = sized ? brush.size : 1;
+      const half = Math.floor((footSize - 1) / 2);
+      const drawOutline = (cx, cy) => {
+        const px = (cx - half) * internalCell;
+        const py = (cy - half) * internalCell;
+        const s = footSize * internalCell;
+        ctx.strokeStyle = 'rgba(0,0,0,0.75)';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(px + 1, py + 1, s - 2, s - 2);
+        ctx.strokeStyle = 'rgba(255,255,255,0.95)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(px + 0.5, py + 0.5, s - 1, s - 1);
+      };
+      for (const [mx, my] of mirrorPoints(hov.x, hov.y, width, height, brush.mirror)) {
+        drawOutline(mx, my);
+      }
+    }
+
     if (selection) {
       ctx.strokeStyle = '#ff004d';
       ctx.lineWidth = 1;
@@ -96,7 +141,7 @@ export default function Canvas({ project, brush, onPushHistory, onSetCells, onEy
       );
       ctx.setLineDash([]);
     }
-  }, [pxW, pxH, internalCell, width, height, selection]);
+  }, [pxW, pxH, internalCell, width, height, selection, brush.mirror, brush.size, brush.tool]);
 
   useEffect(() => {
     renderOverlay(null);
@@ -170,11 +215,17 @@ export default function Canvas({ project, brush, onPushHistory, onSetCells, onEy
   const handlePointerMove = (e) => {
     const { x, y } = eventToCell(e);
     if (onHover) onHover(x, y);
-    if (!drag.current) return;
+    const inBoundsCell = x >= 0 && y >= 0 && x < width && y < height;
+    hoverRef.current = inBoundsCell ? { x, y } : { x: -1, y: -1 };
+
+    if (!drag.current) {
+      renderOverlay(null);
+      return;
+    }
     const d = drag.current;
 
     if (d.mode === 'freehand') {
-      if (x < 0 || y < 0 || x >= width || y >= height) return;
+      if (!inBoundsCell) return;
       freehand(x, y);
     } else if (d.mode === 'shape') {
       renderOverlay(shapePreview(d.start, { x, y }, d.tool));
@@ -238,7 +289,11 @@ export default function Canvas({ project, brush, onPushHistory, onSetCells, onEy
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
-        onPointerLeave={() => onHover && onHover(-1, -1)}
+        onPointerLeave={() => {
+          if (onHover) onHover(-1, -1);
+          hoverRef.current = { x: -1, y: -1 };
+          if (!drag.current) renderOverlay(null);
+        }}
       />
     </div>
   );

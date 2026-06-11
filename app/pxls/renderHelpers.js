@@ -43,14 +43,19 @@ const hash01 = (a) => {
 };
 
 /**
- * Resolves a cell's effective rgb after noise + dither effects.
+ * Resolves a cell's effective rgb after noise + dither effects. The result is
+ * always a single solid colour (one cell holds one value). Dither is applied as
+ * a cross cell checkerboard: on alternating cells the colour shifts toward the
+ * right neighbour, which reads as classic dithering without ever splitting a
+ * cell into multiple colours.
  * @param {Object} cell
  * @param {Object} rightCell - neighbour to the right (for dither) or null
  * @param {number} seed
  * @param {number} idx - cell flat index
+ * @param {number} width - canvas width (for checkerboard parity)
  * @returns {{ r: number, g: number, b: number }}
  */
-const effectiveRgb = (cell, rightCell, seed, idx) => {
+const effectiveRgb = (cell, rightCell, seed, idx, width) => {
   let { r, g, b } = hexToRgb(cell.color);
   if (cell.effect && cell.effect.type === 'noise') {
     const amount = 60 * cell.effect.intensity;
@@ -60,11 +65,16 @@ const effectiveRgb = (cell, rightCell, seed, idx) => {
     b = clamp255(b + j);
   }
   if (cell.effect && cell.effect.type === 'dither' && rightCell && !isEmptyCell(rightCell)) {
-    const n = hexToRgb(rightCell.color);
-    const w = 0.5 * cell.effect.intensity;
-    r = clamp255(r * (1 - w) + n.r * w);
-    g = clamp255(g * (1 - w) + n.g * w);
-    b = clamp255(b * (1 - w) + n.b * w);
+    const x = idx % width;
+    const y = Math.floor(idx / width);
+    // Only the "odd" cells of the checkerboard shift toward the neighbour.
+    if ((x + y) % 2 === 1) {
+      const n = hexToRgb(rightCell.color);
+      const w = cell.effect.intensity;
+      r = clamp255(r * (1 - w) + n.r * w);
+      g = clamp255(g * (1 - w) + n.g * w);
+      b = clamp255(b * (1 - w) + n.b * w);
+    }
   }
   return { r, g, b };
 };
@@ -76,11 +86,12 @@ const effectiveRgb = (cell, rightCell, seed, idx) => {
  * @param {Object|null} rightCell
  * @param {number} seed
  * @param {number} idx
+ * @param {number} width
  * @param {boolean} includeEffects
  * @returns {{ r: number, g: number, b: number }}
  */
-export const resolveRgb = (cell, rightCell, seed, idx, includeEffects) =>
-  (includeEffects ? effectiveRgb(cell, rightCell, seed, idx) : hexToRgb(cell.color));
+export const resolveRgb = (cell, rightCell, seed, idx, width, includeEffects) =>
+  (includeEffects ? effectiveRgb(cell, rightCell, seed, idx, width) : hexToRgb(cell.color));
 
 /**
  * Draws a single layer onto a 2d context.
@@ -118,7 +129,8 @@ const drawLayer = (ctx, layer, dims, cellSize, seed, includeEffects) => {
     ctx.restore();
   }
 
-  // Solid cells.
+  // Solid cells. Every cell resolves to a single colour (one cell, one value)
+  // and is drawn as one integer aligned rect so edges stay perfectly sharp.
   for (let y = 0; y < height; y += 1) {
     for (let x = 0; x < width; x += 1) {
       const idx = y * width + x;
@@ -127,30 +139,10 @@ const drawLayer = (ctx, layer, dims, cellSize, seed, includeEffects) => {
       const a = cell.alpha * opacity;
       const right = x + 1 < width ? cells[idx + 1] : null;
       const { r, g, b } = includeEffects
-        ? effectiveRgb(cell, right, seed, idx)
+        ? effectiveRgb(cell, right, seed, idx, width)
         : hexToRgb(cell.color);
-
-      const dither = includeEffects && cell.effect && cell.effect.type === 'dither'
-        && cellSize >= 2;
-      if (dither && right && !isEmptyCell(right)) {
-        // Draw base in a 2x2 checker against the neighbour colour for a true
-        // dithered look when the cell is large enough to show sub pixels.
-        const n = hexToRgb(right.color);
-        const sub = cellSize / 2;
-        const base = `rgba(${hexToRgb(cell.color).r},${hexToRgb(cell.color).g},${hexToRgb(cell.color).b},${a})`;
-        const alt = `rgba(${n.r},${n.g},${n.b},${a})`;
-        const bx = x * cellSize;
-        const by = y * cellSize;
-        ctx.fillStyle = base;
-        ctx.fillRect(bx, by, Math.ceil(sub), Math.ceil(sub));
-        ctx.fillRect(bx + Math.floor(sub), by + Math.floor(sub), Math.ceil(sub), Math.ceil(sub));
-        ctx.fillStyle = alt;
-        ctx.fillRect(bx + Math.floor(sub), by, Math.ceil(sub), Math.ceil(sub));
-        ctx.fillRect(bx, by + Math.floor(sub), Math.ceil(sub), Math.ceil(sub));
-      } else {
-        ctx.fillStyle = `rgba(${r},${g},${b},${a})`;
-        ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
-      }
+      ctx.fillStyle = `rgba(${r},${g},${b},${a})`;
+      ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
     }
   }
 };
