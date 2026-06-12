@@ -12,12 +12,16 @@
  * @param {Object} props.handlers - layer action callbacks
  */
 
+import { useState } from 'react';
 import styles from './page.module.css';
 
 export default function LayersPanel({ layers, activeLayerId, handlers }) {
   const {
-    onSelect, onToggleVisible, onRename, onAdd, onDelete, onMoveUp, onMoveDown, onOpacity,
+    onSelect, onToggleVisible, onRename, onAdd, onDelete, onMoveUp, onMoveDown, onOpacity, onReorder,
   } = handlers;
+
+  const [dragIndex, setDragIndex] = useState(null);
+  const [overIndex, setOverIndex] = useState(null);
 
   // Display top layer first (last in array renders on top).
   const ordered = [...layers].map((l, i) => ({ layer: l, index: i })).reverse();
@@ -31,9 +35,32 @@ export default function LayersPanel({ layers, activeLayerId, handlers }) {
         {ordered.map(({ layer, index }) => (
           <div
             key={layer.id}
-            className={`${styles.layerRow} ${layer.id === activeLayerId ? styles.layerRowActive : ''}`}
+            className={`${styles.layerRow} ${layer.id === activeLayerId ? styles.layerRowActive : ''} ${overIndex === index && dragIndex !== null ? styles.layerRowDragOver : ''}`}
             onClick={() => onSelect(layer.id)}
+            onDragOver={(e) => { e.preventDefault(); if (overIndex !== index) setOverIndex(index); }}
+            onDrop={(e) => {
+              e.preventDefault();
+              const fromStr = e.dataTransfer.getData('text/plain');
+              const from = fromStr === '' ? dragIndex : Number(fromStr);
+              if (from != null && !Number.isNaN(from) && from !== index) onReorder(from, index);
+              setDragIndex(null);
+              setOverIndex(null);
+            }}
           >
+            <span
+              className={styles.dragHandle}
+              draggable
+              title="Drag to reorder"
+              onClick={(e) => e.stopPropagation()}
+              onDragStart={(e) => {
+                setDragIndex(index);
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', String(index));
+              }}
+              onDragEnd={() => { setDragIndex(null); setOverIndex(null); }}
+            >
+              ⠿
+            </span>
             <button
               type="button"
               className={styles.layerVis}

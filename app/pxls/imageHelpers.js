@@ -60,15 +60,21 @@ const containRect = (sw, sh, tw, th) => {
 
 /**
  * Downsamples an image into a cells array sized targetW * targetH. The image is
- * fit with "contain": the whole image is shown and any remaining area is left
+ * fit with "contain" by default; an optional scale and pixel offset let the user
+ * resize and reposition it before import. Areas the image does not cover stay
  * transparent (empty cells). Each block's averaged colour is kept as true
  * colour with its alpha.
  * @param {HTMLImageElement} img
  * @param {number} targetW
  * @param {number} targetH
+ * @param {Object} [opts]
+ * @param {number} [opts.scale=1] - multiplier on the contain fit size
+ * @param {number} [opts.offsetX=0] - horizontal offset in target pixels
+ * @param {number} [opts.offsetY=0] - vertical offset in target pixels
  * @returns {Object[]} cells (row major)
  */
-export const imageToCells = (img, targetW, targetH) => {
+export const imageToCells = (img, targetW, targetH, opts = {}) => {
+  const { scale = 1, offsetX = 0, offsetY = 0 } = opts;
   const canvas = document.createElement('canvas');
   canvas.width = targetW;
   canvas.height = targetH;
@@ -77,7 +83,11 @@ export const imageToCells = (img, targetW, targetH) => {
   ctx.imageSmoothingQuality = 'high';
   ctx.clearRect(0, 0, targetW, targetH);
 
-  const { dx, dy, dw, dh } = containRect(img.width, img.height, targetW, targetH);
+  const base = containRect(img.width, img.height, targetW, targetH);
+  const dw = base.dw * scale;
+  const dh = base.dh * scale;
+  const dx = (targetW - dw) / 2 + offsetX;
+  const dy = (targetH - dh) / 2 + offsetY;
   ctx.drawImage(img, dx, dy, dw, dh);
 
   const { data } = ctx.getImageData(0, 0, targetW, targetH);

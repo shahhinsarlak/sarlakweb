@@ -142,6 +142,13 @@ export default function PxlsEditor() {
       [layers[index], layers[index - 1]] = [layers[index - 1], layers[index]];
       return { ...p, layers };
     }),
+    onReorder: (from, to) => setProject((p) => {
+      if (from === to || from == null || to == null) return p;
+      const layers = [...p.layers];
+      const [moved] = layers.splice(from, 1);
+      layers.splice(to, 0, moved);
+      return { ...p, layers };
+    }),
     onOpacity: (id, opacity) => setProject((p) => ({
       ...p,
       layers: p.layers.map((l) => (l.id === id ? { ...l, opacity } : l)),

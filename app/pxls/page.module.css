@@ -358,6 +358,24 @@
   background: var(--pxls-active-soft);
 }
 
+.layerRowDragOver {
+  border-color: var(--accent-color);
+  border-style: dashed;
+}
+
+.dragHandle {
+  cursor: grab;
+  opacity: 0.5;
+  font-size: 0.85rem;
+  padding: 0 0.2rem;
+  user-select: none;
+  line-height: 1;
+}
+
+.dragHandle:active {
+  cursor: grabbing;
+}
+
 .layerVis {
   background: transparent;
   border: none;

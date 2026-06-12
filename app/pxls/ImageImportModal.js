@@ -28,6 +28,9 @@ export default function ImageImportModal({ project, onAddLayer, onClose }) {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [dragOver, setDragOver] = useState(false);
+  const [scale, setScale] = useState(100);
+  const [offsetX, setOffsetX] = useState(0);
+  const [offsetY, setOffsetY] = useState(0);
   const fileRef = useRef(null);
   const previewRef = useRef(null);
 
@@ -37,11 +40,15 @@ export default function ImageImportModal({ project, onAddLayer, onClose }) {
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
 
-  // Build the downsampled cells whenever the image changes.
+  // Build the downsampled cells whenever the image or its transform changes.
   useEffect(() => {
     if (!image) { setCells(null); return; }
-    setCells(imageToCells(image, canvasSize, canvasSize));
-  }, [image, canvasSize]);
+    setCells(imageToCells(image, canvasSize, canvasSize, {
+      scale: scale / 100,
+      offsetX: (offsetX / 100) * canvasSize,
+      offsetY: (offsetY / 100) * canvasSize,
+    }));
+  }, [image, canvasSize, scale, offsetX, offsetY]);
 
   // Render the preview.
   useEffect(() => {
@@ -61,6 +68,9 @@ export default function ImageImportModal({ project, onAddLayer, onClose }) {
     try {
       const img = await loadImageFile(file);
       setImage(img);
+      setScale(100);
+      setOffsetX(0);
+      setOffsetY(0);
       setFileName(file.name.replace(/\.[^.]+$/, ''));
     } catch (err) {
       setError(err.message);
@@ -143,6 +153,51 @@ export default function ImageImportModal({ project, onAddLayer, onClose }) {
             <div className={styles.previewWrap}>
               <canvas ref={previewRef} className={styles.previewCanvas} />
             </div>
+          </div>
+        )}
+
+        {cells && (
+          <div className={styles.field}>
+            <div className={styles.rangeRow}>
+              <span style={{ fontSize: '0.7rem', opacity: 0.7, width: 52 }}>Scale</span>
+              <input
+                type="range"
+                min={10}
+                max={400}
+                value={scale}
+                onChange={(e) => setScale(Number(e.target.value))}
+              />
+              <span style={{ fontSize: '0.7rem', width: 42, textAlign: 'right' }}>{scale}%</span>
+            </div>
+            <div className={styles.rangeRow}>
+              <span style={{ fontSize: '0.7rem', opacity: 0.7, width: 52 }}>Pos X</span>
+              <input
+                type="range"
+                min={-100}
+                max={100}
+                value={offsetX}
+                onChange={(e) => setOffsetX(Number(e.target.value))}
+              />
+              <span style={{ fontSize: '0.7rem', width: 42, textAlign: 'right' }}>{offsetX}%</span>
+            </div>
+            <div className={styles.rangeRow}>
+              <span style={{ fontSize: '0.7rem', opacity: 0.7, width: 52 }}>Pos Y</span>
+              <input
+                type="range"
+                min={-100}
+                max={100}
+                value={offsetY}
+                onChange={(e) => setOffsetY(Number(e.target.value))}
+              />
+              <span style={{ fontSize: '0.7rem', width: 42, textAlign: 'right' }}>{offsetY}%</span>
+            </div>
+            <button
+              type="button"
+              className={styles.iconBtn}
+              onClick={() => { setScale(100); setOffsetX(0); setOffsetY(0); }}
+            >
+              Reset transform
+            </button>
           </div>
         )}
 
