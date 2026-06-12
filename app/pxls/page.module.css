@@ -621,6 +621,9 @@
   max-width: 100%;
   width: 180px;
   height: auto;
+  /* Slight guide marking the canvas bounds against the transparency backdrop. */
+  outline: 1px dashed var(--accent-color);
+  outline-offset: 0;
 }
 
 /* Gallery */

@@ -163,7 +163,7 @@ export default function ImageImportModal({ project, onAddLayer, onClose }) {
               <input
                 type="range"
                 min={10}
-                max={400}
+                max={1000}
                 value={scale}
                 onChange={(e) => setScale(Number(e.target.value))}
               />
