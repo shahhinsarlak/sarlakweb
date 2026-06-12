@@ -1,6 +1,7 @@
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import PxlsEditor from './PxlsEditor';
+import styles from './page.module.css';
 
 export const metadata = {
   title: 'PXLS — SARLAK',
@@ -11,8 +12,8 @@ export default function PxlsPage() {
   return (
     <>
       <Header />
-      <div className="container">
-        <main className="main-content">
+      <div className={styles.pageWrap}>
+        <main>
           <PxlsEditor />
         </main>
         <Footer />
