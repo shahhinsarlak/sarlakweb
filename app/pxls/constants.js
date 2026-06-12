@@ -44,11 +44,12 @@ export const TOOLS = {
   ellipse: { id: 'ellipse', name: 'Ellipse', shortcut: 'O' },
   move: { id: 'move', name: 'Move', shortcut: 'M' },
   effects: { id: 'effects', name: 'Effects', shortcut: 'F' },
+  shade: { id: 'shade', name: 'Shade', shortcut: 'S' },
 };
 
 export const TOOL_ORDER = [
   'pencil', 'eraser', 'eyedropper', 'fill',
-  'line', 'rect', 'ellipse', 'move', 'effects',
+  'line', 'rect', 'ellipse', 'move', 'effects', 'shade',
 ];
 
 export const MIRROR_MODES = ['none', 'x', 'y', 'both'];

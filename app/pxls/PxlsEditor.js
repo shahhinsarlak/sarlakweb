@@ -14,6 +14,7 @@ import Toolbar from './Toolbar';
 import ColorPanel from './ColorPanel';
 import LayersPanel from './LayersPanel';
 import EffectsPanel from './EffectsPanel';
+import ShadePanel from './ShadePanel';
 import ExportModal from './ExportModal';
 import ImageImportModal from './ImageImportModal';
 import ProjectGallery from './ProjectGallery';
@@ -25,6 +26,7 @@ import {
   createProject, createLayer, createLayerFromCells, getActiveLayer, validateProject, cloneCells,
 } from './pxlsModel';
 import { saveProject, getLastOpenId, listProjects } from './storageHelpers';
+import { applyShading } from './shadingHelpers';
 import { TOOLS, TOOL_ORDER, MIRROR_MODES, MIN_BRUSH, MAX_BRUSH } from './constants';
 import styles from './page.module.css';
 
@@ -41,6 +43,8 @@ export default function PxlsEditor() {
   const [effect, setEffect] = useState(null);
   const [brushSize, setBrushSize] = useState(1);
   const [mirror, setMirror] = useState('none');
+  const [light, setLight] = useState({ fx: 0.25, fy: 0.2 });
+  const [shadeStrength, setShadeStrength] = useState(0.5);
   const [history, setHistory] = useState(createHistory());
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
@@ -198,6 +202,20 @@ export default function PxlsEditor() {
     });
   };
 
+  const handleApplyShading = () => {
+    const layer = getActiveLayer(projectRef.current);
+    if (!layer) return;
+    pushHistory();
+    const shaded = applyShading(
+      layer.cells,
+      { width: project.width, height: project.height },
+      light.fx * project.width,
+      light.fy * project.height,
+      shadeStrength,
+    );
+    setActiveCells(shaded);
+  };
+
   // --- Keyboard shortcuts ----------------------------------------------------
 
   useEffect(() => {
@@ -295,6 +313,8 @@ export default function PxlsEditor() {
           <Canvas
             project={project}
             brush={brush}
+            light={light}
+            onLightMove={(fx, fy) => setLight({ fx, fy })}
             onPushHistory={pushHistory}
             onSetCells={setActiveCells}
             onEyedrop={handleEyedrop}
@@ -317,6 +337,15 @@ export default function PxlsEditor() {
             onAddSwatch={handleAddSwatch}
           />
           <EffectsPanel effect={effect} onEffect={setEffect} />
+          {activeTool === 'shade' && (
+            <ShadePanel
+              strength={shadeStrength}
+              onStrength={setShadeStrength}
+              light={light}
+              onApply={handleApplyShading}
+              onResetLight={() => setLight({ fx: 0.25, fy: 0.2 })}
+            />
+          )}
           <LayersPanel
             layers={project.layers}
             activeLayerId={project.activeLayerId}

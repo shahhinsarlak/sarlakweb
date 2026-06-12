@@ -28,7 +28,9 @@ import styles from './page.module.css';
 
 const TARGET_PX = 512;
 
-export default function Canvas({ project, brush, onPushHistory, onSetCells, onEyedrop, onHover }) {
+export default function Canvas({
+  project, brush, light, onLightMove, onPushHistory, onSetCells, onEyedrop, onHover,
+}) {
   const bgRef = useRef(null);
   const artRef = useRef(null);
   const overlayRef = useRef(null);
@@ -111,7 +113,7 @@ export default function Canvas({ project, brush, onPushHistory, onSetCells, onEy
     // stays visible (and follows the cursor) while drawing freehand.
     const hov = hoverRef.current;
     const showCursor = (!drag.current || drag.current.mode === 'freehand')
-      && hov.x >= 0 && hov.y >= 0 && brush.tool !== 'move';
+      && hov.x >= 0 && hov.y >= 0 && brush.tool !== 'move' && brush.tool !== 'shade';
     if (showCursor) {
       const sized = brush.tool === 'pencil' || brush.tool === 'eraser' || brush.tool === 'effects';
       const footSize = sized ? brush.size : 1;
@@ -144,7 +146,32 @@ export default function Canvas({ project, brush, onPushHistory, onSetCells, onEy
       );
       ctx.setLineDash([]);
     }
-  }, [pxW, pxH, internalCell, width, height, selection, brush.mirror, brush.size, brush.tool]);
+
+    // Light source marker (Shade tool only).
+    if (brush.tool === 'shade' && light) {
+      const lx = light.fx * pxW;
+      const ly = light.fy * pxH;
+      const r = Math.max(7, internalCell * 0.9);
+      ctx.save();
+      const glow = ctx.createRadialGradient(lx, ly, 0, lx, ly, r * 2.2);
+      glow.addColorStop(0, 'rgba(255, 236, 39, 0.55)');
+      glow.addColorStop(1, 'rgba(255, 236, 39, 0)');
+      ctx.fillStyle = glow;
+      ctx.fillRect(lx - r * 2.2, ly - r * 2.2, r * 4.4, r * 4.4);
+      ctx.beginPath();
+      ctx.arc(lx, ly, r, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255, 236, 39, 0.95)';
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = 'rgba(0,0,0,0.7)';
+      ctx.stroke();
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+      ctx.stroke();
+      ctx.restore();
+    }
+  }, [pxW, pxH, internalCell, width, height, selection,
+    brush.mirror, brush.size, brush.tool, light]);
 
   useEffect(() => {
     renderOverlay(null);
@@ -212,6 +239,17 @@ export default function Canvas({ project, brush, onPushHistory, onSetCells, onEy
     }
     if (e.button !== 0) return;
     try { e.target.setPointerCapture(e.pointerId); } catch { /* synthetic / inactive pointer */ }
+
+    // Shade tool: left drag positions the light source (anywhere on the canvas).
+    if (brush.tool === 'shade') {
+      const rect = artRef.current.getBoundingClientRect();
+      const fx = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+      const fy = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
+      onLightMove(fx, fy);
+      drag.current = { mode: 'light' };
+      return;
+    }
+
     const { x, y } = eventToCell(e);
     if (x < 0 || y < 0 || x >= width || y >= height) return;
     const tool = brush.tool;
@@ -260,6 +298,13 @@ export default function Canvas({ project, brush, onPushHistory, onSetCells, onEy
       setView((prev) => ({ ...prev, x: prev.x + dx, y: prev.y + dy }));
       return;
     }
+    if (drag.current && drag.current.mode === 'light') {
+      const rect = artRef.current.getBoundingClientRect();
+      const fx = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+      const fy = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
+      onLightMove(fx, fy);
+      return;
+    }
     const { x, y } = eventToCell(e);
     if (onHover) onHover(x, y);
     const inBoundsCell = x >= 0 && y >= 0 && x < width && y < height;
@@ -297,7 +342,7 @@ export default function Canvas({ project, brush, onPushHistory, onSetCells, onEy
   const handlePointerUp = (e) => {
     const d = drag.current;
     if (!d) return;
-    if (d.mode === 'pan') {
+    if (d.mode === 'pan' || d.mode === 'light') {
       drag.current = null;
       return;
     }
