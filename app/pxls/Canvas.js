@@ -22,7 +22,7 @@ import {
   applyBrush, floodFill, linePoints, rectPoints, ellipsePoints, stampPoints,
   extractBlock, clearRegion, pasteBlock, mirrorPoints,
 } from './drawHelpers';
-import { compositeToCanvas, drawGrid, drawCheckerboard } from './renderHelpers';
+import { compositeToCanvas, drawCheckerboard } from './renderHelpers';
 import { getActiveLayer } from './pxlsModel';
 import styles from './page.module.css';
 
@@ -79,9 +79,6 @@ export default function Canvas({ project, brush, onPushHistory, onSetCells, onEy
     if (overlay.height !== pxH) overlay.height = pxH;
     const ctx = overlay.getContext('2d');
     ctx.clearRect(0, 0, pxW, pxH);
-    if (internalCell >= 4) {
-      drawGrid(ctx, { width, height }, internalCell, 'rgba(127,127,127,0.28)');
-    }
 
     // Mirror / symmetry axes: green lines showing where reflection happens.
     if (brush.mirror !== 'none') {
@@ -110,9 +107,12 @@ export default function Canvas({ project, brush, onPushHistory, onSetCells, onEy
       }
     }
 
-    // Brush cursor: outline of the footprint about to be painted, mirrored.
+    // Brush cursor: outline of the footprint about to be painted, mirrored. It
+    // stays visible (and follows the cursor) while drawing freehand.
     const hov = hoverRef.current;
-    if (!drag.current && hov.x >= 0 && hov.y >= 0 && brush.tool !== 'move') {
+    const showCursor = (!drag.current || drag.current.mode === 'freehand')
+      && hov.x >= 0 && hov.y >= 0 && brush.tool !== 'move';
+    if (showCursor) {
       const sized = brush.tool === 'pencil' || brush.tool === 'eraser' || brush.tool === 'effects';
       const footSize = sized ? brush.size : 1;
       const half = Math.floor((footSize - 1) / 2);
@@ -274,6 +274,7 @@ export default function Canvas({ project, brush, onPushHistory, onSetCells, onEy
     if (d.mode === 'freehand') {
       if (!inBoundsCell) return;
       freehand(x, y);
+      renderOverlay(null);
     } else if (d.mode === 'shape') {
       renderOverlay(shapePreview(d.start, { x, y }, d.tool));
     } else if (d.mode === 'select') {
