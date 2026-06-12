@@ -3,10 +3,11 @@
 /**
  * PXLS Canvas
  *
- * Renders the project onto stacked canvases (transparency backdrop, art, and a
- * grid + shape preview overlay) and translates pointer input into draw helper
- * calls. Shape tools (line, rect, ellipse) preview on the overlay and commit on
- * release. The move tool lifts a selected block and repositions it.
+ * Renders the project onto stacked canvases (transparency backdrop, art, and an
+ * overlay for cursors, shape previews and selections) and translates pointer
+ * input into draw helper calls. Shape tools preview on the overlay and commit on
+ * release. The select tool marquees the active layer's pixels, lets them float
+ * and be moved, and commits them back into the layer when the user clicks off.
  *
  * @param {Object} props
  * @param {Object} props.project
@@ -20,7 +21,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import {
   applyBrush, floodFill, linePoints, rectPoints, ellipsePoints, stampPoints,
-  extractBlock, clearRegion, pasteBlock, mirrorPoints,
+  collectSelectedPixels, removePixelsAt, pastePixelsAt, mirrorPoints,
 } from './drawHelpers';
 import { compositeToCanvas, drawCheckerboard } from './renderHelpers';
 import { getActiveLayer, cloneCells, isEmptyCell } from './pxlsModel';
@@ -46,8 +47,8 @@ export default function Canvas({
 
   // Interaction state held in a ref so pointer handlers see fresh values.
   const drag = useRef(null);
-  const [selection, setSelection] = useState(null); // { x, y, w, h }
-  const float = useRef(null); // { block, bw, bh, baseCells, ox, oy }
+  const [marquee, setMarquee] = useState(null); // { x, y, w, h } while dragging a rect
+  const [sel, setSel] = useState(null); // floating selection { pixels, ax, ay, w, h, baseCells }
   const hoverRef = useRef({ x: -1, y: -1 });
   const shadeStroke = useRef(null); // { source, working, lx, ly, dmin, dmax, last }
   // Pan / zoom of the canvas viewport. transformOrigin is the top left corner.
@@ -116,7 +117,7 @@ export default function Canvas({
     // stays visible (and follows the cursor) while drawing freehand.
     const hov = hoverRef.current;
     const showCursor = (!drag.current || drag.current.mode === 'freehand' || drag.current.mode === 'shadeBrush')
-      && hov.x >= 0 && hov.y >= 0 && brush.tool !== 'move'
+      && hov.x >= 0 && hov.y >= 0 && brush.tool !== 'select'
       && (brush.tool !== 'shade' || shadeLocked);
     if (showCursor) {
       const sized = brush.tool === 'pencil' || brush.tool === 'eraser'
@@ -139,16 +140,46 @@ export default function Canvas({
       }
     }
 
-    if (selection) {
-      ctx.strokeStyle = '#ff004d';
+    // Selection marquee while dragging the rectangle.
+    if (marquee) {
+      ctx.strokeStyle = 'rgba(255,0,77,0.9)';
       ctx.lineWidth = 1;
       ctx.setLineDash([4, 3]);
       ctx.strokeRect(
-        selection.x * internalCell + 0.5,
-        selection.y * internalCell + 0.5,
-        selection.w * internalCell,
-        selection.h * internalCell,
+        marquee.x * internalCell + 0.5,
+        marquee.y * internalCell + 0.5,
+        marquee.w * internalCell,
+        marquee.h * internalCell,
       );
+      ctx.setLineDash([]);
+    }
+
+    // Floating selection: outline the silhouette of the selected pixels.
+    if (sel) {
+      const has = new Set(sel.pixels.map((p) => `${sel.ax + p.dx},${sel.ay + p.dy}`));
+      const ic = internalCell;
+      const trace = () => {
+        ctx.beginPath();
+        for (const p of sel.pixels) {
+          const x = sel.ax + p.dx;
+          const y = sel.ay + p.dy;
+          const px = x * ic;
+          const py = y * ic;
+          if (!has.has(`${x},${y - 1}`)) { ctx.moveTo(px, py); ctx.lineTo(px + ic, py); }
+          if (!has.has(`${x},${y + 1}`)) { ctx.moveTo(px, py + ic); ctx.lineTo(px + ic, py + ic); }
+          if (!has.has(`${x - 1},${y}`)) { ctx.moveTo(px, py); ctx.lineTo(px, py + ic); }
+          if (!has.has(`${x + 1},${y}`)) { ctx.moveTo(px + ic, py); ctx.lineTo(px + ic, py + ic); }
+        }
+      };
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = 'rgba(0,0,0,0.8)';
+      trace();
+      ctx.stroke();
+      ctx.lineWidth = 1;
+      ctx.setLineDash([3, 3]);
+      ctx.strokeStyle = 'rgba(255,255,255,0.95)';
+      trace();
+      ctx.stroke();
       ctx.setLineDash([]);
     }
 
@@ -175,7 +206,7 @@ export default function Canvas({
       ctx.stroke();
       ctx.restore();
     }
-  }, [pxW, pxH, internalCell, width, height, selection,
+  }, [pxW, pxH, internalCell, width, height, marquee, sel,
     brush.mirror, brush.size, brush.tool, light, shadeLocked]);
 
   useEffect(() => {
@@ -299,20 +330,29 @@ export default function Canvas({
       return;
     }
 
-    if (tool === 'move') {
-      // If a lifted block exists and we click inside the selection, start moving.
-      if (selection && x >= selection.x && x < selection.x + selection.w
-        && y >= selection.y && y < selection.y + selection.h) {
-        const dims = { width, height };
-        const block = extractBlock(activeLayer.cells, dims, selection.x, selection.y, selection.w, selection.h);
-        const baseCells = clearRegion(activeLayer.cells, dims, selection.x, selection.y, selection.w, selection.h);
-        onPushHistory();
-        float.current = { block, bw: selection.w, bh: selection.h, baseCells, startX: x, startY: y, selX: selection.x, selY: selection.y };
-        drag.current = { mode: 'move' };
-      } else {
-        drag.current = { mode: 'select', start: { x, y } };
-        setSelection({ x, y, w: 1, h: 1 });
+    if (tool === 'select') {
+      const dims = { width, height };
+      // Grabbing inside an existing selection starts moving it (lifting it the
+      // first time, which cuts it from the layer until the user clicks off).
+      if (sel && x >= sel.ax && x < sel.ax + sel.w && y >= sel.ay && y < sel.ay + sel.h) {
+        let base = sel.baseCells;
+        if (!base) {
+          onPushHistory();
+          base = removePixelsAt(activeLayer.cells, dims, sel.pixels, sel.ax, sel.ay);
+          onSetCells(pastePixelsAt(base, dims, sel.pixels, sel.ax, sel.ay));
+          setSel({ ...sel, baseCells: base });
+        }
+        drag.current = {
+          mode: 'selMove', pixels: sel.pixels, baseCells: base,
+          ax0: sel.ax, ay0: sel.ay, grabX: x, grabY: y,
+        };
+        return;
       }
+      // Clicking off an existing selection commits it (it is already baked into
+      // the layer at its current position) and begins a fresh marquee.
+      if (sel) setSel(null);
+      drag.current = { mode: 'marquee', start: { x, y } };
+      setMarquee({ x, y, w: 1, h: 1 });
       return;
     }
 
@@ -372,20 +412,18 @@ export default function Canvas({
       renderOverlay(null);
     } else if (d.mode === 'shape') {
       renderOverlay(shapePreview(d.start, { x, y }, d.tool));
-    } else if (d.mode === 'select') {
+    } else if (d.mode === 'marquee') {
       const nx = Math.max(0, Math.min(x, width - 1));
       const ny = Math.max(0, Math.min(y, height - 1));
       const sx = Math.min(d.start.x, nx);
       const sy = Math.min(d.start.y, ny);
-      setSelection({ x: sx, y: sy, w: Math.abs(nx - d.start.x) + 1, h: Math.abs(ny - d.start.y) + 1 });
-    } else if (d.mode === 'move' && float.current) {
-      const f = float.current;
-      const dx = x - f.startX;
-      const dy = y - f.startY;
+      setMarquee({ x: sx, y: sy, w: Math.abs(nx - d.start.x) + 1, h: Math.abs(ny - d.start.y) + 1 });
+    } else if (d.mode === 'selMove') {
       const dims = { width, height };
-      const moved = pasteBlock(f.baseCells, dims, f.block, f.bw, f.bh, f.selX + dx, f.selY + dy);
-      onSetCells(moved);
-      setSelection({ x: f.selX + dx, y: f.selY + dy, w: f.bw, h: f.bh });
+      const nax = d.ax0 + (x - d.grabX);
+      const nay = d.ay0 + (y - d.grabY);
+      onSetCells(pastePixelsAt(d.baseCells, dims, d.pixels, nax, nay));
+      setSel((s) => (s ? { ...s, ax: nax, ay: nay } : s));
     }
   };
 
@@ -410,22 +448,30 @@ export default function Canvas({
         onSetCells(stampPoints(activeLayer.cells, { width, height }, points, brush));
       }
       renderOverlay(null);
-    } else if (d.mode === 'move' && float.current) {
-      const f = float.current;
-      const dx = x - f.startX;
-      const dy = y - f.startY;
-      float.current = { ...f, selX: f.selX + dx, selY: f.selY + dy, startX: 0, startY: 0 };
+    } else if (d.mode === 'marquee') {
+      // Finalise the selection: only the active (non-empty) pixels inside the
+      // rectangle become a movable selection.
+      setMarquee(null);
+      const nx = Math.max(0, Math.min(x, width - 1));
+      const ny = Math.max(0, Math.min(y, height - 1));
+      const rx = Math.min(d.start.x, nx);
+      const ry = Math.min(d.start.y, ny);
+      const rw = Math.abs(nx - d.start.x) + 1;
+      const rh = Math.abs(ny - d.start.y) + 1;
+      setSel(collectSelectedPixels(activeLayer.cells, { width, height }, rx, ry, rw, rh));
     }
+    // selMove just ends here: the selection stays floating until clicked off.
     drag.current = null;
   };
 
-  // Clear selection when leaving the move tool.
+  // Leaving the select tool commits any floating selection (it is already baked
+  // into the layer at its current position) and clears the marquee.
   useEffect(() => {
-    if (brush.tool !== 'move' && selection) {
-      setSelection(null);
-      float.current = null;
+    if (brush.tool !== 'select' && (sel || marquee)) {
+      setSel(null);
+      setMarquee(null);
     }
-  }, [brush.tool, selection]);
+  }, [brush.tool, sel, marquee]);
 
   return (
     <>

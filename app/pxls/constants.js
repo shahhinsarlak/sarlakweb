@@ -42,14 +42,14 @@ export const TOOLS = {
   line: { id: 'line', name: 'Line', shortcut: 'L' },
   rect: { id: 'rect', name: 'Rectangle', shortcut: 'R' },
   ellipse: { id: 'ellipse', name: 'Ellipse', shortcut: 'O' },
-  move: { id: 'move', name: 'Move', shortcut: 'M' },
+  select: { id: 'select', name: 'Select', shortcut: 'V' },
   effects: { id: 'effects', name: 'Effects', shortcut: 'F' },
   shade: { id: 'shade', name: 'Shade', shortcut: 'S' },
 };
 
 export const TOOL_ORDER = [
   'pencil', 'eraser', 'eyedropper', 'fill',
-  'line', 'rect', 'ellipse', 'move', 'effects', 'shade',
+  'line', 'rect', 'ellipse', 'select', 'effects', 'shade',
 ];
 
 export const MIRROR_MODES = ['none', 'x', 'y', 'both'];

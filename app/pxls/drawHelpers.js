@@ -252,21 +252,78 @@ export const clearRegion = (cells, dims, rx, ry, rw, rh) => {
 };
 
 /**
- * Pastes a block of cells at a destination, skipping empty block cells.
- * @returns {Object[]} new cells
+ * Collects the non-empty pixels of a layer inside a rectangle as a movable
+ * selection, using a tight bounding box around the selected pixels.
+ * @param {Object[]} cells
+ * @param {Object} dims - { width, height }
+ * @param {number} rx
+ * @param {number} ry
+ * @param {number} rw
+ * @param {number} rh
+ * @returns {Object|null} { pixels: [{dx,dy,cell}], ax, ay, w, h, baseCells: null }
  */
-export const pasteBlock = (cells, dims, block, bw, bh, dx, dy) => {
+export const collectSelectedPixels = (cells, dims, rx, ry, rw, rh) => {
+  const { width, height } = dims;
+  const found = [];
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (let y = ry; y < ry + rh; y += 1) {
+    for (let x = rx; x < rx + rw; x += 1) {
+      if (!inBounds(x, y, width, height)) continue;
+      const cell = cells[y * width + x];
+      if (isEmptyCell(cell)) continue;
+      found.push({ x, y, cell: { ...cell } });
+      if (x < minX) minX = x;
+      if (y < minY) minY = y;
+      if (x > maxX) maxX = x;
+      if (y > maxY) maxY = y;
+    }
+  }
+  if (found.length === 0) return null;
+  const pixels = found.map((p) => ({ dx: p.x - minX, dy: p.y - minY, cell: p.cell }));
+  return { pixels, ax: minX, ay: minY, w: maxX - minX + 1, h: maxY - minY + 1, baseCells: null };
+};
+
+/**
+ * Returns new cells with the given selection pixels removed (set empty).
+ * @param {Object[]} cells
+ * @param {Object} dims - { width, height }
+ * @param {Array<{dx:number,dy:number}>} pixels
+ * @param {number} ax - anchor x
+ * @param {number} ay - anchor y
+ * @returns {Object[]}
+ */
+export const removePixelsAt = (cells, dims, pixels, ax, ay) => {
   const { width, height } = dims;
   const next = cells.slice();
-  for (let y = 0; y < bh; y += 1) {
-    for (let x = 0; x < bw; x += 1) {
-      const cell = block[y * bw + x];
-      if (isEmptyCell(cell)) continue;
-      const px = dx + x;
-      const py = dy + y;
-      if (!inBounds(px, py, width, height)) continue;
-      next[py * width + px] = { ...cell };
-    }
+  for (const p of pixels) {
+    const x = ax + p.dx;
+    const y = ay + p.dy;
+    if (inBounds(x, y, width, height)) next[y * width + x] = emptyCell();
   }
   return next;
 };
+
+/**
+ * Returns new cells with the selection pixels pasted at an anchor (clipped).
+ * @param {Object[]} cells
+ * @param {Object} dims - { width, height }
+ * @param {Array<{dx:number,dy:number,cell:Object}>} pixels
+ * @param {number} ax
+ * @param {number} ay
+ * @returns {Object[]}
+ */
+export const pastePixelsAt = (cells, dims, pixels, ax, ay) => {
+  const { width, height } = dims;
+  const next = cells.slice();
+  for (const p of pixels) {
+    if (isEmptyCell(p.cell)) continue;
+    const x = ax + p.dx;
+    const y = ay + p.dy;
+    if (inBounds(x, y, width, height)) next[y * width + x] = { ...p.cell };
+  }
+  return next;
+};
+
