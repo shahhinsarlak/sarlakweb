@@ -45,6 +45,7 @@ export default function PxlsEditor() {
   const [mirror, setMirror] = useState('none');
   const [light, setLight] = useState({ fx: 0.25, fy: 0.2 });
   const [shadeStrength, setShadeStrength] = useState(0.5);
+  const [shadeLocked, setShadeLocked] = useState(false);
   const [history, setHistory] = useState(createHistory());
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
@@ -315,6 +316,8 @@ export default function PxlsEditor() {
             brush={brush}
             light={light}
             onLightMove={(fx, fy) => setLight({ fx, fy })}
+            shadeLocked={shadeLocked}
+            shadeStrength={shadeStrength}
             onPushHistory={pushHistory}
             onSetCells={setActiveCells}
             onEyedrop={handleEyedrop}
@@ -342,6 +345,8 @@ export default function PxlsEditor() {
               strength={shadeStrength}
               onStrength={setShadeStrength}
               light={light}
+              locked={shadeLocked}
+              onToggleLock={() => setShadeLocked((v) => !v)}
               onApply={handleApplyShading}
               onResetLight={() => setLight({ fx: 0.25, fy: 0.2 })}
             />

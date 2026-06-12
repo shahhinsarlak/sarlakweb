@@ -11,21 +11,36 @@
  * @param {number} props.strength - 0..1
  * @param {Function} props.onStrength - (0..1) => void
  * @param {Object} props.light - { fx, fy } normalised 0..1
+ * @param {boolean} props.locked
+ * @param {Function} props.onToggleLock
  * @param {Function} props.onApply
  * @param {Function} props.onResetLight
  */
 
 import styles from './page.module.css';
 
-export default function ShadePanel({ strength, onStrength, light, onApply, onResetLight }) {
+export default function ShadePanel({
+  strength, onStrength, light, locked, onToggleLock, onApply, onResetLight,
+}) {
   return (
     <div className={styles.panel}>
       <div className={styles.panelTitle}>Shade</div>
 
       <p className={styles.effectDesc}>
-        Drag the light on the canvas. Pixels nearest the light are lightened,
-        the farthest are darkened. Apply bakes it into the active layer.
+        {locked
+          ? 'Light locked. Brush over pixels to paint shading from the light.'
+          : 'Drag the light on the canvas to position it, then lock it to brush shading on.'}
       </p>
+
+      <div className={styles.effectBtnRow}>
+        <button
+          type="button"
+          className={`${styles.effectBtn} ${locked ? styles.effectBtnActive : ''}`}
+          onClick={onToggleLock}
+        >
+          {locked ? 'Light locked' : 'Lock light'}
+        </button>
+      </div>
 
       <div className={styles.rangeRow}>
         <span style={{ fontSize: '0.7rem', opacity: 0.7, width: 56 }}>Strength</span>

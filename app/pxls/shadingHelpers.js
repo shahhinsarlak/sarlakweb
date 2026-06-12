@@ -33,6 +33,52 @@ export const shadeColor = (hex, shift) => {
 };
 
 /**
+ * Computes the min/max distance of painted cells to the light. Used so brushed
+ * shading matches the whole layer Apply (same normalisation).
+ * @param {Object[]} cells
+ * @param {Object} dims - { width, height }
+ * @param {number} lx
+ * @param {number} ly
+ * @returns {{ dmin: number, dmax: number }}
+ */
+export const computeShadeRange = (cells, dims, lx, ly) => {
+  const { width } = dims;
+  let dmin = Infinity;
+  let dmax = -Infinity;
+  for (let i = 0; i < cells.length; i += 1) {
+    if (isEmptyCell(cells[i])) continue;
+    const x = i % width;
+    const y = Math.floor(i / width);
+    const dx = x + 0.5 - lx;
+    const dy = y + 0.5 - ly;
+    const d = Math.sqrt(dx * dx + dy * dy);
+    if (d < dmin) dmin = d;
+    if (d > dmax) dmax = d;
+  }
+  if (dmax < 0) return { dmin: 0, dmax: 1 };
+  return { dmin, dmax: dmax === dmin ? dmin + 1 : dmax };
+};
+
+/**
+ * Returns the lighten/darken shift for a single cell given a light and range.
+ * @param {number} x - cell x
+ * @param {number} y - cell y
+ * @param {number} lx
+ * @param {number} ly
+ * @param {number} dmin
+ * @param {number} dmax
+ * @param {number} strength - 0..1
+ * @returns {number} shift in -strength..strength
+ */
+export const shadeShiftAt = (x, y, lx, ly, dmin, dmax, strength) => {
+  const dx = x + 0.5 - lx;
+  const dy = y + 0.5 - ly;
+  const d = Math.sqrt(dx * dx + dy * dy);
+  const t = (d - dmin) / (dmax - dmin);
+  return strength * (1 - 2 * t);
+};
+
+/**
  * Bakes distance based shading into a layer's cells.
  * @param {Object[]} cells
  * @param {Object} dims - { width, height }

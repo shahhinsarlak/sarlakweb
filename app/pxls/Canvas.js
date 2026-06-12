@@ -23,13 +23,15 @@ import {
   extractBlock, clearRegion, pasteBlock, mirrorPoints,
 } from './drawHelpers';
 import { compositeToCanvas, drawCheckerboard } from './renderHelpers';
-import { getActiveLayer } from './pxlsModel';
+import { getActiveLayer, cloneCells, isEmptyCell } from './pxlsModel';
+import { computeShadeRange, shadeShiftAt, shadeColor } from './shadingHelpers';
 import styles from './page.module.css';
 
 const TARGET_PX = 512;
 
 export default function Canvas({
-  project, brush, light, onLightMove, onPushHistory, onSetCells, onEyedrop, onHover,
+  project, brush, light, onLightMove, shadeLocked, shadeStrength,
+  onPushHistory, onSetCells, onEyedrop, onHover,
 }) {
   const bgRef = useRef(null);
   const artRef = useRef(null);
@@ -47,6 +49,7 @@ export default function Canvas({
   const [selection, setSelection] = useState(null); // { x, y, w, h }
   const float = useRef(null); // { block, bw, bh, baseCells, ox, oy }
   const hoverRef = useRef({ x: -1, y: -1 });
+  const shadeStroke = useRef(null); // { source, working, lx, ly, dmin, dmax, last }
   // Pan / zoom of the canvas viewport. transformOrigin is the top left corner.
   const [view, setView] = useState({ zoom: 1, x: 0, y: 0 });
 
@@ -112,10 +115,12 @@ export default function Canvas({
     // Brush cursor: outline of the footprint about to be painted, mirrored. It
     // stays visible (and follows the cursor) while drawing freehand.
     const hov = hoverRef.current;
-    const showCursor = (!drag.current || drag.current.mode === 'freehand')
-      && hov.x >= 0 && hov.y >= 0 && brush.tool !== 'move' && brush.tool !== 'shade';
+    const showCursor = (!drag.current || drag.current.mode === 'freehand' || drag.current.mode === 'shadeBrush')
+      && hov.x >= 0 && hov.y >= 0 && brush.tool !== 'move'
+      && (brush.tool !== 'shade' || shadeLocked);
     if (showCursor) {
-      const sized = brush.tool === 'pencil' || brush.tool === 'eraser' || brush.tool === 'effects';
+      const sized = brush.tool === 'pencil' || brush.tool === 'eraser'
+        || brush.tool === 'effects' || brush.tool === 'shade';
       const footSize = sized ? brush.size : 1;
       const half = Math.floor((footSize - 1) / 2);
       const drawOutline = (cx, cy) => {
@@ -171,7 +176,7 @@ export default function Canvas({
       ctx.restore();
     }
   }, [pxW, pxH, internalCell, width, height, selection,
-    brush.mirror, brush.size, brush.tool, light]);
+    brush.mirror, brush.size, brush.tool, light, shadeLocked]);
 
   useEffect(() => {
     renderOverlay(null);
@@ -203,6 +208,28 @@ export default function Canvas({
     vp.addEventListener('wheel', onWheel, { passive: false });
     return () => vp.removeEventListener('wheel', onWheel);
   }, []);
+
+  /** Bakes shading from the locked light into the brush footprint at a cell. */
+  const shadeDab = (cx, cy) => {
+    const st = shadeStroke.current;
+    if (!st) return;
+    const half = Math.floor((brush.size - 1) / 2);
+    for (let dy = -half; dy <= brush.size - 1 - half; dy += 1) {
+      for (let dx = -half; dx <= brush.size - 1 - half; dx += 1) {
+        const px = cx + dx;
+        const py = cy + dy;
+        for (const [mx, my] of mirrorPoints(px, py, width, height, brush.mirror)) {
+          if (mx < 0 || my < 0 || mx >= width || my >= height) continue;
+          const idx = my * width + mx;
+          const src = st.source[idx];
+          if (isEmptyCell(src)) continue;
+          const shift = shadeShiftAt(mx, my, st.lx, st.ly, st.dmin, st.dmax, shadeStrength);
+          st.working[idx] = { ...src, color: shadeColor(src.color, shift) };
+        }
+      }
+    }
+    onSetCells(st.working.slice());
+  };
 
   /** Commits a freehand dab and tracks last position for gap free strokes. */
   const freehand = (x, y) => {
@@ -240,13 +267,26 @@ export default function Canvas({
     if (e.button !== 0) return;
     try { e.target.setPointerCapture(e.pointerId); } catch { /* synthetic / inactive pointer */ }
 
-    // Shade tool: left drag positions the light source (anywhere on the canvas).
+    // Shade tool: unlocked light is dragged; locked light brushes shading on.
     if (brush.tool === 'shade') {
-      const rect = artRef.current.getBoundingClientRect();
-      const fx = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-      const fy = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
-      onLightMove(fx, fy);
-      drag.current = { mode: 'light' };
+      if (!shadeLocked) {
+        const rect = artRef.current.getBoundingClientRect();
+        const fx = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+        const fy = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
+        onLightMove(fx, fy);
+        drag.current = { mode: 'light' };
+        return;
+      }
+      const { x: sx, y: sy } = eventToCell(e);
+      if (sx < 0 || sy < 0 || sx >= width || sy >= height) return;
+      onPushHistory();
+      const source = activeLayer.cells;
+      const lx = light.fx * width;
+      const ly = light.fy * height;
+      const { dmin, dmax } = computeShadeRange(source, { width, height }, lx, ly);
+      shadeStroke.current = { source, working: cloneCells(source), lx, ly, dmin, dmax, last: [sx, sy] };
+      drag.current = { mode: 'shadeBrush' };
+      shadeDab(sx, sy);
       return;
     }
 
@@ -320,6 +360,16 @@ export default function Canvas({
       if (!inBoundsCell) return;
       freehand(x, y);
       renderOverlay(null);
+    } else if (d.mode === 'shadeBrush') {
+      if (!inBoundsCell) return;
+      const st = shadeStroke.current;
+      if (st && st.last) {
+        for (const [px, py] of linePoints(st.last[0], st.last[1], x, y)) shadeDab(px, py);
+      } else {
+        shadeDab(x, y);
+      }
+      if (st) st.last = [x, y];
+      renderOverlay(null);
     } else if (d.mode === 'shape') {
       renderOverlay(shapePreview(d.start, { x, y }, d.tool));
     } else if (d.mode === 'select') {
@@ -344,6 +394,11 @@ export default function Canvas({
     if (!d) return;
     if (d.mode === 'pan' || d.mode === 'light') {
       drag.current = null;
+      return;
+    }
+    if (d.mode === 'shadeBrush') {
+      drag.current = null;
+      shadeStroke.current = null;
       return;
     }
     const { x, y } = eventToCell(e);
