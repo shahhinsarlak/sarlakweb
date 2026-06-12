@@ -15,18 +15,19 @@ const APPS = [
     tags: ['Next.js', 'React'],
     href: '/game',
   },
-  {
-    title: 'Particles 3D',
-    kind: 'Interactive WebGL particle field that connects nearby points',
-    tags: ['Three.js', 'WebGL'],
-    href: '/apps/particles',
-  },
-  {
-    title: 'Spin Wheel',
-    kind: 'A word and caption generator that refreshes every Sydney midnight, powered by Claude',
-    tags: ['Next.js', 'Claude API'],
-    href: '/wheel',
-  },
+  // Temporarily archived (routes still live, hidden from the listing):
+  // {
+  //   title: 'Particles 3D',
+  //   kind: 'Interactive WebGL particle field that connects nearby points',
+  //   tags: ['Three.js', 'WebGL'],
+  //   href: '/apps/particles',
+  // },
+  // {
+  //   title: 'Spin Wheel',
+  //   kind: 'A word and caption generator that refreshes every Sydney midnight, powered by Claude',
+  //   tags: ['Next.js', 'Claude API'],
+  //   href: '/wheel',
+  // },
   {
     title: 'PXLS',
     kind: 'A JSON backed pixel art editor with layers, per cell effects and PNG, SVG and JSON export',

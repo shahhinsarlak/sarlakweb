@@ -28,11 +28,12 @@ const WORK = [
   },
   {
     n: '02',
-    title: 'Particles 3D',
-    kind: 'Interactive WebGL particle field that connects nearby points',
-    tags: ['Three.js', 'WebGL'],
-    href: '/apps/particles',
+    title: 'PXLS',
+    kind: 'A JSON backed pixel art editor with layers, per cell effects and PNG, SVG and JSON export',
+    tags: ['Next.js', 'Canvas'],
+    href: '/pxls',
   },
+  // Particles 3D temporarily archived from Selected Work (route still live).
   {
     n: '03',
     title: 'Web Apps',
