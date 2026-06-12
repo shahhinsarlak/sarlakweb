@@ -33,6 +33,7 @@ export default function Canvas({ project, brush, onPushHistory, onSetCells, onEy
   const artRef = useRef(null);
   const overlayRef = useRef(null);
   const stageRef = useRef(null);
+  const viewportRef = useRef(null);
 
   const { width, height } = project;
   const internalCell = Math.max(2, Math.floor(TARGET_PX / width));
@@ -44,6 +45,8 @@ export default function Canvas({ project, brush, onPushHistory, onSetCells, onEy
   const [selection, setSelection] = useState(null); // { x, y, w, h }
   const float = useRef(null); // { block, bw, bh, baseCells, ox, oy }
   const hoverRef = useRef({ x: -1, y: -1 });
+  // Pan / zoom of the canvas viewport. transformOrigin is the top left corner.
+  const [view, setView] = useState({ zoom: 1, x: 0, y: 0 });
 
   const activeLayer = getActiveLayer(project);
 
@@ -147,6 +150,33 @@ export default function Canvas({ project, brush, onPushHistory, onSetCells, onEy
     renderOverlay(null);
   }, [renderOverlay]);
 
+  // Wheel zoom toward the cursor. Native non passive listener so the page does
+  // not scroll while zooming over the canvas.
+  useEffect(() => {
+    const vp = viewportRef.current;
+    if (!vp) return undefined;
+    const onWheel = (e) => {
+      e.preventDefault();
+      const rect = vp.getBoundingClientRect();
+      const cx = e.clientX - rect.left;
+      const cy = e.clientY - rect.top;
+      setView((prev) => {
+        const factor = e.deltaY < 0 ? 1.12 : 1 / 1.12;
+        const zoom = Math.max(1, Math.min(40, prev.zoom * factor));
+        if (zoom === prev.zoom) return prev;
+        // Keep the content point under the cursor fixed across the zoom change.
+        const contentX = (cx - prev.x) / prev.zoom;
+        const contentY = (cy - prev.y) / prev.zoom;
+        let x = cx - contentX * zoom;
+        let y = cy - contentY * zoom;
+        if (zoom === 1) { x = 0; y = 0; }
+        return { zoom, x, y };
+      });
+    };
+    vp.addEventListener('wheel', onWheel, { passive: false });
+    return () => vp.removeEventListener('wheel', onWheel);
+  }, []);
+
   /** Commits a freehand dab and tracks last position for gap free strokes. */
   const freehand = (x, y) => {
     const dims = { width, height };
@@ -173,7 +203,15 @@ export default function Canvas({ project, brush, onPushHistory, onSetCells, onEy
   };
 
   const handlePointerDown = (e) => {
-    e.target.setPointerCapture(e.pointerId);
+    // Right button pans the view.
+    if (e.button === 2) {
+      e.preventDefault();
+      try { e.target.setPointerCapture(e.pointerId); } catch { /* synthetic / inactive pointer */ }
+      drag.current = { mode: 'pan', lastX: e.clientX, lastY: e.clientY };
+      return;
+    }
+    if (e.button !== 0) return;
+    try { e.target.setPointerCapture(e.pointerId); } catch { /* synthetic / inactive pointer */ }
     const { x, y } = eventToCell(e);
     if (x < 0 || y < 0 || x >= width || y >= height) return;
     const tool = brush.tool;
@@ -213,6 +251,15 @@ export default function Canvas({ project, brush, onPushHistory, onSetCells, onEy
   };
 
   const handlePointerMove = (e) => {
+    if (drag.current && drag.current.mode === 'pan') {
+      const d = drag.current;
+      const dx = e.clientX - d.lastX;
+      const dy = e.clientY - d.lastY;
+      d.lastX = e.clientX;
+      d.lastY = e.clientY;
+      setView((prev) => ({ ...prev, x: prev.x + dx, y: prev.y + dy }));
+      return;
+    }
     const { x, y } = eventToCell(e);
     if (onHover) onHover(x, y);
     const inBoundsCell = x >= 0 && y >= 0 && x < width && y < height;
@@ -249,6 +296,10 @@ export default function Canvas({ project, brush, onPushHistory, onSetCells, onEy
   const handlePointerUp = (e) => {
     const d = drag.current;
     if (!d) return;
+    if (d.mode === 'pan') {
+      drag.current = null;
+      return;
+    }
     const { x, y } = eventToCell(e);
 
     if (d.mode === 'shape') {
@@ -276,25 +327,48 @@ export default function Canvas({ project, brush, onPushHistory, onSetCells, onEy
   }, [brush.tool, selection]);
 
   return (
-    <div
-      ref={stageRef}
-      className={styles.canvasStage}
-      style={{ width: 'min(512px, 92vw)' }}
-    >
-      <canvas ref={bgRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} />
-      <canvas ref={artRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} />
-      <canvas
-        ref={overlayRef}
-        style={{ position: 'relative', width: '100%', height: '100%' }}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerLeave={() => {
-          if (onHover) onHover(-1, -1);
-          hoverRef.current = { x: -1, y: -1 };
-          if (!drag.current) renderOverlay(null);
-        }}
-      />
-    </div>
+    <>
+      <div
+        ref={viewportRef}
+        className={styles.canvasViewport}
+        onContextMenu={(e) => e.preventDefault()}
+      >
+        <div
+          ref={stageRef}
+          className={styles.canvasStage}
+          style={{
+            transform: `translate(${view.x}px, ${view.y}px) scale(${view.zoom})`,
+            transformOrigin: '0 0',
+          }}
+        >
+          <canvas ref={bgRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} />
+          <canvas ref={artRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} />
+          <canvas
+            ref={overlayRef}
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerLeave={() => {
+              if (onHover) onHover(-1, -1);
+              hoverRef.current = { x: -1, y: -1 };
+              if (!drag.current) renderOverlay(null);
+            }}
+          />
+        </div>
+      </div>
+      <div className={styles.zoomBar}>
+        <span>Right drag to pan, scroll to zoom</span>
+        <span className={styles.spacer} />
+        <span>{Math.round(view.zoom * 100)}%</span>
+        <button
+          type="button"
+          className={styles.sizeBtn}
+          onClick={() => setView({ zoom: 1, x: 0, y: 0 })}
+        >
+          Reset view
+        </button>
+      </div>
+    </>
   );
 }
