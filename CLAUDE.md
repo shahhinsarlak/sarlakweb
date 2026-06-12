@@ -39,6 +39,7 @@ app/game/         — incremental game (constants, helpers, modals — see sourc
 app/wheel/        — spin wheel app (SpinWheel.js, wheelCache.js, API route)
 app/log/          — dev log (markdown posts in content/posts/, rendered via lib/posts.js)
 app/apps/         — apps directory page
+app/pxls/         — PXLS pixel art editor (see app/pxls/PXLS_CONTEXT.md for full context)
 app/survival/     — survival game
 app/zayaani/      — Zayaani game
 app/rayan/        — Rayan page
