@@ -173,8 +173,8 @@ export default function ImageImportModal({ project, onAddLayer, onClose }) {
               <span style={{ fontSize: '0.7rem', opacity: 0.7, width: 52 }}>Pos X</span>
               <input
                 type="range"
-                min={-100}
-                max={100}
+                min={-500}
+                max={500}
                 value={offsetX}
                 onChange={(e) => setOffsetX(Number(e.target.value))}
               />
@@ -184,8 +184,8 @@ export default function ImageImportModal({ project, onAddLayer, onClose }) {
               <span style={{ fontSize: '0.7rem', opacity: 0.7, width: 52 }}>Pos Y</span>
               <input
                 type="range"
-                min={-100}
-                max={100}
+                min={-500}
+                max={500}
                 value={offsetY}
                 onChange={(e) => setOffsetY(Number(e.target.value))}
               />
