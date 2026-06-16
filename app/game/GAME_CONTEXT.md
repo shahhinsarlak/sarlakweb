@@ -183,7 +183,9 @@ docs go to the **File Drawer** (`storedDocuments`, capacity 10 + skill). Consumi
 applies the outcome: PP/sanity/energy/xp/skillPoint/materials/lore/locks, plus
 timed **buffs/debuffs** in `activeReportBuffs` (cap `maxActiveBuffs`=3; over cap
 auto-replaces the shortest, or prompts via `BuffReplacementModal` when a pending
-buff is set). Shredding returns some paper.
+buff is set). Shredding returns some paper. Expired buffs are pruned by the
+100 ms tick, which logs a `"<name> wore off."` message so timed effects never end
+silently (mutation sites still use `cleanExpiredBuffs` for correct cap math).
 
 ### Dimensional mining
 Enter the portal (`DimensionalArea`) to collect floating material nodes up to
@@ -215,7 +217,8 @@ messages.
 
 ### Focus Mode and offline progress
 - **Focus Mode (Phase 20):** 20+ Sort clicks within 30 s sets
-  `focusModeExpiry = now + 30s`, giving ×1.5 PP while active.
+  `focusModeExpiry = now + 30s`, giving ×1.5 PP while active. Engaging it logs a
+  message (only on the inactive→active transition) and its expiry logs another.
 - **Offline progress (Phase 20):** on load, grant
   `floor(ppPerSecond * 0.5 * elapsedSeconds)`, only if elapsed > 60 s, capped at
   4 hours; posts a notification. Driven by `lastSavedAt`.

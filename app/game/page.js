@@ -540,6 +540,19 @@ export default function Game() {
         // Focus Mode expiry check — clear buff once timestamp has passed
         if (prev.focusModeExpiry > 0 && Date.now() > prev.focusModeExpiry) {
           newState.focusModeExpiry = 0;
+          setTimeout(() => addMessage('Focus Mode faded. The rhythm is broken.'), 0);
+        }
+
+        // Prune expired report buffs/debuffs and tell the player when each ends,
+        // so timed effects never disappear silently.
+        const nowTs = Date.now();
+        const currentBuffs = prev.activeReportBuffs || [];
+        const expiredBuffs = currentBuffs.filter(b => b.expiresAt <= nowTs);
+        if (expiredBuffs.length > 0) {
+          newState.activeReportBuffs = currentBuffs.filter(b => b.expiresAt > nowTs);
+          expiredBuffs.forEach(b => {
+            setTimeout(() => addMessage(`${b.name} wore off.`), 0);
+          });
         }
 
         return newState;
@@ -654,11 +667,21 @@ export default function Game() {
     clickTimestampsRef.current = clickTimestampsRef.current.filter(t => now - t <= 30000);
 
     if (clickTimestampsRef.current.length >= 20) {
-      // Trigger or refresh Focus Mode — reset 30s expiry window
-      setGameState(prev => ({
-        ...prev,
-        focusModeExpiry: Date.now() + 30000,
-      }));
+      // Trigger or refresh Focus Mode — reset 30s expiry window. Announce only
+      // on the inactive -> active transition so repeated sorts don't spam.
+      setGameState(prev => {
+        const wasActive = prev.focusModeExpiry > Date.now();
+        const newState = { ...prev, focusModeExpiry: Date.now() + 30000 };
+        if (!wasActive) {
+          const msg = 'FOCUS MODE engaged. +50% PP while you keep sorting.';
+          newState.recentMessages = [msg, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15);
+          newState.notifications = [
+            ...(prev.notifications || []),
+            { id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, message: msg, timestamp: Date.now() }
+          ];
+        }
+        return newState;
+      });
     }
 
     actions.sortPapers();

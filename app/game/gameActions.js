@@ -38,7 +38,8 @@ import {
   discoverLocation
 } from './journalHelpers';
 import {
-  createScreenShake
+  createScreenShake,
+  formatPP
 } from './gameUtils';
 import { computeClickPP, computePassivePPPerSecond } from './ppHelpers';
 import { getMaxStoredDocuments } from './skillSystemHelpers';
@@ -69,15 +70,11 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       // erosion) — shared with the passive tick and the display.
       const ppGain = computeClickPP(prev);
 
-      // Clean expired buffs
-      const activeBuffs = cleanExpiredBuffs(prev);
-
       const newState = {
         ...prev,
         pp: prev.pp + ppGain,
         energy: isFreeAction ? prev.energy : Math.max(0, prev.energy - energyCost),
-        sortCount: (prev.sortCount || 0) + 1,
-        activeReportBuffs: activeBuffs
+        sortCount: (prev.sortCount || 0) + 1
       };
 
       // Apply sanity modifier to XP as well - call after state update
@@ -195,7 +192,8 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
           sanityGain *= 2;
         }
 
-        addMessage(message);
+        const appliedSanity = Math.min(prev.maxSanity || 100, prev.sanity + sanityGain) - prev.sanity;
+        addMessage(appliedSanity > 0 ? `${message} (+${Math.round(appliedSanity)} sanity)` : message);
         return {
           ...prev,
           meditating: false,
@@ -298,8 +296,12 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
           buffApplied = true;
         }
 
+        const sanityGain = Math.min(prev.maxSanity || 100, prev.sanity + 5) - prev.sanity;
+        const rewardParts = [`+${formatPP(reward)} PP`];
+        if (sanityGain > 0) rewardParts.push(`+${Math.round(sanityGain)} sanity`);
+        if (buffApplied) rewardParts.push('+25% PP for 5min');
         addMessage(
-          `DEBUG SUCCESS: +${reward} PP.${buffApplied ? ' +25% PP for 5min.' : ''} The code compiles. Reality stabilizes.`
+          `DEBUG SUCCESS: ${rewardParts.join(', ')}. The code compiles. Reality stabilizes.`
         );
         grantXP(15, false); // XP_REWARDS.completeDebug - suppress particles for debug challenges
         return {
