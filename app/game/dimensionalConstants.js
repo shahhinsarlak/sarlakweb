@@ -43,16 +43,23 @@ export const generateMaterialNodes = (textLength, materialInventory, effects = {
   const nodeCount = Math.floor(textLength / 800);
   
   for (let i = 0; i < nodeCount; i++) {
-    const roll = Math.random();
-    let cumulativeRarity = 0;
+    // Weight each material by its base rarity, then favour rarer tiers by their
+    // rank when a rarityBonus is present. DIMENSIONAL_MATERIALS is ordered from
+    // most common to rarest, so the rank exponent gives rarer materials a
+    // compounding boost. With bonus 0 this reduces to the base rarity weights.
+    const rarityBonus = effects.rarityBonus || 0;
+    const weighted = DIMENSIONAL_MATERIALS.map((material, rank) => ({
+      material,
+      weight: material.rarity * Math.pow(1 + rarityBonus, rank)
+    }));
+    const totalWeight = weighted.reduce((sum, w) => sum + w.weight, 0);
+
+    let roll = Math.random() * totalWeight;
     let selectedMaterial = DIMENSIONAL_MATERIALS[0];
-    
-    for (const material of DIMENSIONAL_MATERIALS) {
-      // Apply rarity bonus from luck skills
-      const adjustedRarity = material.rarity * (1 + (effects.rarityBonus || 0));
-      cumulativeRarity += adjustedRarity;
-      if (roll <= cumulativeRarity) {
-        selectedMaterial = material;
+    for (const w of weighted) {
+      roll -= w.weight;
+      if (roll <= 0) {
+        selectedMaterial = w.material;
         break;
       }
     }

@@ -20,9 +20,9 @@ function DimensionalArea({ gameState, setGameState, onExit, grantXP, notificatio
   const effects = getActiveSkillEffects(gameState);
   const modifiedCapacity = getModifiedCapacity(DIMENSIONAL_CAPACITY, gameState);
 
-  // Material Scanner increases glow intensity
+  // Material Scanner boosts the odds of rarer materials spawning
   if (gameState.dimensionalUpgrades?.material_scanner) {
-    effects.glowIntensity = 2;
+    effects.rarityBonus = (effects.rarityBonus || 0) + 0.5;
   }
 
   // Generate encrypted text once per portal entry

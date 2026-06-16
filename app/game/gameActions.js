@@ -40,7 +40,7 @@ import {
 import {
   createScreenShake
 } from './gameUtils';
-import { computeClickPP } from './ppHelpers';
+import { computeClickPP, computePassivePPPerSecond } from './ppHelpers';
 import { getMaxStoredDocuments } from './skillSystemHelpers';
 
 
@@ -260,21 +260,47 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       if (!prev.currentBug) return prev;
 
       const hasGlitchCompiler = prev.dimensionalUpgrades?.glitch_compiler;
-      const isFirstAttempt = prev.debugAttempts === 0;
-
-      // Glitch Compiler: first attempt always succeeds
-      const autoSuccess = hasGlitchCompiler && isFirstAttempt;
-      const isCorrect = autoSuccess || prev.currentBug.userCode.trim() === prev.currentBug.correct.trim();
+      const isCorrect = prev.currentBug.userCode.trim() === prev.currentBug.correct.trim();
 
       if (isCorrect) {
+        // Base flat reward for early game.
         let reward = Math.floor(200 + Math.random() * 300);
+        let newBuffs = prev.activeReportBuffs || [];
+        let buffApplied = false;
 
-        // Glitch Compiler: double rewards
+        // Glitch Compiler: scale the reward with passive income so a debug stays
+        // meaningful late-game, and grant a 5 minute +25% PP buff. The flat reward
+        // acts as a floor so it is never worse than the base.
         if (hasGlitchCompiler) {
-          reward *= 2;
+          const scaledReward = Math.floor(computePassivePPPerSecond(prev) * 90);
+          reward = Math.max(reward, scaledReward);
+
+          const buff = {
+            id: `glitch_compiler_${Date.now()}`,
+            name: 'Glitch Compiler',
+            desc: 'Compiled reality. +25% PP.',
+            duration: 300,
+            expiresAt: Date.now() + 300 * 1000,
+            ppMult: 1.25
+          };
+
+          // Respect the active buff cap (prune expired first, then replace the
+          // shortest active buff if already at capacity).
+          const maxBuffs = prev.maxActiveBuffs || 3;
+          let workingBuffs = cleanExpiredBuffs(prev);
+          if (workingBuffs.length < maxBuffs) {
+            workingBuffs = [...workingBuffs, buff];
+          } else {
+            const shortest = workingBuffs.reduce((min, b) => b.expiresAt < min.expiresAt ? b : min, workingBuffs[0]);
+            workingBuffs = [...workingBuffs.filter(b => b.id !== shortest.id), buff];
+          }
+          newBuffs = workingBuffs;
+          buffApplied = true;
         }
 
-        addMessage(`DEBUG SUCCESS: +${reward} PP. The code compiles. Reality stabilizes.`);
+        addMessage(
+          `DEBUG SUCCESS: +${reward} PP.${buffApplied ? ' +25% PP for 5min.' : ''} The code compiles. Reality stabilizes.`
+        );
         grantXP(15, false); // XP_REWARDS.completeDebug - suppress particles for debug challenges
         return {
           ...prev,
@@ -282,7 +308,8 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
           debugMode: false,
           currentBug: null,
           debugAttempts: 0,
-          sanity: Math.min(prev.maxSanity || 100, prev.sanity + 5)
+          sanity: Math.min(prev.maxSanity || 100, prev.sanity + 5),
+          activeReportBuffs: newBuffs
         };
       } else {
         const newAttempts = prev.debugAttempts + 1;
@@ -293,7 +320,8 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
             debugMode: false,
             currentBug: null,
             debugAttempts: 0,
-            sanity: Math.max(0, prev.sanity - 10)
+            // Glitch Compiler shields against the sanity penalty on failure.
+            sanity: hasGlitchCompiler ? prev.sanity : Math.max(0, prev.sanity - 10)
           };
         }
         addMessage(`ERROR: Compilation failed. ${3 - newAttempts} attempts remaining.`);

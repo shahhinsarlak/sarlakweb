@@ -211,7 +211,11 @@ function DebugModal({ gameState, submitDebug, updateDebugCode, cancelDebug, noti
           justifyContent: 'space-between'
         }}>
           <span>ENERGY: {Math.floor(gameState.energy)}%</span>
-          <span>REWARD: 200-500 PP</span>
+          <span>
+            REWARD: {gameState.dimensionalUpgrades?.glitch_compiler
+              ? 'Scales with income + 25% PP buff'
+              : '200-500 PP'}
+          </span>
         </div>
       </div>
     </div>

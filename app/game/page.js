@@ -393,7 +393,7 @@ export default function Game() {
     } else if (upgrade.effect === 'maxLogMessages') {
       effects.push(`Increases event log to ${upgrade.value} messages`);
     } else if (upgrade.effect === 'debugBonus') {
-      effects.push(`Debug rewards ×${upgrade.value}. First attempt always succeeds`);
+      effects.push('Debug rewards scale with passive income + a 5 min +25% PP buff; failures no longer drain sanity');
     } else if (upgrade.effect === 'portalCooldown') {
       effects.push(`Portal cooldown reduced to ${upgrade.value}s`);
     } else if (upgrade.effect === 'capacity') {
@@ -405,7 +405,7 @@ export default function Game() {
     } else if (upgrade.effect === 'minSanity') {
       effects.push(`Sanity cannot drop below ${upgrade.value}%`);
     } else if (upgrade.effect === 'portalScan') {
-      effects.push(`Materials glow brighter in dimensional space`);
+      effects.push('Rarer materials spawn far more often (+50% rarity odds)');
     }
     
     return effects.length > 0 ? effects.join(' • ') : 'Unknown effect';

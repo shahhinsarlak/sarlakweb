@@ -188,14 +188,17 @@ buff is set). Shredding returns some paper.
 ### Dimensional mining
 Enter the portal (`DimensionalArea`) to collect floating material nodes up to
 capacity (base 20, 40 with Reality Stabilizer). 7 materials from Void Fragment
-(~40%) to Singularity Node (0.15%). Exit applies a portal cooldown (base 35-60 s,
-reduced by Dimensional Anchor, Temporal Accelerator, Portal Attunement,
+(~40%) to Singularity Node (0.15%). Node material selection is weighted by base
+rarity; a `rarityBonus` effect compounds by rarity rank to favour rarer tiers
+(Material Scanner upgrade grants +0.5). Exit applies a portal cooldown (base
+35-60 s, reduced by Dimensional Anchor, Temporal Accelerator, Portal Attunement,
 achievements). Materials craft `DIMENSIONAL_UPGRADES`.
 
 ### Minigames
 - **Debug** (`DebugModal`): fix a code snippet, 3 attempts, ~200-500 PP on
-  success (+5 sanity), -10 sanity on failure. Glitch Compiler doubles reward and
-  auto-passes the first attempt.
+  success (+5 sanity), -10 sanity on failure. Glitch Compiler instead scales the
+  reward to ~90 s of passive income (floored at the base), grants a 5 min +25%
+  PP buff, and removes the sanity penalty on failure (no longer auto-passes).
 - **Meditation** (`MeditationModal`): time inhale/exhale over 3 breaths; 5-40
   sanity by accuracy (doubled by Crystal Meditation). Unlocks at sanity ≤ 25.
 

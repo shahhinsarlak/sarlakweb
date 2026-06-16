@@ -515,7 +515,7 @@ export const DIMENSIONAL_UPGRADES = [
     materials: { glitch_shard: 25 }, 
     effect: 'debugBonus', 
     value: 2, 
-    desc: 'Debug rewards doubled. First attempt always succeeds.' 
+    desc: 'Debug rewards scale with your passive income (90s worth) and grant a 5 min +25% PP buff. Failed attempts no longer drain sanity.' 
   },
   {
     id: 'singularity_engine', 
@@ -533,7 +533,7 @@ export const DIMENSIONAL_UPGRADES = [
     materials: { reality_dust: 10 }, 
     effect: 'portalScan', 
     value: true, 
-    desc: 'Materials glow in the dimensional space.' 
+    desc: 'Attunes the portal. Rarer materials spawn far more often (+50% rarity odds).' 
   },
   { 
     id: 'dimensional_codex', 
