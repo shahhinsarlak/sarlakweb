@@ -32,7 +32,6 @@ import {
   getTierData,
   canPrintDocumentTier,
   rollQualityOutcome,
-  canAddMoreBuffs,
   countActiveBuffs
 } from './sanityPaperHelpers';
 import {
@@ -841,6 +840,13 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
         effectDetails.push(`+${outcome.materials} material${outcome.materials > 1 ? 's' : ''}`);
       }
 
+      // Prune expired buffs before any cap logic so replacement operates on
+      // live buffs only. Without this, an already-expired entry could be picked
+      // as the "shortest" and removed instead of an active buff, leaving more
+      // than maxActiveBuffs active at once.
+      let workingBuffs = cleanExpiredBuffs(prev);
+      const maxBuffs = prev.maxActiveBuffs || 3;
+
       // Handle buffs
       if (outcome.buff) {
         // Filing Expertise skill extends document buff duration
@@ -872,18 +878,17 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
         const buffDuration = Math.floor(buff.duration / 60);
 
         // Check if player has room for more buffs
-        if (canAddMoreBuffs(prev)) {
+        if (workingBuffs.length < maxBuffs) {
           // Add buff normally
-          newState.activeReportBuffs = [...(prev.activeReportBuffs || []), buff];
+          workingBuffs = [...workingBuffs, buff];
           messages.push(`BUFF: ${buffParts.join(', ')} for ${buffDuration}min`);
         } else {
-          // At max capacity - auto-replace shortest remaining buff
-          const currentBuffs = prev.activeReportBuffs || [];
-          const shortest = currentBuffs.reduce((min, b) => b.expiresAt < min.expiresAt ? b : min, currentBuffs[0]);
-          const replaced = currentBuffs.filter(b => b.id !== shortest.id);
-          newState.activeReportBuffs = [...replaced, buff];
+          // At max capacity - auto-replace shortest remaining active buff
+          const shortest = workingBuffs.reduce((min, b) => b.expiresAt < min.expiresAt ? b : min, workingBuffs[0]);
+          workingBuffs = [...workingBuffs.filter(b => b.id !== shortest.id), buff];
           messages.push(`BUFF replaced ${shortest.name}: ${buffParts.join(', ')} for ${buffDuration}min`);
         }
+        newState.activeReportBuffs = workingBuffs;
       }
 
       // Handle debuffs
@@ -908,18 +913,17 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
         const debuffDuration = Math.floor(debuff.duration / 60);
 
         // Check if player has room for more buffs (debuffs count against limit too)
-        if (canAddMoreBuffs(prev)) {
+        if (workingBuffs.length < maxBuffs) {
           // Add debuff normally
-          newState.activeReportBuffs = [...(prev.activeReportBuffs || []), debuff];
+          workingBuffs = [...workingBuffs, debuff];
           messages.push(`DEBUFF: ${debuffParts.join(', ')} for ${debuffDuration}min`);
         } else {
-          // At max capacity - auto-replace shortest remaining buff
-          const currentBuffs = prev.activeReportBuffs || [];
-          const shortest = currentBuffs.reduce((min, b) => b.expiresAt < min.expiresAt ? b : min, currentBuffs[0]);
-          const replaced = currentBuffs.filter(b => b.id !== shortest.id);
-          newState.activeReportBuffs = [...replaced, debuff];
+          // At max capacity - auto-replace shortest remaining active buff
+          const shortest = workingBuffs.reduce((min, b) => b.expiresAt < min.expiresAt ? b : min, workingBuffs[0]);
+          workingBuffs = [...workingBuffs.filter(b => b.id !== shortest.id), debuff];
           messages.push(`DEBUFF replaced ${shortest.name}: ${debuffParts.join(', ')} for ${debuffDuration}min`);
         }
+        newState.activeReportBuffs = workingBuffs;
       }
 
       // Handle permanent PP/sec increase
@@ -999,8 +1003,9 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
     setGameState(prev => {
       if (!prev.pendingBuff) return prev;
 
-      // Remove the buff being replaced
-      const filteredBuffs = (prev.activeReportBuffs || []).filter(
+      // Remove the buff being replaced (and prune any expired buffs so the
+      // active total can never exceed maxActiveBuffs)
+      const filteredBuffs = cleanExpiredBuffs(prev).filter(
         buff => buff.id !== buffIdToReplace
       );
 
