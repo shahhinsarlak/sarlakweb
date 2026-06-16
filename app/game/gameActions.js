@@ -257,6 +257,24 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
     setGameState(prev => {
       if (!prev.currentBug) return prev;
 
+      const maxMessages = prev.maxLogMessages || 15;
+      // Fold a message into both the event log and the toast stack as part of
+      // the SAME state update. submitDebug flips debugMode/currentBug, which
+      // unmounts the DebugModal, so calling addMessage() (a nested setState)
+      // here is unreliable — bake the message straight into the returned state.
+      const withMessage = (state, msg) => ({
+        ...state,
+        recentMessages: [msg, ...state.recentMessages].slice(0, maxMessages),
+        notifications: [
+          ...(state.notifications || []),
+          {
+            id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            message: msg,
+            timestamp: Date.now()
+          }
+        ]
+      });
+
       const hasGlitchCompiler = prev.dimensionalUpgrades?.glitch_compiler;
       const isCorrect = prev.currentBug.userCode.trim() === prev.currentBug.correct.trim();
 
@@ -300,11 +318,12 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
         const rewardParts = [`+${formatPP(reward)} PP`];
         if (sanityGain > 0) rewardParts.push(`+${Math.round(sanityGain)} sanity`);
         if (buffApplied) rewardParts.push('+25% PP for 5min');
-        addMessage(
-          `DEBUG SUCCESS: ${rewardParts.join(', ')}. The code compiles. Reality stabilizes.`
-        );
-        grantXP(15, false); // XP_REWARDS.completeDebug - suppress particles for debug challenges
-        return {
+        const msg = `DEBUG SUCCESS: ${rewardParts.join(', ')}. The code compiles. Reality stabilizes.`;
+
+        // Defer side effects until after this update commits.
+        setTimeout(() => { grantXP(15, false); checkAchievements(); }, 0);
+
+        return withMessage({
           ...prev,
           pp: prev.pp + reward,
           debugMode: false,
@@ -312,25 +331,23 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
           debugAttempts: 0,
           sanity: Math.min(prev.maxSanity || 100, prev.sanity + 5),
           activeReportBuffs: newBuffs
-        };
+        }, msg);
       } else {
         const newAttempts = prev.debugAttempts + 1;
         if (newAttempts >= 3) {
-          addMessage('DEBUG FAILED: Maximum attempts exceeded. The bugs remain.');
-          return {
+          return withMessage({
             ...prev,
             debugMode: false,
             currentBug: null,
             debugAttempts: 0,
             // Glitch Compiler shields against the sanity penalty on failure.
             sanity: hasGlitchCompiler ? prev.sanity : Math.max(0, prev.sanity - 10)
-          };
+          }, 'DEBUG FAILED: Maximum attempts exceeded. The bugs remain.');
         }
-        addMessage(`ERROR: Compilation failed. ${3 - newAttempts} attempts remaining.`);
-        return {
+        return withMessage({
           ...prev,
           debugAttempts: newAttempts
-        };
+        }, `ERROR: Compilation failed. ${3 - newAttempts} attempts remaining.`);
       }
     });
   };
