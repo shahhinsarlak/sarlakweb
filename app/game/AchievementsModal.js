@@ -10,6 +10,9 @@ import NotificationPopup from './NotificationPopup';
 
 function AchievementsModal({ gameState, achievements, onClose, notifications, onDismissNotification }) {
   const unlockedAchievements = gameState.achievements || [];
+  // The Dimensional Codex upgrade reveals the hints (descriptions) for
+  // achievements that are still locked. Without it, locked hints stay hidden.
+  const hasCodex = !!(gameState.dimensionalUpgrades && gameState.dimensionalUpgrades.dimensional_codex);
 
   // Handle escape key to close modal
   useEffect(() => {
@@ -68,6 +71,11 @@ function AchievementsModal({ gameState, achievements, onClose, notifications, on
             </h2>
             <div style={{ fontSize: '14px', opacity: 0.6 }}>
               {unlockedAchievements.length} / {achievements.length} Unlocked
+            </div>
+            <div style={{ fontSize: '12px', opacity: 0.5, marginTop: '4px', fontStyle: 'italic' }}>
+              {hasCodex
+                ? 'Dimensional Codex active. Locked achievement hints revealed.'
+                : 'Locked achievement hints are hidden until the Dimensional Codex is acquired.'}
             </div>
             {(() => {
               const unlocked = gameState.achievements || [];
@@ -171,9 +179,12 @@ function AchievementsModal({ gameState, achievements, onClose, notifications, on
                     <div style={{
                       fontSize: '13px',
                       opacity: 0.8,
-                      lineHeight: '1.5'
+                      lineHeight: '1.5',
+                      fontStyle: isUnlocked || hasCodex ? 'normal' : 'italic'
                     }}>
-                      {achievement.desc}
+                      {isUnlocked || hasCodex
+                        ? achievement.desc
+                        : 'Hidden truth. Acquire the Dimensional Codex to reveal this hint.'}
                     </div>
                     {!isUnlocked && (
                       <div style={{
