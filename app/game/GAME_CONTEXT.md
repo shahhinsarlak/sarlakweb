@@ -211,7 +211,11 @@ nudge pp/energy/sanity and add flavour messages.
 ### Help, journal, notifications
 Help popups are **state-based**: the first unseen popup whose `HELP_TRIGGERS`
 predicate is true surfaces (so milestones already passed on an imported save still
-appear). Dismissing records the mechanic into the journal. `J` toggles the
+appear). Dismissing a popup records its mechanic into the journal. In addition,
+the 100 ms tick records any mechanic whose `HELP_TRIGGERS` predicate is currently
+true into `discoveredMechanics` directly, so mechanics are "learned by
+experiencing them" even when help is disabled or the popup window is missed (this
+is what reliably surfaces the low-sanity / low-quality mechanics). `J` toggles the
 journal. Notifications are a top-left auto-fading toast stack mirrored from event
 messages.
 

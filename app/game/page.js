@@ -39,6 +39,7 @@ import {
   DIMENSIONAL_UPGRADES,
   HELP_POPUPS,
   HELP_TRIGGERS,
+  MECHANICS_ENTRIES,
   PP_MULTIPLIER_TIERS
 } from './constants';
 
@@ -541,6 +542,18 @@ export default function Game() {
         if (prev.focusModeExpiry > 0 && Date.now() > prev.focusModeExpiry) {
           newState.focusModeExpiry = 0;
           setTimeout(() => addMessage('Focus Mode faded. The rhythm is broken.'), 0);
+        }
+
+        // Journal discovery: mechanics are "learned by experiencing them", so
+        // record any mechanic whose trigger condition is currently satisfied —
+        // independent of the help popups (which can be disabled or whose brief
+        // low-sanity / low-quality windows are easy to miss).
+        const learned = prev.discoveredMechanics || [];
+        const newlyLearned = Object.keys(HELP_TRIGGERS).filter(
+          (key) => MECHANICS_ENTRIES[key] && !learned.includes(key) && HELP_TRIGGERS[key](newState)
+        );
+        if (newlyLearned.length > 0) {
+          newState.discoveredMechanics = [...learned, ...newlyLearned];
         }
 
         // Prune expired report buffs/debuffs and tell the player when each ends,
