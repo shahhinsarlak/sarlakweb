@@ -260,18 +260,20 @@ export const getActiveBuffEnergyCostMultiplier = (gameState) => {
 };
 
 /**
- * Get the current PP per second multiplier from active buffs (void contracts)
+ * Get the current PP per second multiplier from active buffs (void contracts).
+ * Must mirror computePassivePPPerSecond in ppHelpers.js, which applies only the
+ * strongest active ppPerSecondMult buff (they do NOT stack). Returning anything
+ * else here makes the stats breakdown disagree with the actual PP/sec headline.
  * @param {Object} gameState - Current game state
- * @returns {number} Stacked PP per second multiplier from active buffs (1.0 if none)
+ * @returns {number} Strongest active PP/sec multiplier (1.0 if none)
  */
 export const getActiveBuffPPPerSecondMultiplier = (gameState) => {
   const activeBuffs = gameState.activeReportBuffs || [];
   const now = Date.now();
   const ppSecBuffs = activeBuffs.filter(b => b.expiresAt > now && b.ppPerSecondMult);
-  // Stack buffs additively (full values, not mult-1)
-  // Two 4x buffs = 4 + 4 = 8x bonus = 9x total (1 + 8) = 800% increase
-  const totalBonus = ppSecBuffs.reduce((sum, b) => sum + b.ppPerSecondMult, 0);
-  return ppSecBuffs.length > 0 ? 1 + totalBonus : 1;
+  if (ppSecBuffs.length === 0) return 1;
+  // Only the strongest contract applies (matches the canonical tick math).
+  return Math.max(...ppSecBuffs.map(b => b.ppPerSecondMult));
 };
 
 /**
