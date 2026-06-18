@@ -187,8 +187,8 @@ function GameActionsPanel({
                 onClick={() => actions.openFactory()}
                 style={{
                   background: 'none',
-                  border: '1px solid #6bff9f',
-                  color: '#6bff9f',
+                  border: '1px solid var(--border-color)',
+                  color: 'var(--text-color)',
                   padding: '14px',
                   cursor: 'pointer',
                   fontSize: '11px',
