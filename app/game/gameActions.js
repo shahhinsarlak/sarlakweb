@@ -14,7 +14,7 @@
  * - printer: Paper generation system
  */
 import { LOCATIONS, UPGRADES, DEBUG_CHALLENGES, PRINTER_UPGRADES, DOCUMENT_TYPES, TIER_MASTERY_WEIGHTS, INITIAL_GAME_STATE, LORE_SNIPPETS, INSIGHTS, CLARITY_BUFF, HELP_POPUPS, FACTORY_MACHINES, FACTORY_UPGRADES } from './constants';
-import { getUpgradeCost, getMachineLevel, getMaxLevel, isBuilt, MIN_OVERCLOCK, MAX_OVERCLOCK } from './factoryHelpers';
+import { getUpgradeCost, getMachineLevel, getMaxLevel, isBuilt, getOverclockCap, MIN_OVERCLOCK } from './factoryHelpers';
 import { getInsightEffects } from './insightHelpers';
 import {
   applyEnergyCostReduction,
@@ -1316,7 +1316,7 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
   const setOverclock = (machineId, percent) => {
     setGameState(prev => {
       if (!isBuilt(prev, machineId)) return prev;
-      const clamped = Math.max(MIN_OVERCLOCK, Math.min(MAX_OVERCLOCK, Math.round(percent)));
+      const clamped = Math.max(MIN_OVERCLOCK, Math.min(getOverclockCap(prev), Math.round(percent)));
       setTimeout(() => checkAchievements(), 50);
       return { ...prev, factoryOverclock: { ...(prev.factoryOverclock || {}), [machineId]: clamped } };
     });

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import EventLog from './EventLog';
 import NotificationPopup from './NotificationPopup';
 import FactorySprite from './FactorySprite';
@@ -12,6 +12,8 @@ import {
   isPaused,
   isOverclockUnlocked,
   getOverclock,
+  getOverclockCap,
+  isMachineAvailable,
   isBlueprintResearched,
   canBuildMachine,
   canResearchBlueprint,
@@ -19,7 +21,6 @@ import {
   getNextUpgrade,
   getUpgradeCost,
   MIN_OVERCLOCK,
-  MAX_OVERCLOCK,
   OVERCLOCK_STEP,
 } from './factoryHelpers';
 import { FACTORY_MACHINES, FACTORY_UPGRADES } from './constants';
@@ -37,11 +38,18 @@ import { FACTORY_MACHINES, FACTORY_UPGRADES } from './constants';
 function FactoryPanel({ gameState, actions, onClose, notifications, onDismissNotification }) {
   const [selected, setSelected] = useState(0);
 
+  // Machines gated by progress (e.g. the Overclock Regulator) are hidden until
+  // available. A ref keeps the live count for the keyboard handler.
+  const visibleMachines = FACTORY_MACHINES.filter((m) => isMachineAvailable(gameState, m));
+  const countRef = useRef(visibleMachines.length);
+  countRef.current = visibleMachines.length;
+
   useEffect(() => {
     const handleKey = (e) => {
+      const n = countRef.current;
       if (e.key === 'Escape') onClose();
-      else if (e.key === 'ArrowLeft') setSelected((s) => (s - 1 + FACTORY_MACHINES.length) % FACTORY_MACHINES.length);
-      else if (e.key === 'ArrowRight') setSelected((s) => (s + 1) % FACTORY_MACHINES.length);
+      else if (e.key === 'ArrowLeft') setSelected((s) => (s - 1 + n) % n);
+      else if (e.key === 'ArrowRight') setSelected((s) => (s + 1) % n);
     };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
@@ -57,7 +65,7 @@ function FactoryPanel({ gameState, actions, onClose, notifications, onDismissNot
   const powerColor = starved ? '#ff6b6b' : draining ? '#ffb454' : '#9fe8ff';
   const subStarved = stats.subNetPerSec < 0 && stats.substrate <= 0;
 
-  const machine = FACTORY_MACHINES[selected];
+  const machine = visibleMachines[Math.min(selected, visibleMachines.length - 1)];
   const built = isBuilt(gameState, machine.id);
   const researched = isBlueprintResearched(machine, gameState);
   const level = getMachineLevel(gameState, machine.id);
@@ -84,6 +92,7 @@ function FactoryPanel({ gameState, actions, onClose, notifications, onDismissNot
   if (eff.substrate > 0) machineEffects.push(`+${eff.substrate.toFixed(2)} substrate/s`);
   if (eff.substrate < 0) machineEffects.push(`${eff.substrate.toFixed(2)} substrate/s`);
   if (eff.output) machineEffects.push(`+${eff.output.rate.toFixed(2)} ${eff.output.resource}/s${eff.output.scalesWithPPTier ? ' x tier' : ''}`);
+  if (machine.id === 'overclocker') machineEffects.push(`Overclock ceiling: ${getOverclockCap(gameState)}%`);
 
   const nextUpgrade = getNextUpgrade(gameState, machine.id);
   const upgradeCost = level < maxLevel ? getUpgradeCost(level + 1) : null;
@@ -104,7 +113,7 @@ function FactoryPanel({ gameState, actions, onClose, notifications, onDismissNot
     </span>
   );
 
-  const go = (dir) => setSelected((s) => (s + dir + FACTORY_MACHINES.length) % FACTORY_MACHINES.length);
+  const go = (dir) => setSelected((s) => (s + dir + visibleMachines.length) % visibleMachines.length);
   const arrowBtn = (label, dir) => (
     <button
       onClick={() => go(dir)}
@@ -191,7 +200,7 @@ function FactoryPanel({ gameState, actions, onClose, notifications, onDismissNot
 
         {/* Machine tabs */}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '14px' }}>
-          {FACTORY_MACHINES.map((m, i) => {
+          {visibleMachines.map((m, i) => {
             const b = isBuilt(gameState, m.id);
             const lvl = getMachineLevel(gameState, m.id);
             const locked = m.blueprint && !(gameState.factoryBlueprints || []).includes(m.id);
@@ -294,14 +303,14 @@ function FactoryPanel({ gameState, actions, onClose, notifications, onDismissNot
                         <input
                           type="range"
                           min={MIN_OVERCLOCK}
-                          max={MAX_OVERCLOCK}
+                          max={getOverclockCap(gameState)}
                           step={OVERCLOCK_STEP}
                           value={overclock}
                           onChange={(e) => actions.setOverclock(machine.id, Number(e.target.value))}
                           style={{ width: '100%' }}
                         />
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', opacity: 0.5 }}>
-                          <span>{MIN_OVERCLOCK}%</span><span>100%</span><span>{MAX_OVERCLOCK}%</span>
+                          <span>{MIN_OVERCLOCK}%</span><span>100%</span><span>{getOverclockCap(gameState)}%</span>
                         </div>
                       </div>
                     )}

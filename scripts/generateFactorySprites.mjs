@@ -31,6 +31,7 @@ const MACHINES = {
   conv_lucidity: '#00d0ff',
   conv_intelligence: '#ffd060',
   conv_material: '#6bff9f',
+  overclocker: '#ff8a5c',
 };
 
 // --- colour helpers ---
@@ -260,6 +261,28 @@ const baseConvMaterial = (f) => {
   return g;
 };
 
+const baseOverclocker = (f) => {
+  const g = newGrid(); floorShadow(g);
+  // Cooling fins on top
+  for (let i = 0; i < 8; i += 1) rect(g, 32 + i * 8, 28, 5, 12, i % 2 ? P.metalDark : P.metalLight);
+  box(g, 28, 40, 72, 66, P.metalMid, P.metalHi, P.metalDark); // regulator unit
+  // Big gauge dial with a sweeping needle
+  disc(g, 54, 70, 18, P.inset); ring(g, 54, 70, 18, P.outline);
+  for (let a = -120; a <= 120; a += 30) {
+    const rad = a * Math.PI / 180 - Math.PI / 2;
+    put(g, Math.round(54 + Math.cos(rad) * 16), Math.round(70 + Math.sin(rad) * 16), P.metalHi);
+  }
+  const ang = (-120 + (f / FRAMES) * 240) * Math.PI / 180 - Math.PI / 2;
+  line(g, 54, 70, Math.round(54 + Math.cos(ang) * 14), Math.round(70 + Math.sin(ang) * 14), pulse(f));
+  disc(g, 54, 70, 3, P.accent);
+  // Digital readout
+  box(g, 80, 50, 16, 20, P.screenDark, P.metalDark, P.outline);
+  for (let k = 0; k < 4; k += 1) rect(g, 82, 65 - k * 4, 12, 3, k <= (f % 4) ? P.accent : P.metalDark);
+  // Accent vents along the bottom
+  for (let i = 0; i < 5; i += 1) rect(g, 34 + i * 12, 99, 8, 3, (i + f) % 2 ? P.accentDark : P.accent);
+  return g;
+};
+
 // ---------------- ATTACHMENTS (static overlays) ----------------
 const A = {}; // A[machineId] = [fn, fn, fn] for levels 3,6,10
 A.generator = [
@@ -302,11 +325,17 @@ A.conv_material = [
   (g) => { ring(g, 56, 74, 16, P.metalLight); for (let a = 0; a < 360; a += 30) put(g, Math.round(56 + Math.cos(a * Math.PI / 180) * 16), Math.round(74 + Math.sin(a * Math.PI / 180) * 16), P.accent); }, // staple ring
   (g) => { for (let j = 0; j < 10; j += 1) { const w = j < 5 ? j + 1 : 10 - j; rect(g, 110 - (w >> 1), 30 + j, w, 1, j % 2 ? P.accentBright : P.accent); } }, // floating crystal
 ];
+A.overclocker = [
+  (g) => { box(g, 16, 54, 12, 44, P.metalDark, P.metalLight, P.outline); for (let k = 0; k < 5; k += 1) rect(g, 18, 58 + k * 8, 8, 3, P.accent); }, // voltage regulator (left)
+  (g) => { disc(g, 110, 62, 11, P.metalDark); ring(g, 110, 62, 11, P.outline); for (let b = 0; b < 3; b += 1) { const a = b * 120 * Math.PI / 180; line(g, 110, 62, Math.round(110 + Math.cos(a) * 8), Math.round(62 + Math.sin(a) * 8), P.metalHi); } }, // chiller fan (right)
+  (g) => { for (let x = 30; x < 98; x += 1) { put(g, x, 24, P.accentLight); if (x % 5 === 0) put(g, x, 22, P.accentBright); } }, // cryo frost rail
+];
 
 const BASE = {
   generator: baseGenerator, capacitor: baseCapacitor, extractor: baseExtractor,
   conv_pp: baseConvPP, conv_paper: baseConvPaper, conv_lucidity: baseConvLucidity,
   conv_intelligence: baseConvIntelligence, conv_material: baseConvMaterial,
+  overclocker: baseOverclocker,
 };
 
 // RLE encode

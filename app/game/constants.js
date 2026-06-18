@@ -737,6 +737,7 @@ export const ACHIEVEMENTS = [
   { id: 'substrate_baron', name: 'Substrate Baron', desc: 'Stockpile 1000 substrate', check: (state) => (state.substrate || 0) >= 1000 },
   { id: 'master_engineer', name: 'Master Engineer', desc: 'Fully upgrade a factory machine to level 10', check: (state) => Object.values(state.factoryMachines || {}).some((lvl) => lvl >= 10), reward: { type: 'ppMultiplier', value: 0.15 } },
   { id: 'overclocked', name: 'Overclocked', desc: 'Run a machine above 100% power', check: (state) => Object.values(state.factoryOverclock || {}).some((v) => v > 100) },
+  { id: 'beyond_limits', name: 'Beyond Limits', desc: 'Overclock a machine past 300% with the Overclock Regulator', check: (state) => Object.values(state.factoryOverclock || {}).some((v) => v > 300), reward: { type: 'ppMultiplier', value: 0.10 } },
 ];
 
 /**
@@ -1486,6 +1487,16 @@ export const FACTORY_MACHINES = [
     output: { resource: 'material', rate: 0.05 },
     material: '#6bff9f',
   },
+  {
+    id: 'overclocker',
+    name: 'Overclock Regulator',
+    desc: 'Raises the safe ceiling on how hard any machine can be overclocked. Appears once you own an Overclock Module.',
+    lore: 'A thermostat, a car radiator, and a bank of dials scavenged from the server room AC. It hums with cold. As long as it runs, your machines can be pushed far past their rated limits without melting through the floor.',
+    blueprint: null,
+    buildCost: { lucidity: 500, intelligence: 200 },
+    availableWhen: 'anyOverclock',
+    material: '#ff8a5c',
+  },
 ];
 
 /**
@@ -1598,6 +1609,18 @@ export const FACTORY_UPGRADES = {
     { name: 'Substrate Recovery Trap', desc: 'Catch the scraps. -20% substrate use.', effect: { substrateUseMult: 0.8 } },
     { name: 'It Makes Things That Should Not Be', desc: 'Solid impossibility. +75% output.', effect: { outputMult: 1.75 }, visual: true },
     { name: 'Overclock Module', desc: 'Unlocks overclocking: feed it above 100% power for proportionally more output (and drain).', effect: { type: 'overclock' }, visual: true },
+  ],
+  overclocker: [
+    { name: 'Desk Fan Bank', desc: 'Point them all at the racks. +50% overclock ceiling.', effect: { type: 'overclockCapAdd', value: 50 } },
+    { name: 'Salvaged Heatsinks', desc: 'Pried off dead CPUs. +50% overclock ceiling.', effect: { type: 'overclockCapAdd', value: 50 } },
+    { name: 'Voltage Regulator', desc: 'Smooths the surges. +75% overclock ceiling.', effect: { type: 'overclockCapAdd', value: 75 }, visual: true },
+    { name: 'Thermal Paste, Reapplied', desc: 'Someone finally did it. +75% overclock ceiling.', effect: { type: 'overclockCapAdd', value: 75 } },
+    { name: 'Water-Cooler Loop', desc: 'The cooler now cools something. +100% overclock ceiling.', effect: { type: 'overclockCapAdd', value: 100 } },
+    { name: 'Server-Room Chiller', desc: 'Tapped the building AC. +100% overclock ceiling.', effect: { type: 'overclockCapAdd', value: 100 }, visual: true },
+    { name: 'Surge Capacitor Wall', desc: 'It drinks the spikes. +125% overclock ceiling.', effect: { type: 'overclockCapAdd', value: 125 } },
+    { name: 'Phase-Change Cooler', desc: 'Frost on the desk legs. +125% overclock ceiling.', effect: { type: 'overclockCapAdd', value: 125 } },
+    { name: 'Cryogenic Tap', desc: 'Where does the cold come from? +150% overclock ceiling.', effect: { type: 'overclockCapAdd', value: 150 } },
+    { name: 'It Cannot Overheat', desc: 'Heat simply leaves. +150% overclock ceiling.', effect: { type: 'overclockCapAdd', value: 150 }, visual: true },
   ],
 };
 

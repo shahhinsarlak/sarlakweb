@@ -54,11 +54,33 @@ export const isOverclockUnlocked = (state, id) => {
   return idx >= 0 && getMachineLevel(state, id) > idx;
 };
 
-/** Current overclock percent for a machine (100 if not unlocked), clamped. */
+/** Current overclock percent for a machine (100 if not unlocked), clamped to cap. */
 export const getOverclock = (state, id) => {
   if (!isOverclockUnlocked(state, id)) return 100;
   const v = state.factoryOverclock?.[id] ?? 100;
-  return Math.max(MIN_OVERCLOCK, Math.min(MAX_OVERCLOCK, v));
+  return Math.max(MIN_OVERCLOCK, Math.min(getOverclockCap(state), v));
+};
+
+/** True if any machine has its Overclock Module researched. */
+export const hasAnyOverclock = (state) => FACTORY_MACHINES.some((m) => isOverclockUnlocked(state, m.id));
+
+/** Current maximum overclock percent: base cap raised by the Overclock Regulator. */
+export const getOverclockCap = (state) => {
+  if (!isBuilt(state, 'overclocker')) return MAX_OVERCLOCK;
+  const level = getMachineLevel(state, 'overclocker');
+  const ups = FACTORY_UPGRADES.overclocker || [];
+  let bonus = 0;
+  for (let i = 0; i < level && i < ups.length; i += 1) {
+    const e = ups[i].effect || {};
+    if (e.type === 'overclockCapAdd') bonus += e.value;
+  }
+  return MAX_OVERCLOCK + bonus;
+};
+
+/** Whether a machine is available to build yet (some are gated by progress). */
+export const isMachineAvailable = (state, machine) => {
+  if (machine.availableWhen === 'anyOverclock') return hasAnyOverclock(state);
+  return true;
 };
 
 /** True if a machine's blueprint has been researched (or it needs none). */

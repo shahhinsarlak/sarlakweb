@@ -290,12 +290,18 @@ upgrades each) in constants; cost formula `getUpgradeCost` in `factoryHelpers`.
   (extractor + 5 converters) has an 11th **Overclock Module** upgrade.
 - **Pause & overclock:** any built machine can be **paused** (`factoryPaused[id]`;
   skipped in `simulate`/capacity — no draw, gen, output, or capacity). Once the
-  Overclock Module is owned, `factoryOverclock[id]` (50-300%, default 100) scales
-  that machine's power draw, output, and substrate throughput together
-  (`getEffectiveMachineStats` applies `getOverclock/100`) — letting players shift
-  the limited power budget toward what they want more of. Actions
+  Overclock Module is owned, `factoryOverclock[id]` (50% to the dynamic cap,
+  default 100) scales that machine's power draw, output, and substrate throughput
+  together (`getEffectiveMachineStats` applies `getOverclock/100`) — letting players
+  shift the limited power budget toward what they want more of. Actions
   `toggleMachinePause` / `setOverclock`. Per-machine max upgrade level is
   `getMaxLevel(id)` (= its upgrades length: 10, or 11 for consumers).
+- **Overclock Regulator** (`overclocker` machine): a 9th machine that only becomes
+  available once any machine owns an Overclock Module (`isMachineAvailable` /
+  `availableWhen:'anyOverclock'`; hidden from the panel until then). It has no
+  power/output of its own; its 10 upgrades (`overclockCapAdd`) raise the global
+  overclock cap above the base 300% via `getOverclockCap(state)`, which clamps
+  `getOverclock` and the panel slider.
 - **Sprites:** animated **128×128** pixel-art per machine, drawn to look cobbled
   from office junk (printer guts, filing cabinet, monitor cube, microwave, etc.),
   muted body + vivid accent. Each has an animated base (4 frames) plus static
