@@ -17,6 +17,8 @@ import JournalModal from './JournalModal';
 import BuffReplacementModal from './BuffReplacementModal';
 import NotificationPopup from './NotificationPopup';
 import TierUnlockModal from './TierUnlockModal';
+import Chapter2Intro from './Chapter2Intro';
+import InsightsPanel from './InsightsPanel';
 import GameActionsPanel from './GameActionsPanel';
 import GameUpgradesPanel from './GameUpgradesPanel';
 import GameStatsPanel from './GameStatsPanel';
@@ -28,7 +30,7 @@ import { computeClickPP, computePassivePPPerSecond } from './ppHelpers';
 import { addExperience, purchaseSkill, getActiveSkillEffects, getModifiedPortalCooldown, getMaxSanity } from './skillSystemHelpers';
 import { SKILLS, LEVEL_SYSTEM, XP_REWARDS } from './skillTreeConstants';
 import { DIMENSIONAL_MATERIALS } from './dimensionalConstants';
-import { getSanityTierDisplay, isSanityDrainPaused, calculatePaperQuality } from './sanityPaperHelpers';
+import { getSanityTierDisplay, isSanityDrainPaused, calculatePaperQuality, getSanityTier } from './sanityPaperHelpers';
 import {
   INITIAL_GAME_STATE,
   LOCATIONS,
@@ -40,10 +42,21 @@ import {
   HELP_POPUPS,
   HELP_TRIGGERS,
   MECHANICS_ENTRIES,
-  PP_MULTIPLIER_TIERS
+  PP_MULTIPLIER_TIERS,
+  LUCID_ANCHOR_FLOORS,
+  RESOURCE_DISCOVERY_GRANT
 } from './constants';
 
 const PORTAL_UNLOCK_ENTRIES = ['glitched', 'maintenance', 'encrypted_lights'];
+
+// Chapter 2 begins once every upgrade across all three shops is owned.
+const isChapter1Complete = (state) =>
+  UPGRADES.every((u) => state.upgrades?.[u.id]) &&
+  PRINTER_UPGRADES.every((u) => state.printerUpgrades?.[u.id]) &&
+  DIMENSIONAL_UPGRADES.every((u) => state.dimensionalUpgrades?.[u.id]);
+
+// Per-tick rate (100ms tick) at which sanity above 100% drifts back toward 100.
+const LUCID_DECAY_PER_TICK = 0.02;
 
 // Dev cheats (DebugPanel, +PP / +DAY buttons) only render outside production.
 const SHOW_DEV_TOOLS = process.env.NODE_ENV !== 'production';
@@ -459,8 +472,10 @@ export default function Game() {
           }
         }
 
-        // Phase 2 full drain: triggered at 100 PP (lowered from 500 for earlier horror)
-        if (prev.phase >= 2) {
+        // Phase 2 full drain: triggered at 100 PP (lowered from 500 for earlier horror).
+        // In Chapter 2, above 100% sanity the office no longer pulls at you — only
+        // lucid decay applies up there (handled below), so skip this drain.
+        if (prev.phase >= 2 && !((prev.chapter || 1) >= 2 && prev.sanity > 100)) {
           // Check if sanity drain is paused by stability report buff
           if (!isSanityDrainPaused(prev)) {
             let sanityDrainRate = 0.05; // Base drain rate
@@ -496,8 +511,21 @@ export default function Game() {
           newState.sanity = 20;
         }
 
-        // Clamp sanity to its current cap (100, or lowered by the Sanity Erosion contract)
-        const maxSanityCap = getMaxSanity(100, prev);
+        // Chapter 2: above 100% sanity drifts back toward 100 (lucid decay), so
+        // staying lucid takes upkeep. Clarity buffs (noSanityDrain) pause it.
+        if ((prev.chapter || 1) >= 2 && newState.sanity > 100 && !isSanityDrainPaused(prev)) {
+          newState.sanity = Math.max(100, newState.sanity - LUCID_DECAY_PER_TICK);
+        }
+
+        // Lucid Anchor sets a permanent high sanity floor once researched.
+        const lucidFloor = LUCID_ANCHOR_FLOORS[prev.lucidAnchorTier || 0] || 0;
+        if (lucidFloor > 0 && newState.sanity < lucidFloor) {
+          newState.sanity = lucidFloor;
+        }
+
+        // Clamp sanity to its current cap. Chapter 1 uses the standard 100 cap (or
+        // a Sanity Erosion contract's lowered cap); Chapter 2 lifts it to maxSanity.
+        const maxSanityCap = (prev.chapter || 1) >= 2 ? (prev.maxSanity || 1000) : getMaxSanity(100, prev);
         if (newState.sanity > maxSanityCap) {
           newState.sanity = maxSanityCap;
         }
@@ -516,7 +544,11 @@ export default function Game() {
               addMessage(event.message);
               if (event.pp) newState.pp += event.pp;
               if (event.energy) newState.energy = Math.max(0, Math.min(100, prev.energy + event.energy));
-              if (event.sanity) newState.sanity = Math.max(0, Math.min(100, prev.sanity + event.sanity));
+              if (event.sanity) {
+                // Chapter 2 lifts the sanity cap, so don't snap a lucid climb back to 100.
+                const sanityCap = (prev.chapter || 1) >= 2 ? (prev.maxSanity || 1000) : 100;
+                newState.sanity = Math.max(0, Math.min(sanityCap, prev.sanity + event.sanity));
+              }
               newState.discoveredEvents = [...prev.discoveredEvents, event.id];
             }
           }
@@ -525,6 +557,33 @@ export default function Game() {
         if (prev.phase === 1 && prev.pp > 100) {
           newState.phase = 2;
           newState.recentMessages = ['Something has changed. Or has it always been this way?', ...prev.recentMessages].slice(0, prev.maxLogMessages || 15);
+        }
+
+        // --- Chapter 2: A Way Through ---
+        // Trigger the intro cinematic once every upgrade is owned.
+        if ((prev.chapter || 1) < 2 && !prev.chapter2IntroSeen && !prev.chapter2IntroActive && isChapter1Complete(prev)) {
+          newState.chapter2IntroActive = true;
+        }
+
+        // While lucid (>100%), gather the new resources. They only accrue after
+        // discovery; the 1000% discovery grant seeds the first Lucid Anchor.
+        if ((prev.chapter || 1) >= 2 && prev.resourcesUnlocked && newState.sanity > 100) {
+          const lucidTier = getSanityTier(newState.sanity);
+          newState.lucidity = (prev.lucidity || 0) + (lucidTier.lucidityRate || 0) / 10;
+          newState.intelligence = (prev.intelligence || 0) + (lucidTier.intelRate || 0) / 10;
+        }
+
+        // Discovery: the first time sanity reaches 1000%, reveal the resources.
+        // Check prev.sanity too: lucid decay (applied above) would otherwise nudge
+        // a freshly-meditated 1000% down to 999.98 before this check ever sees it.
+        if ((prev.chapter || 1) >= 2 && !prev.resourcesUnlocked && (newState.sanity >= 1000 || prev.sanity >= 1000)) {
+          newState.resourcesUnlocked = true;
+          newState.lucidity = (newState.lucidity ?? prev.lucidity ?? 0) + RESOURCE_DISCOVERY_GRANT.lucidity;
+          newState.intelligence = (newState.intelligence ?? prev.intelligence ?? 0) + RESOURCE_DISCOVERY_GRANT.intelligence;
+          newState.recentMessages = [
+            'You see clearly now. LUCIDITY and INTELLIGENCE take shape in your mind.',
+            ...(newState.recentMessages || prev.recentMessages),
+          ].slice(0, prev.maxLogMessages || 15);
         }
 
         // PP tier multiplier check
@@ -729,6 +788,10 @@ export default function Game() {
   };
 
 
+  if (gameState.chapter2IntroActive) {
+    return <Chapter2Intro onComplete={actions.startChapter2} />;
+  }
+
   if (gameState.showSkillTree) {
     return (
       <SkillTreeModal
@@ -759,6 +822,18 @@ export default function Game() {
         gameState={gameState}
         onClose={actions.closeJournal}
         onSwitchTab={actions.switchJournalTab}
+        notifications={gameState.notifications}
+        onDismissNotification={dismissNotification}
+      />
+    );
+  }
+
+  if (gameState.insightsOpen) {
+    return (
+      <InsightsPanel
+        gameState={gameState}
+        actions={actions}
+        onClose={actions.closeInsights}
         notifications={gameState.notifications}
         onDismissNotification={dismissNotification}
       />
@@ -957,6 +1032,23 @@ export default function Game() {
                 }}
               >
                 FILE DRAWER {(gameState.storedDocuments?.length || 0) > 0 && `(${gameState.storedDocuments.length})`}
+              </button>
+            )}
+            {gameState.resourcesUnlocked && (
+              <button
+                onClick={actions.openInsights}
+                style={{
+                  background: 'none',
+                  border: '1px solid #00d0ff',
+                  color: '#00d0ff',
+                  padding: '4px 8px',
+                  cursor: 'pointer',
+                  fontSize: '10px',
+                  fontFamily: 'inherit',
+                  opacity: 0.9
+                }}
+              >
+                INSIGHTS
               </button>
             )}
             <button

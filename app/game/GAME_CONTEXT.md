@@ -227,6 +227,30 @@ messages.
   `floor(ppPerSecond * 0.5 * elapsedSeconds)`, only if elapsed > 60 s, capped at
   4 hours; posts a notification. Driven by `lastSavedAt`.
 
+### Chapter 2: A Way Through
+Begins once **every** upgrade (PP, printer, dimensional) is owned —
+`isChapter1Complete` in `page.js` flips `chapter2IntroActive`, which routes to the
+`Chapter2Intro` cinematic. Finishing it (`actions.startChapter2`) sets `chapter=2`,
+`maxSanity=1000`, `meditationUnlocked=true`, and pops the `chapter2` help popup.
+- **Sanity uncapped:** the tick clamps to `maxSanity` (1000) in chapter 2 instead
+  of `getMaxSanity(100, …)`. Meditation/rest already cap on `maxSanity`. Above 100,
+  the office's phase-2 drain is skipped and a **lucid decay** (0.02/tick) pulls
+  sanity back toward 100, so staying lucid needs upkeep. `LUCID_ANCHOR_FLOORS`
+  ([0,250,500,750] by `lucidAnchorTier`) set a permanent hard floor.
+- **Lucid tiers:** `SANITY_TIERS.lucid1..lucid4/transcendent` (min 100/250/500/750/
+  1000), each 1.0× PP/XP (clarity is NOT the PP path — low sanity still is) but
+  carrying `lucidityRate`/`intelRate`. `getSanityTier` checks these first.
+- **Resources:** reaching 1000% first time sets `resourcesUnlocked` and grants
+  `RESOURCE_DISCOVERY_GRANT` (80 lucidity / 50 intelligence). After that, lucidity
+  accrues passively while >100 (by tier), intelligence from Debug success (+8),
+  consuming Reports (+6), and a lucid trickle; meditating while lucid adds lucidity.
+- **Insights sink:** `InsightsPanel` spends intelligence/lucidity on `INSIGHTS` —
+  Lucid Anchors (raise `lucidAnchorTier`) and the Clarity Technique (`craftClarity`
+  → a `noSanityDrain` buff pausing lucid decay). Seed of the Phase 2 factory layer.
+- New state: `chapter`, `chapter2IntroActive/Seen`, `resourcesUnlocked`, `lucidity`,
+  `intelligence`, `lucidAnchorTier`, `researchedInsights`, `insightsOpen`. Saves get
+  these via the merge-over-`INITIAL_GAME_STATE` (no migration needed).
+
 ### Save system
 `saveSystem.js`. Format `{ version, timestamp, state }`, `CURRENT_SAVE_VERSION=2`.
 Versioned `MIGRATIONS` pipeline runs FROM-version steps, then merges over
@@ -284,6 +308,12 @@ rendered alongside.
 | PP tiers | 10K ×2, 1M ×5, 1B ×25 |
 | Focus Mode | 20 clicks/30 s → ×1.5 for 30 s |
 | Offline PP | 50% of pp/sec, >60 s, cap 4 h |
+| Chapter 2 trigger | all PP+printer+dimensional upgrades owned |
+| Sanity cap (Ch.2) | 1000 (maxSanity) |
+| Lucid decay (>100) | 0.02/tick toward 100 |
+| Lucid tiers | 100 / 250 / 500 / 750 / 1000 |
+| Resource discovery | first reach 1000% sanity (grant 80 luc / 50 int) |
+| Lucid Anchor floors | 250 / 500 / 750 |
 | Save version | 2 |
 
 ---

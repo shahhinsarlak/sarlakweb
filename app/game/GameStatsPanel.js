@@ -163,6 +163,25 @@ function GameStatsPanel({
               </div>
             );
           })()}
+          {gameState.resourcesUnlocked && (
+            <div style={{
+              fontSize: '12px',
+              marginBottom: '16px',
+              padding: '10px',
+              backgroundColor: 'var(--bg-color)',
+              border: '1px solid var(--border-color)',
+              borderRadius: '2px'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                <span style={{ color: '#00d0ff' }}>LUCIDITY</span>
+                <strong style={{ color: '#00d0ff' }}>{Math.floor(gameState.lucidity || 0)}</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: '#ffd060' }}>INTELLIGENCE</span>
+                <strong style={{ color: '#ffd060' }}>{Math.floor(gameState.intelligence || 0)}</strong>
+              </div>
+            </div>
+          )}
           {gameState.pp >= 15 && gameState.phase === 1 && gameState.sanity >= 80 && (
             <div style={{
               fontSize: '10px',

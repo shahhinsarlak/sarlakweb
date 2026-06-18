@@ -101,6 +101,17 @@ export const INITIAL_GAME_STATE = {
   focusModeExpiry: 0,           // Unix ms timestamp when buff expires (0 = inactive)
   // Offline Accumulation (Phase 20)
   lastSavedAt: 0,               // Unix ms timestamp of last save
+  // Chapter 2: A Way Through (Phase 1)
+  chapter: 1,                   // Narrative chapter (1 = the office loop, 2 = the climb)
+  chapter2IntroActive: false,   // Cinematic intro is currently playing (full-screen)
+  chapter2IntroSeen: false,     // Cinematic has already played (never replay)
+  // New resources, discovered on first reaching 1000% sanity
+  resourcesUnlocked: false,     // Lucidity/Intelligence revealed + spendable
+  lucidity: 0,                  // Perception resource (gathered by staying lucid)
+  intelligence: 0,              // Understanding resource (debug, reports, lucid trickle)
+  lucidAnchorTier: 0,           // Lucid Anchor checkpoint (0-3 -> sanity floor 0/250/500/750)
+  researchedInsights: [],       // Insight ids researched in the Insights panel
+  insightsOpen: false,          // Is the Insights panel visible
 };
 
 
@@ -704,6 +715,11 @@ export const ACHIEVEMENTS = [
   { id: 'embrace_madness', name: 'Embrace Madness', desc: 'Generate PP at critical sanity (<10%)', check: (state) => state.sortCount >= 1 && state.sanity < 10 },
   { id: 'bureaucrat', name: 'Master Bureaucrat', desc: 'File 50 reports', check: (state) => (state.documentMastery?.reports || 0) >= 50, reward: { type: 'ppMultiplier', value: 0.02 } },
   { id: 'reality_bender_paper', name: 'Reality Contractor', desc: 'Print 10 reality contracts', check: (state) => (state.documentMastery?.contracts || 0) >= 10 },
+  // Chapter 2: A Way Through
+  { id: 'a_way_through', name: 'A Way Through', desc: 'Begin Chapter 2', check: (state) => (state.chapter || 1) >= 2 },
+  { id: 'first_lucidity', name: 'Lucid', desc: 'Push your sanity above 100%', check: (state) => state.sanity > 100, reward: { type: 'ppMultiplier', value: 0.03 } },
+  { id: 'transcendent_mind', name: 'Transcendent', desc: 'Reach 1000% sanity', check: (state) => state.sanity >= 1000, reward: { type: 'ppMultiplier', value: 0.10 } },
+  { id: 'first_insight', name: 'Insight', desc: 'Research your first insight', check: (state) => (state.researchedInsights || []).length >= 1 },
 ];
 
 /**
@@ -1097,8 +1113,152 @@ export const SANITY_TIERS = {
       'Risk of Void events',
       'Paper becomes unreliable'
     ]
+  },
+  // --- Chapter 2 lucid tiers (sanity > 100, unlocked once the cap is broken) ---
+  // PP/XP stay at the 1.0x baseline here: clarity is NOT the productivity path
+  // (low sanity still is). Lucid tiers instead generate the new resources.
+  lucid1: {
+    min: 100,
+    max: 249,
+    name: 'Lucid Mind',
+    color: '#00d0ff',
+    ppMultiplier: 1.0,
+    xpMultiplier: 1.0,
+    lucidityRate: 0.1,
+    intelRate: 0.02,
+    description: 'You can see the edges of the room for what they are.',
+    effects: [
+      'PP and XP at baseline (decay no longer rewards you)',
+      'Lucidity gathers slowly',
+      'Sanity drifts back toward 100% without upkeep'
+    ]
+  },
+  lucid2: {
+    min: 250,
+    max: 499,
+    name: 'Sharpened Focus',
+    color: '#33ddff',
+    ppMultiplier: 1.0,
+    xpMultiplier: 1.0,
+    lucidityRate: 0.25,
+    intelRate: 0.05,
+    description: 'The hum recedes. Thought moves faster than the lights.',
+    effects: [
+      'Lucidity gathers faster',
+      'A faint understanding begins to settle'
+    ]
+  },
+  lucid3: {
+    min: 500,
+    max: 749,
+    name: 'Piercing Clarity',
+    color: '#66ccff',
+    ppMultiplier: 1.0,
+    xpMultiplier: 1.0,
+    lucidityRate: 0.5,
+    intelRate: 0.1,
+    description: 'You perceive the seams where reality was stitched together.',
+    effects: [
+      'Strong lucidity generation',
+      'Understanding gathers steadily'
+    ]
+  },
+  lucid4: {
+    min: 750,
+    max: 999,
+    name: 'Boundless Awareness',
+    color: '#99bbff',
+    ppMultiplier: 1.0,
+    xpMultiplier: 1.0,
+    lucidityRate: 0.75,
+    intelRate: 0.15,
+    description: 'The walls are suggestions now. You are almost through.',
+    effects: [
+      'Rapid lucidity generation',
+      'Understanding flows freely'
+    ]
+  },
+  transcendent: {
+    min: 1000,
+    max: 1000,
+    name: 'TRANSCENDENT',
+    color: '#ffffff',
+    ppMultiplier: 1.0,
+    xpMultiplier: 1.0,
+    lucidityRate: 1.0,
+    intelRate: 0.25,
+    description: 'You see the way through. It was always here.',
+    effects: [
+      'Maximum lucidity generation',
+      'Maximum passive understanding'
+    ]
   }
 };
+
+/**
+ * Lucid Anchor floors (Chapter 2)
+ * Index by lucidAnchorTier (0-3). Each tier sets a hard sanity floor so a climb
+ * becomes a permanent checkpoint that no longer needs meditation upkeep.
+ */
+export const LUCID_ANCHOR_FLOORS = [0, 250, 500, 750];
+
+/**
+ * Insights (Chapter 2, Phase 1 sink)
+ * Researched in the Insights panel by spending Intelligence; some also cost
+ * Lucidity to build. This is the seed of the Phase 2 factory/automation layer.
+ * - type 'anchor': raises lucidAnchorTier to anchorTier (permanent sanity floor)
+ * - type 'recipe': unlocks a craftable technique (e.g. the Clarity buff)
+ */
+export const INSIGHTS = [
+  {
+    id: 'lucid_anchor_1',
+    name: 'Lucid Anchor I',
+    type: 'anchor',
+    anchorTier: 1,
+    cost: { intelligence: 30, lucidity: 50 },
+    requires: [],
+    desc: 'Anchor your clarity. Sanity can no longer fall below 250%.'
+  },
+  {
+    id: 'clarity_recipe',
+    name: 'Clarity Technique',
+    type: 'recipe',
+    cost: { intelligence: 60 },
+    requires: [],
+    desc: 'Fold a moment of stillness into Clarity: a buff that halts lucid decay for a time.'
+  },
+  {
+    id: 'lucid_anchor_2',
+    name: 'Lucid Anchor II',
+    type: 'anchor',
+    anchorTier: 2,
+    cost: { intelligence: 90, lucidity: 150 },
+    requires: ['lucid_anchor_1'],
+    desc: 'Hold a higher line. Sanity floored at 500%.'
+  },
+  {
+    id: 'lucid_anchor_3',
+    name: 'Lucid Anchor III',
+    type: 'anchor',
+    anchorTier: 3,
+    cost: { intelligence: 240, lucidity: 400 },
+    requires: ['lucid_anchor_2'],
+    desc: 'Stand beyond the walls. Sanity floored at 750%.'
+  }
+];
+
+/**
+ * Clarity buff definition (crafted once the Clarity Technique is researched).
+ * Reuses the activeReportBuffs system + noSanityDrain to pause lucid decay.
+ */
+export const CLARITY_BUFF = { name: 'Clarity', duration: 180, lucidityCost: 40 };
+
+/**
+ * Discovery grant: lump of resources awarded the first time sanity reaches 1000%,
+ * representing the perception of what you have been gathering. Sized to afford the
+ * first Lucid Anchor immediately so progression is not circular.
+ */
+export const RESOURCE_DISCOVERY_GRANT = { lucidity: 80, intelligence: 50 };
 
 /**
  * Help Popup Definitions
@@ -1238,6 +1398,42 @@ Enter to collect dimensional materials from the floating nodes. Watch your capac
 Materials craft powerful dimensional upgrades. The portal has a cooldown between visits.`,
     category: 'mechanics'
   },
+  chapter2: {
+    id: 'chapter2',
+    title: 'CHAPTER 2: A WAY THROUGH',
+    content: `You have done everything the office asked. Bought everything. Sorted everything. And still the walls hold.
+
+There has to be a way out. Not around the office. Past it.
+
+To see past what is in front of you, your mind has to go further than it ever has. The ceiling on your sanity is gone. MEDITATION can now carry you higher than 100%.
+
+Climb. Something waits at the top.`,
+    category: 'story'
+  },
+  lucid: {
+    id: 'lucid',
+    title: 'BEYOND THE CEILING',
+    content: `Your sanity has passed 100%. This is lucidity.
+
+Meditation no longer stops at 100. Keep meditating to climb higher: Lucid Mind, Sharpened Focus, and further still.
+
+But a lucid mind drifts. Without upkeep your sanity sinks back toward 100%. Hold the climb, and reach for 1000%.
+
+Note: clarity is not the productivity path. Low sanity still pays better PP. This is a different road.`,
+    category: 'mechanics'
+  },
+  resourcesDiscovered: {
+    id: 'resourcesDiscovered',
+    title: 'LUCIDITY AND INTELLIGENCE',
+    content: `At 1000% you finally see clearly. Two things you can hold onto take shape:
+
+LUCIDITY: perception. It gathers on its own while you stay lucid, faster the higher you climb.
+
+INTELLIGENCE: understanding. Earned by solving Debug challenges, consuming Reports, and thinking clearly while lucid.
+
+Spend them in INSIGHTS. Anchor your clarity so you never fall so far again, and learn new techniques. This is how you start to build a way through.`,
+    category: 'mechanics'
+  },
 };
 
 /**
@@ -1260,6 +1456,9 @@ export const HELP_TRIGGERS = {
   portal: (state) => !!state.portalUnlocked,
   paperQuality: (state) => !!state.printerUnlocked && (state.paperQuality ?? 100) <= 50,
   debug: (state) => !!state.upgrades?.debugger,
+  chapter2: (state) => (state.chapter || 1) >= 2,
+  lucid: (state) => state.sanity > 100,
+  resourcesDiscovered: (state) => !!state.resourcesUnlocked,
 };
 
 /**
@@ -1461,5 +1660,38 @@ The files contain:
 • Your own documents from timelines that never were
 
 Reading them all reveals... patterns.`
+  },
+  chapter2: {
+    id: 'chapter2',
+    title: 'A Way Through',
+    category: 'The Second Chapter',
+    summary: 'The office is not the end. There is a way past it.',
+    details: `Once every upgrade is bought, Chapter 2 begins. The cap on your sanity is removed.
+
+The way out is not a door in the office. It is a state of mind beyond it. Meditation can now carry your sanity past 100%, into lucidity.`
+  },
+  lucid: {
+    id: 'lucid',
+    title: 'Lucidity (Sanity Above 100%)',
+    category: 'The Second Chapter',
+    summary: 'A mind pushed past its ceiling.',
+    details: `Above 100% sanity you enter lucid tiers: Lucid Mind (100%), Sharpened Focus (250%), Piercing Clarity (500%), Boundless Awareness (750%), and Transcendent (1000%).
+
+A lucid mind drifts: above 100% your sanity slowly sinks back toward 100% unless you keep it up with meditation, Clarity, or a Lucid Anchor.
+
+Clarity is not the productivity path. Low sanity still grants the most PP and XP. Lucidity is a separate road that gathers new resources instead.`
+  },
+  resourcesDiscovered: {
+    id: 'resourcesDiscovered',
+    title: 'Lucidity & Intelligence',
+    category: 'The Second Chapter',
+    summary: 'Two new resources, and what powers them.',
+    details: `Reaching 1000% sanity reveals two resources:
+
+LUCIDITY (perception): gathers passively while lucid, faster the higher your sanity climbs, plus a bonus from meditating while already lucid.
+
+INTELLIGENCE (understanding): earned from Debug successes, from consuming Reports, and as a small trickle while lucid.
+
+Spend both in the INSIGHTS panel. Lucid Anchors set a permanent sanity floor (250 / 500 / 750), and the Clarity Technique lets you craft a buff that halts lucid decay.`
   },
 };

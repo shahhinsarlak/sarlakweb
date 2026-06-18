@@ -13,7 +13,7 @@
  * - upgrades: Purchase permanent improvements
  * - printer: Paper generation system
  */
-import { LOCATIONS, UPGRADES, DEBUG_CHALLENGES, PRINTER_UPGRADES, DOCUMENT_TYPES, TIER_MASTERY_WEIGHTS, INITIAL_GAME_STATE, LORE_SNIPPETS } from './constants';
+import { LOCATIONS, UPGRADES, DEBUG_CHALLENGES, PRINTER_UPGRADES, DOCUMENT_TYPES, TIER_MASTERY_WEIGHTS, INITIAL_GAME_STATE, LORE_SNIPPETS, INSIGHTS, CLARITY_BUFF, HELP_POPUPS } from './constants';
 import {
   applyEnergyCostReduction,
   getModifiedRestCooldown,
@@ -193,12 +193,20 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
         }
 
         const appliedSanity = Math.min(prev.maxSanity || 100, prev.sanity + sanityGain) - prev.sanity;
-        addMessage(appliedSanity > 0 ? `${message} (+${Math.round(appliedSanity)} sanity)` : message);
+        // Chapter 2: meditating while already lucid (>100%) also yields a burst of
+        // Lucidity, once the resource has been discovered.
+        const lucidityBonus = (prev.resourcesUnlocked && prev.sanity > 100)
+          ? Math.round(sanityGain * 0.5)
+          : 0;
+        const sanityNote = appliedSanity > 0 ? ` (+${Math.round(appliedSanity)} sanity)` : '';
+        const lucidNote = lucidityBonus > 0 ? ` (+${lucidityBonus} lucidity)` : '';
+        addMessage(`${message}${sanityNote}${lucidNote}`);
         return {
           ...prev,
           meditating: false,
           breathCount: 0,
           sanity: Math.min(prev.maxSanity || 100, prev.sanity + sanityGain),
+          lucidity: (prev.lucidity || 0) + lucidityBonus,
           energy: Math.max(0, prev.energy - 10),
           meditationPhase: null,
           meditationStartTime: null,
@@ -315,8 +323,12 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
         }
 
         const sanityGain = Math.min(prev.maxSanity || 100, prev.sanity + 5) - prev.sanity;
+        // Chapter 2: Debug is the primary Intelligence source (only once the
+        // resources have been discovered at 1000% sanity).
+        const intelGain = prev.resourcesUnlocked ? 8 : 0;
         const rewardParts = [`+${formatPP(reward)} PP`];
         if (sanityGain > 0) rewardParts.push(`+${Math.round(sanityGain)} sanity`);
+        if (intelGain > 0) rewardParts.push(`+${intelGain} intelligence`);
         if (buffApplied) rewardParts.push('+25% PP for 5min');
         const msg = `DEBUG SUCCESS: ${rewardParts.join(', ')}. The code compiles. Reality stabilizes.`;
 
@@ -330,6 +342,7 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
           currentBug: null,
           debugAttempts: 0,
           sanity: Math.min(prev.maxSanity || 100, prev.sanity + 5),
+          intelligence: (prev.intelligence || 0) + intelGain,
           activeReportBuffs: newBuffs
         }, msg);
       } else {
@@ -853,13 +866,23 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       let xpGain = 0;
       const effectDetails = [];
 
+      // Chapter 2: consuming Reports yields Intelligence (analysis -> understanding).
+      // Only after the resources are discovered at 1000% sanity.
+      if (doc.type === 'report' && prev.resourcesUnlocked) {
+        const intelGain = 6;
+        newState.intelligence = (prev.intelligence || 0) + intelGain;
+        effectDetails.push(`+${intelGain} intelligence`);
+      }
+
       // Apply outcome effects
       if (outcome.pp) {
         newState.pp = Math.max(0, prev.pp + outcome.pp);
         effectDetails.push(`${outcome.pp > 0 ? '+' : ''}${outcome.pp} PP`);
       }
       if (outcome.sanity) {
-        newState.sanity = Math.max(0, Math.min(100, prev.sanity + outcome.sanity));
+        // Use the active sanity cap (1000 in Chapter 2) so sanity-restoring memos
+        // help the lucid climb instead of snapping it back down to 100.
+        newState.sanity = Math.max(0, Math.min(prev.maxSanity || 100, prev.sanity + outcome.sanity));
         effectDetails.push(`${outcome.sanity > 0 ? '+' : ''}${outcome.sanity} sanity`);
       }
       if (outcome.energy) {
@@ -1126,6 +1149,106 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
     });
   };
 
+  // --- Chapter 2: A Way Through (Phase 1) ---
+
+  // Called when the intro cinematic finishes: enter Chapter 2 and lift the cap.
+  const startChapter2 = () => {
+    setGameState(prev => {
+      if ((prev.chapter || 1) >= 2) {
+        return { ...prev, chapter2IntroActive: false, chapter2IntroSeen: true };
+      }
+      setTimeout(() => checkAchievements(), 50);
+      return {
+        ...prev,
+        chapter: 2,
+        chapter2IntroActive: false,
+        chapter2IntroSeen: true,
+        maxSanity: 1000,
+        meditationUnlocked: true,
+        // Surface the Chapter 2 briefing immediately, bypassing the help queue.
+        currentHelpPopup: HELP_POPUPS.chapter2,
+        recentMessages: ['The ceiling is gone. Close your eyes and climb.', ...prev.recentMessages].slice(0, prev.maxLogMessages || 15),
+      };
+    });
+  };
+
+  const openInsights = () => setGameState(prev => ({ ...prev, insightsOpen: true }));
+  const closeInsights = () => setGameState(prev => ({ ...prev, insightsOpen: false }));
+
+  // Research an insight: spend Intelligence (and sometimes Lucidity). Anchors
+  // raise the permanent sanity floor; recipes unlock craftable techniques.
+  const researchInsight = (insightId) => {
+    setGameState(prev => {
+      const insight = INSIGHTS.find(i => i.id === insightId);
+      if (!insight) return prev;
+      if ((prev.researchedInsights || []).includes(insightId)) return prev;
+
+      const requires = insight.requires || [];
+      if (!requires.every(r => (prev.researchedInsights || []).includes(r))) return prev;
+
+      const costInt = insight.cost.intelligence || 0;
+      const costLuc = insight.cost.lucidity || 0;
+      if ((prev.intelligence || 0) < costInt || (prev.lucidity || 0) < costLuc) {
+        return {
+          ...prev,
+          recentMessages: ['Not enough to grasp that insight yet.', ...prev.recentMessages].slice(0, prev.maxLogMessages || 15),
+        };
+      }
+
+      const newState = {
+        ...prev,
+        intelligence: (prev.intelligence || 0) - costInt,
+        lucidity: (prev.lucidity || 0) - costLuc,
+        researchedInsights: [...(prev.researchedInsights || []), insightId],
+      };
+      if (insight.type === 'anchor') {
+        newState.lucidAnchorTier = Math.max(prev.lucidAnchorTier || 0, insight.anchorTier);
+      }
+      newState.recentMessages = [`Insight researched: ${insight.name}.`, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15);
+      setTimeout(() => checkAchievements(), 50);
+      return newState;
+    });
+  };
+
+  // Craft a Clarity buff that halts lucid decay (reuses activeReportBuffs).
+  const craftClarity = () => {
+    setGameState(prev => {
+      if (!(prev.researchedInsights || []).includes('clarity_recipe')) return prev;
+      if ((prev.lucidity || 0) < CLARITY_BUFF.lucidityCost) {
+        return {
+          ...prev,
+          recentMessages: ['Not enough lucidity for Clarity.', ...prev.recentMessages].slice(0, prev.maxLogMessages || 15),
+        };
+      }
+
+      const buff = {
+        id: `clarity_${Date.now()}`,
+        name: CLARITY_BUFF.name,
+        desc: 'Lucid decay halted.',
+        duration: CLARITY_BUFF.duration,
+        expiresAt: Date.now() + CLARITY_BUFF.duration * 1000,
+        noSanityDrain: true,
+      };
+
+      // Respect the buff cap: prune expired, then replace the shortest if full.
+      const maxBuffs = prev.maxActiveBuffs || 3;
+      let workingBuffs = cleanExpiredBuffs(prev);
+      if (workingBuffs.length < maxBuffs) {
+        workingBuffs = [...workingBuffs, buff];
+      } else {
+        const shortest = workingBuffs.reduce((min, b) => b.expiresAt < min.expiresAt ? b : min, workingBuffs[0]);
+        workingBuffs = [...workingBuffs.filter(b => b.id !== shortest.id), buff];
+      }
+
+      return {
+        ...prev,
+        lucidity: (prev.lucidity || 0) - CLARITY_BUFF.lucidityCost,
+        activeReportBuffs: workingBuffs,
+        recentMessages: [`Clarity crafted. Decay halted for ${CLARITY_BUFF.duration / 60} minutes.`, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15),
+      };
+    });
+  };
+
   // Return all action handlers
   return {
     sortPapers,
@@ -1164,5 +1287,11 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
     openJournal,
     closeJournal,
     switchJournalTab,
+    // Chapter 2: A Way Through (Phase 1)
+    startChapter2,
+    openInsights,
+    closeInsights,
+    researchInsight,
+    craftClarity,
   };
 };

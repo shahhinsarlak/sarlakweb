@@ -17,6 +17,12 @@ import { DIMENSIONAL_MATERIALS } from './dimensionalConstants';
  * @returns {Object} Sanity tier object with modifiers and effects
  */
 export const getSanityTier = (sanity) => {
+  // Chapter 2 lucid tiers (sanity > 100) take priority — checked high to low.
+  if (sanity >= SANITY_TIERS.transcendent.min) return SANITY_TIERS.transcendent;
+  if (sanity >= SANITY_TIERS.lucid4.min) return SANITY_TIERS.lucid4;
+  if (sanity >= SANITY_TIERS.lucid3.min) return SANITY_TIERS.lucid3;
+  if (sanity >= SANITY_TIERS.lucid2.min) return SANITY_TIERS.lucid2;
+  if (sanity >= SANITY_TIERS.lucid1.min) return SANITY_TIERS.lucid1;
   if (sanity >= SANITY_TIERS.high.min) return SANITY_TIERS.high;
   if (sanity >= SANITY_TIERS.medium.min) return SANITY_TIERS.medium;
   if (sanity >= SANITY_TIERS.low.min) return SANITY_TIERS.low;
