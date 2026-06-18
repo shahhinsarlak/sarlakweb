@@ -198,7 +198,7 @@ function GameActionsPanel({
                   textAlign: 'center',
                 }}
               >
-                The Construct
+                THE CONSTRUCT
               </button>
             )}
           </div>

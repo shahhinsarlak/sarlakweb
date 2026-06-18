@@ -1081,13 +1081,13 @@ export default function Game() {
                 onClick={actions.openInsights}
                 style={{
                   background: 'none',
-                  border: '1px solid #00d0ff',
-                  color: '#00d0ff',
+                  border: '1px solid var(--accent-color)',
+                  color: 'var(--accent-color)',
                   padding: '4px 8px',
                   cursor: 'pointer',
                   fontSize: '10px',
                   fontFamily: 'inherit',
-                  opacity: 0.9
+                  opacity: 0.8
                 }}
               >
                 INSIGHTS

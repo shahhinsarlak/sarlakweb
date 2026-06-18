@@ -37,7 +37,7 @@ function InsightsPanel({ gameState, actions, onClose, notifications, onDismissNo
     (gameState.intelligence || 0) >= (insight.cost.intelligence || 0) &&
     (gameState.lucidity || 0) >= (insight.cost.lucidity || 0);
 
-  const resourceBox = (label, value, color) => (
+  const resourceBox = (label, value) => (
     <div style={{
       flex: 1,
       border: '1px solid var(--border-color)',
@@ -48,7 +48,7 @@ function InsightsPanel({ gameState, actions, onClose, notifications, onDismissNo
       <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6 }}>
         {label}
       </div>
-      <div style={{ fontSize: '24px', fontWeight: 'bold', color, marginTop: '6px' }}>{value}</div>
+      <div style={{ fontSize: '24px', fontWeight: 'bold', marginTop: '6px' }}>{value}</div>
     </div>
   );
 
@@ -88,8 +88,8 @@ function InsightsPanel({ gameState, actions, onClose, notifications, onDismissNo
         </div>
 
         <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
-          {resourceBox('Lucidity', lucidity, '#00d0ff')}
-          {resourceBox('Intelligence', intelligence, '#ffd060')}
+          {resourceBox('Lucidity', lucidity)}
+          {resourceBox('Intelligence', intelligence)}
         </div>
 
         <div style={{
@@ -136,7 +136,7 @@ function InsightsPanel({ gameState, actions, onClose, notifications, onDismissNo
                 </div>
                 <div style={{ minWidth: '130px', textAlign: 'right' }}>
                   {done ? (
-                    <div style={{ fontSize: '12px', color: '#00d0ff', letterSpacing: '1px' }}>RESEARCHED</div>
+                    <div style={{ fontSize: '12px', opacity: 0.7, letterSpacing: '1px' }}>RESEARCHED</div>
                   ) : !unlocked ? (
                     <div style={{ fontSize: '11px', opacity: 0.6 }}>Requires prior insight</div>
                   ) : (

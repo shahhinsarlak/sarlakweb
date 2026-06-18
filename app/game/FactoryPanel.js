@@ -22,8 +22,11 @@ import { FACTORY_MACHINES, FACTORY_UPGRADES } from './constants';
  * Factory Panel ("The Construct", Chapter 2 Phase 2 / v2)
  *
  * Singular machines, each with a 10-step upgrade track. One machine is featured
- * at a time (click the tabs or arrows to move). Power is a glowing battery bar;
- * each machine drains its own power and HALTS when the battery can't cover it.
+ * at a time (click the tabs or arrows to move). Power is a battery bar; each
+ * machine drains its own power and HALTS when the battery can't cover it.
+ *
+ * Text is kept standard-coloured for readability; the only coloured element is
+ * the functional power bar fill (charging / draining / halting).
  */
 function FactoryPanel({ gameState, actions, onClose, notifications, onDismissNotification }) {
   const [selected, setSelected] = useState(0);
@@ -57,11 +60,10 @@ function FactoryPanel({ gameState, actions, onClose, notifications, onDismissNot
   const runState = stats.status[machine.id];
 
   let statusLabel = 'NOT BUILT';
-  let statusColor = 'var(--text-color)';
   if (built) {
-    if (!isConsumer) { statusLabel = 'ACTIVE'; statusColor = '#6bff9f'; }
-    else if (runState === 'running') { statusLabel = 'RUNNING'; statusColor = '#6bff9f'; }
-    else { statusLabel = 'HALTED \u2014 low power/substrate'; statusColor = '#ff6b6b'; }
+    if (!isConsumer) statusLabel = 'ACTIVE';
+    else if (runState === 'running') statusLabel = 'RUNNING';
+    else statusLabel = 'HALTED \u2014 low power/substrate';
   }
 
   const machineEffects = [];
@@ -84,10 +86,10 @@ function FactoryPanel({ gameState, actions, onClose, notifications, onDismissNot
   };
   const costLabel = (cost) => Object.entries(cost).map(([res, amt]) => `${amt} ${res}`).join(' + ');
 
-  const chip = (label, value, color) => (
+  const chip = (label, value) => (
     <span style={{ fontSize: '12px' }}>
       <span style={{ opacity: 0.6 }}>{label} </span>
-      <strong style={{ color }}>{value}</strong>
+      <strong>{value}</strong>
     </span>
   );
 
@@ -133,7 +135,7 @@ function FactoryPanel({ gameState, actions, onClose, notifications, onDismissNot
           </button>
         </div>
 
-        {/* Power bar */}
+        {/* Power bar (the fill colour is a functional indicator) */}
         <div style={{ marginBottom: '14px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '4px' }}>
             <span style={{ textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.7 }}>
@@ -141,9 +143,7 @@ function FactoryPanel({ gameState, actions, onClose, notifications, onDismissNot
             </span>
             <span style={{ opacity: 0.8 }}>
               {Math.floor(stats.power)} / {Math.round(stats.powerCapacity)} &nbsp;
-              <span style={{ color: stats.powerNetPerSec >= 0 ? '#6bff9f' : '#ffb454' }}>
-                ({stats.powerNetPerSec >= 0 ? '+' : ''}{stats.powerNetPerSec.toFixed(1)}/s)
-              </span>
+              ({stats.powerNetPerSec >= 0 ? '+' : ''}{stats.powerNetPerSec.toFixed(1)}/s)
             </span>
           </div>
           <div style={{
@@ -166,9 +166,9 @@ function FactoryPanel({ gameState, actions, onClose, notifications, onDismissNot
           display: 'flex', flexWrap: 'wrap', gap: '16px', alignItems: 'center', padding: '10px 12px',
           border: '1px solid var(--border-color)', backgroundColor: 'var(--hover-color)', marginBottom: '8px',
         }}>
-          {chip('Substrate', `${Math.floor(stats.substrate)}${subStarved ? ' (dry)' : ''}`, subStarved ? '#ff6b6b' : '#c46bff')}
-          {chip('Lucidity', lucidity, '#00d0ff')}
-          {chip('Intelligence', intelligence, '#ffd060')}
+          {chip('Substrate', `${Math.floor(stats.substrate)}${subStarved ? ' (dry)' : ''}`)}
+          {chip('Lucidity', lucidity)}
+          {chip('Intelligence', intelligence)}
         </div>
         <div style={{ fontSize: '11px', opacity: 0.7, marginBottom: '18px' }}>
           Producing:{' '}
@@ -190,7 +190,7 @@ function FactoryPanel({ gameState, actions, onClose, notifications, onDismissNot
                 onClick={() => setSelected(i)}
                 style={{
                   background: i === selected ? 'var(--accent-color)' : 'none',
-                  border: `1px solid ${i === selected ? 'var(--accent-color)' : 'var(--border-color)'}`,
+                  border: '1px solid var(--border-color)',
                   color: i === selected ? 'var(--bg-color)' : 'var(--text-color)',
                   padding: '6px 10px', cursor: 'pointer', fontSize: '10px', fontFamily: 'inherit',
                   letterSpacing: '0.5px', opacity: locked && !b && i !== selected ? 0.5 : 1,
@@ -205,7 +205,7 @@ function FactoryPanel({ gameState, actions, onClose, notifications, onDismissNot
         {/* Featured machine */}
         <div style={{ display: 'flex', alignItems: 'stretch', gap: '12px' }}>
           {arrowBtn('\u2039', -1)}
-          <div style={{ flex: 1, border: `1px solid ${machine.material}`, backgroundColor: 'var(--hover-color)', padding: '20px' }}>
+          <div style={{ flex: 1, border: '1px solid var(--border-color)', backgroundColor: 'var(--hover-color)', padding: '20px' }}>
             <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
               <div style={{
                 width: '208px', height: '208px', flexShrink: 0, backgroundColor: 'var(--bg-color)',
@@ -216,7 +216,7 @@ function FactoryPanel({ gameState, actions, onClose, notifications, onDismissNot
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '8px' }}>
                   <span style={{ fontSize: '18px', fontWeight: 'bold' }}>{machine.name}</span>
-                  <span style={{ fontSize: '11px', color: statusColor, whiteSpace: 'nowrap' }}>{statusLabel}</span>
+                  <span style={{ fontSize: '11px', opacity: 0.75, whiteSpace: 'nowrap' }}>{statusLabel}</span>
                 </div>
                 {built && (
                   <div style={{ fontSize: '12px', opacity: 0.7, marginTop: '2px' }}>Level {level} / {MAX_UPGRADE_LEVEL}</div>
@@ -232,7 +232,7 @@ function FactoryPanel({ gameState, actions, onClose, notifications, onDismissNot
                       <button
                         onClick={() => actions.researchBlueprint(machine.id)}
                         disabled={!canResearchBlueprint(machine, gameState)}
-                        style={btnStyle(canResearchBlueprint(machine, gameState), '#ffd060', '#1a1a1a')}
+                        style={btnStyle(canResearchBlueprint(machine, gameState))}
                       >
                         RESEARCH ({machine.blueprint.intelligence} intelligence)
                       </button>
@@ -240,7 +240,7 @@ function FactoryPanel({ gameState, actions, onClose, notifications, onDismissNot
                       <button
                         onClick={() => actions.buildMachine(machine.id)}
                         disabled={!canBuildMachine(machine, gameState)}
-                        style={btnStyle(canBuildMachine(machine, gameState), 'var(--accent-color)', 'var(--bg-color)')}
+                        style={btnStyle(canBuildMachine(machine, gameState))}
                       >
                         BUILD ({costLabel(machine.buildCost)})
                       </button>
@@ -252,13 +252,13 @@ function FactoryPanel({ gameState, actions, onClose, notifications, onDismissNot
                       <button
                         onClick={() => actions.upgradeMachine(machine.id)}
                         disabled={!upgradeAffordable}
-                        style={btnStyle(upgradeAffordable, machine.material, '#1a1a1a')}
+                        style={btnStyle(upgradeAffordable)}
                       >
                         UPGRADE ({costLabel(upgradeCost)})
                       </button>
                     </div>
                   ) : (
-                    <div style={{ fontSize: '13px', color: machine.material }}>FULLY UPGRADED</div>
+                    <div style={{ fontSize: '13px', fontWeight: 'bold' }}>FULLY UPGRADED</div>
                   )}
                 </div>
               </div>
@@ -275,12 +275,8 @@ function FactoryPanel({ gameState, actions, onClose, notifications, onDismissNot
                     const done = i < level;
                     const isNext = i === level;
                     return (
-                      <div key={i} style={{
-                        fontSize: '11px', display: 'flex', justifyContent: 'space-between', gap: '8px',
-                        opacity: done ? 0.9 : isNext ? 1 : 0.4,
-                        color: done ? machine.material : 'var(--text-color)',
-                      }}>
-                        <span>{done ? '\u2713' : isNext ? '\u2192' : '\u2022'} {u.name}</span>
+                      <div key={i} style={{ fontSize: '11px', opacity: done ? 0.85 : isNext ? 1 : 0.4 }}>
+                        {done ? '\u2713' : isNext ? '\u2192' : '\u2022'} {u.name}
                       </div>
                     );
                   })}
@@ -297,11 +293,11 @@ function FactoryPanel({ gameState, actions, onClose, notifications, onDismissNot
   );
 }
 
-function btnStyle(enabled, bg, fg) {
+function btnStyle(enabled) {
   return {
-    background: enabled ? bg : 'none',
+    background: enabled ? 'var(--accent-color)' : 'none',
     border: '1px solid var(--border-color)',
-    color: enabled ? fg : 'var(--text-color)',
+    color: enabled ? 'var(--bg-color)' : 'var(--text-color)',
     padding: '12px 18px',
     cursor: enabled ? 'pointer' : 'not-allowed',
     fontSize: '13px',

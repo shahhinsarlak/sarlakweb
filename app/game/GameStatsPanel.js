@@ -173,17 +173,17 @@ function GameStatsPanel({
               borderRadius: '2px'
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-                <span style={{ color: '#00d0ff' }}>LUCIDITY</span>
-                <strong style={{ color: '#00d0ff' }}>{Math.floor(gameState.lucidity || 0)}</strong>
+                <span>LUCIDITY</span>
+                <strong>{Math.floor(gameState.lucidity || 0)}</strong>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: '#ffd060' }}>INTELLIGENCE</span>
-                <strong style={{ color: '#ffd060' }}>{Math.floor(gameState.intelligence || 0)}</strong>
+                <span>INTELLIGENCE</span>
+                <strong>{Math.floor(gameState.intelligence || 0)}</strong>
               </div>
               {gameState.factoryUnlocked && (
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px' }}>
-                  <span style={{ color: '#c46bff' }}>SUBSTRATE</span>
-                  <strong style={{ color: '#c46bff' }}>{Math.floor(gameState.substrate || 0)}</strong>
+                  <span>SUBSTRATE</span>
+                  <strong>{Math.floor(gameState.substrate || 0)}</strong>
                 </div>
               )}
             </div>
