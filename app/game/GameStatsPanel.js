@@ -180,6 +180,12 @@ function GameStatsPanel({
                 <span style={{ color: '#ffd060' }}>INTELLIGENCE</span>
                 <strong style={{ color: '#ffd060' }}>{Math.floor(gameState.intelligence || 0)}</strong>
               </div>
+              {gameState.factoryUnlocked && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px' }}>
+                  <span style={{ color: '#c46bff' }}>SUBSTRATE</span>
+                  <strong style={{ color: '#c46bff' }}>{Math.floor(gameState.substrate || 0)}</strong>
+                </div>
+              )}
             </div>
           )}
           {gameState.pp >= 15 && gameState.phase === 1 && gameState.sanity >= 80 && (

@@ -19,6 +19,7 @@ import NotificationPopup from './NotificationPopup';
 import TierUnlockModal from './TierUnlockModal';
 import Chapter2Intro from './Chapter2Intro';
 import InsightsPanel from './InsightsPanel';
+import FactoryPanel from './FactoryPanel';
 import GameActionsPanel from './GameActionsPanel';
 import GameUpgradesPanel from './GameUpgradesPanel';
 import GameStatsPanel from './GameStatsPanel';
@@ -31,6 +32,7 @@ import { addExperience, purchaseSkill, getActiveSkillEffects, getModifiedPortalC
 import { SKILLS, LEVEL_SYSTEM, XP_REWARDS } from './skillTreeConstants';
 import { DIMENSIONAL_MATERIALS } from './dimensionalConstants';
 import { getSanityTierDisplay, isSanityDrainPaused, calculatePaperQuality, getSanityTier } from './sanityPaperHelpers';
+import { computeFactoryTick } from './factoryHelpers';
 import {
   INITIAL_GAME_STATE,
   LOCATIONS,
@@ -44,7 +46,8 @@ import {
   MECHANICS_ENTRIES,
   PP_MULTIPLIER_TIERS,
   LUCID_ANCHOR_FLOORS,
-  RESOURCE_DISCOVERY_GRANT
+  RESOURCE_DISCOVERY_GRANT,
+  FACTORY_MATERIAL_OUTPUT
 } from './constants';
 
 const PORTAL_UNLOCK_ENTRIES = ['glitched', 'maintenance', 'encrypted_lights'];
@@ -578,12 +581,38 @@ export default function Game() {
         // a freshly-meditated 1000% down to 999.98 before this check ever sees it.
         if ((prev.chapter || 1) >= 2 && !prev.resourcesUnlocked && (newState.sanity >= 1000 || prev.sanity >= 1000)) {
           newState.resourcesUnlocked = true;
+          newState.factoryUnlocked = true;
           newState.lucidity = (newState.lucidity ?? prev.lucidity ?? 0) + RESOURCE_DISCOVERY_GRANT.lucidity;
           newState.intelligence = (newState.intelligence ?? prev.intelligence ?? 0) + RESOURCE_DISCOVERY_GRANT.intelligence;
           newState.recentMessages = [
-            'You see clearly now. LUCIDITY and INTELLIGENCE take shape in your mind.',
+            'You see clearly now. LUCIDITY and INTELLIGENCE take shape in your mind. Beneath it all, machinery waits.',
             ...(newState.recentMessages || prev.recentMessages),
           ].slice(0, prev.maxLogMessages || 15);
+        }
+
+        // Factory ("The Construct"): run the production chain every tick, always
+        // (true idle), once it has been discovered. Outputs add to whatever other
+        // tick logic already set on newState (passive PP, lucidity gen, etc.).
+        // Backfill: saves that reached the resources before this feature existed
+        // have resourcesUnlocked but not factoryUnlocked — grant it on load.
+        if (prev.resourcesUnlocked && !prev.factoryUnlocked) {
+          newState.factoryUnlocked = true;
+        }
+        if (prev.factoryUnlocked) {
+          const f = computeFactoryTick(prev, 0.1);
+          newState.substrate = f.newSubstrate;
+          newState.factoryMaterialAcc = f.materialAcc;
+          if (f.pp) newState.pp = (newState.pp || 0) + f.pp;
+          if (f.paper) newState.paper = (newState.paper || 0) + f.paper;
+          if (f.lucidity) newState.lucidity = (newState.lucidity || 0) + f.lucidity;
+          if (f.intelligence) newState.intelligence = (newState.intelligence || 0) + f.intelligence;
+          if (f.wholeMaterials > 0) {
+            const inv = newState.dimensionalInventory || prev.dimensionalInventory || {};
+            newState.dimensionalInventory = {
+              ...inv,
+              [FACTORY_MATERIAL_OUTPUT]: (inv[FACTORY_MATERIAL_OUTPUT] || 0) + f.wholeMaterials,
+            };
+          }
         }
 
         // PP tier multiplier check
@@ -840,6 +869,18 @@ export default function Game() {
     );
   }
 
+  if (gameState.factoryOpen) {
+    return (
+      <FactoryPanel
+        gameState={gameState}
+        actions={actions}
+        onClose={actions.closeFactory}
+        notifications={gameState.notifications}
+        onDismissNotification={dismissNotification}
+      />
+    );
+  }
+
   if (gameState.pendingBuff) {
     return (
       <BuffReplacementModal
@@ -1049,6 +1090,23 @@ export default function Game() {
                 }}
               >
                 INSIGHTS
+              </button>
+            )}
+            {gameState.factoryUnlocked && (
+              <button
+                onClick={actions.openFactory}
+                style={{
+                  background: 'none',
+                  border: '1px solid #6bff9f',
+                  color: '#6bff9f',
+                  padding: '4px 8px',
+                  cursor: 'pointer',
+                  fontSize: '10px',
+                  fontFamily: 'inherit',
+                  opacity: 0.9
+                }}
+              >
+                FACTORY
               </button>
             )}
             <button

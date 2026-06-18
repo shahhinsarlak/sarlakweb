@@ -13,7 +13,8 @@
  * - upgrades: Purchase permanent improvements
  * - printer: Paper generation system
  */
-import { LOCATIONS, UPGRADES, DEBUG_CHALLENGES, PRINTER_UPGRADES, DOCUMENT_TYPES, TIER_MASTERY_WEIGHTS, INITIAL_GAME_STATE, LORE_SNIPPETS, INSIGHTS, CLARITY_BUFF, HELP_POPUPS } from './constants';
+import { LOCATIONS, UPGRADES, DEBUG_CHALLENGES, PRINTER_UPGRADES, DOCUMENT_TYPES, TIER_MASTERY_WEIGHTS, INITIAL_GAME_STATE, LORE_SNIPPETS, INSIGHTS, CLARITY_BUFF, HELP_POPUPS, FACTORY_MACHINES } from './constants';
+import { getMachineBuildCost } from './factoryHelpers';
 import {
   applyEnergyCostReduction,
   getModifiedRestCooldown,
@@ -1249,6 +1250,68 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
     });
   };
 
+  // --- Factory / "The Construct" (Chapter 2, Phase 2) ---
+
+  const openFactory = () => setGameState(prev => ({ ...prev, factoryOpen: true }));
+  const closeFactory = () => setGameState(prev => ({ ...prev, factoryOpen: false }));
+
+  // Research a machine blueprint with Intelligence (unlocks building that machine).
+  const researchBlueprint = (machineId) => {
+    setGameState(prev => {
+      const machine = FACTORY_MACHINES.find(m => m.id === machineId);
+      if (!machine || !machine.blueprint) return prev;
+      if ((prev.factoryBlueprints || []).includes(machineId)) return prev;
+
+      const cost = machine.blueprint.intelligence || 0;
+      if ((prev.intelligence || 0) < cost) {
+        return {
+          ...prev,
+          recentMessages: ['Not enough intelligence to grasp that blueprint.', ...prev.recentMessages].slice(0, prev.maxLogMessages || 15),
+        };
+      }
+
+      setTimeout(() => checkAchievements(), 50);
+      return {
+        ...prev,
+        intelligence: (prev.intelligence || 0) - cost,
+        factoryBlueprints: [...(prev.factoryBlueprints || []), machineId],
+        recentMessages: [`Blueprint understood: ${machine.name}.`, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15),
+      };
+    });
+  };
+
+  // Build one more of a machine, paying its scaling build cost (lucidity etc.).
+  const buildMachine = (machineId) => {
+    setGameState(prev => {
+      const machine = FACTORY_MACHINES.find(m => m.id === machineId);
+      if (!machine) return prev;
+      if (machine.blueprint && !(prev.factoryBlueprints || []).includes(machineId)) return prev;
+
+      const cost = getMachineBuildCost(machine, prev);
+      const affordable = Object.entries(cost).every(([res, amt]) => (prev[res] || 0) >= amt);
+      if (!affordable) {
+        return {
+          ...prev,
+          recentMessages: ['Not enough to build that machine.', ...prev.recentMessages].slice(0, prev.maxLogMessages || 15),
+        };
+      }
+
+      const newState = {
+        ...prev,
+        factoryMachines: {
+          ...(prev.factoryMachines || {}),
+          [machineId]: (prev.factoryMachines?.[machineId] || 0) + 1,
+        },
+      };
+      Object.entries(cost).forEach(([res, amt]) => {
+        newState[res] = (prev[res] || 0) - amt;
+      });
+      newState.recentMessages = [`Built: ${machine.name}.`, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15);
+      setTimeout(() => checkAchievements(), 50);
+      return newState;
+    });
+  };
+
   // Return all action handlers
   return {
     sortPapers,
@@ -1293,5 +1356,10 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
     closeInsights,
     researchInsight,
     craftClarity,
+    // Factory / The Construct (Phase 2)
+    openFactory,
+    closeFactory,
+    researchBlueprint,
+    buildMachine,
   };
 };

@@ -112,6 +112,13 @@ export const INITIAL_GAME_STATE = {
   lucidAnchorTier: 0,           // Lucid Anchor checkpoint (0-3 -> sanity floor 0/250/500/750)
   researchedInsights: [],       // Insight ids researched in the Insights panel
   insightsOpen: false,          // Is the Insights panel visible
+  // Factory / "The Construct" (Chapter 2, Phase 2)
+  factoryUnlocked: false,       // Revealed alongside lucidity/intelligence at 1000% sanity
+  factoryOpen: false,           // Is the Factory panel visible
+  substrate: 0,                 // Raw resource mined by Extractors, consumed by Converters
+  factoryMachines: {},          // { machineId: count } owned machines
+  factoryBlueprints: [],        // Researched converter blueprint ids (generator/extractor need none)
+  factoryMaterialAcc: 0,        // Fractional dimensional-material accumulator (materials are integers)
 };
 
 
@@ -720,6 +727,9 @@ export const ACHIEVEMENTS = [
   { id: 'first_lucidity', name: 'Lucid', desc: 'Push your sanity above 100%', check: (state) => state.sanity > 100, reward: { type: 'ppMultiplier', value: 0.03 } },
   { id: 'transcendent_mind', name: 'Transcendent', desc: 'Reach 1000% sanity', check: (state) => state.sanity >= 1000, reward: { type: 'ppMultiplier', value: 0.10 } },
   { id: 'first_insight', name: 'Insight', desc: 'Research your first insight', check: (state) => (state.researchedInsights || []).length >= 1 },
+  { id: 'the_construct', name: 'The Construct', desc: 'Build your first factory machine', check: (state) => Object.values(state.factoryMachines || {}).reduce((s, c) => s + c, 0) >= 1 },
+  { id: 'automation', name: 'Automation', desc: 'Research all five converter blueprints', check: (state) => (state.factoryBlueprints || []).length >= 5, reward: { type: 'ppMultiplier', value: 0.10 } },
+  { id: 'substrate_baron', name: 'Substrate Baron', desc: 'Stockpile 1000 substrate', check: (state) => (state.substrate || 0) >= 1000 },
 ];
 
 /**
@@ -1261,6 +1271,113 @@ export const CLARITY_BUFF = { name: 'Clarity', duration: 180, lucidityCost: 40 }
 export const RESOURCE_DISCOVERY_GRANT = { lucidity: 80, intelligence: 50 };
 
 /**
+ * Factory machines ("The Construct", Chapter 2 Phase 2)
+ *
+ * Production chain: Generators make Power -> Extractors spend Power to mine
+ * Substrate -> Converters spend Power + Substrate to output existing resources.
+ * Over-budget power throttles all consumers proportionally; a dry substrate
+ * stockpile throttles converters to available flow.
+ *
+ * Per-machine fields (rates are PER SECOND; the tick applies /10):
+ * - blueprint: { intelligence } cost to research (null = buildable immediately)
+ * - buildCost: resources to build one (scales by costGrowth^owned)
+ * - power: + produced / - consumed
+ * - substrate: + produced / - consumed
+ * - output: { resource, rate, scalesWithPPTier? } existing resource produced
+ * - material: accent colour used by the pixel-art sprite (vivid; bodies are muted)
+ */
+export const FACTORY_MACHINES = [
+  {
+    id: 'generator',
+    name: 'Reality Generator',
+    desc: 'Draws power from the hum of the false lights.',
+    blueprint: null,
+    buildCost: { lucidity: 40 },
+    costGrowth: 1.18,
+    power: 10,
+    substrate: 0,
+    output: null,
+    material: '#9fe8ff',
+  },
+  {
+    id: 'extractor',
+    name: 'Substrate Extractor',
+    desc: 'Bores into the substance beneath the office and draws up raw substrate.',
+    blueprint: null,
+    buildCost: { lucidity: 60 },
+    costGrowth: 1.18,
+    power: -6,
+    substrate: 0.5,
+    output: null,
+    material: '#c46bff',
+  },
+  {
+    id: 'conv_pp',
+    name: 'PP Synthesizer',
+    desc: 'Folds substrate into pure productivity. Output scales with your PP tier.',
+    blueprint: { intelligence: 40 },
+    buildCost: { lucidity: 80 },
+    costGrowth: 1.20,
+    power: -8,
+    substrate: -0.3,
+    output: { resource: 'pp', rate: 50, scalesWithPPTier: true },
+    material: '#ffd24a',
+  },
+  {
+    id: 'conv_paper',
+    name: 'Paper Loom',
+    desc: 'Weaves substrate into endless paper.',
+    blueprint: { intelligence: 50 },
+    buildCost: { lucidity: 100 },
+    costGrowth: 1.20,
+    power: -8,
+    substrate: -0.3,
+    output: { resource: 'paper', rate: 2 },
+    material: '#f2efe6',
+  },
+  {
+    id: 'conv_lucidity',
+    name: 'Lucidity Distiller',
+    desc: 'Condenses substrate into perception.',
+    blueprint: { intelligence: 100 },
+    buildCost: { lucidity: 150 },
+    costGrowth: 1.22,
+    power: -10,
+    substrate: -0.5,
+    output: { resource: 'lucidity', rate: 0.3 },
+    material: '#00d0ff',
+  },
+  {
+    id: 'conv_intelligence',
+    name: 'Cognition Engine',
+    desc: 'Refines substrate into understanding.',
+    blueprint: { intelligence: 150 },
+    buildCost: { lucidity: 180 },
+    costGrowth: 1.22,
+    power: -10,
+    substrate: -0.5,
+    output: { resource: 'intelligence', rate: 0.2 },
+    material: '#ffd060',
+  },
+  {
+    id: 'conv_material',
+    name: 'Material Condenser',
+    desc: 'Crystallises substrate into raw dimensional materials.',
+    blueprint: { intelligence: 120 },
+    buildCost: { lucidity: 200 },
+    costGrowth: 1.22,
+    power: -12,
+    substrate: -0.6,
+    output: { resource: 'material', rate: 0.05 },
+    material: '#6bff9f',
+  },
+];
+
+// Extraction/conversion base rates are read from FACTORY_MACHINES above; this is
+// the dimensional material the Material Condenser yields (commonest tier).
+export const FACTORY_MATERIAL_OUTPUT = 'void_fragment';
+
+/**
  * Help Popup Definitions
  * Context-aware tutorial popups that appear at key moments
  */
@@ -1434,6 +1551,18 @@ INTELLIGENCE: understanding. Earned by solving Debug challenges, consuming Repor
 Spend them in INSIGHTS. Anchor your clarity so you never fall so far again, and learn new techniques. This is how you start to build a way through.`,
     category: 'mechanics'
   },
+  factory: {
+    id: 'factory',
+    title: 'THE CONSTRUCT',
+    content: `Lucid, you can finally perceive the machinery beneath the office, and reshape it.
+
+THE CONSTRUCT is a factory. Research blueprints with INTELLIGENCE, then build machines with LUCIDITY.
+
+Generators make POWER. Extractors spend power to mine SUBSTRATE, the raw stuff of this false reality. Converters spend substrate and power to manufacture PP, paper, materials, lucidity, and intelligence, automatically, forever.
+
+Balance power against demand, and extraction against conversion. Let it run.`,
+    category: 'mechanics'
+  },
 };
 
 /**
@@ -1459,6 +1588,7 @@ export const HELP_TRIGGERS = {
   chapter2: (state) => (state.chapter || 1) >= 2,
   lucid: (state) => state.sanity > 100,
   resourcesDiscovered: (state) => !!state.resourcesUnlocked,
+  factory: (state) => !!state.factoryUnlocked,
 };
 
 /**
@@ -1693,5 +1823,18 @@ LUCIDITY (perception): gathers passively while lucid, faster the higher your san
 INTELLIGENCE (understanding): earned from Debug successes, from consuming Reports, and as a small trickle while lucid.
 
 Spend both in the INSIGHTS panel. Lucid Anchors set a permanent sanity floor (250 / 500 / 750), and the Clarity Technique lets you craft a buff that halts lucid decay.`
+  },
+  factory: {
+    id: 'factory',
+    title: 'The Construct (Factory)',
+    category: 'The Second Chapter',
+    summary: 'An automated production chain that runs forever.',
+    details: `Research blueprints with INTELLIGENCE, build machines with LUCIDITY.
+
+Chain: Generators produce POWER. Extractors spend power to mine SUBSTRATE. Converters spend substrate and power to manufacture PP, paper, dimensional materials, lucidity, and intelligence.
+
+Two throttles keep it honest: if power demand exceeds supply, every machine slows proportionally; if substrate runs dry, converters slow to the rate extraction can sustain. Own as many of each machine as you can afford (each copy costs more). It all runs on its own, even while you are elsewhere.
+
+The PP Synthesizer scales with your PP multiplier tier, so it stays relevant.`
   },
 };
