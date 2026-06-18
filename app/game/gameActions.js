@@ -111,134 +111,62 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
   };
 
   const startMeditation = () => {
-    const targetTime = 1500 + Math.random() * 1000; // Reduced from 3000-5000
     addMessage('Close your eyes. Focus on your breathing.');
     setGameState(prev => ({
       ...prev,
       meditating: true,
       breathCount: 0,
-      meditationPhase: 'inhale',
-      meditationStartTime: Date.now(),
-      meditationTargetTime: targetTime,
-      meditationScore: 0,
-      meditationPerfectWindow: 200 // Reduced from 300
     }));
   };
 
-  const breatheAction = (action) => {
+  // Finish a meditation session. The MeditationModal runs the hold-to-breathe
+  // minigame and passes back an average score (0-100) across the three breaths.
+  const completeMeditation = (avgScore) => {
     setGameState(prev => {
       if (!prev.meditating) return prev;
-      
-      const currentTime = Date.now();
-      const elapsed = currentTime - prev.meditationStartTime;
-      const target = prev.meditationTargetTime;
-      const perfectWindow = prev.meditationPerfectWindow;
-      
-      const isCorrectAction = prev.meditationPhase === action;
-      if (!isCorrectAction) {
-        addMessage('Wrong action! Focus on the rhythm...');
-        return {
-          ...prev,
-          meditationScore: prev.meditationScore - 20
-        };
-      }
-      
-      const difference = Math.abs(elapsed - target);
-      
-      let points = 0;
-      if (difference <= perfectWindow) {
-        points = 100;
-      } else if (difference <= perfectWindow * 2) {
-        points = 75;
-      } else if (difference <= perfectWindow * 4) {
-        points = 50;
-      } else if (difference <= perfectWindow * 6) {
-        points = 25;
+
+      let sanityGain = 0;
+      let message = '';
+      if (avgScore >= 85) {
+        sanityGain = 40;
+        message = 'Perfect rhythm achieved. Your mind is completely clear.';
+      } else if (avgScore >= 70) {
+        sanityGain = 30;
+        message = 'Excellent control. Reality feels more stable.';
+      } else if (avgScore >= 50) {
+        sanityGain = 20;
+        message = 'Good effort. Some peace returns.';
+      } else if (avgScore >= 30) {
+        sanityGain = 12;
+        message = 'Struggling to focus. The lights still intrude.';
       } else {
-        points = 10;
+        sanityGain = 5;
+        message = 'Your rhythm is chaotic. The fluorescent hum grows louder.';
       }
-      
-      const newScore = prev.meditationScore + points;
-      
-      // Increment breath count only when completing a full cycle (after exhale -> moving to next inhale)
-      let newBreathCount = prev.breathCount;
-      if (action === 'exhale') {
-        newBreathCount = prev.breathCount + 1;
+
+      if (prev.dimensionalUpgrades?.crystal_meditation) {
+        sanityGain *= 2;
       }
-      
-      // Complete after 3 full breaths (after 3 exhales)
-      if (newBreathCount >= 3) {
-        const avgScore = newScore / 6;
-        let sanityGain = 0;
-        let message = '';
 
-        if (avgScore >= 85) {
-          sanityGain = 40;
-          message = 'Perfect rhythm achieved. Your mind is completely clear.';
-        } else if (avgScore >= 70) {
-          sanityGain = 30;
-          message = 'Excellent control. Reality feels more stable.';
-        } else if (avgScore >= 50) {
-          sanityGain = 20;
-          message = 'Good effort. Some peace returns.';
-        } else if (avgScore >= 30) {
-          sanityGain = 12;
-          message = 'Struggling to focus. The lights still intrude.';
-        } else {
-          sanityGain = 5;
-          message = 'Your rhythm is chaotic. The fluorescent hum grows louder.';
-        }
+      // Insights (Deep Breathing / Lucid Recall) boost meditation results.
+      const ie = getInsightEffects(prev);
+      sanityGain *= (1 + ie.meditationGainMult);
 
-        // Crystal Meditation doubles sanity gain
-        if (prev.dimensionalUpgrades?.crystal_meditation) {
-          sanityGain *= 2;
-        }
+      const appliedSanity = Math.min(prev.maxSanity || 100, prev.sanity + sanityGain) - prev.sanity;
+      const lucidityBonus = (prev.resourcesUnlocked && prev.sanity > 100)
+        ? Math.round(sanityGain * 0.5 * (1 + ie.meditationLucidityMult))
+        : 0;
+      const sanityNote = appliedSanity > 0 ? ` (+${Math.round(appliedSanity)} sanity)` : '';
+      const lucidNote = lucidityBonus > 0 ? ` (+${lucidityBonus} lucidity)` : '';
+      addMessage(`${message}${sanityNote}${lucidNote}`);
 
-        // Insights (Deep Breathing / Lucid Recall) boost meditation results.
-        const ie = getInsightEffects(prev);
-        sanityGain *= (1 + ie.meditationGainMult);
-
-        const appliedSanity = Math.min(prev.maxSanity || 100, prev.sanity + sanityGain) - prev.sanity;
-        // Chapter 2: meditating while already lucid (>100%) also yields a burst of
-        // Lucidity, once the resource has been discovered.
-        const lucidityBonus = (prev.resourcesUnlocked && prev.sanity > 100)
-          ? Math.round(sanityGain * 0.5 * (1 + ie.meditationLucidityMult))
-          : 0;
-        const sanityNote = appliedSanity > 0 ? ` (+${Math.round(appliedSanity)} sanity)` : '';
-        const lucidNote = lucidityBonus > 0 ? ` (+${lucidityBonus} lucidity)` : '';
-        addMessage(`${message}${sanityNote}${lucidNote}`);
-        return {
-          ...prev,
-          meditating: false,
-          breathCount: 0,
-          sanity: Math.min(prev.maxSanity || 100, prev.sanity + sanityGain),
-          lucidity: (prev.lucidity || 0) + lucidityBonus,
-          energy: Math.max(0, prev.energy - 10),
-          meditationPhase: null,
-          meditationStartTime: null,
-          meditationTargetTime: null,
-          meditationScore: 0
-        };
-      }
-      
-      let nextPhase;
-      let nextTargetTime;
-      
-      if (action === 'inhale') {
-        nextPhase = 'exhale';
-        nextTargetTime = 1000 + Math.random() * 800; // Reduced from 2500-4000
-      } else {
-        nextPhase = 'inhale';
-        nextTargetTime = 1500 + Math.random() * 1000; // Reduced from 3000-5000
-      }
-      
       return {
         ...prev,
-        breathCount: action === 'exhale' ? prev.breathCount + 1 : prev.breathCount,
-        meditationPhase: nextPhase,
-        meditationStartTime: Date.now(),
-        meditationTargetTime: nextTargetTime,
-        meditationScore: newScore
+        meditating: false,
+        breathCount: 0,
+        sanity: Math.min(prev.maxSanity || 100, prev.sanity + sanityGain),
+        lucidity: (prev.lucidity || 0) + lucidityBonus,
+        energy: Math.max(0, prev.energy - 10),
       };
     });
   };
@@ -249,10 +177,6 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       ...prev,
       meditating: false,
       breathCount: 0,
-      meditationPhase: null,
-      meditationStartTime: null,
-      meditationTargetTime: null,
-      meditationScore: 0
     }));
   };
 
@@ -1371,7 +1295,7 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
     sortPapers,
     rest,
     startMeditation,
-    breatheAction,
+    completeMeditation,
     cancelMeditation,
     startDebugSession,
     submitDebug,

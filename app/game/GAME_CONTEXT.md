@@ -56,7 +56,7 @@ variables.
 | `DimensionalArea.js` | Full-screen portal: collect material nodes within capacity, then exit. |
 | `FileDrawer.js` | Inbox-style document manager: consume / shred / star / sort. |
 | `SkillTreeModal.js` | Spend skill points (called "Personnel File System" in lore). |
-| `MeditationModal.js` | Breathing-rhythm minigame to restore sanity. |
+| `MeditationModal.js` | Hold-to-breathe minigame to restore sanity. |
 | `DebugModal.js` | Fix-the-code minigame for PP. |
 | `ArchiveModal.js` / `ExamineModal.js` | Browse Archive bookshelf / read a single item. |
 | `JournalModal.js` | Discovered locations + learned mechanics. |
@@ -201,8 +201,12 @@ achievements). Materials craft `DIMENSIONAL_UPGRADES`.
   success (+5 sanity), -10 sanity on failure. Glitch Compiler instead scales the
   reward to ~90 s of passive income (floored at the base), grants a 5 min +25%
   PP buff, and removes the sanity penalty on failure (no longer auto-passes).
-- **Meditation** (`MeditationModal`): time inhale/exhale over 3 breaths; 5-40
-  sanity by accuracy (doubled by Crystal Meditation). Unlocks at sanity ≤ 25.
+- **Meditation** (`MeditationModal`): hold-to-breathe over 3 breaths. Hold Space
+  (or the button) to inhale — the bar rises at a wandering speed; release inside
+  the green zone near the top, then it exhales (drops). Closer to green = better.
+  The modal runs the real-time minigame and calls `completeMeditation(avgScore)`,
+  which grants 5-40 sanity by accuracy (doubled by Crystal Meditation, boosted by
+  Deep Breathing insights). Unlocks at sanity ≤ 25.
 
 ### Events
 `EVENTS` fire probabilistically in the tick (gated by `minDay`, fire once). They
@@ -252,7 +256,7 @@ Begins once **every** upgrade (PP, printer, dimensional) is owned —
   by `getInsightEffects` (`insightHelpers.js`) — meditationGainMult,
   meditationLucidityMult, lucidDecayReduction (cap 0.9), lucidityRateMult,
   intelRateMult, intelGainMult, clarityDuration/CostMult — hooked into the
-  meditation result (gameActions `breatheAction`), lucid decay + passive
+  meditation result (gameActions `completeMeditation`), lucid decay + passive
   lucidity/intelligence gen (page.js tick), Debug/Report intelligence, and
   `craftClarity` (Clarity buff duration/cost). Techniques branch unlocks + tunes
   the Clarity craft.

@@ -942,8 +942,8 @@ export default function Game() {
     return (
       <MeditationModal
         gameState={gameState}
-        breatheAction={actions.breatheAction}
-        cancelMeditation={actions.cancelMeditation}
+        onComplete={actions.completeMeditation}
+        onCancel={actions.cancelMeditation}
         notifications={gameState.notifications}
         onDismissNotification={dismissNotification}
       />

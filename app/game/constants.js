@@ -1629,7 +1629,7 @@ The lights keep working even when you stop. They never stop.`,
     content: `Your sanity is below 25%. Reality begins to fracture.
 
 MEDITATION is now available. This breathing exercise restores sanity.
-Match the rhythm: Inhale... Exhale... Repeat.
+Hold SPACE to breathe in, release inside the green zone, repeat three times.
 
 Or embrace the madness. Low sanity increases PP and XP gains.
 The choice is yours.`,
@@ -1878,9 +1878,9 @@ The lights keep working even when you stop. They never stop.`
     title: 'Meditation System',
     category: 'Sanity Management',
     summary: 'Breathing exercises restore mental clarity.',
-    details: `When sanity drops below 25%, MEDITATION becomes available. Match the breathing rhythm (Inhale → Exhale) to restore sanity.
+    details: `When sanity drops below 25%, MEDITATION becomes available. Press and hold SPACE to breathe in; the bar rises at a wandering speed. Release it inside the green zone near the top, let it fall for the exhale, and repeat three times.
 
-Better timing grants more sanity. Perfect timing is enlightenment.
+The closer to the green zone on release, the more sanity you restore. Deep Breathing insights make each session worth more.
 
 Cost: 10 energy per session.`
   },
