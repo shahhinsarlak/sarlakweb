@@ -158,8 +158,13 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
         : 0;
       const sanityNote = appliedSanity > 0 ? ` (+${Math.round(appliedSanity)} sanity)` : '';
       const lucidNote = lucidityBonus > 0 ? ` (+${lucidityBonus} lucidity)` : '';
-      addMessage(`${message}${sanityNote}${lucidNote}`);
+      const msg = `${message}${sanityNote}${lucidNote}`;
 
+      // Fold the reward message into the returned state. This same update flips
+      // meditating:false (unmounting the modal), so calling addMessage() here would
+      // be a nested setState that gets dropped intermittently — write the log line
+      // and toast straight into newState instead.
+      const maxMessages = prev.maxLogMessages || 15;
       return {
         ...prev,
         meditating: false,
@@ -167,6 +172,11 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
         sanity: Math.min(prev.maxSanity || 100, prev.sanity + sanityGain),
         lucidity: (prev.lucidity || 0) + lucidityBonus,
         energy: Math.max(0, prev.energy - 10),
+        recentMessages: [msg, ...prev.recentMessages].slice(0, maxMessages),
+        notifications: [
+          ...(prev.notifications || []),
+          { id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, message: msg, timestamp: Date.now() },
+        ],
       };
     });
   };
