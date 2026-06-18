@@ -18,7 +18,7 @@ import { INITIAL_GAME_STATE } from './constants';
  * changes in a way that needs migrating, then add a migration keyed by the
  * previous version in MIGRATIONS below.
  */
-export const CURRENT_SAVE_VERSION = 2;
+export const CURRENT_SAVE_VERSION = 3;
 
 /** localStorage key used for autosave persistence. */
 export const LOCAL_KEY = 'sarlak-office-horror-save';
@@ -49,6 +49,17 @@ export const LOCAL_KEY = 'sarlak-office-horror-save';
 const MIGRATIONS = {
   // 1 -> 2: no structural change. Placeholder so the pipeline is in place.
   1: (state) => state,
+  // 2 -> 3: factory machines went from "buy multiples" (count) to singular
+  // machines with an upgrade level. Any previously-owned machine becomes built
+  // at upgrade level 0; extra copies are dropped.
+  2: (state) => {
+    const old = state.factoryMachines || {};
+    const migrated = {};
+    Object.entries(old).forEach(([id, val]) => {
+      if (typeof val === 'number' && val > 0) migrated[id] = 0;
+    });
+    return { ...state, factoryMachines: migrated };
+  },
 };
 
 /**

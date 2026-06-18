@@ -728,9 +728,10 @@ export const ACHIEVEMENTS = [
   { id: 'first_lucidity', name: 'Lucid', desc: 'Push your sanity above 100%', check: (state) => state.sanity > 100, reward: { type: 'ppMultiplier', value: 0.03 } },
   { id: 'transcendent_mind', name: 'Transcendent', desc: 'Reach 1000% sanity', check: (state) => state.sanity >= 1000, reward: { type: 'ppMultiplier', value: 0.10 } },
   { id: 'first_insight', name: 'Insight', desc: 'Research your first insight', check: (state) => (state.researchedInsights || []).length >= 1 },
-  { id: 'the_construct', name: 'The Construct', desc: 'Build your first factory machine', check: (state) => Object.values(state.factoryMachines || {}).reduce((s, c) => s + c, 0) >= 1 },
+  { id: 'the_construct', name: 'The Construct', desc: 'Build your first factory machine', check: (state) => Object.keys(state.factoryMachines || {}).length >= 1 },
   { id: 'automation', name: 'Automation', desc: 'Research all five converter blueprints', check: (state) => (state.factoryBlueprints || []).length >= 5, reward: { type: 'ppMultiplier', value: 0.10 } },
   { id: 'substrate_baron', name: 'Substrate Baron', desc: 'Stockpile 1000 substrate', check: (state) => (state.substrate || 0) >= 1000 },
+  { id: 'master_engineer', name: 'Master Engineer', desc: 'Fully upgrade a factory machine to level 10', check: (state) => Object.values(state.factoryMachines || {}).some((lvl) => lvl >= 10), reward: { type: 'ppMultiplier', value: 0.15 } },
 ];
 
 /**
@@ -1274,21 +1275,23 @@ export const RESOURCE_DISCOVERY_GRANT = { lucidity: 80, intelligence: 50 };
 /**
  * Factory machines ("The Construct", Chapter 2 Phase 2)
  *
- * Production chain: Generators trickle POWER into a battery (stored `power`,
- * capped by capacity). Capacitors raise the battery capacity. Extractors and
- * Converters DRAIN power and run on it: when the battery hits 0 they can only run
- * on incoming generation, and stop entirely with no generation. Extractors mine
- * Substrate; Converters spend Substrate + power to output existing resources.
+ * Each machine is a SINGULAR, distinct thing the player cobbles together from
+ * office junk and then upgrades (10 upgrades each, see FACTORY_UPGRADES). No
+ * multiples. `factoryMachines[id]` is the machine's upgrade LEVEL (0 = built and
+ * un-upgraded, up to 10); absent = not built.
  *
- * Per-machine fields (rates are PER SECOND; the tick applies /10):
- * - blueprint: { intelligence } cost to research (null = buildable immediately)
- * - buildCost: resources to build one (scales by costGrowth^owned)
- * - powerGen: power/sec produced into the battery
- * - powerUse: power/sec drained from the battery to run
- * - powerCapacity: battery capacity added per machine
- * - substrate: + produced / - consumed (per second)
- * - output: { resource, rate, scalesWithPPTier? } existing resource produced
- * - material: accent colour used by the pixel-art sprite (vivid; bodies are muted)
+ * Power is a battery: the Generator trickles power in, the Capacitor Bank raises
+ * capacity, and each consumer drains its own draw every tick. Consumers run in
+ * `priority` order; a machine runs only if the battery can cover its full draw
+ * that tick, otherwise it HALTS entirely (no output) until power recovers or the
+ * Generator is upgraded to outpace demand.
+ *
+ * Base per-machine fields (rates are PER SECOND; the tick applies /10). Upgrades
+ * modify these via getEffectiveMachineStats:
+ * - blueprint: { intelligence } to research before building (null = none)
+ * - buildCost: one-time resources to build the machine
+ * - priority: lower runs first when power is scarce (consumers only)
+ * - powerGen / powerUse / powerCapacity / substrate / output / material / lore
  */
 export const FACTORY_BASE_POWER_CAPACITY = 50;
 
@@ -1296,10 +1299,10 @@ export const FACTORY_MACHINES = [
   {
     id: 'generator',
     name: 'Reality Generator',
-    desc: 'Draws power from the hum of the false lights, slowly charging the grid.',
+    desc: 'Trickles power into the grid from the hum of the false lights.',
+    lore: 'Three desk fans, a coil of extension cord, and the back panel of a vending machine. It should not produce anything. It hums anyway, in the same key as the ceiling lights.',
     blueprint: null,
     buildCost: { lucidity: 40 },
-    costGrowth: 1.18,
     powerGen: 5,
     material: '#9fe8ff',
   },
@@ -1307,9 +1310,9 @@ export const FACTORY_MACHINES = [
     id: 'capacitor',
     name: 'Capacitor Bank',
     desc: 'Stores charge. Raises how much power the grid can hold.',
+    lore: 'A filing cabinet packed with every dead phone battery from the lost-and-found, wired in series. It holds a charge far longer than it has any right to.',
     blueprint: null,
     buildCost: { lucidity: 50 },
-    costGrowth: 1.18,
     powerCapacity: 50,
     material: '#ffe08a',
   },
@@ -1317,9 +1320,10 @@ export const FACTORY_MACHINES = [
     id: 'extractor',
     name: 'Substrate Extractor',
     desc: 'Bores into the substance beneath the office and draws up raw substrate.',
+    lore: 'A water-cooler bottle inverted over a hand drill, sealed with packing tape. It bites into the floor and the floor, somewhere underneath, bleeds something grey.',
     blueprint: null,
     buildCost: { lucidity: 60 },
-    costGrowth: 1.18,
+    priority: 1,
     powerUse: 4,
     substrate: 0.5,
     material: '#c46bff',
@@ -1328,9 +1332,10 @@ export const FACTORY_MACHINES = [
     id: 'conv_pp',
     name: 'PP Synthesizer',
     desc: 'Folds substrate into pure productivity. Output scales with your PP tier.',
+    lore: 'A stapler, a label-maker, and an in-tray welded around the extractor feed. It sorts substrate into the shape of work. The label-maker only ever prints your name.',
     blueprint: { intelligence: 40 },
     buildCost: { lucidity: 80 },
-    costGrowth: 1.20,
+    priority: 2,
     powerUse: 5,
     substrate: -0.3,
     output: { resource: 'pp', rate: 50, scalesWithPPTier: true },
@@ -1340,9 +1345,10 @@ export const FACTORY_MACHINES = [
     id: 'conv_paper',
     name: 'Paper Loom',
     desc: 'Weaves substrate into endless paper.',
+    lore: 'The gutted carcass of the third-floor printer, its rollers and toner drum still warm. Feed it substrate and it prints blank pages, faster than it ever printed anything real.',
     blueprint: { intelligence: 50 },
     buildCost: { lucidity: 100 },
-    costGrowth: 1.20,
+    priority: 3,
     powerUse: 5,
     substrate: -0.3,
     output: { resource: 'paper', rate: 2 },
@@ -1352,9 +1358,10 @@ export const FACTORY_MACHINES = [
     id: 'conv_lucidity',
     name: 'Lucidity Distiller',
     desc: 'Condenses substrate into perception.',
+    lore: 'A break-room humidifier, a desk lamp, and the office plant nobody remembers buying. It breathes substrate in as fog and out as something clearer than air.',
     blueprint: { intelligence: 100 },
     buildCost: { lucidity: 150 },
-    costGrowth: 1.22,
+    priority: 4,
     powerUse: 6,
     substrate: -0.5,
     output: { resource: 'lucidity', rate: 0.3 },
@@ -1364,9 +1371,10 @@ export const FACTORY_MACHINES = [
     id: 'conv_intelligence',
     name: 'Cognition Engine',
     desc: 'Refines substrate into understanding.',
+    lore: 'Four dead monitors stacked into a cube around a server fan, screens facing inward. They show static, but if you watch long enough the static starts to make a kind of sense.',
     blueprint: { intelligence: 150 },
     buildCost: { lucidity: 180 },
-    costGrowth: 1.22,
+    priority: 5,
     powerUse: 6,
     substrate: -0.5,
     output: { resource: 'intelligence', rate: 0.2 },
@@ -1376,15 +1384,123 @@ export const FACTORY_MACHINES = [
     id: 'conv_material',
     name: 'Material Condenser',
     desc: 'Crystallises substrate into raw dimensional materials.',
+    lore: 'Magnetic paperclip holders, the microwave from the kitchenette, and a ring of staples. It compresses substrate until it forgets it was ever formless and falls out as solid stuff.',
     blueprint: { intelligence: 120 },
     buildCost: { lucidity: 200 },
-    costGrowth: 1.22,
+    priority: 6,
     powerUse: 8,
     substrate: -0.6,
     output: { resource: 'material', rate: 0.05 },
     material: '#6bff9f',
   },
 ];
+
+/**
+ * Per-machine upgrade tracks (10 each). The cost of upgrade level N is computed
+ * by getUpgradeCost() in factoryHelpers (formula, not stored). `effect` is one of:
+ * powerGenAdd, powerCapacityAdd, substrateAdd (additive to base) or
+ * powerUseMult, outputMult, outputAdd, substrateUseMult (multiplicative/additive
+ * modifiers aggregated by getEffectiveMachineStats). `visual: true` flags the
+ * milestone upgrades that will bolt on a new sprite attachment in Phase B.
+ */
+export const FACTORY_UPGRADES = {
+  generator: [
+    { name: 'Extra Extension Cord', desc: 'Reach a second outlet. +3 power/s.', effect: { powerGenAdd: 3 } },
+    { name: 'Overclocked Desk Fans', desc: 'Spin them past the warranty. +4 power/s.', effect: { powerGenAdd: 4 } },
+    { name: 'Daisy-Chained Power Strips', desc: 'A fire marshal would weep. +6 power/s.', effect: { powerGenAdd: 6 }, visual: true },
+    { name: 'Salvaged UPS Battery', desc: 'Ripped from under IT. +8 power/s.', effect: { powerGenAdd: 8 } },
+    { name: 'Server Room Tap', desc: 'Splice into the racks. +12 power/s.', effect: { powerGenAdd: 12 } },
+    { name: 'Fluorescent Ballast Array', desc: 'Harvest the lights themselves. +16 power/s.', effect: { powerGenAdd: 16 }, visual: true },
+    { name: 'Rewired Breaker Panel', desc: 'Bypass every safety. +22 power/s.', effect: { powerGenAdd: 22 } },
+    { name: 'Humming Transformer', desc: 'It sings your name. +30 power/s.', effect: { powerGenAdd: 30 } },
+    { name: 'Substation Splice', desc: 'Tap the building feed. +45 power/s.', effect: { powerGenAdd: 45 } },
+    { name: 'The Mains Itself', desc: 'There was never a meter. +70 power/s.', effect: { powerGenAdd: 70 }, visual: true },
+  ],
+  capacitor: [
+    { name: 'Spare Phone Batteries', desc: 'Lost-and-found haul. +40 capacity.', effect: { powerCapacityAdd: 40 } },
+    { name: 'Laptop Cells', desc: 'Pried from dead ThinkPads. +50 capacity.', effect: { powerCapacityAdd: 50 } },
+    { name: 'UPS Brick Stack', desc: 'A wall of beige. +70 capacity.', effect: { powerCapacityAdd: 70 }, visual: true },
+    { name: 'Car Battery (Whose?)', desc: 'It was in the parking sub-level. +90 capacity.', effect: { powerCapacityAdd: 90 } },
+    { name: 'Supercapacitor Coil', desc: 'Wound from speaker wire. +120 capacity.', effect: { powerCapacityAdd: 120 } },
+    { name: 'Coolant-Bathed Cells', desc: 'Submerged in the water cooler. +160 capacity.', effect: { powerCapacityAdd: 160 }, visual: true },
+    { name: 'Flywheel in a Chair Base', desc: 'It spins for hours. +220 capacity.', effect: { powerCapacityAdd: 220 } },
+    { name: 'Vault of Dead Cells', desc: 'The whole supply closet. +300 capacity.', effect: { powerCapacityAdd: 300 } },
+    { name: 'Resonant Battery Array', desc: 'They charge each other. +420 capacity.', effect: { powerCapacityAdd: 420 } },
+    { name: 'The Building Holds Its Breath', desc: 'Capacity you cannot measure. +600 capacity.', effect: { powerCapacityAdd: 600 }, visual: true },
+  ],
+  extractor: [
+    { name: 'Wider Drill Bit', desc: 'Bore a bigger hole. +0.3 substrate/s.', effect: { substrateAdd: 0.3 } },
+    { name: 'Second Bottle Hopper', desc: 'Twice the throat. +0.4 substrate/s.', effect: { substrateAdd: 0.4 } },
+    { name: 'Greased Bearings', desc: 'Quieter, hungrier. -10% power draw.', effect: { powerUseMult: 0.9 }, visual: true },
+    { name: 'Vacuum Assist', desc: 'A shop-vac on the intake. +0.6 substrate/s.', effect: { substrateAdd: 0.6 } },
+    { name: 'Reinforced Auger', desc: 'Rebar from the renovation. +0.8 substrate/s.', effect: { substrateAdd: 0.8 } },
+    { name: 'Counterweighted Arm', desc: 'It barely sips now. -15% power draw.', effect: { powerUseMult: 0.85 }, visual: true },
+    { name: 'Twin Bore Heads', desc: 'Two holes, one machine. +1.2 substrate/s.', effect: { substrateAdd: 1.2 } },
+    { name: 'Deep Shaft Liner', desc: 'Reach where the grey is thick. +1.6 substrate/s.', effect: { substrateAdd: 1.6 } },
+    { name: 'Frictionless Coupling', desc: 'It runs on almost nothing. -20% power draw.', effect: { powerUseMult: 0.8 } },
+    { name: 'It Digs Itself Now', desc: 'You only watch. +2.5 substrate/s.', effect: { substrateAdd: 2.5 }, visual: true },
+  ],
+  conv_pp: [
+    { name: 'Faster Stapler', desc: 'Ka-chunk, ka-chunk. +25% output.', effect: { outputMult: 1.25 } },
+    { name: 'Ergonomic Keyboard Feed', desc: 'Clack into productivity. +25% output.', effect: { outputMult: 1.25 } },
+    { name: 'Quieter Motor', desc: 'HR stops complaining. -10% power draw.', effect: { powerUseMult: 0.9 }, visual: true },
+    { name: 'Triple In-Tray', desc: 'Sort, sort, sort. +30% output.', effect: { outputMult: 1.30 } },
+    { name: 'Lean Substrate Intake', desc: 'Waste nothing. -15% substrate use.', effect: { substrateUseMult: 0.85 } },
+    { name: 'Hot-Desk Manifold', desc: 'Everyone shares now. +40% output.', effect: { outputMult: 1.40 }, visual: true },
+    { name: 'Cold Boot Bypass', desc: 'It never sleeps. -15% power draw.', effect: { powerUseMult: 0.85 } },
+    { name: 'Quarterly Overdrive', desc: 'Always end of quarter. +50% output.', effect: { outputMult: 1.50 } },
+    { name: 'Recycled Substrate Loop', desc: 'The work feeds itself. -20% substrate use.', effect: { substrateUseMult: 0.8 } },
+    { name: 'Employee of the Eon', desc: 'Productivity beyond reason. +75% output.', effect: { outputMult: 1.75 }, visual: true },
+  ],
+  conv_paper: [
+    { name: 'New Toner Drum', desc: 'Crisper nothing. +25% output.', effect: { outputMult: 1.25 } },
+    { name: 'Duplex Rollers', desc: 'Both sides blank. +25% output.', effect: { outputMult: 1.25 } },
+    { name: 'Standby Saver', desc: 'Sips between pages. -10% power draw.', effect: { powerUseMult: 0.9 }, visual: true },
+    { name: 'Bulk Tray Mod', desc: '500 sheets at a time. +30% output.', effect: { outputMult: 1.30 } },
+    { name: 'Fibre Reclaimer', desc: 'Less pulp wasted. -15% substrate use.', effect: { substrateUseMult: 0.85 } },
+    { name: 'Industrial Fuser', desc: 'It runs hot and proud. +40% output.', effect: { outputMult: 1.40 }, visual: true },
+    { name: 'Eco Ballast', desc: 'Greener haunting. -15% power draw.', effect: { powerUseMult: 0.85 } },
+    { name: 'Continuous Feed', desc: 'No more jams, ever. +50% output.', effect: { outputMult: 1.50 } },
+    { name: 'Pulp Recirculator', desc: 'The page remembers. -20% substrate use.', effect: { substrateUseMult: 0.8 } },
+    { name: 'The Press That Never Stops', desc: 'A library a second. +75% output.', effect: { outputMult: 1.75 }, visual: true },
+  ],
+  conv_lucidity: [
+    { name: 'Brighter Lamp', desc: 'See a little further. +25% output.', effect: { outputMult: 1.25 } },
+    { name: 'Second Humidifier', desc: 'Thicker fog, clearer mind. +25% output.', effect: { outputMult: 1.25 } },
+    { name: 'Low-Watt Bulbs', desc: 'Gentle on the grid. -10% power draw.', effect: { powerUseMult: 0.9 }, visual: true },
+    { name: 'A Second Plant', desc: 'It leans toward you. +30% output.', effect: { outputMult: 1.30 } },
+    { name: 'Condensate Loop', desc: 'Reuse the mist. -15% substrate use.', effect: { substrateUseMult: 0.85 } },
+    { name: 'Crystal Diffuser', desc: 'Light splits into meaning. +40% output.', effect: { outputMult: 1.40 }, visual: true },
+    { name: 'Trickle Power Mode', desc: 'Barely there. -15% power draw.', effect: { powerUseMult: 0.85 } },
+    { name: 'Resonant Chamber', desc: 'The room agrees with you. +50% output.', effect: { outputMult: 1.50 } },
+    { name: 'Closed Breathing Cycle', desc: 'It exhales what it needs. -20% substrate use.', effect: { substrateUseMult: 0.8 } },
+    { name: 'Perfect Stillness', desc: 'Clarity without effort. +75% output.', effect: { outputMult: 1.75 }, visual: true },
+  ],
+  conv_intelligence: [
+    { name: 'Fifth Monitor', desc: 'More static to read. +25% output.', effect: { outputMult: 1.25 } },
+    { name: 'Overclocked Server Fan', desc: 'Think faster. +25% output.', effect: { outputMult: 1.25 } },
+    { name: 'Undervolted Boards', desc: 'Cool and quiet. -10% power draw.', effect: { powerUseMult: 0.9 }, visual: true },
+    { name: 'RAID of Old Drives', desc: 'It remembers more. +30% output.', effect: { outputMult: 1.30 } },
+    { name: 'Cache Optimiser', desc: 'Chew substrate finer. -15% substrate use.', effect: { substrateUseMult: 0.85 } },
+    { name: 'Neural Screen Lattice', desc: 'The static forms a face. +40% output.', effect: { outputMult: 1.40 }, visual: true },
+    { name: 'Sleep-State Bypass', desc: 'It never powers down. -15% power draw.', effect: { powerUseMult: 0.85 } },
+    { name: 'Parallel Cores', desc: 'A dozen trains of thought. +50% output.', effect: { outputMult: 1.50 } },
+    { name: 'Lossless Substrate Codec', desc: 'Nothing misunderstood. -20% substrate use.', effect: { substrateUseMult: 0.8 } },
+    { name: 'It Finishes Your Sentences', desc: 'Understanding beyond yours. +75% output.', effect: { outputMult: 1.75 }, visual: true },
+  ],
+  conv_material: [
+    { name: 'Stronger Magnets', desc: 'Pull harder. +25% output.', effect: { outputMult: 1.25 } },
+    { name: 'Second Microwave', desc: 'Double the compression. +25% output.', effect: { outputMult: 1.25 } },
+    { name: 'Shielded Casing', desc: 'Less leaks out. -10% power draw.', effect: { powerUseMult: 0.9 }, visual: true },
+    { name: 'Staple Ring Mk II', desc: 'A tighter cage. +30% output.', effect: { outputMult: 1.30 } },
+    { name: 'Dense Packing', desc: 'Squeeze every gram. -15% substrate use.', effect: { substrateUseMult: 0.85 } },
+    { name: 'Resonant Compression', desc: 'Matter forgets it was fog. +40% output.', effect: { outputMult: 1.40 }, visual: true },
+    { name: 'Capacitive Pulse Drive', desc: 'Brief, efficient bursts. -15% power draw.', effect: { powerUseMult: 0.85 } },
+    { name: 'Crystalline Mould', desc: 'Perfect lattices. +50% output.', effect: { outputMult: 1.50 } },
+    { name: 'Substrate Recovery Trap', desc: 'Catch the scraps. -20% substrate use.', effect: { substrateUseMult: 0.8 } },
+    { name: 'It Makes Things That Should Not Be', desc: 'Solid impossibility. +75% output.', effect: { outputMult: 1.75 }, visual: true },
+  ],
+};
 
 // Extraction/conversion base rates are read from FACTORY_MACHINES above; this is
 // the dimensional material the Material Condenser yields (commonest tier).

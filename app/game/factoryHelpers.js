@@ -1,38 +1,39 @@
 /**
- * Factory Helpers ("The Construct", Chapter 2 Phase 2)
+ * Factory Helpers ("The Construct", Chapter 2 Phase 2 / v2)
  *
- * Pure functions for the production chain: a power BATTERY (generators trickle
- * power in, capacitors raise capacity, consumers drain it), substrate flow,
- * per-machine scaling build cost, and a per-second production summary used by
- * both the UI and (mirrored) the 100ms tick.
+ * Singular machines: each machine is built once, then has a 10-step upgrade track
+ * (FACTORY_UPGRADES). `state.factoryMachines[id]` holds the machine's upgrade
+ * LEVEL (0..10); the key being present means it is built.
  *
- * Power: stored `power` is capped at capacity. Each tick, consumers run at
- * `powerEff` = how much of their demand the battery + incoming generation can
- * cover. At 0 stored power with no generation, powerEff = 0 and machines stop.
- * Substrate adds a second throttle (subEff) when the stockpile runs dry.
+ * Power is a battery. The Generator tops it up each tick; consumers draw in
+ * `priority` order and each runs only if the battery can cover its FULL draw that
+ * tick, otherwise it HALTS (no output, no draw). Converters also halt if their
+ * substrate draw is not available. No throttling — binary on/off per machine.
  */
 
-import { FACTORY_MACHINES, FACTORY_BASE_POWER_CAPACITY, PP_MULTIPLIER_TIERS } from './constants';
+import { FACTORY_MACHINES, FACTORY_UPGRADES, FACTORY_BASE_POWER_CAPACITY, PP_MULTIPLIER_TIERS } from './constants';
+
+export const MAX_UPGRADE_LEVEL = 10;
+
+// Upgrade cost formula (level = the level being purchased, 1..10).
+const UP_LUC_BASE = 40;
+const UP_LUC_GROWTH = 1.55;
+const UP_SUB_FROM = 4;
+const UP_SUB_BASE = 15;
+const UP_SUB_GROWTH = 1.5;
+const UP_INT_FROM = 7;
+const UP_INT_BASE = 25;
+const UP_INT_GROWTH = 1.5;
 
 /** Look up a machine definition by id. */
 export const getMachine = (id) => FACTORY_MACHINES.find((m) => m.id === id) || null;
 
-/** Number of a given machine the player owns. */
-export const getMachineCount = (state, id) => (state.factoryMachines?.[id] || 0);
+/** True if the machine has been built (key present, even at level 0). */
+export const isBuilt = (state, id) =>
+  Object.prototype.hasOwnProperty.call(state.factoryMachines || {}, id);
 
-/**
- * Build cost for the NEXT copy of a machine (scales by costGrowth^owned).
- * @returns {Object} resource -> integer amount
- */
-export const getMachineBuildCost = (machine, state) => {
-  const count = getMachineCount(state, machine.id);
-  const mult = Math.pow(machine.costGrowth || 1, count);
-  const cost = {};
-  Object.entries(machine.buildCost || {}).forEach(([res, amt]) => {
-    cost[res] = Math.ceil(amt * mult);
-  });
-  return cost;
-};
+/** Current upgrade level (0..10) of a built machine; 0 if not built. */
+export const getMachineLevel = (state, id) => (isBuilt(state, id) ? (state.factoryMachines[id] || 0) : 0);
 
 /** True if a machine's blueprint has been researched (or it needs none). */
 export const isBlueprintResearched = (machine, state) =>
@@ -44,10 +45,39 @@ export const canResearchBlueprint = (machine, state) =>
   !isBlueprintResearched(machine, state) &&
   (state.intelligence || 0) >= (machine.blueprint.intelligence || 0);
 
-/** Can the player afford to build the next copy of this machine? */
+/** Can the player afford to build this (unbuilt) machine? */
 export const canBuildMachine = (machine, state) => {
+  if (isBuilt(state, machine.id)) return false;
   if (!isBlueprintResearched(machine, state)) return false;
-  const cost = getMachineBuildCost(machine, state);
+  return Object.entries(machine.buildCost || {}).every(([res, amt]) => (state[res] || 0) >= amt);
+};
+
+/** The next upgrade definition for a machine, or null if maxed / not built. */
+export const getNextUpgrade = (state, id) => {
+  if (!isBuilt(state, id)) return null;
+  const level = getMachineLevel(state, id);
+  if (level >= MAX_UPGRADE_LEVEL) return null;
+  return (FACTORY_UPGRADES[id] || [])[level] || null;
+};
+
+/** Cost of upgrading a machine to `targetLevel` (1..10). */
+export const getUpgradeCost = (targetLevel) => {
+  const cost = { lucidity: Math.round(UP_LUC_BASE * Math.pow(UP_LUC_GROWTH, targetLevel - 1)) };
+  if (targetLevel >= UP_SUB_FROM) {
+    cost.substrate = Math.round(UP_SUB_BASE * Math.pow(UP_SUB_GROWTH, targetLevel - UP_SUB_FROM));
+  }
+  if (targetLevel >= UP_INT_FROM) {
+    cost.intelligence = Math.round(UP_INT_BASE * Math.pow(UP_INT_GROWTH, targetLevel - UP_INT_FROM));
+  }
+  return cost;
+};
+
+/** Can the player afford the next upgrade for a built, non-maxed machine? */
+export const canUpgradeMachine = (state, id) => {
+  if (!isBuilt(state, id)) return false;
+  const level = getMachineLevel(state, id);
+  if (level >= MAX_UPGRADE_LEVEL) return false;
+  const cost = getUpgradeCost(level + 1);
   return Object.entries(cost).every(([res, amt]) => (state[res] || 0) >= amt);
 };
 
@@ -59,154 +89,168 @@ export const getPPTierMultiplier = (state) => {
   return data ? data.multiplier : 1;
 };
 
-/** Total battery capacity = base + capacitor contributions. */
+/**
+ * Effective per-machine stats after applying its purchased upgrades.
+ * @returns {Object} { powerGen, powerUse, powerCapacity, substrate, output }
+ */
+export const getEffectiveMachineStats = (state, machine) => {
+  const level = getMachineLevel(state, machine.id);
+  const upgrades = FACTORY_UPGRADES[machine.id] || [];
+
+  let powerGen = machine.powerGen || 0;
+  let powerCapacity = machine.powerCapacity || 0;
+  let substrate = machine.substrate || 0;
+  let powerUseMult = 1;
+  let outputMult = 1;
+  let outputAdd = 0;
+  let substrateUseMult = 1;
+  let substrateAdd = 0;
+
+  for (let i = 0; i < level && i < upgrades.length; i += 1) {
+    const e = upgrades[i].effect || {};
+    if (e.powerGenAdd) powerGen += e.powerGenAdd;
+    if (e.powerCapacityAdd) powerCapacity += e.powerCapacityAdd;
+    if (e.substrateAdd) substrateAdd += e.substrateAdd;
+    if (e.powerUseMult) powerUseMult *= e.powerUseMult;
+    if (e.outputMult) outputMult *= e.outputMult;
+    if (e.outputAdd) outputAdd += e.outputAdd;
+    if (e.substrateUseMult) substrateUseMult *= e.substrateUseMult;
+  }
+
+  substrate += substrateAdd;
+  if (substrate < 0) substrate *= substrateUseMult; // converters: reduce consumption magnitude
+
+  const powerUse = (machine.powerUse || 0) * powerUseMult;
+  const output = machine.output
+    ? { ...machine.output, rate: (machine.output.rate + outputAdd) * outputMult }
+    : null;
+
+  return { powerGen, powerUse, powerCapacity, substrate, output };
+};
+
+/** Total battery capacity = base floor + all built machines' capacity. */
 export const getPowerCapacity = (state) => {
-  const machines = state.factoryMachines || {};
   let cap = FACTORY_BASE_POWER_CAPACITY;
-  FACTORY_MACHINES.forEach((m) => {
-    if (m.powerCapacity) cap += m.powerCapacity * (machines[m.id] || 0);
+  Object.keys(state.factoryMachines || {}).forEach((id) => {
+    const m = getMachine(id);
+    if (m) cap += getEffectiveMachineStats(state, m).powerCapacity || 0;
   });
   return cap;
 };
 
-/** Power generation (per second) from all generators. */
-export const getPowerGen = (state) => {
-  const machines = state.factoryMachines || {};
-  let gen = 0;
-  FACTORY_MACHINES.forEach((m) => {
-    if (m.powerGen) gen += m.powerGen * (machines[m.id] || 0);
-  });
-  return gen;
-};
+/**
+ * Simulate one tick of dt seconds. Shared by computeFactoryTick (authoritative)
+ * and getFactoryStats (UI). Returns power/substrate after the tick, per-machine
+ * run status, this-tick outputs, and the power balance.
+ */
+const simulate = (state, dt) => {
+  const builtIds = Object.keys(state.factoryMachines || {});
+  let capacity = FACTORY_BASE_POWER_CAPACITY;
+  let genPerSec = 0;
+  let demandPerSec = 0;
 
-/** Power demand (per second) from all consumers. */
-export const getPowerUse = (state) => {
-  const machines = state.factoryMachines || {};
-  let use = 0;
-  FACTORY_MACHINES.forEach((m) => {
-    if (m.powerUse) use += m.powerUse * (machines[m.id] || 0);
+  const consumers = [];
+  builtIds.forEach((id) => {
+    const m = getMachine(id);
+    if (!m) return;
+    const s = getEffectiveMachineStats(state, m);
+    capacity += s.powerCapacity || 0;
+    genPerSec += s.powerGen || 0;
+    if (m.priority !== undefined) {
+      demandPerSec += s.powerUse || 0;
+      consumers.push({ m, s });
+    }
   });
-  return use;
+  consumers.sort((a, b) => a.m.priority - b.m.priority);
+
+  // Top up the battery with this tick's generation.
+  let battery = Math.min(capacity, (state.power || 0) + genPerSec * dt);
+
+  let substrate = state.substrate || 0;
+  const out = { pp: 0, paper: 0, lucidity: 0, intelligence: 0, material: 0 };
+  const ppTierMult = getPPTierMultiplier(state);
+  const status = {};
+  let actualUsePerSec = 0;
+
+  consumers.forEach(({ m, s }) => {
+    const powerNeed = (s.powerUse || 0) * dt;
+    if (battery < powerNeed) { status[m.id] = 'halted'; return; }
+
+    // Converters need substrate; extractors produce it (and run first by priority).
+    if (s.substrate < 0) {
+      const subNeed = -s.substrate * dt;
+      if (substrate < subNeed) { status[m.id] = 'halted'; return; }
+      substrate -= subNeed;
+    }
+
+    battery -= powerNeed;
+    actualUsePerSec += s.powerUse || 0;
+    status[m.id] = 'running';
+
+    if (s.substrate > 0) substrate += s.substrate * dt;
+    if (s.output) {
+      let r = s.output.rate * dt;
+      if (s.output.scalesWithPPTier) r *= ppTierMult;
+      out[s.output.resource] += r;
+    }
+  });
+
+  const newPower = Math.max(0, Math.min(capacity, battery));
+  const newSubstrate = Math.max(0, substrate);
+
+  return { capacity, genPerSec, demandPerSec, actualUsePerSec, newPower, newSubstrate, out, status };
 };
 
 /**
- * Per-second factory summary for the UI. powerEff here is the steady-state
- * estimate: full while the battery holds charge or generation covers demand,
- * otherwise throttled to the share generation can sustain.
+ * Per-second factory summary for the UI (status + rates scaled from one tick).
  */
 export const getFactoryStats = (state) => {
-  const machines = state.factoryMachines || {};
-  const powerCapacity = getPowerCapacity(state);
-  const powerGenPerSec = getPowerGen(state);
-  const powerUsePerSec = getPowerUse(state);
-  const stored = state.power || 0;
-
-  let powerEff;
-  if (powerUsePerSec <= 0) powerEff = 1;
-  else if (stored > 0 || powerGenPerSec >= powerUsePerSec) powerEff = 1;
-  else powerEff = powerGenPerSec / powerUsePerSec;
-
-  // Substrate flow (throttled by power).
-  let subProducedPerSec = 0;
-  let subDemandPerSec = 0;
-  FACTORY_MACHINES.forEach((m) => {
-    const count = machines[m.id] || 0;
-    if (count <= 0 || !m.substrate) return;
-    if (m.substrate > 0) subProducedPerSec += m.substrate * count * powerEff;
-    else subDemandPerSec += -m.substrate * count * powerEff;
-  });
-  const subAvailablePerSec = (state.substrate || 0) + subProducedPerSec;
-  const subEff = subDemandPerSec > 0 ? Math.min(1, subAvailablePerSec / subDemandPerSec) : 1;
-  const subNetPerSec = subProducedPerSec - subDemandPerSec * subEff;
-
-  const ppTierMult = getPPTierMultiplier(state);
-  const outputs = { pp: 0, paper: 0, lucidity: 0, intelligence: 0, material: 0 };
-  FACTORY_MACHINES.forEach((m) => {
-    const count = machines[m.id] || 0;
-    if (count <= 0 || !m.output) return;
-    let rate = m.output.rate * count * powerEff * subEff;
-    if (m.output.scalesWithPPTier) rate *= ppTierMult;
-    outputs[m.output.resource] = (outputs[m.output.resource] || 0) + rate;
-  });
+  const dt = 0.1;
+  const sim = simulate(state, dt);
+  const scale = 1 / dt;
+  const outputs = {
+    pp: sim.out.pp * scale,
+    paper: sim.out.paper * scale,
+    lucidity: sim.out.lucidity * scale,
+    intelligence: sim.out.intelligence * scale,
+    material: sim.out.material * scale,
+  };
+  const subNetPerSec = (sim.newSubstrate - (state.substrate || 0)) * scale;
+  const anyHalted = Object.values(sim.status).some((v) => v === 'halted');
 
   return {
-    power: stored,
-    powerCapacity,
-    powerGenPerSec,
-    powerUsePerSec,
-    powerNetPerSec: powerGenPerSec - powerUsePerSec,
-    powerEff,
+    power: state.power || 0,
+    powerCapacity: sim.capacity,
+    powerGenPerSec: sim.genPerSec,
+    powerUsePerSec: sim.demandPerSec,
+    powerNetPerSec: sim.genPerSec - sim.actualUsePerSec,
+    status: sim.status,
+    anyHalted,
     substrate: state.substrate || 0,
-    subProducedPerSec,
-    subDemandPerSec,
-    subEff,
     subNetPerSec,
     outputs,
   };
 };
 
 /**
- * Advance the factory by dt seconds. Pure: reads `state`, returns the deltas the
- * tick should apply. Power is a battery: stored power + incoming generation must
- * cover consumer demand; whatever fraction it covers is powerEff, and machines
- * (extraction, conversion) run at that rate. Materials are integers, so
- * fractional material output banks in factoryMaterialAcc until whole units pop.
- *
+ * Advance the factory by dt seconds (authoritative tick math). Materials are
+ * integers, so fractional output banks in factoryMaterialAcc until whole units pop.
  * @returns {Object} { newPower, newSubstrate, materialAcc, wholeMaterials, pp, paper, lucidity, intelligence }
  */
 export const computeFactoryTick = (state, dt) => {
-  const machines = state.factoryMachines || {};
-  const capacity = getPowerCapacity(state);
-  const genPerSec = getPowerGen(state);
-  const usePerSec = getPowerUse(state);
-  const stored = state.power || 0;
-
-  // Power battery: how much of this tick's demand can stored + generation cover?
-  const availThisTick = stored + genPerSec * dt;
-  const needThisTick = usePerSec * dt;
-  const powerEff = needThisTick > 0 ? Math.min(1, availThisTick / needThisTick) : 1;
-  const powerConsumed = needThisTick * powerEff;
-  let newPower = stored + genPerSec * dt - powerConsumed;
-  if (newPower < 0) newPower = 0;
-  if (newPower > capacity) newPower = capacity;
-
-  // Substrate flow this tick, throttled by power.
-  let subProd = 0;
-  let subDem = 0;
-  FACTORY_MACHINES.forEach((m) => {
-    const c = machines[m.id] || 0;
-    if (!c || !m.substrate) return;
-    if (m.substrate > 0) subProd += m.substrate * c * powerEff * dt;
-    else subDem += -m.substrate * c * powerEff * dt;
-  });
-  const subAvail = (state.substrate || 0) + subProd;
-  const subEff = subDem > 0 ? Math.min(1, subAvail / subDem) : 1;
-  const subConsumed = subDem * subEff;
-  let newSubstrate = (state.substrate || 0) + subProd - subConsumed;
-  if (newSubstrate < 0) newSubstrate = 0;
-
-  const ppTierMult = getPPTierMultiplier(state);
-  const out = { pp: 0, paper: 0, lucidity: 0, intelligence: 0, material: 0 };
-  FACTORY_MACHINES.forEach((m) => {
-    const c = machines[m.id] || 0;
-    if (!c || !m.output) return;
-    let r = m.output.rate * c * powerEff * subEff * dt;
-    if (m.output.scalesWithPPTier) r *= ppTierMult;
-    out[m.output.resource] += r;
-  });
-
-  let materialAcc = (state.factoryMaterialAcc || 0) + out.material;
+  const sim = simulate(state, dt);
+  let materialAcc = (state.factoryMaterialAcc || 0) + sim.out.material;
   const wholeMaterials = Math.floor(materialAcc);
   materialAcc -= wholeMaterials;
 
   return {
-    newPower,
-    newSubstrate,
+    newPower: sim.newPower,
+    newSubstrate: sim.newSubstrate,
     materialAcc,
     wholeMaterials,
-    pp: out.pp,
-    paper: out.paper,
-    lucidity: out.lucidity,
-    intelligence: out.intelligence,
+    pp: sim.out.pp,
+    paper: sim.out.paper,
+    lucidity: sim.out.lucidity,
+    intelligence: sim.out.intelligence,
   };
 };

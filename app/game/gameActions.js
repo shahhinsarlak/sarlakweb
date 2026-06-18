@@ -13,8 +13,8 @@
  * - upgrades: Purchase permanent improvements
  * - printer: Paper generation system
  */
-import { LOCATIONS, UPGRADES, DEBUG_CHALLENGES, PRINTER_UPGRADES, DOCUMENT_TYPES, TIER_MASTERY_WEIGHTS, INITIAL_GAME_STATE, LORE_SNIPPETS, INSIGHTS, CLARITY_BUFF, HELP_POPUPS, FACTORY_MACHINES } from './constants';
-import { getMachineBuildCost } from './factoryHelpers';
+import { LOCATIONS, UPGRADES, DEBUG_CHALLENGES, PRINTER_UPGRADES, DOCUMENT_TYPES, TIER_MASTERY_WEIGHTS, INITIAL_GAME_STATE, LORE_SNIPPETS, INSIGHTS, CLARITY_BUFF, HELP_POPUPS, FACTORY_MACHINES, FACTORY_UPGRADES } from './constants';
+import { getUpgradeCost, getMachineLevel, isBuilt, MAX_UPGRADE_LEVEL } from './factoryHelpers';
 import {
   applyEnergyCostReduction,
   getModifiedRestCooldown,
@@ -1292,14 +1292,16 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
     });
   };
 
-  // Build one more of a machine, paying its scaling build cost (lucidity etc.).
+  // Build a machine once (singular). Requires its blueprint (converters) and the
+  // one-time build cost; sets it to upgrade level 0.
   const buildMachine = (machineId) => {
     setGameState(prev => {
       const machine = FACTORY_MACHINES.find(m => m.id === machineId);
       if (!machine) return prev;
+      if (isBuilt(prev, machineId)) return prev;
       if (machine.blueprint && !(prev.factoryBlueprints || []).includes(machineId)) return prev;
 
-      const cost = getMachineBuildCost(machine, prev);
+      const cost = machine.buildCost || {};
       const affordable = Object.entries(cost).every(([res, amt]) => (prev[res] || 0) >= amt);
       if (!affordable) {
         return {
@@ -1310,15 +1312,44 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
 
       const newState = {
         ...prev,
-        factoryMachines: {
-          ...(prev.factoryMachines || {}),
-          [machineId]: (prev.factoryMachines?.[machineId] || 0) + 1,
-        },
+        factoryMachines: { ...(prev.factoryMachines || {}), [machineId]: 0 },
       };
       Object.entries(cost).forEach(([res, amt]) => {
         newState[res] = (prev[res] || 0) - amt;
       });
       newState.recentMessages = [`Built: ${machine.name}.`, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15);
+      setTimeout(() => checkAchievements(), 50);
+      return newState;
+    });
+  };
+
+  // Buy the next upgrade for a built machine (up to level 10).
+  const upgradeMachine = (machineId) => {
+    setGameState(prev => {
+      const machine = FACTORY_MACHINES.find(m => m.id === machineId);
+      if (!machine || !isBuilt(prev, machineId)) return prev;
+      const level = getMachineLevel(prev, machineId);
+      if (level >= MAX_UPGRADE_LEVEL) return prev;
+
+      const upgrade = (FACTORY_UPGRADES[machineId] || [])[level];
+      const cost = getUpgradeCost(level + 1);
+      const affordable = Object.entries(cost).every(([res, amt]) => (prev[res] || 0) >= amt);
+      if (!affordable) {
+        return {
+          ...prev,
+          recentMessages: ['Not enough for that upgrade.', ...prev.recentMessages].slice(0, prev.maxLogMessages || 15),
+        };
+      }
+
+      const newState = {
+        ...prev,
+        factoryMachines: { ...(prev.factoryMachines || {}), [machineId]: level + 1 },
+      };
+      Object.entries(cost).forEach(([res, amt]) => {
+        newState[res] = (prev[res] || 0) - amt;
+      });
+      const upName = upgrade ? upgrade.name : 'Upgrade';
+      newState.recentMessages = [`${machine.name}: ${upName} installed.`, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15);
       setTimeout(() => checkAchievements(), 50);
       return newState;
     });
@@ -1373,5 +1404,6 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
     closeFactory,
     researchBlueprint,
     buildMachine,
+    upgradeMachine,
   };
 };
