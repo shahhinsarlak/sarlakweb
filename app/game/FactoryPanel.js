@@ -208,10 +208,10 @@ function FactoryPanel({ gameState, actions, onClose, notifications, onDismissNot
           <div style={{ flex: 1, border: `1px solid ${machine.material}`, backgroundColor: 'var(--hover-color)', padding: '20px' }}>
             <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
               <div style={{
-                width: '160px', height: '160px', flexShrink: 0, backgroundColor: 'var(--bg-color)',
+                width: '208px', height: '208px', flexShrink: 0, backgroundColor: 'var(--bg-color)',
                 border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>
-                <FactorySprite machineId={machine.id} display={156} animate={built && runState !== 'halted'} />
+                <FactorySprite machineId={machine.id} level={level} display={200} animate={built && runState !== 'halted'} />
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '8px' }}>

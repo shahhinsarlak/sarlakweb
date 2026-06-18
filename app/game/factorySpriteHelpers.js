@@ -4,6 +4,9 @@
  * Decodes the compact RLE/palette-indexed sprite data (factorySpriteData.js) into
  * the PXLS data model so it can be drawn with the existing PXLS renderer
  * (compositeToCanvas) and, if wanted, opened/edited in the /pxls editor.
+ *
+ * Each machine has an animated base (4 frames) plus static attachment overlays
+ * that turn on once the machine's upgrade level reaches each attachment's atLevel.
  */
 
 import { FACTORY_SPRITES } from './factorySpriteData';
@@ -18,6 +21,15 @@ export const decodeFrame = (rle, length) => {
   return out;
 };
 
+/** Native pixel size (square) of a sprite. */
+export const spriteSize = (machineId) => FACTORY_SPRITES[machineId]?.size || 64;
+
+/** Number of animation frames a sprite has. */
+export const spriteFrameCount = (machineId) => FACTORY_SPRITES[machineId]?.baseFrames.length || 1;
+
+/** Frames-per-second for a sprite's animation. */
+export const spriteFps = (machineId) => FACTORY_SPRITES[machineId]?.fps || 4;
+
 /**
  * Convert a decoded frame into a PXLS cells array. Index 0 is transparent; vivid
  * accent indices (sprite.glowIndices) get a soft glow effect for the material bits.
@@ -29,47 +41,48 @@ const frameToCells = (indices, palette, glowIndices) =>
     return { color: palette[idx], alpha: 1, effect };
   });
 
+const makeLayer = (id, name, rle, sprite) => ({
+  id,
+  name,
+  visible: true,
+  opacity: 1,
+  cells: frameToCells(decodeFrame(rle, sprite.size * sprite.size), sprite.palette, sprite.glowIndices || []),
+});
+
 /**
- * Build a minimal PXLS project for a single animation frame, ready for
- * compositeToCanvas.
+ * Build a PXLS project for a single animation frame at a given upgrade level:
+ * the base frame plus every attachment whose atLevel <= level (each its own layer,
+ * composited in order by compositeToCanvas).
  * @returns {Object|null}
  */
-export const spriteFrameToProject = (machineId, frameIndex) => {
+export const spriteFrameToProject = (machineId, frameIndex, level = 0) => {
   const sprite = FACTORY_SPRITES[machineId];
   if (!sprite) return null;
-  const length = sprite.size * sprite.size;
-  const frame = sprite.frames[frameIndex % sprite.frames.length];
-  const cells = frameToCells(decodeFrame(frame, length), sprite.palette, sprite.glowIndices || []);
-  return {
-    width: sprite.size,
-    height: sprite.size,
-    seed: 1,
-    layers: [{ id: `${machineId}_${frameIndex}`, name: 'frame', visible: true, opacity: 1, cells }],
-  };
+  const frame = sprite.baseFrames[frameIndex % sprite.baseFrames.length];
+  const layers = [makeLayer(`${machineId}_base_${frameIndex}`, 'base', frame, sprite)];
+  (sprite.attachments || []).forEach((att, i) => {
+    if (level >= att.atLevel) {
+      layers.push(makeLayer(`${machineId}_att_${i}`, `attachment ${att.atLevel}`, att.cells, sprite));
+    }
+  });
+  return { width: sprite.size, height: sprite.size, seed: 1, layers };
 };
 
-/** Number of animation frames a sprite has. */
-export const spriteFrameCount = (machineId) => FACTORY_SPRITES[machineId]?.frames.length || 1;
-
-/** Frames-per-second for a sprite's animation. */
-export const spriteFps = (machineId) => FACTORY_SPRITES[machineId]?.fps || 4;
-
 /**
- * Build a full PXLS project with every animation frame as a layer. Useful for
- * exporting a sprite into the /pxls editor for hand-tweaking.
+ * Build a full PXLS project (base frames + every attachment as layers) for editing
+ * a sprite in the /pxls editor.
  * @returns {Object|null}
  */
 export const spriteToPxlsProject = (machineId) => {
   const sprite = FACTORY_SPRITES[machineId];
   if (!sprite) return null;
-  const length = sprite.size * sprite.size;
-  const layers = sprite.frames.map((frame, i) => ({
-    id: `${machineId}_frame_${i}`,
-    name: `Frame ${i + 1}`,
+  const layers = sprite.baseFrames.map((frame, i) => ({
+    ...makeLayer(`${machineId}_frame_${i}`, `Frame ${i + 1}`, frame, sprite),
     visible: i === 0,
-    opacity: 1,
-    cells: frameToCells(decodeFrame(frame, length), sprite.palette, sprite.glowIndices || []),
   }));
+  (sprite.attachments || []).forEach((att, i) => {
+    layers.push(makeLayer(`${machineId}_att_${i}`, `Attachment L${att.atLevel}`, att.cells, sprite));
+  });
   return {
     id: `factory_${machineId}`,
     name: `Factory ${machineId}`,
