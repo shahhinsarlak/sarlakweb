@@ -14,7 +14,7 @@
  * - printer: Paper generation system
  */
 import { LOCATIONS, UPGRADES, DEBUG_CHALLENGES, PRINTER_UPGRADES, DOCUMENT_TYPES, TIER_MASTERY_WEIGHTS, INITIAL_GAME_STATE, LORE_SNIPPETS, INSIGHTS, CLARITY_BUFF, HELP_POPUPS, FACTORY_MACHINES, FACTORY_UPGRADES } from './constants';
-import { getUpgradeCost, getMachineLevel, isBuilt, MAX_UPGRADE_LEVEL } from './factoryHelpers';
+import { getUpgradeCost, getMachineLevel, getMaxLevel, isBuilt, MIN_OVERCLOCK, MAX_OVERCLOCK } from './factoryHelpers';
 import { getInsightEffects } from './insightHelpers';
 import {
   applyEnergyCostReduction,
@@ -1264,7 +1264,7 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       const machine = FACTORY_MACHINES.find(m => m.id === machineId);
       if (!machine || !isBuilt(prev, machineId)) return prev;
       const level = getMachineLevel(prev, machineId);
-      if (level >= MAX_UPGRADE_LEVEL) return prev;
+      if (level >= getMaxLevel(machineId)) return prev;
 
       const upgrade = (FACTORY_UPGRADES[machineId] || [])[level];
       const cost = getUpgradeCost(level + 1);
@@ -1287,6 +1287,28 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       newState.recentMessages = [`${machine.name}: ${upName} installed.`, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15);
       setTimeout(() => checkAchievements(), 50);
       return newState;
+    });
+  };
+
+  // Pause/resume a built machine. Paused machines draw no power and produce nothing.
+  const toggleMachinePause = (machineId) => {
+    setGameState(prev => {
+      if (!isBuilt(prev, machineId)) return prev;
+      const paused = { ...(prev.factoryPaused || {}) };
+      if (paused[machineId]) delete paused[machineId];
+      else paused[machineId] = true;
+      return { ...prev, factoryPaused: paused };
+    });
+  };
+
+  // Set a machine's overclock percent (clamped). Higher = more power draw and
+  // proportionally more output. Only takes effect if the Overclock Module is owned.
+  const setOverclock = (machineId, percent) => {
+    setGameState(prev => {
+      if (!isBuilt(prev, machineId)) return prev;
+      const clamped = Math.max(MIN_OVERCLOCK, Math.min(MAX_OVERCLOCK, Math.round(percent)));
+      setTimeout(() => checkAchievements(), 50);
+      return { ...prev, factoryOverclock: { ...(prev.factoryOverclock || {}), [machineId]: clamped } };
     });
   };
 
@@ -1340,5 +1362,7 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
     researchBlueprint,
     buildMachine,
     upgradeMachine,
+    toggleMachinePause,
+    setOverclock,
   };
 };

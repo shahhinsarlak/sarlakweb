@@ -286,7 +286,16 @@ upgrades each) in constants; cost formula `getUpgradeCost` in `factoryHelpers`.
   Materials are integers, so fractional output banks in `factoryMaterialAcc`.
 - **Economy:** converters need a blueprint (intelligence) before building;
   building costs a one-time lucidity sum; upgrades cost lucidity (+substrate from
-  L4, +intelligence from L7) via the cost formula.
+  L4, +intelligence from L7) via the cost formula. Each consumer machine
+  (extractor + 5 converters) has an 11th **Overclock Module** upgrade.
+- **Pause & overclock:** any built machine can be **paused** (`factoryPaused[id]`;
+  skipped in `simulate`/capacity — no draw, gen, output, or capacity). Once the
+  Overclock Module is owned, `factoryOverclock[id]` (50-300%, default 100) scales
+  that machine's power draw, output, and substrate throughput together
+  (`getEffectiveMachineStats` applies `getOverclock/100`) — letting players shift
+  the limited power budget toward what they want more of. Actions
+  `toggleMachinePause` / `setOverclock`. Per-machine max upgrade level is
+  `getMaxLevel(id)` (= its upgrades length: 10, or 11 for consumers).
 - **Sprites:** animated **128×128** pixel-art per machine, drawn to look cobbled
   from office junk (printer guts, filing cabinet, monitor cube, microwave, etc.),
   muted body + vivid accent. Each has an animated base (4 frames) plus static
@@ -369,7 +378,7 @@ rendered alongside.
 | Factory unlock | same 1000% discovery (`factoryUnlocked`) |
 | Factory machines | singular (one of each), 10 upgrades each, level in factoryMachines[id] |
 | Factory chain | Generator->Power battery (cap by Capacitor), Extractor->Substrate, Converters->resources |
-| Power model | battery; consumers run in priority order, halt (binary) if battery can't cover full draw |
+| Power model | battery; consumers run in priority order, halt (binary) if battery can't cover full draw; machines can be paused; consumers can be overclocked 50-300% |
 | Machine build cost | one-time lucidity; upgrades lucidity (+substrate L4, +intelligence L7) |
 | Factory sprites | 128x128 office-junk, 4-frame base + attachments at L3/6/10, RLE JSON via PXLS renderer |
 | Save version | 3 (factory machine counts -> built level 0) |

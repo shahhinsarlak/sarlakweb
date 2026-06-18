@@ -7,14 +7,20 @@ import {
   getFactoryStats,
   getEffectiveMachineStats,
   getMachineLevel,
+  getMaxLevel,
   isBuilt,
+  isPaused,
+  isOverclockUnlocked,
+  getOverclock,
   isBlueprintResearched,
   canBuildMachine,
   canResearchBlueprint,
   canUpgradeMachine,
   getNextUpgrade,
   getUpgradeCost,
-  MAX_UPGRADE_LEVEL,
+  MIN_OVERCLOCK,
+  MAX_OVERCLOCK,
+  OVERCLOCK_STEP,
 } from './factoryHelpers';
 import { FACTORY_MACHINES, FACTORY_UPGRADES } from './constants';
 
@@ -55,13 +61,18 @@ function FactoryPanel({ gameState, actions, onClose, notifications, onDismissNot
   const built = isBuilt(gameState, machine.id);
   const researched = isBlueprintResearched(machine, gameState);
   const level = getMachineLevel(gameState, machine.id);
+  const maxLevel = getMaxLevel(machine.id);
   const eff = getEffectiveMachineStats(gameState, machine);
   const isConsumer = machine.priority !== undefined;
   const runState = stats.status[machine.id];
+  const paused = isPaused(gameState, machine.id);
+  const overclockUnlocked = isOverclockUnlocked(gameState, machine.id);
+  const overclock = getOverclock(gameState, machine.id);
 
   let statusLabel = 'NOT BUILT';
   if (built) {
-    if (!isConsumer) statusLabel = 'ACTIVE';
+    if (paused) statusLabel = 'PAUSED';
+    else if (!isConsumer) statusLabel = 'ACTIVE';
     else if (runState === 'running') statusLabel = 'RUNNING';
     else statusLabel = 'HALTED \u2014 low power/substrate';
   }
@@ -75,7 +86,7 @@ function FactoryPanel({ gameState, actions, onClose, notifications, onDismissNot
   if (eff.output) machineEffects.push(`+${eff.output.rate.toFixed(2)} ${eff.output.resource}/s${eff.output.scalesWithPPTier ? ' x tier' : ''}`);
 
   const nextUpgrade = getNextUpgrade(gameState, machine.id);
-  const upgradeCost = level < MAX_UPGRADE_LEVEL ? getUpgradeCost(level + 1) : null;
+  const upgradeCost = level < maxLevel ? getUpgradeCost(level + 1) : null;
   const upgradeAffordable = canUpgradeMachine(gameState, machine.id);
 
   const fmtRate = (resource, perSec) => {
@@ -211,7 +222,7 @@ function FactoryPanel({ gameState, actions, onClose, notifications, onDismissNot
                 width: '208px', height: '208px', flexShrink: 0, backgroundColor: 'var(--bg-color)',
                 border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>
-                <FactorySprite machineId={machine.id} level={level} display={200} animate={built && runState !== 'halted'} />
+                <FactorySprite machineId={machine.id} level={level} display={200} animate={built && !paused && runState !== 'halted'} />
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '8px' }}>
@@ -219,7 +230,7 @@ function FactoryPanel({ gameState, actions, onClose, notifications, onDismissNot
                   <span style={{ fontSize: '11px', opacity: 0.75, whiteSpace: 'nowrap' }}>{statusLabel}</span>
                 </div>
                 {built && (
-                  <div style={{ fontSize: '12px', opacity: 0.7, marginTop: '2px' }}>Level {level} / {MAX_UPGRADE_LEVEL}</div>
+                  <div style={{ fontSize: '12px', opacity: 0.7, marginTop: '2px' }}>Level {level} / {maxLevel}</div>
                 )}
                 <div style={{ fontSize: '11px', opacity: 0.65, fontStyle: 'italic', marginTop: '10px', lineHeight: '1.55' }}>
                   {machine.lore}
@@ -261,6 +272,41 @@ function FactoryPanel({ gameState, actions, onClose, notifications, onDismissNot
                     <div style={{ fontSize: '13px', fontWeight: 'bold' }}>FULLY UPGRADED</div>
                   )}
                 </div>
+
+                {built && (
+                  <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <button
+                      onClick={() => actions.toggleMachinePause(machine.id)}
+                      style={{
+                        background: paused ? 'var(--accent-color)' : 'none', border: '1px solid var(--border-color)',
+                        color: paused ? 'var(--bg-color)' : 'var(--text-color)', padding: '8px 14px', cursor: 'pointer',
+                        fontSize: '12px', fontFamily: 'inherit', letterSpacing: '1px', alignSelf: 'flex-start',
+                      }}
+                    >
+                      {paused ? 'RESUME' : 'PAUSE'}
+                    </button>
+                    {overclockUnlocked && (
+                      <div>
+                        <div style={{ fontSize: '11px', opacity: 0.75, marginBottom: '6px' }}>
+                          Overclock: <strong>{overclock}%</strong> power
+                          {overclock !== 100 ? ` \u2014 \u00d7${(overclock / 100).toFixed(2)} output & drain` : ''}
+                        </div>
+                        <input
+                          type="range"
+                          min={MIN_OVERCLOCK}
+                          max={MAX_OVERCLOCK}
+                          step={OVERCLOCK_STEP}
+                          value={overclock}
+                          onChange={(e) => actions.setOverclock(machine.id, Number(e.target.value))}
+                          style={{ width: '100%' }}
+                        />
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', opacity: 0.5 }}>
+                          <span>{MIN_OVERCLOCK}%</span><span>100%</span><span>{MAX_OVERCLOCK}%</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 

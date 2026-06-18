@@ -117,9 +117,11 @@ export const INITIAL_GAME_STATE = {
   factoryOpen: false,           // Is the Factory panel visible
   power: 0,                     // Stored grid power (battery), 0..capacity
   substrate: 0,                 // Raw resource mined by Extractors, consumed by Converters
-  factoryMachines: {},          // { machineId: count } owned machines
+  factoryMachines: {},          // { machineId: level } owned machines (level 0..max)
   factoryBlueprints: [],        // Researched converter blueprint ids (generator/extractor need none)
   factoryMaterialAcc: 0,        // Fractional dimensional-material accumulator (materials are integers)
+  factoryPaused: {},            // { machineId: true } paused machines (no draw, no output)
+  factoryOverclock: {},         // { machineId: percent } overclock setting (50-300; needs Overclock Module)
 };
 
 
@@ -734,6 +736,7 @@ export const ACHIEVEMENTS = [
   { id: 'automation', name: 'Automation', desc: 'Research all five converter blueprints', check: (state) => (state.factoryBlueprints || []).length >= 5, reward: { type: 'ppMultiplier', value: 0.10 } },
   { id: 'substrate_baron', name: 'Substrate Baron', desc: 'Stockpile 1000 substrate', check: (state) => (state.substrate || 0) >= 1000 },
   { id: 'master_engineer', name: 'Master Engineer', desc: 'Fully upgrade a factory machine to level 10', check: (state) => Object.values(state.factoryMachines || {}).some((lvl) => lvl >= 10), reward: { type: 'ppMultiplier', value: 0.15 } },
+  { id: 'overclocked', name: 'Overclocked', desc: 'Run a machine above 100% power', check: (state) => Object.values(state.factoryOverclock || {}).some((v) => v > 100) },
 ];
 
 /**
@@ -1529,6 +1532,7 @@ export const FACTORY_UPGRADES = {
     { name: 'Deep Shaft Liner', desc: 'Reach where the grey is thick. +1.6 substrate/s.', effect: { substrateAdd: 1.6 } },
     { name: 'Frictionless Coupling', desc: 'It runs on almost nothing. -20% power draw.', effect: { powerUseMult: 0.8 } },
     { name: 'It Digs Itself Now', desc: 'You only watch. +2.5 substrate/s.', effect: { substrateAdd: 2.5 }, visual: true },
+    { name: 'Overclock Module', desc: 'Unlocks overclocking: feed it above 100% power for proportionally more output (and drain).', effect: { type: 'overclock' }, visual: true },
   ],
   conv_pp: [
     { name: 'Faster Stapler', desc: 'Ka-chunk, ka-chunk. +25% output.', effect: { outputMult: 1.25 } },
@@ -1541,6 +1545,7 @@ export const FACTORY_UPGRADES = {
     { name: 'Quarterly Overdrive', desc: 'Always end of quarter. +50% output.', effect: { outputMult: 1.50 } },
     { name: 'Recycled Substrate Loop', desc: 'The work feeds itself. -20% substrate use.', effect: { substrateUseMult: 0.8 } },
     { name: 'Employee of the Eon', desc: 'Productivity beyond reason. +75% output.', effect: { outputMult: 1.75 }, visual: true },
+    { name: 'Overclock Module', desc: 'Unlocks overclocking: feed it above 100% power for proportionally more output (and drain).', effect: { type: 'overclock' }, visual: true },
   ],
   conv_paper: [
     { name: 'New Toner Drum', desc: 'Crisper nothing. +25% output.', effect: { outputMult: 1.25 } },
@@ -1553,6 +1558,7 @@ export const FACTORY_UPGRADES = {
     { name: 'Continuous Feed', desc: 'No more jams, ever. +50% output.', effect: { outputMult: 1.50 } },
     { name: 'Pulp Recirculator', desc: 'The page remembers. -20% substrate use.', effect: { substrateUseMult: 0.8 } },
     { name: 'The Press That Never Stops', desc: 'A library a second. +75% output.', effect: { outputMult: 1.75 }, visual: true },
+    { name: 'Overclock Module', desc: 'Unlocks overclocking: feed it above 100% power for proportionally more output (and drain).', effect: { type: 'overclock' }, visual: true },
   ],
   conv_lucidity: [
     { name: 'Brighter Lamp', desc: 'See a little further. +25% output.', effect: { outputMult: 1.25 } },
@@ -1565,6 +1571,7 @@ export const FACTORY_UPGRADES = {
     { name: 'Resonant Chamber', desc: 'The room agrees with you. +50% output.', effect: { outputMult: 1.50 } },
     { name: 'Closed Breathing Cycle', desc: 'It exhales what it needs. -20% substrate use.', effect: { substrateUseMult: 0.8 } },
     { name: 'Perfect Stillness', desc: 'Clarity without effort. +75% output.', effect: { outputMult: 1.75 }, visual: true },
+    { name: 'Overclock Module', desc: 'Unlocks overclocking: feed it above 100% power for proportionally more output (and drain).', effect: { type: 'overclock' }, visual: true },
   ],
   conv_intelligence: [
     { name: 'Fifth Monitor', desc: 'More static to read. +25% output.', effect: { outputMult: 1.25 } },
@@ -1577,6 +1584,7 @@ export const FACTORY_UPGRADES = {
     { name: 'Parallel Cores', desc: 'A dozen trains of thought. +50% output.', effect: { outputMult: 1.50 } },
     { name: 'Lossless Substrate Codec', desc: 'Nothing misunderstood. -20% substrate use.', effect: { substrateUseMult: 0.8 } },
     { name: 'It Finishes Your Sentences', desc: 'Understanding beyond yours. +75% output.', effect: { outputMult: 1.75 }, visual: true },
+    { name: 'Overclock Module', desc: 'Unlocks overclocking: feed it above 100% power for proportionally more output (and drain).', effect: { type: 'overclock' }, visual: true },
   ],
   conv_material: [
     { name: 'Stronger Magnets', desc: 'Pull harder. +25% output.', effect: { outputMult: 1.25 } },
@@ -1589,6 +1597,7 @@ export const FACTORY_UPGRADES = {
     { name: 'Crystalline Mould', desc: 'Perfect lattices. +50% output.', effect: { outputMult: 1.50 } },
     { name: 'Substrate Recovery Trap', desc: 'Catch the scraps. -20% substrate use.', effect: { substrateUseMult: 0.8 } },
     { name: 'It Makes Things That Should Not Be', desc: 'Solid impossibility. +75% output.', effect: { outputMult: 1.75 }, visual: true },
+    { name: 'Overclock Module', desc: 'Unlocks overclocking: feed it above 100% power for proportionally more output (and drain).', effect: { type: 'overclock' }, visual: true },
   ],
 };
 

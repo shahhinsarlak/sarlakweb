@@ -14,6 +14,9 @@
 import { FACTORY_MACHINES, FACTORY_UPGRADES, FACTORY_BASE_POWER_CAPACITY, PP_MULTIPLIER_TIERS } from './constants';
 
 export const MAX_UPGRADE_LEVEL = 10;
+export const MIN_OVERCLOCK = 50;
+export const MAX_OVERCLOCK = 300;
+export const OVERCLOCK_STEP = 25;
 
 // Upgrade cost formula (level = the level being purchased, 1..10).
 const UP_LUC_BASE = 40;
@@ -32,8 +35,31 @@ export const getMachine = (id) => FACTORY_MACHINES.find((m) => m.id === id) || n
 export const isBuilt = (state, id) =>
   Object.prototype.hasOwnProperty.call(state.factoryMachines || {}, id);
 
-/** Current upgrade level (0..10) of a built machine; 0 if not built. */
+/** Current upgrade level (0..max) of a built machine; 0 if not built. */
 export const getMachineLevel = (state, id) => (isBuilt(state, id) ? (state.factoryMachines[id] || 0) : 0);
+
+/** Highest upgrade level a machine can reach (= number of upgrades it has). */
+export const getMaxLevel = (id) => (FACTORY_UPGRADES[id] || []).length || MAX_UPGRADE_LEVEL;
+
+/** True if the machine is paused (off: no power draw/gen, no output, no capacity). */
+export const isPaused = (state, id) => !!(state.factoryPaused && state.factoryPaused[id]);
+
+/** Index of a machine's Overclock Module upgrade, or -1 if it has none. */
+export const getOverclockUpgradeIndex = (id) =>
+  (FACTORY_UPGRADES[id] || []).findIndex((u) => u.effect && u.effect.type === 'overclock');
+
+/** True if the machine's Overclock Module has been researched. */
+export const isOverclockUnlocked = (state, id) => {
+  const idx = getOverclockUpgradeIndex(id);
+  return idx >= 0 && getMachineLevel(state, id) > idx;
+};
+
+/** Current overclock percent for a machine (100 if not unlocked), clamped. */
+export const getOverclock = (state, id) => {
+  if (!isOverclockUnlocked(state, id)) return 100;
+  const v = state.factoryOverclock?.[id] ?? 100;
+  return Math.max(MIN_OVERCLOCK, Math.min(MAX_OVERCLOCK, v));
+};
 
 /** True if a machine's blueprint has been researched (or it needs none). */
 export const isBlueprintResearched = (machine, state) =>
@@ -56,7 +82,7 @@ export const canBuildMachine = (machine, state) => {
 export const getNextUpgrade = (state, id) => {
   if (!isBuilt(state, id)) return null;
   const level = getMachineLevel(state, id);
-  if (level >= MAX_UPGRADE_LEVEL) return null;
+  if (level >= getMaxLevel(id)) return null;
   return (FACTORY_UPGRADES[id] || [])[level] || null;
 };
 
@@ -76,7 +102,7 @@ export const getUpgradeCost = (targetLevel) => {
 export const canUpgradeMachine = (state, id) => {
   if (!isBuilt(state, id)) return false;
   const level = getMachineLevel(state, id);
-  if (level >= MAX_UPGRADE_LEVEL) return false;
+  if (level >= getMaxLevel(id)) return false;
   const cost = getUpgradeCost(level + 1);
   return Object.entries(cost).every(([res, amt]) => (state[res] || 0) >= amt);
 };
@@ -120,18 +146,24 @@ export const getEffectiveMachineStats = (state, machine) => {
   substrate += substrateAdd;
   if (substrate < 0) substrate *= substrateUseMult; // converters: reduce consumption magnitude
 
-  const powerUse = (machine.powerUse || 0) * powerUseMult;
+  // Overclock (if unlocked) scales power draw, output, and substrate throughput
+  // together. Generator/Capacitor have no Overclock Module, so oc is 1 for them.
+  const oc = getOverclock(state, machine.id) / 100;
+
+  const powerUse = (machine.powerUse || 0) * powerUseMult * oc;
+  substrate *= oc;
   const output = machine.output
-    ? { ...machine.output, rate: (machine.output.rate + outputAdd) * outputMult }
+    ? { ...machine.output, rate: (machine.output.rate + outputAdd) * outputMult * oc }
     : null;
 
   return { powerGen, powerUse, powerCapacity, substrate, output };
 };
 
-/** Total battery capacity = base floor + all built machines' capacity. */
+/** Total battery capacity = base floor + all built (non-paused) capacitors. */
 export const getPowerCapacity = (state) => {
   let cap = FACTORY_BASE_POWER_CAPACITY;
   Object.keys(state.factoryMachines || {}).forEach((id) => {
+    if (isPaused(state, id)) return;
     const m = getMachine(id);
     if (m) cap += getEffectiveMachineStats(state, m).powerCapacity || 0;
   });
@@ -151,6 +183,7 @@ const simulate = (state, dt) => {
 
   const consumers = [];
   builtIds.forEach((id) => {
+    if (isPaused(state, id)) return; // paused: contributes nothing this tick
     const m = getMachine(id);
     if (!m) return;
     const s = getEffectiveMachineStats(state, m);
