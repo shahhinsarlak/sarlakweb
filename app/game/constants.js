@@ -115,6 +115,7 @@ export const INITIAL_GAME_STATE = {
   // Factory / "The Construct" (Chapter 2, Phase 2)
   factoryUnlocked: false,       // Revealed alongside lucidity/intelligence at 1000% sanity
   factoryOpen: false,           // Is the Factory panel visible
+  power: 0,                     // Stored grid power (battery), 0..capacity
   substrate: 0,                 // Raw resource mined by Extractors, consumed by Converters
   factoryMachines: {},          // { machineId: count } owned machines
   factoryBlueprints: [],        // Researched converter blueprint ids (generator/extractor need none)
@@ -1273,31 +1274,44 @@ export const RESOURCE_DISCOVERY_GRANT = { lucidity: 80, intelligence: 50 };
 /**
  * Factory machines ("The Construct", Chapter 2 Phase 2)
  *
- * Production chain: Generators make Power -> Extractors spend Power to mine
- * Substrate -> Converters spend Power + Substrate to output existing resources.
- * Over-budget power throttles all consumers proportionally; a dry substrate
- * stockpile throttles converters to available flow.
+ * Production chain: Generators trickle POWER into a battery (stored `power`,
+ * capped by capacity). Capacitors raise the battery capacity. Extractors and
+ * Converters DRAIN power and run on it: when the battery hits 0 they can only run
+ * on incoming generation, and stop entirely with no generation. Extractors mine
+ * Substrate; Converters spend Substrate + power to output existing resources.
  *
  * Per-machine fields (rates are PER SECOND; the tick applies /10):
  * - blueprint: { intelligence } cost to research (null = buildable immediately)
  * - buildCost: resources to build one (scales by costGrowth^owned)
- * - power: + produced / - consumed
- * - substrate: + produced / - consumed
+ * - powerGen: power/sec produced into the battery
+ * - powerUse: power/sec drained from the battery to run
+ * - powerCapacity: battery capacity added per machine
+ * - substrate: + produced / - consumed (per second)
  * - output: { resource, rate, scalesWithPPTier? } existing resource produced
  * - material: accent colour used by the pixel-art sprite (vivid; bodies are muted)
  */
+export const FACTORY_BASE_POWER_CAPACITY = 50;
+
 export const FACTORY_MACHINES = [
   {
     id: 'generator',
     name: 'Reality Generator',
-    desc: 'Draws power from the hum of the false lights.',
+    desc: 'Draws power from the hum of the false lights, slowly charging the grid.',
     blueprint: null,
     buildCost: { lucidity: 40 },
     costGrowth: 1.18,
-    power: 10,
-    substrate: 0,
-    output: null,
+    powerGen: 5,
     material: '#9fe8ff',
+  },
+  {
+    id: 'capacitor',
+    name: 'Capacitor Bank',
+    desc: 'Stores charge. Raises how much power the grid can hold.',
+    blueprint: null,
+    buildCost: { lucidity: 50 },
+    costGrowth: 1.18,
+    powerCapacity: 50,
+    material: '#ffe08a',
   },
   {
     id: 'extractor',
@@ -1306,9 +1320,8 @@ export const FACTORY_MACHINES = [
     blueprint: null,
     buildCost: { lucidity: 60 },
     costGrowth: 1.18,
-    power: -6,
+    powerUse: 4,
     substrate: 0.5,
-    output: null,
     material: '#c46bff',
   },
   {
@@ -1318,7 +1331,7 @@ export const FACTORY_MACHINES = [
     blueprint: { intelligence: 40 },
     buildCost: { lucidity: 80 },
     costGrowth: 1.20,
-    power: -8,
+    powerUse: 5,
     substrate: -0.3,
     output: { resource: 'pp', rate: 50, scalesWithPPTier: true },
     material: '#ffd24a',
@@ -1330,7 +1343,7 @@ export const FACTORY_MACHINES = [
     blueprint: { intelligence: 50 },
     buildCost: { lucidity: 100 },
     costGrowth: 1.20,
-    power: -8,
+    powerUse: 5,
     substrate: -0.3,
     output: { resource: 'paper', rate: 2 },
     material: '#f2efe6',
@@ -1342,7 +1355,7 @@ export const FACTORY_MACHINES = [
     blueprint: { intelligence: 100 },
     buildCost: { lucidity: 150 },
     costGrowth: 1.22,
-    power: -10,
+    powerUse: 6,
     substrate: -0.5,
     output: { resource: 'lucidity', rate: 0.3 },
     material: '#00d0ff',
@@ -1354,7 +1367,7 @@ export const FACTORY_MACHINES = [
     blueprint: { intelligence: 150 },
     buildCost: { lucidity: 180 },
     costGrowth: 1.22,
-    power: -10,
+    powerUse: 6,
     substrate: -0.5,
     output: { resource: 'intelligence', rate: 0.2 },
     material: '#ffd060',
@@ -1366,7 +1379,7 @@ export const FACTORY_MACHINES = [
     blueprint: { intelligence: 120 },
     buildCost: { lucidity: 200 },
     costGrowth: 1.22,
-    power: -12,
+    powerUse: 8,
     substrate: -0.6,
     output: { resource: 'material', rate: 0.05 },
     material: '#6bff9f',

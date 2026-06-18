@@ -1,17 +1,18 @@
 /**
  * Factory Helpers ("The Construct", Chapter 2 Phase 2)
  *
- * Pure functions for the production chain: power balance, substrate flow,
+ * Pure functions for the production chain: a power BATTERY (generators trickle
+ * power in, capacitors raise capacity, consumers drain it), substrate flow,
  * per-machine scaling build cost, and a per-second production summary used by
  * both the UI and (mirrored) the 100ms tick.
  *
- * Chain: Generators make Power -> Extractors spend Power to mine Substrate ->
- * Converters spend Power + Substrate to output existing resources. Over-budget
- * power throttles all consumers proportionally; a dry substrate stockpile
- * throttles converters to the flow extraction can sustain.
+ * Power: stored `power` is capped at capacity. Each tick, consumers run at
+ * `powerEff` = how much of their demand the battery + incoming generation can
+ * cover. At 0 stored power with no generation, powerEff = 0 and machines stop.
+ * Substrate adds a second throttle (subEff) when the stockpile runs dry.
  */
 
-import { FACTORY_MACHINES, PP_MULTIPLIER_TIERS } from './constants';
+import { FACTORY_MACHINES, FACTORY_BASE_POWER_CAPACITY, PP_MULTIPLIER_TIERS } from './constants';
 
 /** Look up a machine definition by id. */
 export const getMachine = (id) => FACTORY_MACHINES.find((m) => m.id === id) || null;
@@ -58,51 +59,66 @@ export const getPPTierMultiplier = (state) => {
   return data ? data.multiplier : 1;
 };
 
+/** Total battery capacity = base + capacitor contributions. */
+export const getPowerCapacity = (state) => {
+  const machines = state.factoryMachines || {};
+  let cap = FACTORY_BASE_POWER_CAPACITY;
+  FACTORY_MACHINES.forEach((m) => {
+    if (m.powerCapacity) cap += m.powerCapacity * (machines[m.id] || 0);
+  });
+  return cap;
+};
+
+/** Power generation (per second) from all generators. */
+export const getPowerGen = (state) => {
+  const machines = state.factoryMachines || {};
+  let gen = 0;
+  FACTORY_MACHINES.forEach((m) => {
+    if (m.powerGen) gen += m.powerGen * (machines[m.id] || 0);
+  });
+  return gen;
+};
+
+/** Power demand (per second) from all consumers. */
+export const getPowerUse = (state) => {
+  const machines = state.factoryMachines || {};
+  let use = 0;
+  FACTORY_MACHINES.forEach((m) => {
+    if (m.powerUse) use += m.powerUse * (machines[m.id] || 0);
+  });
+  return use;
+};
+
 /**
- * Compute the full factory state: power balance, substrate flow, and per-second
- * outputs (after power + substrate throttling). dt scales the substrate flow used
- * for the throttle estimate; pass 1 for a per-second summary.
- *
- * @param {Object} state - game state
- * @returns {Object} {
- *   powerProduced, powerDemand, powerEff,
- *   substrate, subProducedPerSec, subDemandPerSec, subEff, subNetPerSec,
- *   outputs: { pp, paper, lucidity, intelligence, material }
- * }
+ * Per-second factory summary for the UI. powerEff here is the steady-state
+ * estimate: full while the battery holds charge or generation covers demand,
+ * otherwise throttled to the share generation can sustain.
  */
 export const getFactoryStats = (state) => {
   const machines = state.factoryMachines || {};
+  const powerCapacity = getPowerCapacity(state);
+  const powerGenPerSec = getPowerGen(state);
+  const powerUsePerSec = getPowerUse(state);
+  const stored = state.power || 0;
 
-  let powerProduced = 0;
-  let powerDemand = 0;
-  FACTORY_MACHINES.forEach((m) => {
-    const count = machines[m.id] || 0;
-    if (count <= 0) return;
-    if (m.power > 0) powerProduced += m.power * count;
-    else if (m.power < 0) powerDemand += -m.power * count;
-  });
-  const powerEff = powerDemand > 0 ? Math.min(1, powerProduced / powerDemand) : 1;
+  let powerEff;
+  if (powerUsePerSec <= 0) powerEff = 1;
+  else if (stored > 0 || powerGenPerSec >= powerUsePerSec) powerEff = 1;
+  else powerEff = powerGenPerSec / powerUsePerSec;
 
-  // Substrate produced by extractors (per second), throttled by power.
+  // Substrate flow (throttled by power).
   let subProducedPerSec = 0;
-  FACTORY_MACHINES.forEach((m) => {
-    const count = machines[m.id] || 0;
-    if (count > 0 && m.substrate > 0) subProducedPerSec += m.substrate * count * powerEff;
-  });
-
-  // Substrate demanded by converters (per second), throttled by power.
   let subDemandPerSec = 0;
   FACTORY_MACHINES.forEach((m) => {
     const count = machines[m.id] || 0;
-    if (count > 0 && m.substrate < 0) subDemandPerSec += -m.substrate * count * powerEff;
+    if (count <= 0 || !m.substrate) return;
+    if (m.substrate > 0) subProducedPerSec += m.substrate * count * powerEff;
+    else subDemandPerSec += -m.substrate * count * powerEff;
   });
-
-  // Substrate efficiency: stockpile plus this second's production must cover demand.
   const subAvailablePerSec = (state.substrate || 0) + subProducedPerSec;
   const subEff = subDemandPerSec > 0 ? Math.min(1, subAvailablePerSec / subDemandPerSec) : 1;
   const subNetPerSec = subProducedPerSec - subDemandPerSec * subEff;
 
-  // Converter outputs (per second), throttled by power then substrate.
   const ppTierMult = getPPTierMultiplier(state);
   const outputs = { pp: 0, paper: 0, lucidity: 0, intelligence: 0, material: 0 };
   FACTORY_MACHINES.forEach((m) => {
@@ -114,8 +130,11 @@ export const getFactoryStats = (state) => {
   });
 
   return {
-    powerProduced,
-    powerDemand,
+    power: stored,
+    powerCapacity,
+    powerGenPerSec,
+    powerUsePerSec,
+    powerNetPerSec: powerGenPerSec - powerUsePerSec,
     powerEff,
     substrate: state.substrate || 0,
     subProducedPerSec,
@@ -128,33 +147,37 @@ export const getFactoryStats = (state) => {
 
 /**
  * Advance the factory by dt seconds. Pure: reads `state`, returns the deltas the
- * tick should apply (it does not mutate). Materials are integers, so fractional
- * material output accumulates in factoryMaterialAcc until whole units pop out.
+ * tick should apply. Power is a battery: stored power + incoming generation must
+ * cover consumer demand; whatever fraction it covers is powerEff, and machines
+ * (extraction, conversion) run at that rate. Materials are integers, so
+ * fractional material output banks in factoryMaterialAcc until whole units pop.
  *
- * @param {Object} state - game state (read from `prev` in the tick)
- * @param {number} dt - seconds elapsed (0.1 for the 100ms tick)
- * @returns {Object} { newSubstrate, materialAcc, wholeMaterials, pp, paper, lucidity, intelligence }
+ * @returns {Object} { newPower, newSubstrate, materialAcc, wholeMaterials, pp, paper, lucidity, intelligence }
  */
 export const computeFactoryTick = (state, dt) => {
   const machines = state.factoryMachines || {};
+  const capacity = getPowerCapacity(state);
+  const genPerSec = getPowerGen(state);
+  const usePerSec = getPowerUse(state);
+  const stored = state.power || 0;
 
-  let powerProduced = 0;
-  let powerDemand = 0;
-  FACTORY_MACHINES.forEach((m) => {
-    const c = machines[m.id] || 0;
-    if (!c) return;
-    if (m.power > 0) powerProduced += m.power * c;
-    else if (m.power < 0) powerDemand += -m.power * c;
-  });
-  const powerEff = powerDemand > 0 ? Math.min(1, powerProduced / powerDemand) : 1;
+  // Power battery: how much of this tick's demand can stored + generation cover?
+  const availThisTick = stored + genPerSec * dt;
+  const needThisTick = usePerSec * dt;
+  const powerEff = needThisTick > 0 ? Math.min(1, availThisTick / needThisTick) : 1;
+  const powerConsumed = needThisTick * powerEff;
+  let newPower = stored + genPerSec * dt - powerConsumed;
+  if (newPower < 0) newPower = 0;
+  if (newPower > capacity) newPower = capacity;
 
+  // Substrate flow this tick, throttled by power.
   let subProd = 0;
   let subDem = 0;
   FACTORY_MACHINES.forEach((m) => {
     const c = machines[m.id] || 0;
-    if (!c) return;
+    if (!c || !m.substrate) return;
     if (m.substrate > 0) subProd += m.substrate * c * powerEff * dt;
-    else if (m.substrate < 0) subDem += -m.substrate * c * powerEff * dt;
+    else subDem += -m.substrate * c * powerEff * dt;
   });
   const subAvail = (state.substrate || 0) + subProd;
   const subEff = subDem > 0 ? Math.min(1, subAvail / subDem) : 1;
@@ -177,6 +200,7 @@ export const computeFactoryTick = (state, dt) => {
   materialAcc -= wholeMaterials;
 
   return {
+    newPower,
     newSubstrate,
     materialAcc,
     wholeMaterials,

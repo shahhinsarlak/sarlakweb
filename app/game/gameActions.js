@@ -1037,8 +1037,20 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       const effectSummary = effectDetails.length > 0 ? ` [${effectDetails.join(', ')}]` : '';
       messages.unshift(`${icon} ${doc.tierName} [${qualityLabel}]: ${outcome.desc}${effectSummary}`);
 
-      // Add all messages to notifications
-      messages.forEach(msg => addMessage(msg));
+      // Fold the consume results into the returned state directly. Calling
+      // addMessage() here would be a nested setState inside this updater and gets
+      // dropped (the File Drawer would then show no log/toast for the bonuses),
+      // so write recentMessages + notifications straight into newState.
+      const maxMessages = prev.maxLogMessages || 15;
+      newState.recentMessages = [...messages, ...prev.recentMessages].slice(0, maxMessages);
+      newState.notifications = [
+        ...(prev.notifications || []),
+        ...messages.map((m) => ({
+          id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          message: m,
+          timestamp: Date.now(),
+        })),
+      ];
 
       // Grant XP
       if (xpGain > 0) {

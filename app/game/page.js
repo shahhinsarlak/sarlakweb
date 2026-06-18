@@ -600,6 +600,7 @@ export default function Game() {
         }
         if (prev.factoryUnlocked) {
           const f = computeFactoryTick(prev, 0.1);
+          newState.power = f.newPower;
           newState.substrate = f.newSubstrate;
           newState.factoryMaterialAcc = f.materialAcc;
           if (f.pp) newState.pp = (newState.pp || 0) + f.pp;

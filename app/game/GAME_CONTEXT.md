@@ -256,12 +256,13 @@ Open-ended automation engine, revealed at the same 1000% discovery
 (`factoryUnlocked`; a tick backfill grants it to pre-existing saves that already
 had `resourcesUnlocked`). Production chain in `factoryHelpers.js` / `FACTORY_MACHINES`
 (constants):
-- **Generators** make Power. **Extractors** spend Power to mine **Substrate** (a
-  stockpiled new resource). **Converters** (PP / paper / lucidity / intelligence /
-  materials) spend Substrate + Power to output existing resources. PP Synthesizer
-  output scales by the PP multiplier tier so it stays relevant.
-- **Throttles:** if power demand > supply, all consumers run at `powerEff =
-  supply/demand`; if substrate would go negative, converters run at `subEff`.
+- **Generators** trickle Power into a battery (stored `power`, capped by
+  capacity); **Capacitors** raise capacity; **Extractors** drain power to mine
+  **Substrate**; **Converters** drain power + substrate to output existing
+  resources. PP Synthesizer output scales by the PP multiplier tier.
+- **Throttles:** each tick consumers run at `powerEff` = the share of demand the
+  battery + incoming generation can cover; at 0 power with no generation they
+  stop. Substrate adds `subEff` when the stockpile runs dry.
   `computeFactoryTick(state, dt)` is the authoritative per-tick math (dt=0.1);
   `getFactoryStats` is the per-second UI summary. Materials are integers, so
   fractional output banks in `factoryMaterialAcc` until whole `void_fragment`s pop.
@@ -342,7 +343,8 @@ rendered alongside.
 | Resource discovery | first reach 1000% sanity (grant 80 luc / 50 int) |
 | Lucid Anchor floors | 250 / 500 / 750 |
 | Factory unlock | same 1000% discovery (`factoryUnlocked`) |
-| Factory chain | Generators->Power, Extractors->Substrate, Converters->resources |
+| Factory chain | Generators->Power battery (cap by Capacitors), Extractors->Substrate, Converters->resources |
+| Power model | stored battery; machines run at powerEff (battery+gen vs demand), stop at 0 |
 | Power/substrate throttle | proportional (powerEff, subEff) |
 | Machine build cost | ceil(base * 1.18-1.22^owned) lucidity |
 | Factory sprites | 64x64, 4 frames, RLE JSON, drawn via PXLS renderer |

@@ -31,6 +31,7 @@ const BASE = {
 // Machine accent (vivid material) colours.
 const MACHINES = {
   generator: '#9fe8ff',
+  capacitor: '#ffe08a',
   extractor: '#c46bff',
   conv_pp: '#ffd24a',
   conv_paper: '#f2efe6',
@@ -170,6 +171,29 @@ const drawExtractor = (frame) => {
   return g;
 };
 
+const drawCapacitor = (frame) => {
+  const g = newGrid();
+  drawFloor(g);
+  // Terminal nub on top
+  rect(g, 29, 12, 6, 4, P.bodyLight);
+  // Battery body + inner window
+  panel(g, 22, 16, 20, 40, P.bodyMid, P.outline);
+  panel(g, 26, 20, 12, 32, P.bodyDark, P.outline);
+  // Charge segments fill bottom-up, animated (charging)
+  const segs = 5;
+  const lit = 1 + (frame % segs);
+  for (let s = 0; s < segs; s += 1) {
+    const y = 47 - s * 6;
+    const on = s < lit;
+    const col = on ? (s === lit - 1 ? P.accentBright : P.accent) : P.bodyDark;
+    rect(g, 28, y, 8, 4, col);
+  }
+  // Feet
+  rect(g, 23, 55, 4, 3, P.bodyDark);
+  rect(g, 37, 55, 4, 3, P.bodyDark);
+  return g;
+};
+
 const drawConverter = (frame) => {
   const g = newGrid();
   drawFloor(g);
@@ -205,6 +229,7 @@ const drawConverter = (frame) => {
 
 const DRAW = {
   generator: drawGenerator,
+  capacitor: drawCapacitor,
   extractor: drawExtractor,
   conv_pp: drawConverter,
   conv_paper: drawConverter,
