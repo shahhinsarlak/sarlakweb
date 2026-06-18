@@ -728,6 +728,8 @@ export const ACHIEVEMENTS = [
   { id: 'first_lucidity', name: 'Lucid', desc: 'Push your sanity above 100%', check: (state) => state.sanity > 100, reward: { type: 'ppMultiplier', value: 0.03 } },
   { id: 'transcendent_mind', name: 'Transcendent', desc: 'Reach 1000% sanity', check: (state) => state.sanity >= 1000, reward: { type: 'ppMultiplier', value: 0.10 } },
   { id: 'first_insight', name: 'Insight', desc: 'Research your first insight', check: (state) => (state.researchedInsights || []).length >= 1 },
+  { id: 'lucid_scholar', name: 'Lucid Scholar', desc: 'Research 10 insights', check: (state) => (state.researchedInsights || []).length >= 10, reward: { type: 'ppMultiplier', value: 0.08 } },
+  { id: 'enlightened', name: 'Enlightened', desc: 'Research every insight', check: (state) => (state.researchedInsights || []).length >= 21, reward: { type: 'ppMultiplier', value: 0.20 } },
   { id: 'the_construct', name: 'The Construct', desc: 'Build your first factory machine', check: (state) => Object.keys(state.factoryMachines || {}).length >= 1 },
   { id: 'automation', name: 'Automation', desc: 'Research all five converter blueprints', check: (state) => (state.factoryBlueprints || []).length >= 5, reward: { type: 'ppMultiplier', value: 0.10 } },
   { id: 'substrate_baron', name: 'Substrate Baron', desc: 'Stockpile 1000 substrate', check: (state) => (state.substrate || 0) >= 1000 },
@@ -1215,48 +1217,136 @@ export const SANITY_TIERS = {
 export const LUCID_ANCHOR_FLOORS = [0, 250, 500, 750];
 
 /**
- * Insights (Chapter 2, Phase 1 sink)
- * Researched in the Insights panel by spending Intelligence; some also cost
- * Lucidity to build. This is the seed of the Phase 2 factory/automation layer.
- * - type 'anchor': raises lucidAnchorTier to anchorTier (permanent sanity floor)
- * - type 'recipe': unlocks a craftable technique (e.g. the Clarity buff)
+ * Insights ("The Lucid Mind", Chapter 2). Chapter 2's counterpart to the skill
+ * tree: spend Intelligence (and some Lucidity) to research permanent mental
+ * upgrades, grouped into five categories. Tiers chain via `requires`.
+ *
+ * Types:
+ * - 'anchor': raises lucidAnchorTier to anchorTier (permanent sanity floor)
+ * - 'recipe': unlocks a craftable technique (the Clarity buff)
+ * - 'passive': contributes an `effect` aggregated by getInsightEffects()
+ *
+ * Passive effect types: meditationGainMult, lucidDecayReduction,
+ * meditationLucidityMult, lucidityRateMult, intelRateMult, intelGainMult,
+ * clarityDurationMult, clarityCostReduction.
  */
+export const INSIGHT_CATEGORIES = ['Stability', 'Discipline', 'Perception', 'Cognition', 'Techniques'];
+
 export const INSIGHTS = [
+  // --- Stability: permanent sanity floors ---
   {
-    id: 'lucid_anchor_1',
-    name: 'Lucid Anchor I',
-    type: 'anchor',
-    anchorTier: 1,
-    cost: { intelligence: 30, lucidity: 50 },
-    requires: [],
-    desc: 'Anchor your clarity. Sanity can no longer fall below 250%.'
+    id: 'lucid_anchor_1', name: 'Lucid Anchor I', category: 'Stability', type: 'anchor', anchorTier: 1,
+    cost: { intelligence: 30, lucidity: 50 }, requires: [],
+    desc: 'Drive a stake into your clarity. Sanity can no longer fall below 250%.',
   },
   {
-    id: 'clarity_recipe',
-    name: 'Clarity Technique',
-    type: 'recipe',
-    cost: { intelligence: 60 },
-    requires: [],
-    desc: 'Fold a moment of stillness into Clarity: a buff that halts lucid decay for a time.'
+    id: 'lucid_anchor_2', name: 'Lucid Anchor II', category: 'Stability', type: 'anchor', anchorTier: 2,
+    cost: { intelligence: 90, lucidity: 150 }, requires: ['lucid_anchor_1'],
+    desc: 'Hold a higher line. Sanity floored at 500%.',
   },
   {
-    id: 'lucid_anchor_2',
-    name: 'Lucid Anchor II',
-    type: 'anchor',
-    anchorTier: 2,
-    cost: { intelligence: 90, lucidity: 150 },
-    requires: ['lucid_anchor_1'],
-    desc: 'Hold a higher line. Sanity floored at 500%.'
+    id: 'lucid_anchor_3', name: 'Lucid Anchor III', category: 'Stability', type: 'anchor', anchorTier: 3,
+    cost: { intelligence: 240, lucidity: 400 }, requires: ['lucid_anchor_2'],
+    desc: 'Stand beyond the walls. Sanity floored at 750%.',
+  },
+
+  // --- Discipline: meditation & decay ---
+  {
+    id: 'deep_breathing_1', name: 'Deep Breathing I', category: 'Discipline', type: 'passive',
+    effect: { type: 'meditationGainMult', value: 0.25 }, cost: { intelligence: 40 }, requires: [],
+    desc: 'Slower breaths reach deeper. Meditation restores 25% more sanity.',
   },
   {
-    id: 'lucid_anchor_3',
-    name: 'Lucid Anchor III',
-    type: 'anchor',
-    anchorTier: 3,
-    cost: { intelligence: 240, lucidity: 400 },
-    requires: ['lucid_anchor_2'],
-    desc: 'Stand beyond the walls. Sanity floored at 750%.'
-  }
+    id: 'deep_breathing_2', name: 'Deep Breathing II', category: 'Discipline', type: 'passive',
+    effect: { type: 'meditationGainMult', value: 0.25 }, cost: { intelligence: 100 }, requires: ['deep_breathing_1'],
+    desc: 'The breath becomes a tide. Meditation restores a further 25% sanity.',
+  },
+  {
+    id: 'deep_breathing_3', name: 'Deep Breathing III', category: 'Discipline', type: 'passive',
+    effect: { type: 'meditationGainMult', value: 0.30 }, cost: { intelligence: 220, lucidity: 80 }, requires: ['deep_breathing_2'],
+    desc: 'You no longer breathe; you are breathed. +30% meditation sanity.',
+  },
+  {
+    id: 'steady_mind_1', name: 'Steady Mind I', category: 'Discipline', type: 'passive',
+    effect: { type: 'lucidDecayReduction', value: 0.25 }, cost: { intelligence: 60, lucidity: 40 }, requires: [],
+    desc: 'Clarity clings a little longer. Lucid decay slows by 25%.',
+  },
+  {
+    id: 'steady_mind_2', name: 'Steady Mind II', category: 'Discipline', type: 'passive',
+    effect: { type: 'lucidDecayReduction', value: 0.30 }, cost: { intelligence: 160, lucidity: 120 }, requires: ['steady_mind_1'],
+    desc: 'The drift barely pulls at you now. Lucid decay slows a further 30%.',
+  },
+  {
+    id: 'lucid_recall_1', name: 'Lucid Recall I', category: 'Discipline', type: 'passive',
+    effect: { type: 'meditationLucidityMult', value: 0.5 }, cost: { intelligence: 50 }, requires: [],
+    desc: 'Each session leaves more behind. +50% lucidity from meditating while lucid.',
+  },
+  {
+    id: 'lucid_recall_2', name: 'Lucid Recall II', category: 'Discipline', type: 'passive',
+    effect: { type: 'meditationLucidityMult', value: 0.5 }, cost: { intelligence: 140, lucidity: 100 }, requires: ['lucid_recall_1'],
+    desc: 'You carry the stillness with you. +50% more meditation lucidity.',
+  },
+
+  // --- Perception: passive lucidity ---
+  {
+    id: 'open_aperture_1', name: 'Open Aperture I', category: 'Perception', type: 'passive',
+    effect: { type: 'lucidityRateMult', value: 0.3 }, cost: { intelligence: 50, lucidity: 40 }, requires: [],
+    desc: 'Let more of it in. +30% passive lucidity while lucid.',
+  },
+  {
+    id: 'open_aperture_2', name: 'Open Aperture II', category: 'Perception', type: 'passive',
+    effect: { type: 'lucidityRateMult', value: 0.4 }, cost: { intelligence: 130, lucidity: 120 }, requires: ['open_aperture_1'],
+    desc: 'The edges of the room thin. +40% passive lucidity.',
+  },
+  {
+    id: 'open_aperture_3', name: 'Open Aperture III', category: 'Perception', type: 'passive',
+    effect: { type: 'lucidityRateMult', value: 0.5 }, cost: { intelligence: 300, lucidity: 300 }, requires: ['open_aperture_2'],
+    desc: 'You see the seams in everything. +50% passive lucidity.',
+  },
+
+  // --- Cognition: passive intelligence ---
+  {
+    id: 'sharp_focus_1', name: 'Sharp Focus I', category: 'Cognition', type: 'passive',
+    effect: { type: 'intelRateMult', value: 0.3 }, cost: { intelligence: 50 }, requires: [],
+    desc: 'Thought sharpens to a point. +30% passive intelligence while lucid.',
+  },
+  {
+    id: 'sharp_focus_2', name: 'Sharp Focus II', category: 'Cognition', type: 'passive',
+    effect: { type: 'intelRateMult', value: 0.4 }, cost: { intelligence: 130 }, requires: ['sharp_focus_1'],
+    desc: 'Ideas arrive uninvited. +40% passive intelligence.',
+  },
+  {
+    id: 'sharp_focus_3', name: 'Sharp Focus III', category: 'Cognition', type: 'passive',
+    effect: { type: 'intelRateMult', value: 0.5 }, cost: { intelligence: 300, lucidity: 150 }, requires: ['sharp_focus_2'],
+    desc: 'Understanding without effort. +50% passive intelligence.',
+  },
+  {
+    id: 'pattern_sense_1', name: 'Pattern Sense I', category: 'Cognition', type: 'passive',
+    effect: { type: 'intelGainMult', value: 0.25 }, cost: { intelligence: 80 }, requires: [],
+    desc: 'See the shape behind the work. +25% intelligence from Debug and Reports.',
+  },
+  {
+    id: 'pattern_sense_2', name: 'Pattern Sense II', category: 'Cognition', type: 'passive',
+    effect: { type: 'intelGainMult', value: 0.35 }, cost: { intelligence: 200, lucidity: 120 }, requires: ['pattern_sense_1'],
+    desc: 'Every task is a sentence you can read. +35% more from Debug and Reports.',
+  },
+
+  // --- Techniques: active Clarity ---
+  {
+    id: 'clarity_recipe', name: 'Clarity Technique', category: 'Techniques', type: 'recipe',
+    cost: { intelligence: 60 }, requires: [],
+    desc: 'Fold a moment of stillness into Clarity: a craftable buff that halts lucid decay for a time.',
+  },
+  {
+    id: 'lasting_clarity', name: 'Lasting Clarity', category: 'Techniques', type: 'passive',
+    effect: { type: 'clarityDurationMult', value: 0.5 }, cost: { intelligence: 100, lucidity: 60 }, requires: ['clarity_recipe'],
+    desc: 'Stillness that lingers. Clarity lasts 50% longer.',
+  },
+  {
+    id: 'efficient_clarity', name: 'Efficient Clarity', category: 'Techniques', type: 'passive',
+    effect: { type: 'clarityCostReduction', value: 0.3 }, cost: { intelligence: 100, lucidity: 80 }, requires: ['clarity_recipe'],
+    desc: 'Find the calm with less effort. Clarity costs 30% less lucidity.',
+  },
 ];
 
 /**
@@ -1951,7 +2041,7 @@ LUCIDITY (perception): gathers passively while lucid, faster the higher your san
 
 INTELLIGENCE (understanding): earned from Debug successes, from consuming Reports, and as a small trickle while lucid.
 
-Spend both in the INSIGHTS panel. Lucid Anchors set a permanent sanity floor (250 / 500 / 750), and the Clarity Technique lets you craft a buff that halts lucid decay.`
+Spend both in the INSIGHTS panel ("The Lucid Mind"), Chapter 2's research system. Five branches: Stability (Lucid Anchors that floor your sanity at 250 / 500 / 750), Discipline (stronger meditation, slower lucid decay), Perception (more passive lucidity), Cognition (more passive intelligence, more from Debug and Reports), and Techniques (craft Clarity to halt decay, then make it last longer and cost less).`
   },
   factory: {
     id: 'factory',

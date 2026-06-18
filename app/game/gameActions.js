@@ -15,6 +15,7 @@
  */
 import { LOCATIONS, UPGRADES, DEBUG_CHALLENGES, PRINTER_UPGRADES, DOCUMENT_TYPES, TIER_MASTERY_WEIGHTS, INITIAL_GAME_STATE, LORE_SNIPPETS, INSIGHTS, CLARITY_BUFF, HELP_POPUPS, FACTORY_MACHINES, FACTORY_UPGRADES } from './constants';
 import { getUpgradeCost, getMachineLevel, isBuilt, MAX_UPGRADE_LEVEL } from './factoryHelpers';
+import { getInsightEffects } from './insightHelpers';
 import {
   applyEnergyCostReduction,
   getModifiedRestCooldown,
@@ -193,11 +194,15 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
           sanityGain *= 2;
         }
 
+        // Insights (Deep Breathing / Lucid Recall) boost meditation results.
+        const ie = getInsightEffects(prev);
+        sanityGain *= (1 + ie.meditationGainMult);
+
         const appliedSanity = Math.min(prev.maxSanity || 100, prev.sanity + sanityGain) - prev.sanity;
         // Chapter 2: meditating while already lucid (>100%) also yields a burst of
         // Lucidity, once the resource has been discovered.
         const lucidityBonus = (prev.resourcesUnlocked && prev.sanity > 100)
-          ? Math.round(sanityGain * 0.5)
+          ? Math.round(sanityGain * 0.5 * (1 + ie.meditationLucidityMult))
           : 0;
         const sanityNote = appliedSanity > 0 ? ` (+${Math.round(appliedSanity)} sanity)` : '';
         const lucidNote = lucidityBonus > 0 ? ` (+${lucidityBonus} lucidity)` : '';
@@ -325,8 +330,10 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
 
         const sanityGain = Math.min(prev.maxSanity || 100, prev.sanity + 5) - prev.sanity;
         // Chapter 2: Debug is the primary Intelligence source (only once the
-        // resources have been discovered at 1000% sanity).
-        const intelGain = prev.resourcesUnlocked ? 8 : 0;
+        // resources have been discovered at 1000% sanity). Pattern Sense boosts it.
+        const intelGain = prev.resourcesUnlocked
+          ? Math.round(8 * (1 + getInsightEffects(prev).intelGainMult))
+          : 0;
         const rewardParts = [`+${formatPP(reward)} PP`];
         if (sanityGain > 0) rewardParts.push(`+${Math.round(sanityGain)} sanity`);
         if (intelGain > 0) rewardParts.push(`+${intelGain} intelligence`);
@@ -868,9 +875,9 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       const effectDetails = [];
 
       // Chapter 2: consuming Reports yields Intelligence (analysis -> understanding).
-      // Only after the resources are discovered at 1000% sanity.
+      // Only after the resources are discovered at 1000% sanity. Pattern Sense boosts it.
       if (doc.type === 'report' && prev.resourcesUnlocked) {
-        const intelGain = 6;
+        const intelGain = Math.round(6 * (1 + getInsightEffects(prev).intelGainMult));
         newState.intelligence = (prev.intelligence || 0) + intelGain;
         effectDetails.push(`+${intelGain} intelligence`);
       }
@@ -1224,10 +1231,14 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
   };
 
   // Craft a Clarity buff that halts lucid decay (reuses activeReportBuffs).
+  // Lasting/Efficient Clarity insights extend its duration and cut its cost.
   const craftClarity = () => {
     setGameState(prev => {
       if (!(prev.researchedInsights || []).includes('clarity_recipe')) return prev;
-      if ((prev.lucidity || 0) < CLARITY_BUFF.lucidityCost) {
+      const ie = getInsightEffects(prev);
+      const cost = Math.ceil(CLARITY_BUFF.lucidityCost * (1 - ie.clarityCostReduction));
+      const duration = Math.round(CLARITY_BUFF.duration * (1 + ie.clarityDurationMult));
+      if ((prev.lucidity || 0) < cost) {
         return {
           ...prev,
           recentMessages: ['Not enough lucidity for Clarity.', ...prev.recentMessages].slice(0, prev.maxLogMessages || 15),
@@ -1238,8 +1249,8 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
         id: `clarity_${Date.now()}`,
         name: CLARITY_BUFF.name,
         desc: 'Lucid decay halted.',
-        duration: CLARITY_BUFF.duration,
-        expiresAt: Date.now() + CLARITY_BUFF.duration * 1000,
+        duration,
+        expiresAt: Date.now() + duration * 1000,
         noSanityDrain: true,
       };
 
@@ -1255,9 +1266,9 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
 
       return {
         ...prev,
-        lucidity: (prev.lucidity || 0) - CLARITY_BUFF.lucidityCost,
+        lucidity: (prev.lucidity || 0) - cost,
         activeReportBuffs: workingBuffs,
-        recentMessages: [`Clarity crafted. Decay halted for ${CLARITY_BUFF.duration / 60} minutes.`, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15),
+        recentMessages: [`Clarity crafted. Decay halted for ${(duration / 60).toFixed(1)} minutes.`, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15),
       };
     });
   };

@@ -33,6 +33,7 @@ import { SKILLS, LEVEL_SYSTEM, XP_REWARDS } from './skillTreeConstants';
 import { DIMENSIONAL_MATERIALS } from './dimensionalConstants';
 import { getSanityTierDisplay, isSanityDrainPaused, calculatePaperQuality, getSanityTier } from './sanityPaperHelpers';
 import { computeFactoryTick } from './factoryHelpers';
+import { getInsightEffects } from './insightHelpers';
 import {
   INITIAL_GAME_STATE,
   LOCATIONS,
@@ -515,9 +516,11 @@ export default function Game() {
         }
 
         // Chapter 2: above 100% sanity drifts back toward 100 (lucid decay), so
-        // staying lucid takes upkeep. Clarity buffs (noSanityDrain) pause it.
+        // staying lucid takes upkeep. Clarity buffs (noSanityDrain) pause it, and
+        // Steady Mind insights slow it.
         if ((prev.chapter || 1) >= 2 && newState.sanity > 100 && !isSanityDrainPaused(prev)) {
-          newState.sanity = Math.max(100, newState.sanity - LUCID_DECAY_PER_TICK);
+          const decay = LUCID_DECAY_PER_TICK * (1 - getInsightEffects(prev).lucidDecayReduction);
+          newState.sanity = Math.max(100, newState.sanity - decay);
         }
 
         // Lucid Anchor sets a permanent high sanity floor once researched.
@@ -569,11 +572,12 @@ export default function Game() {
         }
 
         // While lucid (>100%), gather the new resources. They only accrue after
-        // discovery; the 1000% discovery grant seeds the first Lucid Anchor.
+        // discovery; Perception/Cognition insights boost the rates.
         if ((prev.chapter || 1) >= 2 && prev.resourcesUnlocked && newState.sanity > 100) {
           const lucidTier = getSanityTier(newState.sanity);
-          newState.lucidity = (prev.lucidity || 0) + (lucidTier.lucidityRate || 0) / 10;
-          newState.intelligence = (prev.intelligence || 0) + (lucidTier.intelRate || 0) / 10;
+          const ie = getInsightEffects(prev);
+          newState.lucidity = (prev.lucidity || 0) + ((lucidTier.lucidityRate || 0) * (1 + ie.lucidityRateMult)) / 10;
+          newState.intelligence = (prev.intelligence || 0) + ((lucidTier.intelRate || 0) * (1 + ie.intelRateMult)) / 10;
         }
 
         // Discovery: the first time sanity reaches 1000%, reveal the resources.

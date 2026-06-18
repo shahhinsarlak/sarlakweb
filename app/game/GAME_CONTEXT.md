@@ -244,9 +244,18 @@ Begins once **every** upgrade (PP, printer, dimensional) is owned —
   `RESOURCE_DISCOVERY_GRANT` (80 lucidity / 50 intelligence). After that, lucidity
   accrues passively while >100 (by tier), intelligence from Debug success (+8),
   consuming Reports (+6), and a lucid trickle; meditating while lucid adds lucidity.
-- **Insights sink:** `InsightsPanel` spends intelligence/lucidity on `INSIGHTS` —
-  Lucid Anchors (raise `lucidAnchorTier`) and the Clarity Technique (`craftClarity`
-  → a `noSanityDrain` buff pausing lucid decay). Seed of the Phase 2 factory layer.
+- **Insights ("The Lucid Mind"):** `InsightsPanel` is Chapter 2's research system
+  (counterpart to the skill tree). 21 insights in 5 branches (`INSIGHT_CATEGORIES`:
+  Stability/Discipline/Perception/Cognition/Techniques), chained via `requires`,
+  bought with intelligence (+some lucidity). Stability = Lucid Anchors (raise
+  `lucidAnchorTier` → sanity floor). Passive insights contribute effects aggregated
+  by `getInsightEffects` (`insightHelpers.js`) — meditationGainMult,
+  meditationLucidityMult, lucidDecayReduction (cap 0.9), lucidityRateMult,
+  intelRateMult, intelGainMult, clarityDuration/CostMult — hooked into the
+  meditation result (gameActions `breatheAction`), lucid decay + passive
+  lucidity/intelligence gen (page.js tick), Debug/Report intelligence, and
+  `craftClarity` (Clarity buff duration/cost). Techniques branch unlocks + tunes
+  the Clarity craft.
 - New state: `chapter`, `chapter2IntroActive/Seen`, `resourcesUnlocked`, `lucidity`,
   `intelligence`, `lucidAnchorTier`, `researchedInsights`, `insightsOpen`. Saves get
   these via the merge-over-`INITIAL_GAME_STATE` (no migration needed).

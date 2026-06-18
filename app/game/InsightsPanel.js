@@ -1,53 +1,50 @@
 import React, { useEffect } from 'react';
 import EventLog from './EventLog';
 import NotificationPopup from './NotificationPopup';
-import { INSIGHTS, CLARITY_BUFF, LUCID_ANCHOR_FLOORS } from './constants';
+import { INSIGHTS, INSIGHT_CATEGORIES, CLARITY_BUFF } from './constants';
+import {
+  getInsight,
+  isInsightResearched,
+  insightRequirementsMet,
+  canAffordInsight,
+  canResearchInsight,
+  getInsightEffects,
+  insightEffectText,
+  getInsightBonusSummary,
+} from './insightHelpers';
 
 /**
- * Insights Panel (Chapter 2, Phase 1)
+ * Insights Panel ("The Lucid Mind", Chapter 2)
  *
- * Spend Lucidity and Intelligence to research insights: Lucid Anchors (permanent
- * sanity floors) and the Clarity Technique (a craftable decay-pausing buff).
- * This is the seed of the Phase 2 factory/automation layer.
- *
- * @param {Object} gameState - Current game state
- * @param {Object} actions - Game actions (researchInsight, craftClarity)
- * @param {Function} onClose - Close the panel
+ * Chapter 2's research system: spend Intelligence (and some Lucidity) on permanent
+ * mental upgrades, grouped into five branches. Tiers chain via requirements. Text
+ * is standard-coloured for readability.
  */
 function InsightsPanel({ gameState, actions, onClose, notifications, onDismissNotification }) {
   useEffect(() => {
-    const handleEscape = (e) => {
-      if (e.key === 'Escape') onClose();
-    };
+    const handleEscape = (e) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', handleEscape);
     return () => window.removeEventListener('keydown', handleEscape);
   }, [onClose]);
 
-  const researched = gameState.researchedInsights || [];
   const lucidity = Math.floor(gameState.lucidity || 0);
   const intelligence = Math.floor(gameState.intelligence || 0);
-  const anchorFloor = LUCID_ANCHOR_FLOORS[gameState.lucidAnchorTier || 0] || 0;
-  const hasClarityRecipe = researched.includes('clarity_recipe');
-  const canAffordClarity = lucidity >= CLARITY_BUFF.lucidityCost;
+  const eff = getInsightEffects(gameState);
+  const bonuses = getInsightBonusSummary(gameState);
+  const floors = [0, 250, 500, 750];
+  const anchorFloor = floors[gameState.lucidAnchorTier || 0] || 0;
 
-  const isResearched = (insight) => researched.includes(insight.id);
-  const requirementsMet = (insight) =>
-    (insight.requires || []).every((r) => researched.includes(r));
-  const canAfford = (insight) =>
-    (gameState.intelligence || 0) >= (insight.cost.intelligence || 0) &&
-    (gameState.lucidity || 0) >= (insight.cost.lucidity || 0);
+  const hasClarity = (gameState.researchedInsights || []).includes('clarity_recipe');
+  const clarityCost = Math.ceil(CLARITY_BUFF.lucidityCost * (1 - eff.clarityCostReduction));
+  const clarityDuration = Math.round(CLARITY_BUFF.duration * (1 + eff.clarityDurationMult));
+  const canCraftClarity = (gameState.lucidity || 0) >= clarityCost;
+
+  const costLabel = (cost) =>
+    Object.entries(cost).map(([res, amt]) => `${amt} ${res}`).join(' + ');
 
   const resourceBox = (label, value) => (
-    <div style={{
-      flex: 1,
-      border: '1px solid var(--border-color)',
-      padding: '14px',
-      backgroundColor: 'var(--bg-color)',
-      textAlign: 'center',
-    }}>
-      <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6 }}>
-        {label}
-      </div>
+    <div style={{ flex: 1, border: '1px solid var(--border-color)', padding: '14px', backgroundColor: 'var(--bg-color)', textAlign: 'center' }}>
+      <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6 }}>{label}</div>
       <div style={{ fontSize: '24px', fontWeight: 'bold', marginTop: '6px' }}>{value}</div>
     </div>
   );
@@ -57,31 +54,18 @@ function InsightsPanel({ gameState, actions, onClose, notifications, onDismissNo
       <EventLog messages={gameState.recentMessages} />
       <div style={{
         fontFamily: "'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace",
-        maxWidth: '720px',
-        margin: '0 auto',
-        padding: '40px 24px',
-        minHeight: '100vh',
-        color: 'var(--text-color)',
+        maxWidth: '820px', margin: '0 auto', padding: '40px 24px', minHeight: '100vh', color: 'var(--text-color)',
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
           <div>
-            <div style={{ fontSize: '22px', letterSpacing: '2px', textTransform: 'uppercase' }}>Insights</div>
+            <div style={{ fontSize: '22px', letterSpacing: '2px', textTransform: 'uppercase' }}>The Lucid Mind</div>
             <div style={{ fontSize: '12px', opacity: 0.6, marginTop: '4px' }}>
-              Build a way through. Spend what you have perceived and understood.
+              Spend what you perceive and understand to reshape your own mind.
             </div>
           </div>
           <button
             onClick={onClose}
-            style={{
-              background: 'none',
-              border: '1px solid var(--border-color)',
-              color: 'var(--text-color)',
-              padding: '10px 20px',
-              cursor: 'pointer',
-              fontSize: '13px',
-              fontFamily: 'inherit',
-              letterSpacing: '1px',
-            }}
+            style={{ background: 'none', border: '1px solid var(--border-color)', color: 'var(--text-color)', padding: '10px 20px', cursor: 'pointer', fontSize: '13px', fontFamily: 'inherit', letterSpacing: '1px' }}
           >
             CLOSE
           </button>
@@ -92,99 +76,68 @@ function InsightsPanel({ gameState, actions, onClose, notifications, onDismissNo
           {resourceBox('Intelligence', intelligence)}
         </div>
 
-        <div style={{
-          fontSize: '12px',
-          opacity: 0.7,
-          marginBottom: '24px',
-          padding: '10px 12px',
-          border: '1px solid var(--border-color)',
-          backgroundColor: 'var(--hover-color)',
-        }}>
-          Current sanity floor: <strong>{anchorFloor > 0 ? `${anchorFloor}%` : 'none'}</strong>
-          {anchorFloor > 0 && ' — your clarity holds here without upkeep.'}
+        {/* Active bonuses + clarity craft */}
+        <div style={{ border: '1px solid var(--border-color)', backgroundColor: 'var(--hover-color)', padding: '12px', marginBottom: '24px' }}>
+          <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6, marginBottom: '6px' }}>Active Bonuses</div>
+          <div style={{ fontSize: '12px', opacity: 0.85, lineHeight: '1.7' }}>
+            {anchorFloor > 0 && <span>Sanity floor {anchorFloor}%{bonuses.length > 0 ? '  \u2022  ' : ''}</span>}
+            {bonuses.join('  \u2022  ') || (anchorFloor === 0 ? 'None yet \u2014 research insights below.' : '')}
+          </div>
+          {hasClarity && (
+            <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+              <button
+                onClick={() => actions.craftClarity()}
+                disabled={!canCraftClarity}
+                style={btn(canCraftClarity)}
+              >
+                CRAFT CLARITY ({clarityCost} lucidity)
+              </button>
+              <span style={{ fontSize: '11px', opacity: 0.65 }}>
+                Halts lucid decay for {(clarityDuration / 60).toFixed(1)} min.
+              </span>
+            </div>
+          )}
         </div>
 
-        {INSIGHTS.map((insight) => {
-          const done = isResearched(insight);
-          const unlocked = requirementsMet(insight);
-          const affordable = canAfford(insight);
-          const isClarity = insight.id === 'clarity_recipe';
-
+        {/* Branches */}
+        {INSIGHT_CATEGORIES.map((category) => {
+          const items = INSIGHTS.filter((i) => i.category === category);
+          if (items.length === 0) return null;
           return (
-            <div
-              key={insight.id}
-              style={{
-                border: '1px solid var(--border-color)',
-                padding: '16px',
-                marginBottom: '12px',
-                backgroundColor: 'var(--hover-color)',
-                opacity: unlocked || done ? 1 : 0.5,
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: '15px', fontWeight: 'bold', marginBottom: '4px' }}>
-                    {insight.name}
-                  </div>
-                  <div style={{ fontSize: '12px', opacity: 0.75, lineHeight: '1.5' }}>{insight.desc}</div>
-                  <div style={{ fontSize: '11px', opacity: 0.6, marginTop: '8px' }}>
-                    Cost:
-                    {insight.cost.intelligence ? ` ${insight.cost.intelligence} intelligence` : ''}
-                    {insight.cost.intelligence && insight.cost.lucidity ? ' +' : ''}
-                    {insight.cost.lucidity ? ` ${insight.cost.lucidity} lucidity` : ''}
-                  </div>
-                </div>
-                <div style={{ minWidth: '130px', textAlign: 'right' }}>
-                  {done ? (
-                    <div style={{ fontSize: '12px', opacity: 0.7, letterSpacing: '1px' }}>RESEARCHED</div>
-                  ) : !unlocked ? (
-                    <div style={{ fontSize: '11px', opacity: 0.6 }}>Requires prior insight</div>
-                  ) : (
-                    <button
-                      onClick={() => actions.researchInsight(insight.id)}
-                      disabled={!affordable}
-                      style={{
-                        background: affordable ? 'var(--accent-color)' : 'none',
-                        border: '1px solid var(--border-color)',
-                        color: affordable ? 'var(--bg-color)' : 'var(--text-color)',
-                        padding: '10px 16px',
-                        cursor: affordable ? 'pointer' : 'not-allowed',
-                        fontSize: '12px',
-                        fontFamily: 'inherit',
-                        letterSpacing: '1px',
-                        opacity: affordable ? 1 : 0.5,
-                      }}
-                    >
-                      RESEARCH
-                    </button>
-                  )}
-                </div>
+            <div key={category} style={{ marginBottom: '28px' }}>
+              <div style={{ fontSize: '13px', textTransform: 'uppercase', letterSpacing: '1.5px', opacity: 0.8, borderBottom: '1px solid var(--border-color)', paddingBottom: '6px', marginBottom: '12px' }}>
+                {category}
               </div>
-
-              {isClarity && done && (
-                <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--border-color)' }}>
-                  <button
-                    onClick={() => actions.craftClarity()}
-                    disabled={!canAffordClarity}
-                    style={{
-                      background: canAffordClarity ? 'var(--accent-color)' : 'none',
-                      border: '1px solid var(--border-color)',
-                      color: canAffordClarity ? 'var(--bg-color)' : 'var(--text-color)',
-                      padding: '10px 16px',
-                      cursor: canAffordClarity ? 'pointer' : 'not-allowed',
-                      fontSize: '12px',
-                      fontFamily: 'inherit',
-                      letterSpacing: '1px',
-                      opacity: canAffordClarity ? 1 : 0.5,
-                    }}
-                  >
-                    CRAFT CLARITY ({CLARITY_BUFF.lucidityCost} LUCIDITY)
-                  </button>
-                  <span style={{ fontSize: '11px', opacity: 0.6, marginLeft: '12px' }}>
-                    Halts lucid decay for {CLARITY_BUFF.duration / 60} minutes.
-                  </span>
-                </div>
-              )}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '12px' }}>
+                {items.map((insight) => {
+                  const researched = isInsightResearched(gameState, insight.id);
+                  const reqMet = insightRequirementsMet(insight, gameState);
+                  const affordable = canAffordInsight(insight, gameState);
+                  const reqNames = (insight.requires || []).map((r) => getInsight(r)?.name).filter(Boolean);
+                  return (
+                    <div key={insight.id} style={{ border: '1px solid var(--border-color)', backgroundColor: 'var(--hover-color)', padding: '14px', opacity: researched || reqMet ? 1 : 0.55 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '8px' }}>
+                        <span style={{ fontSize: '14px', fontWeight: 'bold' }}>{insight.name}</span>
+                        <span style={{ fontSize: '11px', opacity: 0.7, whiteSpace: 'nowrap' }}>{insightEffectText(insight)}</span>
+                      </div>
+                      <div style={{ fontSize: '11px', opacity: 0.65, fontStyle: 'italic', margin: '8px 0', lineHeight: '1.5' }}>{insight.desc}</div>
+                      {researched ? (
+                        <div style={{ fontSize: '12px', opacity: 0.7, letterSpacing: '1px' }}>{'\u2713 RESEARCHED'}</div>
+                      ) : !reqMet ? (
+                        <div style={{ fontSize: '11px', opacity: 0.6 }}>Requires: {reqNames.join(', ')}</div>
+                      ) : (
+                        <button
+                          onClick={() => actions.researchInsight(insight.id)}
+                          disabled={!affordable}
+                          style={btn(affordable)}
+                        >
+                          RESEARCH ({costLabel(insight.cost)})
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           );
         })}
@@ -193,6 +146,20 @@ function InsightsPanel({ gameState, actions, onClose, notifications, onDismissNo
       <NotificationPopup notifications={notifications} onDismiss={onDismissNotification} />
     </>
   );
+}
+
+function btn(enabled) {
+  return {
+    background: enabled ? 'var(--accent-color)' : 'none',
+    border: '1px solid var(--border-color)',
+    color: enabled ? 'var(--bg-color)' : 'var(--text-color)',
+    padding: '9px 14px',
+    cursor: enabled ? 'pointer' : 'not-allowed',
+    fontSize: '12px',
+    fontFamily: 'inherit',
+    letterSpacing: '1px',
+    opacity: enabled ? 1 : 0.5,
+  };
 }
 
 InsightsPanel.displayName = 'InsightsPanel';
