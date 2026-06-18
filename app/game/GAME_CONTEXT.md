@@ -296,6 +296,17 @@ upgrades each) in constants; cost formula `getUpgradeCost` in `factoryHelpers`.
   shift the limited power budget toward what they want more of. Actions
   `toggleMachinePause` / `setOverclock`. Per-machine max upgrade level is
   `getMaxLevel(id)` (= its upgrades length: 10, or 11 for consumers).
+- **Materials & Transmuter:** the Material Condenser only makes **Void Fragments**
+  (the commonest material). The **Material Transmuter** (`transmuter`) consumes Void
+  Fragments and emits a chosen rarer material; cost per unit is rarity-aware
+  (`getTransmuteCost = rarity(void)/rarity(target) / yield`), so rarer targets cost
+  far more fragments. Its 10 upgrades raise throughput (`voidRateAdd`/`voidRateMult`)
+  and yield (`transmuteEffMult`). It runs on Void Fragments instead of substrate
+  (special-cased in `simulate`); `computeFactoryTick` does the conversion via
+  `factoryTransmuteVoidAcc`/`factoryTransmuteOutAcc` and returns a `dimDelta` the
+  page tick applies to `dimensionalInventory`. Its sprite recolours to the target
+  material (`FactorySprite accentColor` → `spriteFrameToProject` overrides accent
+  palette indices 19-22). State: `factoryTransmuteTarget` + the two accumulators.
 - **Overclock Regulator** (`overclocker` machine): a 9th machine that only becomes
   available once any machine owns an Overclock Module (`isMachineAvailable` /
   `availableWhen:'anyOverclock'`; hidden from the panel until then). It has no

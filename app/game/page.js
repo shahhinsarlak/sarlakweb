@@ -47,8 +47,7 @@ import {
   MECHANICS_ENTRIES,
   PP_MULTIPLIER_TIERS,
   LUCID_ANCHOR_FLOORS,
-  RESOURCE_DISCOVERY_GRANT,
-  FACTORY_MATERIAL_OUTPUT
+  RESOURCE_DISCOVERY_GRANT
 } from './constants';
 
 const PORTAL_UNLOCK_ENTRIES = ['glitched', 'maintenance', 'encrypted_lights'];
@@ -607,16 +606,20 @@ export default function Game() {
           newState.power = f.newPower;
           newState.substrate = f.newSubstrate;
           newState.factoryMaterialAcc = f.materialAcc;
+          newState.factoryTransmuteVoidAcc = f.transmuteVoidAcc;
+          newState.factoryTransmuteOutAcc = f.transmuteOutAcc;
           if (f.pp) newState.pp = (newState.pp || 0) + f.pp;
           if (f.paper) newState.paper = (newState.paper || 0) + f.paper;
           if (f.lucidity) newState.lucidity = (newState.lucidity || 0) + f.lucidity;
           if (f.intelligence) newState.intelligence = (newState.intelligence || 0) + f.intelligence;
-          if (f.wholeMaterials > 0) {
-            const inv = newState.dimensionalInventory || prev.dimensionalInventory || {};
-            newState.dimensionalInventory = {
-              ...inv,
-              [FACTORY_MATERIAL_OUTPUT]: (inv[FACTORY_MATERIAL_OUTPUT] || 0) + f.wholeMaterials,
-            };
+          // Apply dimensional-inventory changes (condenser adds Void Fragments;
+          // the Transmuter consumes them and emits the chosen target material).
+          if (f.dimDelta && Object.keys(f.dimDelta).length > 0) {
+            const inv = { ...(newState.dimensionalInventory || prev.dimensionalInventory || {}) };
+            Object.entries(f.dimDelta).forEach(([mid, d]) => {
+              inv[mid] = Math.max(0, (inv[mid] || 0) + d);
+            });
+            newState.dimensionalInventory = inv;
           }
         }
 

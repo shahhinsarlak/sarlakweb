@@ -14,7 +14,7 @@ import { spriteFrameToProject, spriteFrameCount, spriteFps, spriteSize } from '.
  * @param {number} [display=128] - on-screen size in CSS px
  * @param {boolean} [animate=true] - cycle frames (false = static first frame)
  */
-function FactorySprite({ machineId, level = 0, display = 128, animate = true }) {
+function FactorySprite({ machineId, level = 0, display = 128, animate = true, accentColor = null }) {
   const canvasRef = useRef(null);
   const frameRef = useRef(0);
 
@@ -27,7 +27,7 @@ function FactorySprite({ machineId, level = 0, display = 128, animate = true }) 
     const cellSize = Math.max(1, Math.round(display / size));
 
     const render = (frameIndex) => {
-      const project = spriteFrameToProject(machineId, frameIndex, level);
+      const project = spriteFrameToProject(machineId, frameIndex, level, accentColor);
       if (project) compositeToCanvas(canvas, project, cellSize, { includeEffects: true, background: null });
     };
 
@@ -40,7 +40,7 @@ function FactorySprite({ machineId, level = 0, display = 128, animate = true }) 
       render(frameRef.current);
     }, intervalMs);
     return () => clearInterval(id);
-  }, [machineId, level, display, animate]);
+  }, [machineId, level, display, animate, accentColor]);
 
   const size = spriteSize(machineId);
   const cellSize = Math.max(1, Math.round(display / size));

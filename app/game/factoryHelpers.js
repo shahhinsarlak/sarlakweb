@@ -12,6 +12,9 @@
  */
 
 import { FACTORY_MACHINES, FACTORY_UPGRADES, FACTORY_BASE_POWER_CAPACITY, PP_MULTIPLIER_TIERS } from './constants';
+import { DIMENSIONAL_MATERIALS } from './dimensionalConstants';
+
+const TRANSMUTER_ID = 'transmuter';
 
 export const MAX_UPGRADE_LEVEL = 10;
 export const MIN_OVERCLOCK = 50;
@@ -81,6 +84,67 @@ export const getOverclockCap = (state) => {
 export const isMachineAvailable = (state, machine) => {
   if (machine.availableWhen === 'anyOverclock') return hasAnyOverclock(state);
   return true;
+};
+
+// --- Material Transmuter (converts Void Fragments into rarer materials) ---
+
+/** Aggregate the transmuter's upgrade effects (throughput + yield). */
+const getTransmuterUpgradeEffects = (state) => {
+  const level = getMachineLevel(state, TRANSMUTER_ID);
+  const ups = FACTORY_UPGRADES[TRANSMUTER_ID] || [];
+  let rateAdd = 0;
+  let rateMult = 1;
+  let effMult = 1;
+  for (let i = 0; i < level && i < ups.length; i += 1) {
+    const e = ups[i].effect || {};
+    if (e.type === 'voidRateAdd') rateAdd += e.value;
+    if (e.type === 'voidRateMult') rateMult *= e.value;
+    if (e.type === 'transmuteEffMult') effMult *= e.value;
+  }
+  return { rateAdd, rateMult, effMult };
+};
+
+/** Void Fragments processed per second at full run. */
+export const getTransmuterRate = (state) => {
+  const base = getMachine(TRANSMUTER_ID)?.transmuteBase || 5;
+  const { rateAdd, rateMult } = getTransmuterUpgradeEffects(state);
+  return (base + rateAdd) * rateMult;
+};
+
+/** Base spawn rarity weight of a material (higher = more common). */
+export const getMaterialRarity = (id) => {
+  const m = DIMENSIONAL_MATERIALS.find((x) => x.id === id);
+  return m ? m.rarity : 1;
+};
+
+/** The Transmuter's currently selected output material (validated). */
+export const getTransmuteTarget = (state) => {
+  const t = state.factoryTransmuteTarget;
+  return getTransmutableTargets().some((m) => m.id === t) ? t : 'static_crystal';
+};
+
+/**
+ * Void Fragments needed to make ONE unit of the target material. Rarity-aware:
+ * cost = rarity(void) / rarity(target), so rarer targets cost far more. Reduced
+ * by the transmuter's yield (efficiency) upgrades.
+ */
+export const getTransmuteCost = (state, targetId) => {
+  const rarityVoid = getMaterialRarity('void_fragment');
+  const rarityTarget = getMaterialRarity(targetId);
+  if (rarityTarget <= 0) return Infinity;
+  const { effMult } = getTransmuterUpgradeEffects(state);
+  return (rarityVoid / rarityTarget) / effMult;
+};
+
+/** Materials the transmuter can produce (everything rarer than Void Fragment). */
+export const getTransmutableTargets = () => DIMENSIONAL_MATERIALS.filter((m) => m.id !== 'void_fragment');
+
+/** Per-second transmuter summary for the UI. */
+export const getTransmuterStats = (state) => {
+  const target = getTransmuteTarget(state);
+  const rate = getTransmuterRate(state);
+  const cost = getTransmuteCost(state, target);
+  return { target, rate, cost, voidPerSec: rate, targetPerSec: cost > 0 && isFinite(cost) ? rate / cost : 0 };
 };
 
 /** True if a machine's blueprint has been researched (or it needs none). */
@@ -231,6 +295,15 @@ const simulate = (state, dt) => {
     const powerNeed = (s.powerUse || 0) * dt;
     if (battery < powerNeed) { status[m.id] = 'halted'; return; }
 
+    // The Transmuter runs on Void Fragments (from inventory) rather than substrate.
+    if (m.isTransmuter) {
+      if ((state.dimensionalInventory?.void_fragment || 0) < 1) { status[m.id] = 'halted'; return; }
+      battery -= powerNeed;
+      actualUsePerSec += s.powerUse || 0;
+      status[m.id] = 'running';
+      return; // the actual conversion is applied in computeFactoryTick
+    }
+
     // Converters need substrate; extractors produce it (and run first by priority).
     if (s.substrate < 0) {
       const subNeed = -s.substrate * dt;
@@ -272,6 +345,7 @@ export const getFactoryStats = (state) => {
   };
   const subNetPerSec = (sim.newSubstrate - (state.substrate || 0)) * scale;
   const anyHalted = Object.values(sim.status).some((v) => v === 'halted');
+  const transmuter = { ...getTransmuterStats(state), running: sim.status[TRANSMUTER_ID] === 'running' };
 
   return {
     power: state.power || 0,
@@ -284,25 +358,51 @@ export const getFactoryStats = (state) => {
     substrate: state.substrate || 0,
     subNetPerSec,
     outputs,
+    transmuter,
   };
 };
 
 /**
  * Advance the factory by dt seconds (authoritative tick math). Materials are
- * integers, so fractional output banks in factoryMaterialAcc until whole units pop.
- * @returns {Object} { newPower, newSubstrate, materialAcc, wholeMaterials, pp, paper, lucidity, intelligence }
+ * integers, so fractional output banks in accumulators until whole units pop.
+ * Returns a dimensional-inventory delta (condenser adds Void Fragments; the
+ * Transmuter consumes them and emits the chosen target material).
  */
 export const computeFactoryTick = (state, dt) => {
   const sim = simulate(state, dt);
   let materialAcc = (state.factoryMaterialAcc || 0) + sim.out.material;
-  const wholeMaterials = Math.floor(materialAcc);
-  materialAcc -= wholeMaterials;
+  const wholeVoid = Math.floor(materialAcc);
+  materialAcc -= wholeVoid;
+
+  const dimDelta = {};
+  if (wholeVoid > 0) dimDelta.void_fragment = wholeVoid;
+
+  // Transmuter: consume Void Fragments, emit the target material.
+  let transmuteVoidAcc = state.factoryTransmuteVoidAcc || 0;
+  let transmuteOutAcc = state.factoryTransmuteOutAcc || 0;
+  if (sim.status[TRANSMUTER_ID] === 'running') {
+    transmuteVoidAcc += getTransmuterRate(state) * dt;
+    const target = getTransmuteTarget(state);
+    const cost = getTransmuteCost(state, target);
+    const availVoid = (state.dimensionalInventory?.void_fragment || 0) + (dimDelta.void_fragment || 0);
+    const voidConsume = Math.min(Math.floor(transmuteVoidAcc), availVoid);
+    if (voidConsume > 0 && Number.isFinite(cost) && cost > 0) {
+      transmuteVoidAcc -= voidConsume;
+      transmuteOutAcc += voidConsume / cost;
+      const wholeOut = Math.floor(transmuteOutAcc);
+      transmuteOutAcc -= wholeOut;
+      dimDelta.void_fragment = (dimDelta.void_fragment || 0) - voidConsume;
+      if (wholeOut > 0) dimDelta[target] = (dimDelta[target] || 0) + wholeOut;
+    }
+  }
 
   return {
     newPower: sim.newPower,
     newSubstrate: sim.newSubstrate,
     materialAcc,
-    wholeMaterials,
+    transmuteVoidAcc,
+    transmuteOutAcc,
+    dimDelta,
     pp: sim.out.pp,
     paper: sim.out.paper,
     lucidity: sim.out.lucidity,

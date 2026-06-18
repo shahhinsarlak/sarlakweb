@@ -20,10 +20,15 @@ import {
   canUpgradeMachine,
   getNextUpgrade,
   getUpgradeCost,
+  getTransmuterStats,
+  getTransmutableTargets,
+  getTransmuteTarget,
+  getTransmuteCost,
   MIN_OVERCLOCK,
   OVERCLOCK_STEP,
 } from './factoryHelpers';
 import { FACTORY_MACHINES, FACTORY_UPGRADES } from './constants';
+import { DIMENSIONAL_MATERIALS } from './dimensionalConstants';
 
 /**
  * Factory Panel ("The Construct", Chapter 2 Phase 2 / v2)
@@ -76,12 +81,18 @@ function FactoryPanel({ gameState, actions, onClose, notifications, onDismissNot
   const paused = isPaused(gameState, machine.id);
   const overclockUnlocked = isOverclockUnlocked(gameState, machine.id);
   const overclock = getOverclock(gameState, machine.id);
+  const isTransmuter = !!machine.isTransmuter;
+  const transmuteTarget = getTransmuteTarget(gameState);
+  const targetMat = DIMENSIONAL_MATERIALS.find((m) => m.id === transmuteTarget);
+  const tstats = isTransmuter ? getTransmuterStats(gameState) : null;
+  const spriteAccent = isTransmuter && targetMat ? targetMat.color : null;
 
   let statusLabel = 'NOT BUILT';
   if (built) {
     if (paused) statusLabel = 'PAUSED';
     else if (!isConsumer) statusLabel = 'ACTIVE';
     else if (runState === 'running') statusLabel = 'RUNNING';
+    else if (isTransmuter) statusLabel = 'HALTED \u2014 no power/fragments';
     else statusLabel = 'HALTED \u2014 low power/substrate';
   }
 
@@ -93,6 +104,10 @@ function FactoryPanel({ gameState, actions, onClose, notifications, onDismissNot
   if (eff.substrate < 0) machineEffects.push(`${eff.substrate.toFixed(2)} substrate/s`);
   if (eff.output) machineEffects.push(`+${eff.output.rate.toFixed(2)} ${eff.output.resource}/s${eff.output.scalesWithPPTier ? ' x tier' : ''}`);
   if (machine.id === 'overclocker') machineEffects.push(`Overclock ceiling: ${getOverclockCap(gameState)}%`);
+  if (isTransmuter && tstats) {
+    machineEffects.push(`Void Fragments \u2192 ${targetMat ? targetMat.name : transmuteTarget}`);
+    machineEffects.push(`~${tstats.cost.toFixed(1)} fragments each \u2022 ~${tstats.targetPerSec.toFixed(3)}/s`);
+  }
 
   const nextUpgrade = getNextUpgrade(gameState, machine.id);
   const upgradeCost = level < maxLevel ? getUpgradeCost(level + 1) : null;
@@ -231,7 +246,7 @@ function FactoryPanel({ gameState, actions, onClose, notifications, onDismissNot
                 width: '208px', height: '208px', flexShrink: 0, backgroundColor: 'var(--bg-color)',
                 border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>
-                <FactorySprite machineId={machine.id} level={level} display={200} animate={built && !paused && runState !== 'halted'} />
+                <FactorySprite machineId={machine.id} level={level} display={200} accentColor={spriteAccent} animate={built && !paused && runState !== 'halted'} />
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '8px' }}>
@@ -294,6 +309,25 @@ function FactoryPanel({ gameState, actions, onClose, notifications, onDismissNot
                     >
                       {paused ? 'RESUME' : 'PAUSE'}
                     </button>
+                    {isTransmuter && (
+                      <div>
+                        <div style={{ fontSize: '11px', opacity: 0.75, marginBottom: '6px' }}>Convert Void Fragments into:</div>
+                        <select
+                          value={transmuteTarget}
+                          onChange={(e) => actions.setTransmuteTarget(e.target.value)}
+                          style={{
+                            width: '100%', padding: '8px', fontSize: '12px', fontFamily: 'inherit',
+                            background: 'var(--bg-color)', color: 'var(--text-color)', border: '1px solid var(--border-color)',
+                          }}
+                        >
+                          {getTransmutableTargets().map((m) => (
+                            <option key={m.id} value={m.id}>
+                              {`${m.name} \u2014 ${getTransmuteCost(gameState, m.id).toFixed(1)} fragments each`}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
                     {overclockUnlocked && (
                       <div>
                         <div style={{ fontSize: '11px', opacity: 0.75, marginBottom: '6px' }}>
@@ -310,7 +344,7 @@ function FactoryPanel({ gameState, actions, onClose, notifications, onDismissNot
                           style={{ width: '100%' }}
                         />
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', opacity: 0.5 }}>
-                          <span>{MIN_OVERCLOCK}%</span><span>100%</span><span>{getOverclockCap(gameState)}%</span>
+                          <span>{MIN_OVERCLOCK}%</span><span>{getOverclockCap(gameState)}%</span>
                         </div>
                       </div>
                     )}

@@ -121,7 +121,10 @@ export const INITIAL_GAME_STATE = {
   factoryBlueprints: [],        // Researched converter blueprint ids (generator/extractor need none)
   factoryMaterialAcc: 0,        // Fractional dimensional-material accumulator (materials are integers)
   factoryPaused: {},            // { machineId: true } paused machines (no draw, no output)
-  factoryOverclock: {},         // { machineId: percent } overclock setting (50-300; needs Overclock Module)
+  factoryOverclock: {},         // { machineId: percent } overclock setting (50-cap; needs Overclock Module)
+  factoryTransmuteTarget: 'static_crystal', // Material Transmuter's chosen output material
+  factoryTransmuteVoidAcc: 0,   // Fractional void fragments pending consumption (Transmuter)
+  factoryTransmuteOutAcc: 0,    // Fractional target material pending output (Transmuter)
 };
 
 
@@ -1477,8 +1480,8 @@ export const FACTORY_MACHINES = [
   {
     id: 'conv_material',
     name: 'Material Condenser',
-    desc: 'Crystallises substrate into raw dimensional materials.',
-    lore: 'Magnetic paperclip holders, the microwave from the kitchenette, and a ring of staples. It compresses substrate until it forgets it was ever formless and falls out as solid stuff.',
+    desc: 'Crystallises substrate into raw Void Fragments (the commonest material). Use a Transmuter to turn them into rarer materials.',
+    lore: 'Magnetic paperclip holders, the microwave from the kitchenette, and a ring of staples. It compresses substrate until it forgets it was ever formless and falls out as Void Fragments, the dull grey base of everything.',
     blueprint: { intelligence: 120 },
     buildCost: { lucidity: 200 },
     priority: 6,
@@ -1486,6 +1489,19 @@ export const FACTORY_MACHINES = [
     substrate: -0.6,
     output: { resource: 'material', rate: 0.05 },
     material: '#6bff9f',
+  },
+  {
+    id: 'transmuter',
+    name: 'Material Transmuter',
+    desc: 'Transmutes Void Fragments into a chosen rarer material. Rarer targets cost far more fragments (by their rarity).',
+    lore: 'A coffee urn, a microwave turntable, and a funnel of bent cutlery. Pour Void Fragments in the top; with enough heat and patience it coaxes them into something rarer. The grey goes in. Colour comes out.',
+    blueprint: { intelligence: 200 },
+    buildCost: { lucidity: 300 },
+    priority: 7,
+    powerUse: 12,
+    isTransmuter: true,
+    transmuteBase: 5,
+    material: '#b4b4c4',
   },
   {
     id: 'overclocker',
@@ -1609,6 +1625,18 @@ export const FACTORY_UPGRADES = {
     { name: 'Substrate Recovery Trap', desc: 'Catch the scraps. -20% substrate use.', effect: { substrateUseMult: 0.8 } },
     { name: 'It Makes Things That Should Not Be', desc: 'Solid impossibility. +75% output.', effect: { outputMult: 1.75 }, visual: true },
     { name: 'Overclock Module', desc: 'Unlocks overclocking: feed it above 100% power for proportionally more output (and drain).', effect: { type: 'overclock' }, visual: true },
+  ],
+  transmuter: [
+    { name: 'Bigger Crucible', desc: 'Melt more at once. +2 fragments/s.', effect: { type: 'voidRateAdd', value: 2 } },
+    { name: 'Second Burner', desc: 'Twice the heat. +3 fragments/s.', effect: { type: 'voidRateAdd', value: 3 } },
+    { name: 'Reinforced Lining', desc: 'Less is lost to the walls. +10% yield.', effect: { type: 'transmuteEffMult', value: 1.10 }, visual: true },
+    { name: 'Faster Feed', desc: 'A wider funnel. +4 fragments/s.', effect: { type: 'voidRateAdd', value: 4 } },
+    { name: 'Catalyst Tray', desc: 'A pinch of something. +15% yield.', effect: { type: 'transmuteEffMult', value: 1.15 } },
+    { name: 'Twin Chambers', desc: 'Two pours at once. x1.5 throughput.', effect: { type: 'voidRateMult', value: 1.5 }, visual: true },
+    { name: 'Pressure Seal', desc: 'Hold the heat in. +6 fragments/s.', effect: { type: 'voidRateAdd', value: 6 } },
+    { name: 'Resonant Matrix', desc: 'It sings the matter into shape. +20% yield.', effect: { type: 'transmuteEffMult', value: 1.20 } },
+    { name: 'Continuous Pour', desc: 'It never stops. +10 fragments/s.', effect: { type: 'voidRateAdd', value: 10 } },
+    { name: "Philosopher's Stone", desc: 'The old dream, in a break room. x2 throughput.', effect: { type: 'voidRateMult', value: 2 }, visual: true },
   ],
   overclocker: [
     { name: 'Desk Fan Bank', desc: 'Point them all at the racks. +50% overclock ceiling.', effect: { type: 'overclockCapAdd', value: 50 } },

@@ -14,7 +14,7 @@
  * - printer: Paper generation system
  */
 import { LOCATIONS, UPGRADES, DEBUG_CHALLENGES, PRINTER_UPGRADES, DOCUMENT_TYPES, TIER_MASTERY_WEIGHTS, INITIAL_GAME_STATE, LORE_SNIPPETS, INSIGHTS, CLARITY_BUFF, HELP_POPUPS, FACTORY_MACHINES, FACTORY_UPGRADES } from './constants';
-import { getUpgradeCost, getMachineLevel, getMaxLevel, isBuilt, getOverclockCap, MIN_OVERCLOCK } from './factoryHelpers';
+import { getUpgradeCost, getMachineLevel, getMaxLevel, isBuilt, getOverclockCap, getTransmutableTargets, MIN_OVERCLOCK } from './factoryHelpers';
 import { getInsightEffects } from './insightHelpers';
 import {
   applyEnergyCostReduction,
@@ -1322,6 +1322,17 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
     });
   };
 
+  // Choose which material the Material Transmuter converts Void Fragments into.
+  // Validate the id, and reset the fractional output accumulator on a real change
+  // so banked progress toward a cheap material can't complete a rare one cheaply.
+  const setTransmuteTarget = (materialId) => {
+    setGameState(prev => {
+      if (prev.factoryTransmuteTarget === materialId) return prev;
+      if (!getTransmutableTargets().some(m => m.id === materialId)) return prev;
+      return { ...prev, factoryTransmuteTarget: materialId, factoryTransmuteOutAcc: 0 };
+    });
+  };
+
   // Return all action handlers
   return {
     sortPapers,
@@ -1374,5 +1385,6 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
     upgradeMachine,
     toggleMachinePause,
     setOverclock,
+    setTransmuteTarget,
   };
 };

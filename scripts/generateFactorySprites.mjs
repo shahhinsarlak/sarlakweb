@@ -31,6 +31,7 @@ const MACHINES = {
   conv_lucidity: '#00d0ff',
   conv_intelligence: '#ffd060',
   conv_material: '#6bff9f',
+  transmuter: '#b4b4c4',
   overclocker: '#ff8a5c',
 };
 
@@ -261,6 +262,28 @@ const baseConvMaterial = (f) => {
   return g;
 };
 
+const baseTransmuter = (f) => {
+  const g = newGrid(); floorShadow(g);
+  // Funnel on top with grey Void Fragments pouring in
+  for (let j = 0; j < 10; j += 1) { const w = Math.round(24 - j * 1.6); rect(g, 64 - (w >> 1), 24 + j, w, 1, j % 2 ? P.metalLight : P.metalDark); }
+  for (let k = 0; k < 3; k += 1) { const y = 12 + ((k * 4 + f * 2) % 12); put(g, 63, y, P.metalDark); put(g, 64, y + 1, P.metalHi); put(g, 65, y, P.metalDark); }
+  // Main vessel + window
+  box(g, 34, 44, 60, 60, P.metalMid, P.metalHi, P.metalDark);
+  box(g, 40, 50, 30, 30, P.screenDark, P.metalDark, P.outline);
+  // Swirling transmutation inside (accent = target colour at render)
+  const r = 6 + (f % 2) * 2;
+  disc(g, 55, 65, r, P.accentDark); disc(g, 55, 65, r - 2, pulse(f));
+  ring(g, 55, 65, 11 - (f % 3) * 2, P.accentLight);
+  // Output spout + crystal on the right
+  rect(g, 86, 70, 10, 6, P.metalDark);
+  disc(g, 92, 73, 4, P.accentDark); disc(g, 92, 73, 2, pulse(f));
+  for (let k = 0; k < 3; k += 1) { const x = 96 + ((k * 3 + f * 2) % 9); put(g, x, 73, P.accentLight); }
+  // Heat flicker at the base
+  for (let i = 0; i < 6; i += 1) { const fh = 2 + ((i + f) % 3); rect(g, 40 + i * 8, 104 - fh, 4, fh, (i + f) % 2 ? P.accent : P.accentDark); }
+  rect(g, 36, 102, 4, 4, P.metalDark); rect(g, 88, 102, 4, 4, P.metalDark);
+  return g;
+};
+
 const baseOverclocker = (f) => {
   const g = newGrid(); floorShadow(g);
   // Cooling fins on top
@@ -325,6 +348,11 @@ A.conv_material = [
   (g) => { ring(g, 56, 74, 16, P.metalLight); for (let a = 0; a < 360; a += 30) put(g, Math.round(56 + Math.cos(a * Math.PI / 180) * 16), Math.round(74 + Math.sin(a * Math.PI / 180) * 16), P.accent); }, // staple ring
   (g) => { for (let j = 0; j < 10; j += 1) { const w = j < 5 ? j + 1 : 10 - j; rect(g, 110 - (w >> 1), 30 + j, w, 1, j % 2 ? P.accentBright : P.accent); } }, // floating crystal
 ];
+A.transmuter = [
+  (g) => { for (let j = 0; j < 60; j += 1) { put(g, 33, 44 + j, P.metalHi); put(g, 95, 44 + j, P.metalHi); } }, // reinforced lining
+  (g) => { box(g, 96, 80, 20, 24, P.metalMid, P.metalHi, P.metalDark); disc(g, 106, 92, 5, P.accentDark); disc(g, 106, 92, 3, P.accent); }, // twin chamber
+  (g) => { disc(g, 64, 18, 6, P.accentDark); disc(g, 64, 18, 4, P.accentBright); ring(g, 64, 18, 8, P.accentLight); }, // philosopher's stone
+];
 A.overclocker = [
   (g) => { box(g, 16, 54, 12, 44, P.metalDark, P.metalLight, P.outline); for (let k = 0; k < 5; k += 1) rect(g, 18, 58 + k * 8, 8, 3, P.accent); }, // voltage regulator (left)
   (g) => { disc(g, 110, 62, 11, P.metalDark); ring(g, 110, 62, 11, P.outline); for (let b = 0; b < 3; b += 1) { const a = b * 120 * Math.PI / 180; line(g, 110, 62, Math.round(110 + Math.cos(a) * 8), Math.round(62 + Math.sin(a) * 8), P.metalHi); } }, // chiller fan (right)
@@ -335,6 +363,7 @@ const BASE = {
   generator: baseGenerator, capacitor: baseCapacitor, extractor: baseExtractor,
   conv_pp: baseConvPP, conv_paper: baseConvPaper, conv_lucidity: baseConvLucidity,
   conv_intelligence: baseConvIntelligence, conv_material: baseConvMaterial,
+  transmuter: baseTransmuter,
   overclocker: baseOverclocker,
 };
 
