@@ -327,7 +327,10 @@ upgrades each) in constants; cost formula `getUpgradeCost` in `factoryHelpers`.
   `factoryMachines{}` (level map), `factoryBlueprints[]`, `factoryMaterialAcc`. UI:
   `FactoryPanel.js` (carousel: one machine + lore + status + 10-upgrade track),
   "The Construct" entry in the LOCATIONS section, substrate readout in
-  `GameStatsPanel`. Save bumped to v3 (old machine counts -> built level 0).
+  `GameStatsPanel`. Save bumped to v3 (old machine counts -> built level 0). The
+  Construct is also a journal **Location** (`JOURNAL_ENTRIES.locations.construct`,
+  added to `discoveredLocations` on factory unlock) — not a mechanics entry; the
+  journal Locations tab iterates `JOURNAL_ENTRIES.locations` keys.
 
 ### Save system
 `saveSystem.js`. Format `{ version, timestamp, state }`, `CURRENT_SAVE_VERSION=2`.

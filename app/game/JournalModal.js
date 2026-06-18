@@ -13,7 +13,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { JOURNAL_ENTRIES, LOCATIONS, MECHANICS_ENTRIES } from './constants';
+import { JOURNAL_ENTRIES, MECHANICS_ENTRIES } from './constants';
 import NotificationPopup from './NotificationPopup';
 
 function JournalModal({ gameState, onClose, onSwitchTab, notifications, onDismissNotification }) {
@@ -31,8 +31,9 @@ function JournalModal({ gameState, onClose, onSwitchTab, notifications, onDismis
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
-  // Get all location IDs
-  const allLocationIds = Object.keys(LOCATIONS);
+  // All journal location IDs (some, like The Construct, are facilities rather
+  // than navigable LOCATIONS, so drive this off the journal entries themselves).
+  const allLocationIds = Object.keys(JOURNAL_ENTRIES.locations);
 
   // Render location tab
   const renderLocationsTab = () => {
@@ -76,7 +77,7 @@ function JournalModal({ gameState, onClose, onSwitchTab, notifications, onDismis
               }}
             >
               <div style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '8px' }}>
-                {entry?.name || LOCATIONS[locationId].name}
+                {entry?.name || locationId}
                 {gameState.location === locationId && <span style={{ marginLeft: '8px', fontSize: '14px' }}>[CURRENT]</span>}
               </div>
 

@@ -601,6 +601,10 @@ export default function Game() {
         if (prev.resourcesUnlocked && !prev.factoryUnlocked) {
           newState.factoryUnlocked = true;
         }
+        // Record The Construct as a discovered journal location (in the Locations tab).
+        if ((newState.factoryUnlocked || prev.factoryUnlocked) && !(prev.discoveredLocations || []).includes('construct')) {
+          newState.discoveredLocations = [...(prev.discoveredLocations || []), 'construct'];
+        }
         if (prev.factoryUnlocked) {
           const f = computeFactoryTick(prev, 0.1);
           newState.power = f.newPower;

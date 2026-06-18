@@ -1903,6 +1903,12 @@ export const JOURNAL_ENTRIES = {
       unlockHint: 'Purchase Printer Room Access upgrade',
       lore: 'The machines hum in perfect unison. Paper feeds endlessly from sources unknown. The ink is always fresh, always ready. Reality is malleable here. Words printed on paper can reshape truth itself.',
       notes: 'The printers never jam. They never stop. Never.'
+    },
+    construct: {
+      name: 'The Construct',
+      unlockHint: 'Reach 1000% sanity and perceive the machinery beneath the office',
+      lore: 'Not a room so much as a thing you built. Generators trickle power into a battery; extractors bore into the grey substance under the floor; converters and a transmuter reshape it into everything you need. It runs on its own, forever, a small factory cobbled from office junk and lucid will. Build it, balance the power, and let it work while you do not.',
+      notes: 'The grey goes in. Whatever you ask for comes out.'
     }
   },
 
@@ -2102,18 +2108,5 @@ LUCIDITY (perception): gathers passively while lucid, faster the higher your san
 INTELLIGENCE (understanding): earned from Debug successes, from consuming Reports, and as a small trickle while lucid.
 
 Spend both in the INSIGHTS panel ("The Lucid Mind"), Chapter 2's research system. Five branches: Stability (Lucid Anchors that floor your sanity at 250 / 500 / 750), Discipline (stronger meditation, slower lucid decay), Perception (more passive lucidity), Cognition (more passive intelligence, more from Debug and Reports), and Techniques (craft Clarity to halt decay, then make it last longer and cost less).`
-  },
-  factory: {
-    id: 'factory',
-    title: 'The Construct (Factory)',
-    category: 'The Second Chapter',
-    summary: 'An automated production chain that runs forever.',
-    details: `Research blueprints with INTELLIGENCE, build machines with LUCIDITY.
-
-Chain: Generators produce POWER. Extractors spend power to mine SUBSTRATE. Converters spend substrate and power to manufacture PP, paper, dimensional materials, lucidity, and intelligence.
-
-Two throttles keep it honest: if power demand exceeds supply, every machine slows proportionally; if substrate runs dry, converters slow to the rate extraction can sustain. Own as many of each machine as you can afford (each copy costs more). It all runs on its own, even while you are elsewhere.
-
-The PP Synthesizer scales with your PP multiplier tier, so it stays relevant.`
   },
 };
