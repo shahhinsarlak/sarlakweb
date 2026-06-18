@@ -118,7 +118,7 @@ function GameActionsPanel({
       </div>
 
       {/* Locations Section */}
-      {gameState.unlockedLocations.length > 1 && (
+      {(gameState.unlockedLocations.length > 1 || gameState.factoryUnlocked) && (
         <div style={{ marginBottom: '32px' }}>
           <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6, marginBottom: '16px' }}>
             LOCATIONS
@@ -182,6 +182,25 @@ function GameActionsPanel({
                 </button>
               );
             })}
+            {gameState.factoryUnlocked && (
+              <button
+                onClick={() => actions.openFactory()}
+                style={{
+                  background: 'none',
+                  border: '1px solid #6bff9f',
+                  color: '#6bff9f',
+                  padding: '14px',
+                  cursor: 'pointer',
+                  fontSize: '11px',
+                  fontFamily: 'inherit',
+                  letterSpacing: '0.5px',
+                  transition: 'all 0.2s',
+                  textAlign: 'center',
+                }}
+              >
+                The Construct
+              </button>
+            )}
           </div>
         </div>
       )}

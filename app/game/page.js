@@ -1092,23 +1092,6 @@ export default function Game() {
                 INSIGHTS
               </button>
             )}
-            {gameState.factoryUnlocked && (
-              <button
-                onClick={actions.openFactory}
-                style={{
-                  background: 'none',
-                  border: '1px solid #6bff9f',
-                  color: '#6bff9f',
-                  padding: '4px 8px',
-                  cursor: 'pointer',
-                  fontSize: '10px',
-                  fontFamily: 'inherit',
-                  opacity: 0.9
-                }}
-              >
-                FACTORY
-              </button>
-            )}
             <button
               onClick={() => setShowSaveMenu(!showSaveMenu)}
               style={{
