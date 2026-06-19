@@ -34,6 +34,8 @@ import { SKILLS, LEVEL_SYSTEM, XP_REWARDS } from './skillTreeConstants';
 import { DIMENSIONAL_MATERIALS } from './dimensionalConstants';
 import { getSanityTierDisplay, isSanityDrainPaused, calculatePaperQuality, getSanityTier } from './sanityPaperHelpers';
 import { computeFactoryTick, isBuilt, isPaused } from './factoryHelpers';
+import { runExpeditionsTick } from './expeditionHelpers';
+import { createChartPage } from './expeditionChart';
 import { getInsightEffects } from './insightHelpers';
 import {
   INITIAL_GAME_STATE,
@@ -659,6 +661,41 @@ export default function Game() {
               }
             } else {
               newState.factoryFullRunSeconds = 0;
+            }
+          }
+        }
+
+        // Expeditions: create the first chart page on unlock (and backfill any
+        // older save), then resolve active expeditions on the same idle tick.
+        if (newState.undercroftUnlocked || prev.undercroftUnlocked) {
+          if (!(prev.chartPages && prev.chartPages.length) && !(newState.chartPages && newState.chartPages.length)) {
+            newState.chartPages = [createChartPage(0, Math.floor(Math.random() * 1e9) + 1)];
+          }
+          if ((prev.expeditions || []).length > 0) {
+            const r = runExpeditionsTick(prev, 0.1);
+            if (r) {
+              newState.expeditions = r.expeditions;
+              if (r.minds) newState.minds = r.minds;
+              if (r.chartPages) newState.chartPages = r.chartPages;
+              if (r.resourceDelta) {
+                Object.entries(r.resourceDelta).forEach(([k, v]) => {
+                  const base = newState[k] !== undefined ? newState[k] : (prev[k] || 0);
+                  newState[k] = base + v;
+                });
+              }
+              if (r.materialDelta) {
+                const inv = { ...(newState.dimensionalInventory || prev.dimensionalInventory || {}) };
+                Object.entries(r.materialDelta).forEach(([id, v]) => {
+                  inv[id] = Math.max(0, (inv[id] || 0) + v);
+                });
+                newState.dimensionalInventory = inv;
+              }
+              if (r.messages && r.messages.length) {
+                newState.recentMessages = [
+                  ...r.messages.slice().reverse(),
+                  ...(newState.recentMessages || prev.recentMessages),
+                ].slice(0, prev.maxLogMessages || 15);
+              }
             }
           }
         }

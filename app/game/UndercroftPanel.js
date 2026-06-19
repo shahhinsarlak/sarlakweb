@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import EventLog from './EventLog';
 import NotificationPopup from './NotificationPopup';
+import ChartCanvas from './ChartCanvas';
 import { formatPP } from './gameUtils';
 import {
   GEAR_BLUEPRINTS,
@@ -9,6 +10,7 @@ import {
   ROLL_PITY_THRESHOLD,
 } from './constants';
 import { DIMENSIONAL_MATERIALS } from './dimensionalConstants';
+import { getGatewayCore, nodeDepth } from './expeditionChart';
 import {
   getWeaponType,
   getWeaponRarity,
@@ -17,6 +19,12 @@ import {
   parseBlueprintKey,
   getPrintCost,
   getTrait,
+  getProvisionType,
+  getFoeArchetype,
+  getKitCapabilities,
+  buildEncounters,
+  buildSurveyEncounters,
+  computeRisk,
   canAffordCost,
   canAffordCraft,
 } from './expeditionHelpers';
@@ -31,7 +39,14 @@ import {
  */
 function UndercroftPanel({ gameState, actions, onClose, notifications, onDismissNotification }) {
   const [rolling, setRolling] = useState(false);
-  const tab = gameState.undercroftTab || 'roster';
+  const [selNode, setSelNode] = useState(null);
+  const [kitMind, setKitMind] = useState(null);
+  const [kitShell, setKitShell] = useState(null);
+  const [kitWeapon, setKitWeapon] = useState(null);
+  const [kitGear, setKitGear] = useState([]);
+  const [prov, setProv] = useState({});
+  const [surveyDepth, setSurveyDepth] = useState(0.5);
+  const tab = gameState.undercroftTab || 'chart';
 
   useEffect(() => {
     const handleKey = (e) => { if (e.key === 'Escape') onClose(); };
@@ -102,6 +117,7 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
   );
 
   // ---- ROSTER ------------------------------------------------------------
+  const rosterBusy = new Set((gameState.expeditions || []).map((e) => e.mindId));
   const renderRoster = () => (
     <div>
       {sectionTitle('Roster', `Minds: ${minds.length} / ${gameState.printBeds || 3} print beds. A mind lost on an expedition is lost for good.`)}
@@ -127,9 +143,9 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' }}>
               <span style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.7 }}>
-                {m.status === 'idle' ? 'Idle' : m.status}
+                {rosterBusy.has(m.id) ? 'On expedition' : 'Idle'}
               </span>
-              {m.status === 'idle' && actBtn('RETIRE', () => actions.discardMind(m.id), true)}
+              {!rosterBusy.has(m.id) && actBtn('RETIRE', () => actions.discardMind(m.id), true)}
             </div>
           </div>
         ))}
@@ -345,6 +361,223 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
     </div>
   );
 
+  // ---- CHART (expeditions hub) -------------------------------------------
+  const pages = gameState.chartPages || [];
+  const tierSel = gameState.currentTier || 0;
+  const page = pages.find((p) => p.tier === tierSel) || pages[0] || null;
+  const activeExps = gameState.expeditions || [];
+  const busyMind = new Set(activeExps.map((e) => e.mindId));
+  const busyShell = new Set(activeExps.map((e) => e.shellId));
+  const busyWeapon = new Set(activeExps.map((e) => e.weaponId).filter(Boolean));
+  const availMinds = minds.filter((m) => !busyMind.has(m.id));
+  const availShells = (gameState.shells || []).filter((s) => !busyShell.has(s.id));
+  const availWeapons = weapons.filter((w) => !busyWeapon.has(w.id));
+  const pageTier = page ? page.tier : tierSel;
+  const node = page && selNode ? page.nodes.find((n) => n.id === selNode) : null;
+
+  const kit = { mindId: kitMind, shellId: kitShell, weaponId: kitWeapon, gear: kitGear, provisions: prov };
+  const caps = (kitMind && kitShell) ? getKitCapabilities(gameState, kit) : null;
+  let risk = null;
+  if (caps) {
+    const enc = node
+      ? buildEncounters(node, pageTier, caps, 'preview')
+      : buildSurveyEncounters(pageTier, surveyDepth, caps, 'preview');
+    risk = computeRisk(caps, enc);
+  }
+
+  const bandColor = (b) => ({ Safe: '#5fb878', Risky: '#ffb454', Grave: '#e8995c', Suicidal: '#ff5c5c' }[b] || 'var(--text-color)');
+  const axisMark = (p) => (p < 0.15 ? '\u2713 ok' : p < 0.5 ? '\u26a0 weak' : '\u2717 exposed');
+  const ownedGear = Object.entries(gameState.gearInventory || {}).filter(([, n]) => n > 0).map(([id]) => id);
+  // Clarity Charges drive the brink intervention, which is implemented next
+  // phase; keep them out of the dispatch loadout for now so they aren't wasted.
+  const ownedProv = Object.entries(gameState.provisions || {}).filter(([id, n]) => n > 0 && id !== 'clarity_charge');
+  const toggleGear = (id) => setKitGear((g) => (g.includes(id) ? g.filter((x) => x !== id) : [...g, id]));
+  const setProvQty = (id, q, max) => setProv((p) => ({ ...p, [id]: Math.max(0, Math.min(max, q)) }));
+
+  const pickChip = (label, active, onClick, color) => (
+    <button
+      key={label}
+      onClick={onClick}
+      style={{
+        background: active ? 'var(--text-color)' : 'none',
+        color: active ? 'var(--bg-color)' : (color || 'var(--text-color)'),
+        border: `1px solid ${active ? 'var(--text-color)' : (color || 'var(--border-color)')}`,
+        padding: '5px 9px', cursor: 'pointer', fontSize: '11px', fontFamily: 'inherit',
+      }}
+    >
+      {label}
+    </button>
+  );
+
+  const nodeHint = (n) => {
+    const depthPct = Math.round(nodeDepth(n) * 100);
+    if (n.type === 'haunt' || n.type === 'anomaly') {
+      const foe = getFoeArchetype(n.archetype);
+      return foe ? `Depth ${depthPct}%. ${foe.foeName} (${foe.name}): ${foe.desc}` : `Depth ${depthPct}%.`;
+    }
+    return `Depth ${depthPct}%. A ${n.type} waiting in the dark.`;
+  };
+
+  const launch = () => {
+    if (!kitMind || !kitShell || !page) return;
+    if (node) actions.dispatchDelve({ mindId: kitMind, shellId: kitShell, weaponId: kitWeapon, gear: kitGear, provisions: prov, tier: page.tier, nodeId: node.id });
+    else actions.dispatchSurvey({ mindId: kitMind, shellId: kitShell, weaponId: kitWeapon, gear: kitGear, provisions: prov, tier: page.tier, depth: surveyDepth });
+    setProv({});
+  };
+
+  const renderChart = () => {
+    if (!page) return <div style={{ fontSize: '12px', opacity: 0.6 }}>The chart is still forming...</div>;
+    return (
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', alignItems: 'flex-start' }}>
+        <div style={{ flex: '1 1 360px', minWidth: '300px' }}>
+          <div style={{ display: 'flex', gap: '6px', marginBottom: '10px', flexWrap: 'wrap' }}>
+            {pages.map((p) => (
+              <button
+                key={p.tier}
+                onClick={() => { actions.selectTier(p.tier); setSelNode(null); }}
+                style={{ background: p.tier === pageTier ? 'var(--text-color)' : 'none', color: p.tier === pageTier ? 'var(--bg-color)' : 'var(--text-color)', border: '1px solid var(--border-color)', padding: '5px 12px', cursor: 'pointer', fontSize: '11px', fontFamily: 'inherit' }}
+              >
+                Tier {p.tier + 1}{p.breached ? ' \u2713' : ''}
+              </button>
+            ))}
+          </div>
+          <ChartCanvas page={page} expeditions={activeExps.filter((e) => e.tier === pageTier)} selectedNodeId={selNode} onSelectNode={setSelNode} size={384} />
+          <div style={{ fontSize: '10px', opacity: 0.5, marginTop: '6px' }}>
+            Click a charted site to plan a Delve. Click empty dark to plan a Survey.
+          </div>
+          <div style={{ marginTop: '16px' }}>
+            {sectionTitle('In the dark', activeExps.length === 0 ? 'No active expeditions.' : null)}
+            {activeExps.map((e) => {
+              const m = minds.find((mm) => mm.id === e.mindId);
+              const pct = Math.round((e.progress || 0) * 100);
+              return (
+                <div key={e.id} style={{ border: '1px solid var(--border-color)', padding: '8px 10px', marginBottom: '6px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px' }}>
+                    <span>{m ? m.designation : 'A mind'} - {e.kind === 'delve' ? 'Delve' : 'Survey'} (T{e.tier + 1})</span>
+                    <span style={{ opacity: 0.7 }}>{pct}%</span>
+                  </div>
+                  <div style={{ height: '4px', background: 'var(--bg-color)', border: '1px solid var(--border-color)', marginTop: '4px' }}>
+                    <div style={{ height: '100%', width: `${pct}%`, background: '#9fe8ff' }} />
+                  </div>
+                  {(e.log || []).slice(-2).map((l, i) => (
+                    <div key={i} style={{ fontSize: '10px', opacity: 0.55, marginTop: '3px' }}>{l}</div>
+                  ))}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div style={{ flex: '1 1 300px', minWidth: '280px', border: '1px solid var(--border-color)', padding: '14px' }}>
+          {sectionTitle(node ? `Delve: ${node.type}` : 'Survey the dark', node ? nodeHint(node) : 'Push into the unknown to chart new sites.')}
+
+          {!node && (
+            <div style={{ marginBottom: '12px' }}>
+              <div style={{ fontSize: '11px', opacity: 0.6, marginBottom: '4px' }}>Push depth: {Math.round(surveyDepth * 100)}%</div>
+              <input type="range" min="20" max="100" value={Math.round(surveyDepth * 100)} onChange={(ev) => setSurveyDepth(Number(ev.target.value) / 100)} style={{ width: '100%' }} />
+            </div>
+          )}
+
+          <div style={{ marginBottom: '10px' }}>
+            <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6, marginBottom: '4px' }}>Mind</div>
+            {availMinds.length === 0 && <div style={{ fontSize: '11px', opacity: 0.5 }}>No idle minds. Print one in the Workbench.</div>}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+              {availMinds.map((m) => pickChip(`${m.designation} L${m.level}`, kitMind === m.id, () => setKitMind(m.id)))}
+            </div>
+          </div>
+
+          <div style={{ marginBottom: '10px' }}>
+            <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6, marginBottom: '4px' }}>Shell</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
+              {availShells.map((s, i) => pickChip(`Shell ${i + 1} (${s.maxHp}hp)`, kitShell === s.id, () => setKitShell(s.id)))}
+              {actBtn('+ ASSEMBLE', () => actions.craftShell(), canAffordCraft(gameState, EXPEDITION.shellCost))}
+            </div>
+          </div>
+
+          <div style={{ marginBottom: '10px' }}>
+            <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6, marginBottom: '4px' }}>Weapon</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+              {pickChip('None', !kitWeapon, () => setKitWeapon(null))}
+              {availWeapons.map((w) => {
+                const t = getWeaponType(w.typeId);
+                const r = getWeaponRarity(w.rarityId);
+                return pickChip(`${t ? t.name : ''} (${getWeaponMight(w.typeId, w.rarityId)})`, kitWeapon === w.id, () => setKitWeapon(w.id), r ? r.color : null);
+              })}
+            </div>
+            {availWeapons.length === 0 && <div style={{ fontSize: '11px', opacity: 0.5 }}>No forged weapons. Roll and forge in Blueprints.</div>}
+          </div>
+
+          {ownedGear.length > 0 && (
+            <div style={{ marginBottom: '10px' }}>
+              <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6, marginBottom: '4px' }}>Gear</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                {ownedGear.map((id) => pickChip((GEAR_BLUEPRINTS.find((g) => g.id === id) || {}).name || id, kitGear.includes(id), () => toggleGear(id)))}
+              </div>
+            </div>
+          )}
+
+          {ownedProv.length > 0 && (
+            <div style={{ marginBottom: '12px' }}>
+              <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6, marginBottom: '4px' }}>Provisions</div>
+              {ownedProv.map(([id, owned]) => {
+                const p = getProvisionType(id);
+                const q = prov[id] || 0;
+                return (
+                  <div key={id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px', marginBottom: '3px' }}>
+                    <span>{p ? p.name : id} <span style={{ opacity: 0.5 }}>({owned})</span></span>
+                    <span style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                      {actBtn('-', () => setProvQty(id, q - 1, owned), q > 0)}
+                      <strong>{q}</strong>
+                      {actBtn('+', () => setProvQty(id, q + 1, owned), q < owned)}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {risk && (
+            <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '10px', marginBottom: '12px' }}>
+              <div style={{ fontSize: '12px', marginBottom: '6px' }}>
+                Survival: <strong style={{ color: bandColor(risk.band) }}>{risk.band}</strong>
+              </div>
+              <div style={{ fontSize: '11px', opacity: 0.85, lineHeight: 1.8 }}>
+                <div>Combat {axisMark(risk.axes.combat)}</div>
+                <div>Dark {axisMark(risk.axes.dark)}</div>
+                <div>Dread {axisMark(risk.axes.dread)}</div>
+                <div>Corruption {axisMark(risk.axes.corruption)}</div>
+              </div>
+              <div style={{ fontSize: '10px', opacity: 0.55, marginTop: '6px' }}>
+                Projected end: {risk.shellHp} shell / {risk.resolve} resolve / {risk.corruption} corruption.
+                {!risk.survived && ' This mind would hit the brink. For now it retreats; permanent loss arrives next phase.'}
+              </div>
+            </div>
+          )}
+
+          {node && node.type === 'gateway' && (
+            <div style={{ fontSize: '11px', opacity: 0.7, marginBottom: '10px' }}>
+              Breaching consumes 1 {getGatewayCore(pageTier).replace(/_/g, ' ')}.
+            </div>
+          )}
+
+          {node && (node.cleared || node.looted) && (
+            <div style={{ fontSize: '11px', opacity: 0.7, marginBottom: '10px' }}>
+              This site is already cleared. Select another, or click empty dark to survey.
+            </div>
+          )}
+
+          <button
+            onClick={launch}
+            disabled={!kitMind || !kitShell || (node && (node.cleared || node.looted))}
+            style={{ width: '100%', background: 'none', border: '1px solid var(--border-color)', color: 'var(--text-color)', padding: '12px', cursor: (kitMind && kitShell && !(node && (node.cleared || node.looted))) ? 'pointer' : 'not-allowed', fontSize: '12px', fontFamily: 'inherit', letterSpacing: '1px', textTransform: 'uppercase', opacity: (kitMind && kitShell && !(node && (node.cleared || node.looted))) ? 1 : 0.4 }}
+          >
+            {node ? 'Launch Delve' : 'Launch Survey'}
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <>
       <EventLog messages={gameState.recentMessages} />
@@ -382,12 +615,14 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
           {chip('Energy', Math.floor(gameState.energy || 0))}
         </div>
 
-        <div style={{ display: 'flex', gap: '8px', marginBottom: '22px' }}>
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '22px', flexWrap: 'wrap' }}>
+          {tabBtn('chart', 'Chart')}
           {tabBtn('roster', 'Roster')}
           {tabBtn('workbench', 'Workbench')}
           {tabBtn('blueprints', 'Blueprints')}
         </div>
 
+        {tab === 'chart' && renderChart()}
         {tab === 'roster' && renderRoster()}
         {tab === 'workbench' && renderWorkbench()}
         {tab === 'blueprints' && renderBlueprints()}

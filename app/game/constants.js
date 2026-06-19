@@ -129,7 +129,7 @@ export const INITIAL_GAME_STATE = {
   undercroftUnlocked: false,    // Revealed when the running factory breaks through the floor
   undercroftOpen: false,        // Is the Undercroft panel visible
   factoryFullRunSeconds: 0,     // Sustained full-operation counter toward the breakthrough
-  undercroftTab: 'roster',      // Active Undercroft tab: roster | workbench | blueprints
+  undercroftTab: 'chart',       // Active Undercroft tab: chart | roster | workbench | blueprints
   minds: [],                    // [{ id, designation, level, xp, resolve, acuity, will, traits[], scars[], status }]
   mindCounter: 0,               // Serial counter for mind designations (Copy I, II, ...)
   printBeds: 3,                 // Roster cap (max simultaneous minds)
@@ -142,6 +142,11 @@ export const INITIAL_GAME_STATE = {
   rollPity: 0,                  // Rolls since the last Rare-or-better (soft pity)
   lastRoll: null,               // Most recent rolled blueprint { typeId, rarityId, dup } (for reveal)
   wayOutFragments: 0,           // Reclaimed "pieces of the way out" (Phase C)
+  // Expeditions chart + dispatch (Chapter 2, Phase B)
+  chartPages: [],               // [{ tier, seed, nodes:[...], gatewayId, breached }] discovered tiers
+  currentTier: 0,               // Selected chart page tab
+  expeditions: [],              // Active expedition records (resolved over time in the tick)
+  expeditionCounter: 0,         // Serial counter for expedition ids/route seeds
 };
 
 
@@ -1778,6 +1783,19 @@ export const EXPEDITION = {
   mindBase: { resolve: 40, acuity: 5, will: 5 },
   mindGrowth: { resolve: 8, acuity: 1.5, will: 1.5 },
   shellBaseHp: 50,
+  // --- Phase B: dispatch + resolution tuning ---
+  shellCost: { substrate: 40, core: 'static_crystal', coreQty: 1 },
+  surveyCost: { paper: 5, energy: 10 },
+  delveCost: { paper: 8, energy: 15 },
+  baseDurationSec: 35,          // base wall-clock time of an expedition
+  distanceDurationSec: 35,      // extra seconds scaled by route distance (0..1)
+  xpPerLevel: 100,              // xp needed per level (x current level)
+  acuityToSight: 0.04,          // Sight multiplier per point of mind Acuity
+  willToWard: 0.04,             // Wardstrength multiplier per point of mind Will
+  baseSight: 2,                 // innate Sight before instruments
+  corruptionMax: 100,           // corruption at/over this = brink
+  // Tier -> dimensional core a Gateway breach consumes (deeper = rarer).
+  tierCores: ['void_fragment', 'static_crystal', 'glitch_shard', 'reality_dust', 'temporal_core', 'dimensional_essence', 'singularity_node'],
 };
 
 /**

@@ -28,7 +28,9 @@ import {
   getWeaponCraftCost,
   canAffordCost,
   canAffordCraft,
+  createExpedition,
 } from './expeditionHelpers';
+import { getGatewayCore } from './expeditionChart';
 import { getInsightEffects } from './insightHelpers';
 import {
   applyEnergyCostReduction,
@@ -1406,12 +1408,16 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
     });
   };
 
-  // Retire an idle mind, freeing its print bed.
+  // Retire an idle mind, freeing its print bed. A mind out on an expedition
+  // cannot be retired.
   const discardMind = (mindId) => {
     setGameState(prev => {
       const minds = prev.minds || [];
       const mind = minds.find(m => m.id === mindId);
-      if (!mind || mind.status !== 'idle') return prev;
+      if (!mind) return prev;
+      if ((prev.expeditions || []).some(e => e.mindId === mindId)) {
+        return { ...prev, recentMessages: log(prev, `${mind.designation} is still out in the dark.`) };
+      }
       return {
         ...prev,
         minds: minds.filter(m => m.id !== mindId),
@@ -1522,6 +1528,100 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
     });
   };
 
+  // ---- Expeditions / dispatch (Phase B) ----------------------------------
+  const selectTier = (tier) => setGameState(prev => ({ ...prev, currentTier: tier }));
+
+  // Assemble a shell (a body) from substrate + a core.
+  const craftShell = () => {
+    setGameState(prev => {
+      const cost = EXPEDITION.shellCost;
+      if (!canAffordCraft(prev, cost)) {
+        return { ...prev, recentMessages: log(prev, 'Not enough substrate or cores to assemble a shell.') };
+      }
+      const inst = { id: `shell_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`, maxHp: EXPEDITION.shellBaseHp, coreId: cost.core };
+      const newState = { ...prev, shells: [...(prev.shells || []), inst] };
+      newState.substrate = (prev.substrate || 0) - (cost.substrate || 0);
+      const inv = { ...(prev.dimensionalInventory || {}) };
+      inv[cost.core] = Math.max(0, (inv[cost.core] || 0) - (cost.coreQty || 1));
+      newState.dimensionalInventory = inv;
+      newState.recentMessages = log(prev, 'Assembled a shell.');
+      return newState;
+    });
+  };
+
+  // Shared dispatch validation + cost application. kind = 'survey' | 'delve'.
+  const dispatchExpedition = (kind, params) => {
+    setGameState(prev => {
+      const { mindId, shellId, weaponId, gear = [], provisions = {}, tier = prev.currentTier || 0, nodeId, depth = 0.5 } = params || {};
+      const mind = (prev.minds || []).find(m => m.id === mindId);
+      const shell = (prev.shells || []).find(s => s.id === shellId);
+      if (!mind || !shell) {
+        return { ...prev, recentMessages: log(prev, 'A mind and a shell are required to set out.') };
+      }
+      const busyM = new Set((prev.expeditions || []).map(e => e.mindId));
+      const busyS = new Set((prev.expeditions || []).map(e => e.shellId));
+      const busyW = new Set((prev.expeditions || []).map(e => e.weaponId).filter(Boolean));
+      if (busyM.has(mindId) || busyS.has(shellId) || (weaponId && busyW.has(weaponId))) {
+        return { ...prev, recentMessages: log(prev, 'That mind, shell or weapon is already out in the dark.') };
+      }
+
+      let node = null;
+      const page = (prev.chartPages || []).find(p => p.tier === tier);
+      if (kind === 'delve') {
+        node = page ? page.nodes.find(n => n.id === nodeId) : null;
+        if (!node || !node.discovered) {
+          return { ...prev, recentMessages: log(prev, 'That site is not charted. Survey first.') };
+        }
+        if (node.cleared || node.looted) {
+          return { ...prev, recentMessages: log(prev, 'That site is already cleared. Nothing left to take.') };
+        }
+      }
+
+      const cost = kind === 'delve' ? EXPEDITION.delveCost : EXPEDITION.surveyCost;
+      if (!canAffordCost(prev, cost)) {
+        return { ...prev, recentMessages: log(prev, 'Not enough paper or energy to set out.') };
+      }
+      const provOk = Object.entries(provisions).every(([id, q]) => ((prev.provisions || {})[id] || 0) >= q);
+      if (!provOk) {
+        return { ...prev, recentMessages: log(prev, 'Not enough provisions for that loadout.') };
+      }
+
+      let coreSpend = null;
+      if (kind === 'delve' && node.type === 'gateway') {
+        const core = getGatewayCore(tier);
+        if (((prev.dimensionalInventory || {})[core] || 0) < 1) {
+          return { ...prev, recentMessages: log(prev, `Breaching this Gateway needs a ${core.replace(/_/g, ' ')}.`) };
+        }
+        coreSpend = core;
+      }
+
+      const serial = (prev.expeditionCounter || 0) + 1;
+      const kit = { mindId, shellId, weaponId, gear, provisions };
+      const exp = createExpedition(prev, { kind, kit, node, tier, depth, serial });
+
+      const newState = { ...prev, expeditionCounter: serial, expeditions: [...(prev.expeditions || []), exp] };
+      Object.entries(cost).forEach(([r, a]) => { newState[r] = (prev[r] || 0) - a; });
+      if (Object.keys(provisions).length) {
+        const pv = { ...(prev.provisions || {}) };
+        Object.entries(provisions).forEach(([id, q]) => { pv[id] = Math.max(0, (pv[id] || 0) - q); });
+        newState.provisions = pv;
+      }
+      if (coreSpend) {
+        const inv = { ...(prev.dimensionalInventory || {}) };
+        inv[coreSpend] = Math.max(0, (inv[coreSpend] || 0) - 1);
+        newState.dimensionalInventory = inv;
+      }
+      newState.recentMessages = log(prev, kind === 'delve'
+        ? `${mind.designation} delves the ${node.type}.`
+        : `${mind.designation} sets out to survey the dark.`);
+      setTimeout(() => checkAchievements(), 50);
+      return newState;
+    });
+  };
+
+  const dispatchSurvey = (params) => dispatchExpedition('survey', params);
+  const dispatchDelve = (params) => dispatchExpedition('delve', params);
+
   // Return all action handlers
   return {
     sortPapers,
@@ -1587,5 +1687,10 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
     craftGear,
     craftWeapon,
     brewProvision,
+    // Expeditions / dispatch (Phase B)
+    selectTier,
+    craftShell,
+    dispatchSurvey,
+    dispatchDelve,
   };
 };
