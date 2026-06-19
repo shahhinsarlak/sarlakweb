@@ -87,6 +87,29 @@ function ChartCanvas({ page, expeditions, selectedNodeId, onSelectNode, size = 3
       px(ENTRY.x - 2, ENTRY.y - 1, 5, 3, '#9fe8ff');
 
       if (pg) {
+        // persistent history: past routes + death markers (faint, beneath active)
+        (pg.routes || []).forEach((route) => {
+          if (!route.target) return;
+          const pts = genRoute(route.seed, ENTRY, route.target, 24);
+          let col = 'rgba(120,120,140,0.22)';
+          if (route.outcome === 'death') col = 'rgba(160,50,55,0.7)';
+          else if (route.outcome === 'success') col = 'rgba(150,150,165,0.35)';
+          else if (route.outcome === 'scarred') col = 'rgba(180,120,90,0.4)';
+          ctx.strokeStyle = col;
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          pts.forEach((p, i) => (i ? ctx.lineTo(p.x * scale, p.y * scale) : ctx.moveTo(p.x * scale, p.y * scale)));
+          ctx.stroke();
+          if (route.outcome === 'death') {
+            const tx = route.target.x;
+            const ty = route.target.y;
+            px(tx - 2, ty - 1, 5, 1, '#c2353c');
+            px(tx - 1, ty, 3, 2, '#c2353c');
+            px(tx - 2, ty + 2, 1, 1, '#c2353c');
+            px(tx + 1, ty + 2, 1, 1, '#c2353c');
+          }
+        });
+
         (exps || []).forEach((exp) => {
           if (!exp.targetPoint) return;
           const pts = genRoute(exp.seed, ENTRY, exp.targetPoint, 28);

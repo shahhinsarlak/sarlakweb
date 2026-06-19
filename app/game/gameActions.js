@@ -29,8 +29,10 @@ import {
   canAffordCost,
   canAffordCraft,
   createExpedition,
+  finalizeExpedition,
+  getLetRideChance,
 } from './expeditionHelpers';
-import { getGatewayCore } from './expeditionChart';
+import { getGatewayCore, createChartPage } from './expeditionChart';
 import { getInsightEffects } from './insightHelpers';
 import {
   applyEnergyCostReduction,
@@ -1575,6 +1577,9 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
         if (node.cleared || node.looted) {
           return { ...prev, recentMessages: log(prev, 'That site is already cleared. Nothing left to take.') };
         }
+        if ((prev.expeditions || []).some(e => e.tier === tier && e.nodeId === node.id)) {
+          return { ...prev, recentMessages: log(prev, 'A team is already delving that site.') };
+        }
       }
 
       const cost = kind === 'delve' ? EXPEDITION.delveCost : EXPEDITION.surveyCost;
@@ -1621,6 +1626,84 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
 
   const dispatchSurvey = (params) => dispatchExpedition('survey', params);
   const dispatchDelve = (params) => dispatchExpedition('delve', params);
+
+  // ---- Expeditions: brink + the loop (Phase C) ---------------------------
+  const applyOutcomeToState = (prev, exp, outcome) => {
+    const r = finalizeExpedition(
+      { minds: prev.minds || [], chartPages: prev.chartPages || [], wayOutFragments: prev.wayOutFragments || 0 },
+      exp,
+      outcome,
+    );
+    const newState = { ...prev };
+    newState.minds = r.minds.filter((m) => !r.mindsRemove.includes(m.id));
+    newState.chartPages = r.chartPages;
+    newState.wayOutFragments = r.wayOutFragments;
+    if (r.weaponsRemove.length) newState.weapons = (prev.weapons || []).filter((w) => !r.weaponsRemove.includes(w.id));
+    if (r.shellsRemove.length) newState.shells = (prev.shells || []).filter((s) => !r.shellsRemove.includes(s.id));
+    Object.entries(r.resourceDelta).forEach(([k, v]) => {
+      newState[k] = (newState[k] !== undefined ? newState[k] : (prev[k] || 0)) + v;
+    });
+    if (Object.keys(r.materialDelta).length) {
+      const inv = { ...(prev.dimensionalInventory || {}) };
+      Object.entries(r.materialDelta).forEach(([id, v]) => { inv[id] = Math.max(0, (inv[id] || 0) + v); });
+      newState.dimensionalInventory = inv;
+    }
+    newState.expeditions = (prev.expeditions || []).filter((e) => e.id !== exp.id);
+    if (r.triggerEnding) newState.loopEndingActive = true;
+    newState.recentMessages = [...r.messages.slice().reverse(), ...prev.recentMessages].slice(0, prev.maxLogMessages || 15);
+    return newState;
+  };
+
+  // Resolve a brink-paused expedition. choice 'save' spends a Clarity Charge to
+  // pull the mind out; 'risk' gambles (survive scarred, or permanent loss).
+  const resolveBrink = (expId, choice) => {
+    setGameState(prev => {
+      const exp = (prev.expeditions || []).find(e => e.id === expId && e.awaiting);
+      if (!exp) return prev;
+      if (choice === 'save') {
+        if (((prev.provisions || {}).clarity_charge || 0) < 1) {
+          return { ...prev, recentMessages: log(prev, 'No Clarity Charge to spend. Brew one, or let it ride.') };
+        }
+        const pv = { ...(prev.provisions || {}) };
+        pv.clarity_charge = Math.max(0, (pv.clarity_charge || 0) - 1);
+        const next = applyOutcomeToState(prev, exp, 'retreat');
+        next.provisions = pv;
+        setTimeout(() => checkAchievements(), 50);
+        return next;
+      }
+      const mind = (prev.minds || []).find(m => m.id === exp.mindId);
+      const outcome = Math.random() < getLetRideChance(mind) ? 'survive' : 'death';
+      const next = applyOutcomeToState(prev, exp, outcome);
+      if (outcome === 'death') next.mindsLost = (prev.mindsLost || 0) + 1;
+      setTimeout(() => checkAchievements(), 50);
+      return next;
+    });
+  };
+
+  // Finish the loop-ending cinematic: the way out leads back in. Keep minds,
+  // gear and blueprints; reset the chart, bank a windfall, and go again.
+  const completeLoop = () => {
+    setGameState(prev => {
+      const loop = (prev.loopCount || 0) + 1;
+      const newState = {
+        ...prev,
+        loopEndingActive: false,
+        loopCount: loop,
+        wayOutFragments: 0,
+        chartPages: [createChartPage(0, Math.floor(Math.random() * 1e9) + 1)],
+        currentTier: 0,
+        expeditions: [],
+        lucidity: (prev.lucidity || 0) + 200 * loop,
+        intelligence: (prev.intelligence || 0) + 150 * loop,
+      };
+      newState.recentMessages = [
+        `The way out led back in. Loop ${loop}. The office is deeper now, and you carried knowledge back through.`,
+        ...prev.recentMessages,
+      ].slice(0, prev.maxLogMessages || 15);
+      setTimeout(() => checkAchievements(), 50);
+      return newState;
+    });
+  };
 
   // Return all action handlers
   return {
@@ -1692,5 +1775,7 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
     craftShell,
     dispatchSurvey,
     dispatchDelve,
+    resolveBrink,
+    completeLoop,
   };
 };

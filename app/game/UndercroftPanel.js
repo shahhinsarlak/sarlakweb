@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import EventLog from './EventLog';
 import NotificationPopup from './NotificationPopup';
 import ChartCanvas from './ChartCanvas';
+import MindPortrait from './MindPortrait';
 import { formatPP } from './gameUtils';
 import {
   GEAR_BLUEPRINTS,
@@ -25,6 +26,7 @@ import {
   buildEncounters,
   buildSurveyEncounters,
   computeRisk,
+  getLetRideChance,
   canAffordCost,
   canAffordCraft,
 } from './expeditionHelpers';
@@ -129,9 +131,12 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '12px' }}>
         {minds.map((m) => (
           <div key={m.id} style={{ border: '1px solid var(--border-color)', padding: '14px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-              <strong style={{ fontSize: '14px', letterSpacing: '1px' }}>{m.designation}</strong>
-              <span style={{ fontSize: '11px', opacity: 0.6 }}>Lv {m.level}</span>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              <MindPortrait mind={m} size={40} />
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flex: 1 }}>
+                <strong style={{ fontSize: '14px', letterSpacing: '1px' }}>{m.designation}</strong>
+                <span style={{ fontSize: '11px', opacity: 0.6 }}>Lv {m.level}</span>
+              </div>
             </div>
             <div style={{ fontSize: '11px', opacity: 0.8, marginTop: '8px' }}>
               Resolve {Math.round(m.resolve)} &nbsp; Acuity {m.acuity} &nbsp; Will {m.will}
@@ -388,9 +393,10 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
   const bandColor = (b) => ({ Safe: '#5fb878', Risky: '#ffb454', Grave: '#e8995c', Suicidal: '#ff5c5c' }[b] || 'var(--text-color)');
   const axisMark = (p) => (p < 0.15 ? '\u2713 ok' : p < 0.5 ? '\u26a0 weak' : '\u2717 exposed');
   const ownedGear = Object.entries(gameState.gearInventory || {}).filter(([, n]) => n > 0).map(([id]) => id);
-  // Clarity Charges drive the brink intervention, which is implemented next
-  // phase; keep them out of the dispatch loadout for now so they aren't wasted.
-  const ownedProv = Object.entries(gameState.provisions || {}).filter(([id, n]) => n > 0 && id !== 'clarity_charge');
+  // A pre-loaded Clarity Charge auto-retreats the expedition at its first brink
+  // (insurance). You can also keep charges in reserve and spend one reactively
+  // when a brink prompt appears.
+  const ownedProv = Object.entries(gameState.provisions || {}).filter(([, n]) => n > 0);
   const toggleGear = (id) => setKitGear((g) => (g.includes(id) ? g.filter((x) => x !== id) : [...g, id]));
   const setProvQty = (id, q, max) => setProv((p) => ({ ...p, [id]: Math.max(0, Math.min(max, q)) }));
 
@@ -425,9 +431,36 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
     setProv({});
   };
 
+  const brinkExps = activeExps.filter((e) => e.awaiting);
+  const clarityStock = (gameState.provisions || {}).clarity_charge || 0;
+
   const renderChart = () => {
     if (!page) return <div style={{ fontSize: '12px', opacity: 0.6 }}>The chart is still forming...</div>;
     return (
+      <div>
+      {brinkExps.length > 0 && (
+        <div style={{ marginBottom: '16px' }}>
+          {brinkExps.map((e) => {
+            const m = minds.find((mm) => mm.id === e.mindId);
+            const odds = Math.round(getLetRideChance(m) * 100);
+            return (
+              <div key={e.id} style={{ border: '1px solid #c2353c', boxShadow: '0 0 12px -2px #c2353c', padding: '12px', marginBottom: '8px', display: 'flex', gap: '12px', alignItems: 'center' }}>
+                <MindPortrait mind={m} size={48} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: '13px' }}><strong>{m ? m.designation : 'A mind'}</strong> is at the BRINK.</div>
+                  <div style={{ fontSize: '11px', opacity: 0.75, marginTop: '3px' }}>
+                    Spend a Clarity Charge to pull them out safely, or let it ride ({odds}% they crawl back, scarred; otherwise lost for good).
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                    {actBtn(`SPEND CLARITY (${clarityStock})`, () => actions.resolveBrink(e.id, 'save'), clarityStock > 0)}
+                    {actBtn('LET IT RIDE', () => actions.resolveBrink(e.id, 'risk'), true)}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', alignItems: 'flex-start' }}>
         <div style={{ flex: '1 1 360px', minWidth: '300px' }}>
           <div style={{ display: 'flex', gap: '6px', marginBottom: '10px', flexWrap: 'wrap' }}>
@@ -522,13 +555,15 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
               {ownedProv.map(([id, owned]) => {
                 const p = getProvisionType(id);
                 const q = prov[id] || 0;
+                // A pre-loaded Clarity Charge fires once (auto-retreat); cap at 1.
+                const max = id === 'clarity_charge' ? Math.min(1, owned) : owned;
                 return (
                   <div key={id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px', marginBottom: '3px' }}>
                     <span>{p ? p.name : id} <span style={{ opacity: 0.5 }}>({owned})</span></span>
                     <span style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                      {actBtn('-', () => setProvQty(id, q - 1, owned), q > 0)}
+                      {actBtn('-', () => setProvQty(id, q - 1, max), q > 0)}
                       <strong>{q}</strong>
-                      {actBtn('+', () => setProvQty(id, q + 1, owned), q < owned)}
+                      {actBtn('+', () => setProvQty(id, q + 1, max), q < max)}
                     </span>
                   </div>
                 );
@@ -574,6 +609,7 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
             {node ? 'Launch Delve' : 'Launch Survey'}
           </button>
         </div>
+      </div>
       </div>
     );
   };

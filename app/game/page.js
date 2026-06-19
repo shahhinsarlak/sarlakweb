@@ -18,6 +18,7 @@ import BuffReplacementModal from './BuffReplacementModal';
 import NotificationPopup from './NotificationPopup';
 import TierUnlockModal from './TierUnlockModal';
 import Chapter2Intro from './Chapter2Intro';
+import LoopEnding from './LoopEnding';
 import InsightsPanel from './InsightsPanel';
 import FactoryPanel from './FactoryPanel';
 import UndercroftPanel from './UndercroftPanel';
@@ -677,6 +678,8 @@ export default function Game() {
               newState.expeditions = r.expeditions;
               if (r.minds) newState.minds = r.minds;
               if (r.chartPages) newState.chartPages = r.chartPages;
+              if (r.wayOutFragments !== undefined) newState.wayOutFragments = r.wayOutFragments;
+              if (r.triggerEnding) newState.loopEndingActive = true;
               if (r.resourceDelta) {
                 Object.entries(r.resourceDelta).forEach(([k, v]) => {
                   const base = newState[k] !== undefined ? newState[k] : (prev[k] || 0);
@@ -904,6 +907,10 @@ export default function Game() {
 
   if (gameState.chapter2IntroActive) {
     return <Chapter2Intro onComplete={actions.startChapter2} />;
+  }
+
+  if (gameState.loopEndingActive) {
+    return <LoopEnding loopCount={gameState.loopCount || 0} onComplete={actions.completeLoop} />;
   }
 
   if (gameState.showSkillTree) {

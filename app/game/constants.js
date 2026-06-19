@@ -143,10 +143,14 @@ export const INITIAL_GAME_STATE = {
   lastRoll: null,               // Most recent rolled blueprint { typeId, rarityId, dup } (for reveal)
   wayOutFragments: 0,           // Reclaimed "pieces of the way out" (Phase C)
   // Expeditions chart + dispatch (Chapter 2, Phase B)
-  chartPages: [],               // [{ tier, seed, nodes:[...], gatewayId, breached }] discovered tiers
+  chartPages: [],               // [{ tier, seed, nodes:[...], gatewayId, breached, routes:[] }]
   currentTier: 0,               // Selected chart page tab
   expeditions: [],              // Active expedition records (resolved over time in the tick)
   expeditionCounter: 0,         // Serial counter for expedition ids/route seeds
+  // Expeditions stakes + ending (Chapter 2, Phase C)
+  loopCount: 0,                 // How many times the "way out" has looped back in
+  loopEndingActive: false,      // The loop-ending cinematic is playing (full-screen)
+  mindsLost: 0,                 // Minds lost permanently on expeditions
 };
 
 
@@ -767,6 +771,9 @@ export const ACHIEVEMENTS = [
   { id: 'first_copy', name: 'First Copy', desc: 'Print your first mind in the Undercroft', check: (state) => (state.mindCounter || 0) >= 1 },
   { id: 'armoury', name: 'Armoury', desc: 'Roll your first weapon blueprint', check: (state) => (state.weaponBlueprints || []).length >= 1 },
   { id: 'legendary_find', name: 'Legendary Find', desc: 'Roll a Legendary or Mythic weapon blueprint', check: (state) => (state.weaponBlueprints || []).some((k) => k.endsWith(':legendary') || k.endsWith(':mythic')), reward: { type: 'ppMultiplier', value: 0.10 } },
+  { id: 'into_the_deep', name: 'Into the Deep', desc: 'Chart a third tier of the Undercroft', check: (state) => (state.chartPages || []).some((p) => p.tier >= 2) },
+  { id: 'lost_to_dark', name: 'Lost to the Dark', desc: 'Lose a mind, permanently, in the dark', check: (state) => (state.mindsLost || 0) >= 1 },
+  { id: 'the_loop', name: 'The Loop', desc: 'Reach the way out, and find it leads back in', check: (state) => (state.loopCount || 0) >= 1, reward: { type: 'ppMultiplier', value: 0.25 } },
 ];
 
 /**
@@ -1796,6 +1803,10 @@ export const EXPEDITION = {
   corruptionMax: 100,           // corruption at/over this = brink
   // Tier -> dimensional core a Gateway breach consumes (deeper = rarer).
   tierCores: ['void_fragment', 'static_crystal', 'glitch_shard', 'reality_dust', 'temporal_core', 'dimensional_essence', 'singularity_node'],
+  // --- Phase C: stakes + ending ---
+  exitFragments: 6,             // way-out fragments needed before a Gateway breach reaches the Exit
+  letRideBase: 0.35,            // base survival chance when you decline to spend a Clarity Charge
+  fragmentCapability: 1,        // Sight + Wardstrength granted per held way-out fragment
 };
 
 /**
@@ -2093,7 +2104,9 @@ Here you PRINT MINDS (copies of yourself) from paper, PP and lucidity, equip the
 
 Weapons are found by ROLLING blueprints with intelligence: each is a weapon type at a random rarity, and a rolled blueprint is yours forever. A crafted weapon can be lost with the mind that carries it, but you keep the blueprint.
 
-A mind lost on an expedition is lost permanently. Print carefully. Protect your veterans.`
+A mind lost on an expedition is lost permanently. Print carefully. Protect your veterans.
+
+At the BRINK, a mind pauses and waits: spend a Clarity Charge to pull it out, or let it ride and gamble. Deep in the dark are pieces of the WAY OUT. Gather enough, breach the final Gateway, and step through. It may not lead where you hope.`
   },
   welcome: {
     id: 'welcome',

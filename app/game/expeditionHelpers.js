@@ -238,6 +238,10 @@ export const getKitCapabilities = (state, kit) => {
   wardstrength *= 1 + will * EXPEDITION.willToWard;
   const traits = mind ? mind.traits || [] : [];
   if (traits.includes('warded')) wardstrength += 6;
+  // Reclaimed "way out" fragments make the whole frontier a little more legible.
+  const frags = state.wayOutFragments || 0;
+  sight += frags * EXPEDITION.fragmentCapability;
+  wardstrength += frags * EXPEDITION.fragmentCapability;
 
   const prov = kit.provisions || {};
   const lucidVal = (getProvisionType('lucid_draught') || {}).value || 0;
@@ -477,14 +481,144 @@ export const createExpedition = (state, { kind, kit, node, tier, depth, serial }
     log: [],
     outcome: null,
     finished: false,
+    awaiting: false,
+    autoClarity: !!(kit.provisions && (kit.provisions.clarity_charge || 0) > 0),
     depth: usedDepth,
   };
 };
 
+// Survival chance when you decline to spend a Clarity Charge at the brink.
+export const getLetRideChance = (mind) => {
+  const lvl = mind ? mind.level : 1;
+  const will = mind ? mind.will : 0;
+  return Math.max(0.1, Math.min(0.8, EXPEDITION.letRideBase + lvl * 0.012 + will * 0.006));
+};
+
+const SCAR_NAMES = ['Frostbitten', 'Hollow-eyed', 'Trembling', 'Marked', 'Unspooled', 'Half-there'];
+
 /**
- * Advance every active expedition by dt and finalize any that complete.
- * Returns a partial-state object to MERGE (or null if nothing to do):
- *   { expeditions, minds?, chartPages?, resourceDelta?, materialDelta?, messages? }
+ * Apply a single expedition's outcome to a threaded context. Returns the new
+ * { minds, chartPages, wayOutFragments } plus deltas to merge. Outcomes:
+ *   'success' | 'retreat' (Clarity save) | 'survive' (let-it-ride win, scarred)
+ *   | 'death' (permanent loss).
+ * Used by both the tick and the brink-resolution action.
+ */
+export const finalizeExpedition = (ctx, e2, outcome) => {
+  let minds = ctx.minds;
+  let chartPages = ctx.chartPages;
+  let wayOutFragments = ctx.wayOutFragments || 0;
+  const resourceDelta = {};
+  const materialDelta = {};
+  const messages = [];
+  const weaponsRemove = [];
+  const shellsRemove = [];
+  const mindsRemove = [];
+  let triggerEnding = false;
+  const addRes = (k, v) => { resourceDelta[k] = (resourceDelta[k] || 0) + v; };
+  const addMat = (id, v) => { materialDelta[id] = (materialDelta[id] || 0) + v; };
+
+  const mind = minds.find((m) => m.id === e2.mindId) || null;
+  const desig = mind ? mind.designation : 'A mind';
+  const page = chartPages.find((p) => p.tier === e2.tier) || null;
+
+  const markNode = (patch) => {
+    if (!page || !e2.nodeId) return;
+    chartPages = chartPages.map((p) => (p.tier === e2.tier
+      ? { ...p, nodes: p.nodes.map((n) => (n.id === e2.nodeId ? { ...n, ...patch } : n)) }
+      : p));
+  };
+  const appendRoute = (routeOutcome) => {
+    if (!page) return;
+    const mark = { seed: e2.seed, target: e2.targetPoint, kind: e2.kind, outcome: routeOutcome };
+    chartPages = chartPages.map((p) => (p.tier === e2.tier
+      ? { ...p, routes: [...(p.routes || []), mark].slice(-40) }
+      : p));
+  };
+
+  if (outcome === 'success') {
+    if (e2.kind === 'delve' && page) {
+      const node = page.nodes.find((n) => n.id === e2.nodeId);
+      if (node && !node.cleared && !node.looted) {
+        const rng = mulberry32(hashSeed(`${e2.seed}:loot`));
+        const loot = getNodeLoot(node, e2.tier, rng);
+        Object.entries(loot.resources).forEach(([k, v]) => addRes(k, v));
+        Object.entries(loot.materials).forEach(([id, v]) => addMat(id, v));
+        markNode({ discovered: true, cleared: true, looted: true });
+        if (node.type === 'echo') {
+          wayOutFragments += 1;
+          messages.push(`${desig} read the Echo. A piece of the way out comes loose (${wayOutFragments}/${EXPEDITION.exitFragments}).`);
+        } else if (node.type === 'gateway') {
+          chartPages = chartPages.map((p) => (p.tier === e2.tier ? { ...p, breached: true } : p));
+          wayOutFragments += 1;
+          if (wayOutFragments >= EXPEDITION.exitFragments) {
+            triggerEnding = true;
+            messages.push(`${desig} breached the final Gateway. Beyond it, light. Or something shaped like light.`);
+          } else {
+            if (!chartPages.some((p) => p.tier === e2.tier + 1)) {
+              chartPages = [...chartPages, createChartPage(e2.tier + 1, (page.seed || 1) + 777)];
+            }
+            messages.push(`${desig} breached the Gateway. A piece of the way out, and a new page of the dark (${wayOutFragments}/${EXPEDITION.exitFragments}).`);
+          }
+        } else {
+          messages.push(`${desig} returned from the ${node.type}, loot in hand.`);
+        }
+      }
+    } else if (e2.kind === 'survey' && page) {
+      const cart = mind && (mind.traits || []).includes('cartographer');
+      const revealN = 3 + (cart ? 2 : 0);
+      const tp = e2.targetPoint || ENTRY;
+      const undisc = page.nodes
+        .filter((n) => !n.discovered)
+        .sort((a, b) => Math.hypot(a.x - tp.x, a.y - tp.y) - Math.hypot(b.x - tp.x, b.y - tp.y));
+      const toReveal = undisc.slice(0, revealN).map((n) => n.id);
+      if (toReveal.length) {
+        chartPages = chartPages.map((p) => (p.tier === e2.tier
+          ? { ...p, nodes: p.nodes.map((n) => (toReveal.includes(n.id) ? { ...n, discovered: true } : n)) }
+          : p));
+      }
+      addRes('intelligence', 5 * (1 + e2.tier));
+      messages.push(`${desig} surveyed deeper. ${toReveal.length} new site(s) charted.`);
+    }
+    if (mind) {
+      const xpGain = (e2.kind === 'delve' ? 60 : 25) * (1 + e2.tier * 0.5) * (1 + e2.depth);
+      const res = applyMindXP(mind, Math.round(xpGain));
+      minds = minds.map((m) => (m.id === mind.id ? res.mind : m));
+      if (res.leveledTo) messages.push(`${desig} reached level ${res.leveledTo}.`);
+    }
+    appendRoute('success');
+  } else if (outcome === 'retreat' || outcome === 'survive') {
+    if (mind) {
+      const scarred = outcome === 'survive';
+      let m = { ...mind };
+      if (scarred) {
+        const scar = SCAR_NAMES[Math.floor(Math.random() * SCAR_NAMES.length)];
+        m.scars = [...(m.scars || []), scar];
+      }
+      const res = applyMindXP(m, scarred ? 25 : 10);
+      minds = minds.map((mm) => (mm.id === mind.id ? res.mind : mm));
+    }
+    if (e2.kind === 'delve') markNode({ discovered: true });
+    appendRoute(outcome === 'survive' ? 'scarred' : 'retreat');
+    messages.push(outcome === 'survive'
+      ? `${desig} clawed back from the brink, badly scarred, but alive.`
+      : `${desig} was pulled out at the brink. The shell is wrecked; the mind survives.`);
+  } else if (outcome === 'death') {
+    if (mind) mindsRemove.push(mind.id);
+    if (e2.weaponId) weaponsRemove.push(e2.weaponId);
+    if (e2.shellId) shellsRemove.push(e2.shellId);
+    if (e2.kind === 'delve') markNode({ discovered: true });
+    appendRoute('death');
+    messages.push(`${desig} did not return. The dark kept the mind, the shell, and all it carried. A marker remains on the chart.`);
+  }
+
+  return { minds, chartPages, wayOutFragments, resourceDelta, materialDelta, weaponsRemove, shellsRemove, mindsRemove, messages, triggerEnding };
+};
+
+/**
+ * Advance every active expedition by dt. Completed expeditions are finalized;
+ * an expedition that hits the brink either auto-retreats (if a Clarity Charge
+ * was pre-loaded) or PAUSES awaiting the player's choice. Returns a partial
+ * state object to MERGE (or null if nothing changed).
  */
 export const runExpeditionsTick = (state, dt) => {
   const exps = state.expeditions || [];
@@ -492,107 +626,70 @@ export const runExpeditionsTick = (state, dt) => {
 
   let minds = state.minds || [];
   let chartPages = state.chartPages || [];
+  let wayOutFragments = state.wayOutFragments || 0;
   const resourceDelta = {};
   const materialDelta = {};
   const messages = [];
   const stillActive = [];
-  let mindsChanged = false;
-  let chartChanged = false;
-  const addRes = (k, v) => { resourceDelta[k] = (resourceDelta[k] || 0) + v; };
-  const addMat = (id, v) => { materialDelta[id] = (materialDelta[id] || 0) + v; };
+  let changed = false;
+  let triggerEnding = false;
+  const mergeDelta = (target, src) => { Object.entries(src).forEach(([k, v]) => { target[k] = (target[k] || 0) + v; }); };
 
   exps.forEach((exp) => {
+    // A brink-paused expedition waits for the player; never advance it.
+    if (exp.awaiting) { stillActive.push(exp); return; }
+
     const e2 = { ...exp, rs: { ...exp.rs }, log: exp.log || [] };
     e2.progress = Math.min(1.0001, e2.progress + dt / Math.max(1, e2.duration));
-    while (!e2.finished && e2.encIndex < e2.encounters.length && e2.encounters[e2.encIndex].at <= e2.progress) {
+    while (!e2.finished && !e2.awaiting && e2.encIndex < e2.encounters.length && e2.encounters[e2.encIndex].at <= e2.progress) {
       const enc = e2.encounters[e2.encIndex];
       const line = applyEncounter(e2.rs, enc, e2.caps);
       e2.log = [...e2.log, line].slice(-12);
       e2.encIndex += 1;
       if ((e2.rs.shellHp <= 0 && e2.rs.resolve <= 0) || e2.rs.corruption >= EXPEDITION.corruptionMax) {
-        e2.finished = true;
-        e2.outcome = 'retreat';
+        if (e2.autoClarity) {
+          e2.finished = true;
+          e2.outcome = 'retreat';
+        } else {
+          e2.awaiting = true;
+          e2.outcome = 'brink';
+        }
       }
     }
-    if (!e2.finished && e2.progress >= 1) {
+    if (!e2.finished && !e2.awaiting && e2.progress >= 1) {
       e2.finished = true;
       e2.outcome = 'success';
+    }
+
+    if (e2.awaiting) {
+      const m = minds.find((mm) => mm.id === e2.mindId);
+      messages.push(`${m ? m.designation : 'A mind'} is at the BRINK. Spend a Clarity Charge to pull them out, or let it ride.`);
+      stillActive.push(e2);
+      changed = true;
+      return;
     }
     if (!e2.finished) {
       stillActive.push(e2);
       return;
     }
 
-    const mind = minds.find((m) => m.id === e2.mindId) || null;
-    const desig = mind ? mind.designation : 'A mind';
-    const page = chartPages.find((p) => p.tier === e2.tier) || null;
-
-    if (e2.outcome === 'success') {
-      if (e2.kind === 'delve' && page) {
-        const node = page.nodes.find((n) => n.id === e2.nodeId);
-        if (node) {
-          const rng = mulberry32(hashSeed(`${e2.seed}:loot`));
-          const loot = getNodeLoot(node, e2.tier, rng);
-          Object.entries(loot.resources).forEach(([k, v]) => addRes(k, v));
-          Object.entries(loot.materials).forEach(([id, v]) => addMat(id, v));
-          chartPages = chartPages.map((p) => (p.tier === e2.tier
-            ? { ...p, nodes: p.nodes.map((n) => (n.id === node.id ? { ...n, discovered: true, cleared: true, looted: true } : n)) }
-            : p));
-          chartChanged = true;
-          if (node.type === 'gateway') {
-            chartPages = chartPages.map((p) => (p.tier === e2.tier ? { ...p, breached: true } : p));
-            if (!chartPages.some((p) => p.tier === e2.tier + 1)) {
-              chartPages = [...chartPages, createChartPage(e2.tier + 1, (page.seed || 1) + 777)];
-            }
-            messages.push(`${desig} breached the Gateway. A new page of the dark opens beneath.`);
-          } else {
-            messages.push(`${desig} returned from the ${node.type}, loot in hand.`);
-          }
-        }
-      } else if (e2.kind === 'survey' && page) {
-        const cart = mind && (mind.traits || []).includes('cartographer');
-        const revealN = 3 + (cart ? 2 : 0);
-        const tp = e2.targetPoint || ENTRY;
-        const undisc = page.nodes
-          .filter((n) => !n.discovered)
-          .sort((a, b) => Math.hypot(a.x - tp.x, a.y - tp.y) - Math.hypot(b.x - tp.x, b.y - tp.y));
-        const toReveal = undisc.slice(0, revealN).map((n) => n.id);
-        if (toReveal.length) {
-          chartPages = chartPages.map((p) => (p.tier === e2.tier
-            ? { ...p, nodes: p.nodes.map((n) => (toReveal.includes(n.id) ? { ...n, discovered: true } : n)) }
-            : p));
-          chartChanged = true;
-        }
-        addRes('intelligence', 5 * (1 + e2.tier));
-        messages.push(`${desig} surveyed deeper. ${toReveal.length} new site(s) charted.`);
-      }
-      if (mind) {
-        const xpGain = (e2.kind === 'delve' ? 60 : 25) * (1 + e2.tier * 0.5) * (1 + e2.depth);
-        const res = applyMindXP(mind, Math.round(xpGain));
-        minds = minds.map((m) => (m.id === mind.id ? res.mind : m));
-        mindsChanged = true;
-        if (res.leveledTo) messages.push(`${desig} reached level ${res.leveledTo}.`);
-      }
-    } else {
-      // retreat (Phase B: mind survives; permanent loss arrives in Phase C)
-      if (mind) {
-        const res = applyMindXP(mind, 10);
-        minds = minds.map((m) => (m.id === mind.id ? res.mind : m));
-        mindsChanged = true;
-      }
-      if (e2.kind === 'delve' && e2.nodeId) {
-        chartPages = chartPages.map((p) => (p.tier === e2.tier
-          ? { ...p, nodes: p.nodes.map((n) => (n.id === e2.nodeId ? { ...n, discovered: true } : n)) }
-          : p));
-        chartChanged = true;
-      }
-      messages.push(`${desig} was driven back from the dark. The shell is wrecked; the mind survives.`);
-    }
+    const r = finalizeExpedition({ minds, chartPages, wayOutFragments }, e2, e2.outcome);
+    minds = r.minds;
+    chartPages = r.chartPages;
+    wayOutFragments = r.wayOutFragments;
+    mergeDelta(resourceDelta, r.resourceDelta);
+    mergeDelta(materialDelta, r.materialDelta);
+    r.messages.forEach((mm) => messages.push(mm));
+    if (r.triggerEnding) triggerEnding = true;
+    changed = true;
   });
 
+  if (!changed) return null;
   const out = { expeditions: stillActive };
-  if (mindsChanged) out.minds = minds;
-  if (chartChanged) out.chartPages = chartPages;
+  out.minds = minds;
+  out.chartPages = chartPages;
+  out.wayOutFragments = wayOutFragments;
+  if (triggerEnding) out.triggerEnding = true;
   if (Object.keys(resourceDelta).length) out.resourceDelta = resourceDelta;
   if (Object.keys(materialDelta).length) out.materialDelta = materialDelta;
   if (messages.length) out.messages = messages;
