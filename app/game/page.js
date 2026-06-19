@@ -87,18 +87,11 @@ export default function Game() {
     setGameState(prev => {
       const maxMessages = prev.maxLogMessages || 15;
       const updatedMessages = [msg, ...prev.recentMessages];
-
-      // Create notification popup for the message
-      const notification = {
-        id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        message: msg,
-        timestamp: Date.now()
-      };
-
+      // Notifications are mirrored from recentMessages centrally (see effect
+      // below), so message sources only need to update the log.
       return {
         ...prev,
         recentMessages: updatedMessages.slice(0, maxMessages),
-        notifications: [...(prev.notifications || []), notification]
       };
     });
   }, []);
@@ -109,6 +102,45 @@ export default function Game() {
       notifications: prev.notifications.filter(n => n.id !== notificationId)
     }));
   }, []);
+
+  // Single source of truth for toasts: mirror every NEW event-log message into a
+  // popup notification, so a message appears as a toast regardless of which
+  // screen is open (Undercroft, factory, dashboard, modals) and regardless of
+  // how it was logged (addMessage, folded state, or the idle tick). Message
+  // sources only write recentMessages; this effect creates the notifications.
+  const prevMsgsRef = useRef(null);
+  useEffect(() => {
+    const newArr = gameState.recentMessages || [];
+    const oldArr = prevMsgsRef.current;
+    prevMsgsRef.current = newArr;
+    if (oldArr === null || newArr === oldArr) return;
+    // New messages are prepended; slide the old array against the new one to
+    // count how many leading entries are new.
+    let d = 0;
+    while (d <= newArr.length) {
+      let match = true;
+      for (let i = 0; i + d < newArr.length && i < oldArr.length; i += 1) {
+        if (newArr[i + d] !== oldArr[i]) { match = false; break; }
+      }
+      if (match) break;
+      d += 1;
+    }
+    // d<=0: nothing new. d>=length: a wholesale replacement (save restore or
+    // reset) with no overlap — don't spam toasts for those.
+    if (d <= 0 || d >= newArr.length) return;
+    const fresh = newArr.slice(0, d);
+    setGameState(prev => {
+      const toAdd = [];
+      for (let i = fresh.length - 1; i >= 0; i -= 1) {
+        toAdd.push({
+          id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}_${i}`,
+          message: fresh[i],
+          timestamp: Date.now(),
+        });
+      }
+      return { ...prev, notifications: [...(prev.notifications || []), ...toAdd] };
+    });
+  }, [gameState.recentMessages]);
 
   const grantXP = useCallback((amount, showParticles = true) => {
     setGameState(prev => {
@@ -173,18 +205,11 @@ export default function Game() {
         }
 
         // Create notifications for all achievement messages
-        const newNotifications = achievementMessages.map(msg => ({
-          id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          message: msg,
-          timestamp: Date.now()
-        }));
-
         return {
           ...prev,
           ...xpResult,
           achievements: newAchievements,
           recentMessages: [...achievementMessages.reverse(), ...prev.recentMessages].slice(0, prev.maxLogMessages || 15),
-          notifications: [...(prev.notifications || []), ...newNotifications]
         };
       }
       return prev;
@@ -202,18 +227,12 @@ export default function Game() {
           'NEW LOCATION: The Portal'
         ];
         setTimeout(() => createScreenShake(), 0);
-        const newNotifications = messages.map(msg => ({
-          id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          message: msg,
-          timestamp: Date.now()
-        }));
         return {
           ...prev,
           portalUnlocked: true,
           unlockedLocations: [...new Set([...prev.unlockedLocations, 'portal'])],
           sanity: Math.max(0, prev.sanity - 10),
           recentMessages: [...messages.reverse(), ...prev.recentMessages].slice(0, prev.maxLogMessages || 15),
-          notifications: [...(prev.notifications || []), ...newNotifications]
         };
       }
       return prev;
@@ -244,6 +263,9 @@ export default function Game() {
   useEffect(() => {
     const saved = loadFromLocalStorage();
     if (saved) {
+      // Prime the toast-mirror ref so restoring the saved log doesn't fire a
+      // burst of notifications for messages the player already saw.
+      prevMsgsRef.current = saved.recentMessages || [];
       setGameState(prev => ({ ...prev, ...saved }));
       setTimeout(() => addMessage('Progress restored from autosave.'), 0);
     }
@@ -864,10 +886,6 @@ export default function Game() {
         if (!wasActive) {
           const msg = 'FOCUS MODE engaged. +50% PP while you keep sorting.';
           newState.recentMessages = [msg, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15);
-          newState.notifications = [
-            ...(prev.notifications || []),
-            { id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, message: msg, timestamp: Date.now() }
-          ];
         }
         return newState;
       });

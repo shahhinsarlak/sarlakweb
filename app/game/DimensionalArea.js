@@ -123,7 +123,6 @@ function DimensionalArea({ gameState, setGameState, onExit, grantXP, notificatio
 
       // Build messages and notifications for collected materials
       const messages = [];
-      const notifications = [];
 
       Object.keys(currentInventory).forEach(materialId => {
         const count = currentInventory[materialId];
@@ -132,11 +131,6 @@ function DimensionalArea({ gameState, setGameState, onExit, grantXP, notificatio
           const message = `Collected: ${count}x ${material?.name || materialId}`;
 
           messages.push(message);
-          notifications.push({
-            id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-            message: message,
-            timestamp: Date.now()
-          });
         }
 
         newDimensionalInventory[materialId] = (newDimensionalInventory[materialId] || 0) + count;
@@ -152,7 +146,6 @@ function DimensionalArea({ gameState, setGameState, onExit, grantXP, notificatio
         dimensionalInventory: newDimensionalInventory,
         portalCooldown: 60,
         recentMessages: [...messages, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15),
-        notifications: [...(prev.notifications || []), ...notifications]
       };
     });
 

@@ -192,10 +192,6 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
         lucidity: (prev.lucidity || 0) + lucidityBonus,
         energy: Math.max(0, prev.energy - 10),
         recentMessages: [msg, ...prev.recentMessages].slice(0, maxMessages),
-        notifications: [
-          ...(prev.notifications || []),
-          { id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, message: msg, timestamp: Date.now() },
-        ],
       };
     });
   };
@@ -232,14 +228,6 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       const withMessage = (state, msg) => ({
         ...state,
         recentMessages: [msg, ...state.recentMessages].slice(0, maxMessages),
-        notifications: [
-          ...(state.notifications || []),
-          {
-            id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-            message: msg,
-            timestamp: Date.now()
-          }
-        ]
       });
 
       const hasGlitchCompiler = prev.dimensionalUpgrades?.glitch_compiler;
@@ -652,13 +640,6 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       const qualityLabel = qualityOutcome.toUpperCase();
       const message = `${icon} ${tierData.name} [${qualityLabel}] created! Check File Drawer to consume.`;
 
-      // Create notification
-      const notification = {
-        id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        message: message,
-        timestamp: Date.now()
-      };
-
       const maxMessages = prev.maxLogMessages || 15;
       const newState = {
         ...prev,
@@ -671,7 +652,6 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
         },
         storedDocuments: [...(prev.storedDocuments || []), document],
         recentMessages: [message, ...prev.recentMessages].slice(0, maxMessages),
-        notifications: [...(prev.notifications || []), notification]
       };
 
       // Visual effects based on quality
@@ -1003,14 +983,6 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       // so write recentMessages + notifications straight into newState.
       const maxMessages = prev.maxLogMessages || 15;
       newState.recentMessages = [...messages, ...prev.recentMessages].slice(0, maxMessages);
-      newState.notifications = [
-        ...(prev.notifications || []),
-        ...messages.map((m) => ({
-          id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          message: m,
-          timestamp: Date.now(),
-        })),
-      ];
 
       // Grant XP
       if (xpGain > 0) {
