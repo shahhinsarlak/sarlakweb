@@ -10,6 +10,7 @@ import {
   PROVISION_TYPES,
   EXPEDITION,
   ROLL_PITY_THRESHOLD,
+  WEAPON_RARITIES,
 } from './constants';
 import { DIMENSIONAL_MATERIALS } from './dimensionalConstants';
 import { getGatewayCore, nodeDepth } from './expeditionChart';
@@ -28,6 +29,7 @@ import {
   buildSurveyEncounters,
   computeRisk,
   getLetRideChance,
+  getDispatchCost,
   expectedLoot,
   canAffordCost,
   canAffordCraft,
@@ -51,6 +53,8 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
   const [prov, setProv] = useState({});
   const [surveyDepth, setSurveyDepth] = useState(0.5);
   const [confirmRecall, setConfirmRecall] = useState(null);
+  const [bpSort, setBpSort] = useState('rarity_desc');
+  const [detailBp, setDetailBp] = useState(null);
   const rawTab = gameState.undercroftTab;
   const tabMap = { chart: 'expedition', roster: 'expedition', workbench: 'prepare', blueprints: 'armory' };
   const tab = ['expedition', 'prepare', 'armory'].includes(rawTab) ? rawTab : (tabMap[rawTab] || 'expedition');
@@ -332,40 +336,86 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
     );
   };
 
-  const renderLibrary = () => (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '12px' }}>
-      {blueprints.length === 0 && (
-        <div style={{ fontSize: '12px', opacity: 0.5 }}>No blueprints yet. Roll to begin your armoury.</div>
-      )}
-      {blueprints.map((key) => {
-        const { typeId, rarityId } = parseBlueprintKey(key);
-        const t = getWeaponType(typeId);
-        const r = getWeaponRarity(rarityId);
-        if (!t || !r) return null;
-        const craftCost = getWeaponCraftCost(typeId, rarityId);
-        const owned = weapons.filter((w) => w.typeId === typeId && w.rarityId === rarityId).length;
-        return (
-          <div key={key} style={{ border: `1px solid ${r.color}`, boxShadow: `0 0 8px -2px ${r.color}`, padding: '14px' }}>
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-              <WeaponSprite typeId={typeId} rarityId={rarityId} size={40} />
-              <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                  <strong style={{ fontSize: '13px' }}>{t.name}</strong>
-                  <span style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1px', color: r.color }}>{r.name}</span>
-                </div>
-                <div style={{ fontSize: '11px', opacity: 0.7, marginTop: '4px' }}>Might {getWeaponMight(typeId, rarityId)}{owned > 0 ? ` \u2022 forged x${owned}` : ''}</div>
-              </div>
-            </div>
-            <div style={{ fontSize: '11px', opacity: 0.6, marginTop: '6px', minHeight: '30px' }}>{t.quirk}</div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px' }}>
-              <span style={{ fontSize: '10px', opacity: 0.5 }}>{fmtCost(craftCost)}</span>
-              {actBtn('FORGE', () => actions.craftWeapon(typeId, rarityId), canAffordCraft(gameState, craftCost))}
-            </div>
-          </div>
-        );
-      })}
-    </div>
+  const rarityRank = (id) => WEAPON_RARITIES.findIndex((r) => r.id === id);
+  const sortChip = (id, label) => (
+    <button
+      key={id}
+      onClick={() => setBpSort(id)}
+      style={{ background: bpSort === id ? 'var(--text-color)' : 'none', color: bpSort === id ? 'var(--bg-color)' : 'var(--text-color)', border: '1px solid var(--border-color)', padding: '3px 9px', cursor: 'pointer', fontSize: '10px', fontFamily: 'inherit' }}
+    >
+      {label}
+    </button>
   );
+
+  const renderLibrary = () => {
+    const sorted = [...blueprints].sort((a, b) => {
+      const A = parseBlueprintKey(a);
+      const B = parseBlueprintKey(b);
+      if (bpSort === 'type') {
+        const an = (getWeaponType(A.typeId) || {}).name || '';
+        const bn = (getWeaponType(B.typeId) || {}).name || '';
+        return an.localeCompare(bn);
+      }
+      const ra = rarityRank(A.rarityId);
+      const rb = rarityRank(B.rarityId);
+      return bpSort === 'rarity_asc' ? ra - rb : rb - ra;
+    });
+    return (
+      <div>
+        {blueprints.length > 0 && (
+          <div style={{ display: 'flex', gap: '6px', marginBottom: '12px', alignItems: 'center' }}>
+            <span style={{ fontSize: '10px', opacity: 0.5, textTransform: 'uppercase', letterSpacing: '1px' }}>Sort</span>
+            {sortChip('rarity_desc', 'Rarity \u2193')}
+            {sortChip('rarity_asc', 'Rarity \u2191')}
+            {sortChip('type', 'Type')}
+          </div>
+        )}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '12px' }}>
+          {sorted.length === 0 && (
+            <div style={{ fontSize: '12px', opacity: 0.5 }}>No blueprints yet. Roll to begin your armoury.</div>
+          )}
+          {sorted.map((key) => {
+            const { typeId, rarityId } = parseBlueprintKey(key);
+            const t = getWeaponType(typeId);
+            const r = getWeaponRarity(rarityId);
+            if (!t || !r) return null;
+            const craftCost = getWeaponCraftCost(typeId, rarityId);
+            const owned = weapons.filter((w) => w.typeId === typeId && w.rarityId === rarityId).length;
+            return (
+              <div
+                key={key}
+                onClick={() => setDetailBp(key)}
+                title="Click to view"
+                style={{ border: `1px solid ${r.color}`, boxShadow: `0 0 8px -2px ${r.color}`, padding: '14px', cursor: 'pointer' }}
+              >
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                  <WeaponSprite typeId={typeId} rarityId={rarityId} size={40} />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                      <strong style={{ fontSize: '13px' }}>{t.name}</strong>
+                      <span style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1px', color: r.color }}>{r.name}</span>
+                    </div>
+                    <div style={{ fontSize: '11px', opacity: 0.7, marginTop: '4px' }}>Might {getWeaponMight(typeId, rarityId)}{owned > 0 ? ` \u2022 forged x${owned}` : ''}</div>
+                  </div>
+                </div>
+                <div style={{ fontSize: '11px', opacity: 0.6, marginTop: '6px', minHeight: '30px' }}>{t.quirk}</div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px' }}>
+                  <span style={{ fontSize: '10px', opacity: 0.5 }}>{fmtCost(craftCost)}</span>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); if (canAffordCraft(gameState, craftCost)) actions.craftWeapon(typeId, rarityId); }}
+                    disabled={!canAffordCraft(gameState, craftCost)}
+                    style={{ background: 'none', border: '1px solid var(--border-color)', color: 'var(--text-color)', padding: '8px 12px', cursor: canAffordCraft(gameState, craftCost) ? 'pointer' : 'not-allowed', fontSize: '11px', fontFamily: 'inherit', letterSpacing: '0.5px', opacity: canAffordCraft(gameState, craftCost) ? 1 : 0.4 }}
+                  >
+                    FORGE
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
 
   const doRoll = () => {
     if (!canRoll || rolling) return;
@@ -673,6 +723,10 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
             </div>
           )}
 
+          <div style={{ fontSize: '10px', opacity: 0.55, marginBottom: '8px' }}>
+            Dispatch cost: {fmtCost(getDispatchCost(node ? 'delve' : 'survey', pageTier))}
+          </div>
+
           <button
             onClick={launch}
             disabled={!kitMind || !kitShell || (node && (node.cleared || node.looted))}
@@ -740,6 +794,46 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
         {tab === 'prepare' && renderPrepare()}
         {tab === 'armory' && renderBlueprints()}
       </div>
+      {detailBp && (() => {
+        const { typeId, rarityId } = parseBlueprintKey(detailBp);
+        const t = getWeaponType(typeId);
+        const r = getWeaponRarity(rarityId);
+        if (!t || !r) return null;
+        const cost = getWeaponCraftCost(typeId, rarityId);
+        const owned = weapons.filter((w) => w.typeId === typeId && w.rarityId === rarityId).length;
+        const foeS = getFoeArchetype(t.strongVs);
+        const foeW = getFoeArchetype(t.weakVs);
+        return (
+          <div
+            onClick={() => setDetailBp(null)}
+            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 2500, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{ maxWidth: '460px', width: '100%', maxHeight: '90vh', overflowY: 'auto', border: `2px solid ${r.color}`, boxShadow: `0 0 28px -2px ${r.color}`, background: 'var(--bg-color)', padding: '24px', fontFamily: 'inherit', color: 'var(--text-color)', textAlign: 'center' }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '14px' }}>
+                <WeaponSprite typeId={typeId} rarityId={rarityId} size={224} />
+              </div>
+              <div style={{ fontSize: '11px', letterSpacing: '2px', textTransform: 'uppercase', color: r.color }}>{r.name}</div>
+              <div style={{ fontSize: '22px', letterSpacing: '1px', marginTop: '4px' }}>{t.name}</div>
+              <div style={{ fontSize: '12px', opacity: 0.75, marginTop: '8px' }}>Might {getWeaponMight(typeId, rarityId)}{owned > 0 ? ` \u2022 forged x${owned}` : ''}</div>
+              <div style={{ fontSize: '12px', opacity: 0.85, marginTop: '12px', lineHeight: 1.6 }}>{t.quirk}</div>
+              <div style={{ fontSize: '11px', opacity: 0.7, marginTop: '8px' }}>
+                {foeS ? `Strong vs ${foeS.name}` : ''}{foeS && foeW ? ' \u2022 ' : ''}{foeW ? `Weak vs ${foeW.name}` : ''}
+              </div>
+              <div style={{ fontSize: '12px', opacity: 0.6, marginTop: '14px', lineHeight: 1.7, textAlign: 'left', fontStyle: 'italic' }}>{t.lore}</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '20px' }}>
+                <span style={{ fontSize: '11px', opacity: 0.6 }}>{fmtCost(cost)}</span>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  {actBtn('FORGE', () => actions.craftWeapon(typeId, rarityId), canAffordCraft(gameState, cost))}
+                  {actBtn('CLOSE', () => setDetailBp(null), true)}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
       <NotificationPopup notifications={notifications} onDismiss={onDismissNotification} />
     </>
   );

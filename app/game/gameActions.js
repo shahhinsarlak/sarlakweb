@@ -31,6 +31,7 @@ import {
   createExpedition,
   finalizeExpedition,
   getLetRideChance,
+  getDispatchCost,
 } from './expeditionHelpers';
 import { getGatewayCore, createChartPage } from './expeditionChart';
 import { getInsightEffects } from './insightHelpers';
@@ -1585,7 +1586,7 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
         }
       }
 
-      const cost = kind === 'delve' ? EXPEDITION.delveCost : EXPEDITION.surveyCost;
+      const cost = getDispatchCost(kind, tier);
       if (!canAffordCost(prev, cost)) {
         return { ...prev, recentMessages: log(prev, 'Not enough paper or energy to set out.') };
       }

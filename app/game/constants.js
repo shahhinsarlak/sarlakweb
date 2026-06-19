@@ -1780,21 +1780,23 @@ export const MIND_TRAIT_LEVELS = [3, 6, 10, 15];
 
 // Tuning for printing/rolling and the capability math (see expeditionHelpers.js).
 export const EXPEDITION = {
-  rollCost: { intelligence: 200 },
-  printBase: { paper: 20, pp: 150, lucidity: 10 },
+  rollCost: { intelligence: 2500 },
+  printBase: { paper: 300, pp: 5000, lucidity: 120 },
   printTiers: [
     { id: 'raw', name: 'Raw Copy', startLevel: 1, extraTrait: false, costMult: 1, research: null },
-    { id: 'primed', name: 'Primed Copy', startLevel: 4, extraTrait: false, costMult: 3, research: { intelligence: 120 } },
-    { id: 'refined', name: 'Refined Copy', startLevel: 8, extraTrait: true, costMult: 7, research: { intelligence: 300 } },
+    { id: 'primed', name: 'Primed Copy', startLevel: 4, extraTrait: false, costMult: 3, research: { intelligence: 1500 } },
+    { id: 'refined', name: 'Refined Copy', startLevel: 8, extraTrait: true, costMult: 7, research: { intelligence: 4000 } },
   ],
   mindBase: { resolve: 40, acuity: 5, will: 5 },
   mindGrowth: { resolve: 8, acuity: 1.5, will: 1.5 },
   shellBaseHp: 50,
   shellBay: 6,                  // max shells that can be kept assembled at once
   // --- Phase B: dispatch + resolution tuning ---
-  shellCost: { substrate: 40, core: 'void_fragment', coreQty: 2 },
-  surveyCost: { paper: 5, energy: 10 },
-  delveCost: { paper: 8, energy: 15 },
+  shellCost: { substrate: 400, core: 'void_fragment', coreQty: 3 },
+  // Dispatch costs; the lucidity portion is multiplied by (tier+1) so deeper
+  // expeditions cost progressively more (see getDispatchCost in expeditionHelpers).
+  surveyCost: { paper: 20, energy: 10, lucidity: 40 },
+  delveCost: { paper: 50, energy: 15, lucidity: 100 },
   baseDurationSec: 35,          // base wall-clock time of an expedition
   distanceDurationSec: 35,      // extra seconds scaled by route distance (0..1)
   xpPerLevel: 100,              // xp needed per level (x current level)

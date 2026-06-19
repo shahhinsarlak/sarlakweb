@@ -51,6 +51,15 @@ export const expectedLoot = (type) => ({
   gateway: 'a piece of the way out; opens the next tier',
 }[type] || 'the unknown');
 
+// Dispatch cost for a kind at a tier. The lucidity portion scales with depth so
+// deeper expeditions cost progressively more.
+export const getDispatchCost = (kind, tier) => {
+  const base = kind === 'delve' ? EXPEDITION.delveCost : EXPEDITION.surveyCost;
+  const cost = { ...base };
+  if (cost.lucidity) cost.lucidity = cost.lucidity * ((tier || 0) + 1);
+  return cost;
+};
+
 // ---- Lookups -------------------------------------------------------------
 
 export const getWeaponType = (id) => WEAPON_TYPES.find((w) => w.id === id) || null;
