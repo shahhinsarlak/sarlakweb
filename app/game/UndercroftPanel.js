@@ -67,6 +67,7 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
   const [craftFx, setCraftFx] = useState(null);
   const [mindDetail, setMindDetail] = useState(null);
   const [renameVal, setRenameVal] = useState('');
+  const [confirmRetire, setConfirmRetire] = useState(null);
   const triggerFx = (fxKey) => {
     const ts = Date.now();
     setCraftFx({ key: fxKey, ts });
@@ -182,7 +183,14 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
               <span style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.7 }}>
                 {rosterBusy.has(m.id) ? 'On expedition' : 'Idle'}
               </span>
-              {!rosterBusy.has(m.id) && actBtn('RETIRE', () => actions.discardMind(m.id), true)}
+              {!rosterBusy.has(m.id) && (
+                confirmRetire === m.id ? (
+                  <span style={{ display: 'flex', gap: '4px' }}>
+                    {actBtn('CONFIRM', () => { actions.discardMind(m.id); setConfirmRetire(null); }, true)}
+                    {actBtn('CANCEL', () => setConfirmRetire(null), true)}
+                  </span>
+                ) : actBtn('RETIRE', () => setConfirmRetire(m.id), true)
+              )}
             </div>
           </div>
         ))}
@@ -975,9 +983,20 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
                 {` Next level: Resolve ${Math.round(nextStats.resolve)} (+${Math.round(nextStats.resolve - m.resolve)}).`}
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '18px' }}>
-                {!busy && actBtn('RETIRE', () => { actions.discardMind(m.id); setMindDetail(null); }, true)}
-                {actBtn('CLOSE', () => setMindDetail(null), true)}
+              <div style={{ marginTop: '18px' }}>
+                {!busy && confirmRetire === m.id && (
+                  <div style={{ fontSize: '11px', color: '#ffb454', marginBottom: '8px' }}>
+                    Retire {m.designation}? This permanently destroys the copy and everything it has learned. This cannot be undone.
+                  </div>
+                )}
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                  {!busy && (
+                    confirmRetire === m.id
+                      ? actBtn('CONFIRM RETIRE', () => { actions.discardMind(m.id); setConfirmRetire(null); setMindDetail(null); }, true)
+                      : actBtn('RETIRE', () => setConfirmRetire(m.id), true)
+                  )}
+                  {actBtn('CLOSE', () => { setMindDetail(null); setConfirmRetire(null); }, true)}
+                </div>
               </div>
             </div>
           </div>
