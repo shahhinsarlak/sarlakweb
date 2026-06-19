@@ -3,6 +3,7 @@ import EventLog from './EventLog';
 import NotificationPopup from './NotificationPopup';
 import ChartCanvas from './ChartCanvas';
 import MindPortrait from './MindPortrait';
+import WeaponSprite from './WeaponSprite';
 import { formatPP } from './gameUtils';
 import {
   GEAR_BLUEPRINTS,
@@ -27,6 +28,7 @@ import {
   buildSurveyEncounters,
   computeRisk,
   getLetRideChance,
+  expectedLoot,
   canAffordCost,
   canAffordCraft,
 } from './expeditionHelpers';
@@ -49,7 +51,9 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
   const [prov, setProv] = useState({});
   const [surveyDepth, setSurveyDepth] = useState(0.5);
   const [confirmRecall, setConfirmRecall] = useState(null);
-  const tab = gameState.undercroftTab || 'chart';
+  const rawTab = gameState.undercroftTab;
+  const tabMap = { chart: 'expedition', roster: 'expedition', workbench: 'prepare', blueprints: 'armory' };
+  const tab = ['expedition', 'prepare', 'armory'].includes(rawTab) ? rawTab : (tabMap[rawTab] || 'expedition');
 
   useEffect(() => {
     const handleKey = (e) => { if (e.key === 'Escape') onClose(); };
@@ -251,12 +255,24 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
     );
   };
 
-  const renderWorkbench = () => (
+  const renderPrepare = () => {
+    const shellCount = (gameState.shells || []).length;
+    const shellBay = EXPEDITION.shellBay || 6;
+    return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '26px' }}>
       <div>
-        {sectionTitle('Print a Mind', 'Copies of yourself, printed from paper, PP and lucidity. Premium processes start stronger.')}
+        {sectionTitle('Print a Mind', `Copies of yourself, printed from paper, PP and lucidity. ${minds.length}/${gameState.printBeds || 3} print beds used.`)}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           {EXPEDITION.printTiers.map(renderPrintTier)}
+        </div>
+      </div>
+      <div>
+        {sectionTitle('Assemble Shells', `Bodies for your minds, from substrate + a core. ${shellCount}/${shellBay} in the bay.`)}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', border: '1px solid var(--border-color)', padding: '12px' }}>
+          <div style={{ flex: 1, fontSize: '11px', opacity: 0.7 }}>
+            Each shell has {EXPEDITION.shellBaseHp} HP and is consumed only on catastrophe or recall. Cost: {fmtCost(EXPEDITION.shellCost)}.
+          </div>
+          {actBtn(shellCount >= shellBay ? 'BAY FULL' : 'ASSEMBLE SHELL', () => actions.craftShell(), shellCount < shellBay && canAffordCraft(gameState, EXPEDITION.shellCost))}
         </div>
       </div>
       <div>
@@ -272,7 +288,8 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
         </div>
       </div>
     </div>
-  );
+    );
+  };
 
   // ---- BLUEPRINTS (the roll + library) -----------------------------------
   const last = gameState.lastRoll;
@@ -282,12 +299,11 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
   const renderReveal = () => {
     if (rolling) {
       return (
-        <div style={{
-          border: '1px solid var(--border-color)', padding: '22px', textAlign: 'center',
-          animation: 'undercroftScan 0.5s linear infinite',
-        }}>
-          <div style={{ fontSize: '13px', letterSpacing: '3px', textTransform: 'uppercase', opacity: 0.8 }}>Decoding schematic</div>
-          <div style={{ height: '10px', marginTop: '14px', background: 'linear-gradient(90deg, #9aa0a6, #4aa3ff, #b46bff, #ffb454, #ff5c5c, #9aa0a6)', backgroundSize: '300% 100%', animation: 'undercroftRoll 0.7s linear infinite' }} />
+        <div style={{ border: '1px solid var(--border-color)', padding: '18px', textAlign: 'center' }}>
+          <div style={{ fontSize: '13px', letterSpacing: '3px', textTransform: 'uppercase', opacity: 0.8, marginBottom: '12px' }}>Fabricating schematic</div>
+          <div style={{ display: 'flex', justifyContent: 'center' }}>
+            {last && <WeaponSprite typeId={last.typeId} rarityId={last.rarityId} size={96} building />}
+          </div>
         </div>
       );
     }
@@ -304,6 +320,9 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
         boxShadow: `0 0 16px 1px ${lastRarity ? lastRarity.color : 'transparent'}`,
         padding: '18px', textAlign: 'center',
       }}>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '8px' }}>
+          <WeaponSprite typeId={last.typeId} rarityId={last.rarityId} size={96} />
+        </div>
         <div style={{ fontSize: '11px', letterSpacing: '2px', textTransform: 'uppercase', color: lastRarity ? lastRarity.color : 'inherit' }}>
           {lastRarity ? lastRarity.name : ''}{last.dup ? ' (duplicate, salvaged)' : ''}
         </div>
@@ -327,11 +346,16 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
         const owned = weapons.filter((w) => w.typeId === typeId && w.rarityId === rarityId).length;
         return (
           <div key={key} style={{ border: `1px solid ${r.color}`, boxShadow: `0 0 8px -2px ${r.color}`, padding: '14px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-              <strong style={{ fontSize: '13px' }}>{t.name}</strong>
-              <span style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1px', color: r.color }}>{r.name}</span>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              <WeaponSprite typeId={typeId} rarityId={rarityId} size={40} />
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                  <strong style={{ fontSize: '13px' }}>{t.name}</strong>
+                  <span style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1px', color: r.color }}>{r.name}</span>
+                </div>
+                <div style={{ fontSize: '11px', opacity: 0.7, marginTop: '4px' }}>Might {getWeaponMight(typeId, rarityId)}{owned > 0 ? ` \u2022 forged x${owned}` : ''}</div>
+              </div>
             </div>
-            <div style={{ fontSize: '11px', opacity: 0.7, marginTop: '6px' }}>Might {getWeaponMight(typeId, rarityId)}{owned > 0 ? ` \u2022 forged x${owned}` : ''}</div>
             <div style={{ fontSize: '11px', opacity: 0.6, marginTop: '6px', minHeight: '30px' }}>{t.quirk}</div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px' }}>
               <span style={{ fontSize: '10px', opacity: 0.5 }}>{fmtCost(craftCost)}</span>
@@ -441,9 +465,9 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
     const hasShell = (gameState.shells || []).length > 0;
     const anyDiscovered = page.nodes.some((n) => n.discovered);
     let guide = null;
-    if (!hasMind) guide = 'Step 1: open the WORKBENCH tab and Print a Mind (costs paper, PP and lucidity). A mind is the copy of yourself you send into the dark.';
-    else if (!hasShell) guide = 'Step 2: in the dispatch panel on the right, press + ASSEMBLE to build a Shell (a body, costs substrate and a core).';
-    else if (!anyDiscovered) guide = 'Step 3: on the right, pick your Mind and Shell, leave no site selected, and Launch Survey. The fogged map charts new sites as it explores (about a minute). Optional: roll and forge a weapon in the BLUEPRINTS tab first.';
+    if (!hasMind) guide = 'Step 1: open the PREPARE tab and Print a Mind (costs paper, PP and lucidity). A mind is the copy of yourself you send into the dark.';
+    else if (!hasShell) guide = 'Step 2: in the PREPARE tab, Assemble a Shell (a body, costs substrate and a core).';
+    else if (!anyDiscovered) guide = 'Step 3: below, pick your Mind and Shell, leave no site selected, and Launch Survey. The fogged map charts new sites as it explores (about a minute). Optional: roll and forge a weapon in the ARMORY tab first.';
     return (
       <div>
       {guide && (
@@ -535,6 +559,12 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
         <div style={{ flex: '1 1 300px', minWidth: '280px', border: '1px solid var(--border-color)', padding: '14px' }}>
           {sectionTitle(node ? `Delve: ${node.type}` : 'Survey the dark', node ? nodeHint(node) : 'Push into the unknown to chart new sites.')}
 
+          {node && !node.cleared && !node.looted && (
+            <div style={{ fontSize: '11px', opacity: 0.7, marginBottom: '10px' }}>
+              Expected haul: {expectedLoot(node.type)}.
+            </div>
+          )}
+
           {!node && (
             <div style={{ marginBottom: '12px' }}>
               <div style={{ fontSize: '11px', opacity: 0.6, marginBottom: '4px' }}>Push depth: {Math.round(surveyDepth * 100)}%</div>
@@ -544,7 +574,7 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
 
           <div style={{ marginBottom: '10px' }}>
             <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6, marginBottom: '4px' }}>Mind</div>
-            {availMinds.length === 0 && <div style={{ fontSize: '11px', opacity: 0.5 }}>No idle minds. Print one in the Workbench.</div>}
+            {availMinds.length === 0 && <div style={{ fontSize: '11px', opacity: 0.5 }}>No idle minds. Print one in the PREPARE tab.</div>}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
               {availMinds.map((m) => pickChip(`${m.designation} L${m.level}`, kitMind === m.id, () => setKitMind(m.id)))}
             </div>
@@ -552,23 +582,34 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
 
           <div style={{ marginBottom: '10px' }}>
             <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6, marginBottom: '4px' }}>Shell</div>
+            {availShells.length === 0 && <div style={{ fontSize: '11px', opacity: 0.5 }}>No free shells. Assemble one in the PREPARE tab.</div>}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
               {availShells.map((s, i) => pickChip(`Shell ${i + 1} (${s.maxHp}hp)`, kitShell === s.id, () => setKitShell(s.id)))}
-              {actBtn('+ ASSEMBLE', () => actions.craftShell(), canAffordCraft(gameState, EXPEDITION.shellCost))}
             </div>
           </div>
 
           <div style={{ marginBottom: '10px' }}>
             <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6, marginBottom: '4px' }}>Weapon</div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
               {pickChip('None', !kitWeapon, () => setKitWeapon(null))}
               {availWeapons.map((w) => {
                 const t = getWeaponType(w.typeId);
                 const r = getWeaponRarity(w.rarityId);
-                return pickChip(`${t ? t.name : ''} (${getWeaponMight(w.typeId, w.rarityId)})`, kitWeapon === w.id, () => setKitWeapon(w.id), r ? r.color : null);
+                const active = kitWeapon === w.id;
+                return (
+                  <button
+                    key={w.id}
+                    onClick={() => setKitWeapon(w.id)}
+                    title={`${t ? t.name : ''} - ${r ? r.name : ''}`}
+                    style={{ display: 'flex', alignItems: 'center', gap: '5px', background: active ? 'var(--text-color)' : 'none', color: active ? 'var(--bg-color)' : (r ? r.color : 'var(--text-color)'), border: `1px solid ${active ? 'var(--text-color)' : (r ? r.color : 'var(--border-color)')}`, padding: '4px 7px', cursor: 'pointer', fontSize: '11px', fontFamily: 'inherit' }}
+                  >
+                    <WeaponSprite typeId={w.typeId} rarityId={w.rarityId} size={20} />
+                    {getWeaponMight(w.typeId, w.rarityId)}
+                  </button>
+                );
               })}
             </div>
-            {availWeapons.length === 0 && <div style={{ fontSize: '11px', opacity: 0.5 }}>No forged weapons. Roll and forge in Blueprints.</div>}
+            {availWeapons.length === 0 && <div style={{ fontSize: '11px', opacity: 0.5 }}>No forged weapons. Roll and forge in the ARMORY tab.</div>}
           </div>
 
           {ownedGear.length > 0 && (
@@ -683,16 +724,21 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
         </div>
 
         <div style={{ display: 'flex', gap: '8px', marginBottom: '22px', flexWrap: 'wrap' }}>
-          {tabBtn('chart', 'Chart')}
-          {tabBtn('roster', 'Roster')}
-          {tabBtn('workbench', 'Workbench')}
-          {tabBtn('blueprints', 'Blueprints')}
+          {tabBtn('expedition', 'Expedition')}
+          {tabBtn('prepare', 'Prepare')}
+          {tabBtn('armory', 'Armory')}
         </div>
 
-        {tab === 'chart' && renderChart()}
-        {tab === 'roster' && renderRoster()}
-        {tab === 'workbench' && renderWorkbench()}
-        {tab === 'blueprints' && renderBlueprints()}
+        {tab === 'expedition' && (
+          <>
+            {renderChart()}
+            <div style={{ marginTop: '30px', borderTop: '1px solid var(--border-color)', paddingTop: '20px' }}>
+              {renderRoster()}
+            </div>
+          </>
+        )}
+        {tab === 'prepare' && renderPrepare()}
+        {tab === 'armory' && renderBlueprints()}
       </div>
       <NotificationPopup notifications={notifications} onDismiss={onDismissNotification} />
     </>

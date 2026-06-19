@@ -1536,6 +1536,9 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
   // Assemble a shell (a body) from substrate + a core.
   const craftShell = () => {
     setGameState(prev => {
+      if ((prev.shells || []).length >= (EXPEDITION.shellBay || 6)) {
+        return { ...prev, recentMessages: log(prev, 'The shell bay is full. Send some out, or they just take up space.') };
+      }
       const cost = EXPEDITION.shellCost;
       if (!canAffordCraft(prev, cost)) {
         return { ...prev, recentMessages: log(prev, 'Not enough substrate or cores to assemble a shell.') };

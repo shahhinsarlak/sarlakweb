@@ -27,6 +27,29 @@ import {
   getNodeLoot,
   createChartPage,
 } from './expeditionChart';
+import { DIMENSIONAL_MATERIALS } from './dimensionalConstants';
+
+// Human-readable loot summary, e.g. "+412 PP, +30 paper, +2 Reality Dust".
+const matName = (id) => (DIMENSIONAL_MATERIALS.find((m) => m.id === id) || {}).name || id;
+export const formatLoot = (loot) => {
+  const parts = [];
+  Object.entries(loot.resources || {}).forEach(([k, v]) => {
+    if (v >= 1) parts.push(`+${Math.round(v)} ${k === 'pp' ? 'PP' : k}`);
+  });
+  Object.entries(loot.materials || {}).forEach(([id, v]) => {
+    if (v >= 1) parts.push(`+${v} ${matName(id)}`);
+  });
+  return parts.join(', ');
+};
+
+// Qualitative "what does this site tend to drop" hint for the pre-delve readout.
+export const expectedLoot = (type) => ({
+  cache: 'PP, paper, and a tier material',
+  haunt: 'tier materials and lucidity',
+  echo: 'intelligence, and a piece of the way out',
+  anomaly: 'rare materials, lucidity and intelligence',
+  gateway: 'a piece of the way out; opens the next tier',
+}[type] || 'the unknown');
 
 // ---- Lookups -------------------------------------------------------------
 
@@ -544,9 +567,10 @@ export const finalizeExpedition = (ctx, e2, outcome) => {
         Object.entries(loot.resources).forEach(([k, v]) => addRes(k, v));
         Object.entries(loot.materials).forEach(([id, v]) => addMat(id, v));
         markNode({ discovered: true, cleared: true, looted: true });
+        const lootStr = formatLoot(loot);
         if (node.type === 'echo') {
           wayOutFragments += 1;
-          messages.push(`${desig} read the Echo. A piece of the way out comes loose (${wayOutFragments}/${EXPEDITION.exitFragments}).`);
+          messages.push(`${desig} read the Echo${lootStr ? ` (${lootStr})` : ''}. A piece of the way out comes loose (${wayOutFragments}/${EXPEDITION.exitFragments}).`);
         } else if (node.type === 'gateway') {
           chartPages = chartPages.map((p) => (p.tier === e2.tier ? { ...p, breached: true } : p));
           wayOutFragments += 1;
@@ -557,10 +581,10 @@ export const finalizeExpedition = (ctx, e2, outcome) => {
             if (!chartPages.some((p) => p.tier === e2.tier + 1)) {
               chartPages = [...chartPages, createChartPage(e2.tier + 1, (page.seed || 1) + 777)];
             }
-            messages.push(`${desig} breached the Gateway. A piece of the way out, and a new page of the dark (${wayOutFragments}/${EXPEDITION.exitFragments}).`);
+            messages.push(`${desig} breached the Gateway${lootStr ? ` (${lootStr})` : ''}. A piece of the way out, and a new page of the dark (${wayOutFragments}/${EXPEDITION.exitFragments}).`);
           }
         } else {
-          messages.push(`${desig} returned from the ${node.type}, loot in hand.`);
+          messages.push(`${desig} returned from the ${node.type}: ${lootStr || 'nothing of worth'}.`);
         }
       }
     } else if (e2.kind === 'survey' && page) {

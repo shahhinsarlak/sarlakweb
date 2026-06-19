@@ -129,7 +129,7 @@ export const INITIAL_GAME_STATE = {
   undercroftUnlocked: false,    // Revealed when the running factory breaks through the floor
   undercroftOpen: false,        // Is the Undercroft panel visible
   factoryFullRunSeconds: 0,     // Sustained full-operation counter toward the breakthrough
-  undercroftTab: 'chart',       // Active Undercroft tab: chart | roster | workbench | blueprints
+  undercroftTab: 'expedition',  // Active Undercroft tab: expedition | prepare | armory
   minds: [],                    // [{ id, designation, level, xp, resolve, acuity, will, traits[], scars[], status }]
   mindCounter: 0,               // Serial counter for mind designations (Copy I, II, ...)
   printBeds: 3,                 // Roster cap (max simultaneous minds)
@@ -1780,7 +1780,7 @@ export const MIND_TRAIT_LEVELS = [3, 6, 10, 15];
 
 // Tuning for printing/rolling and the capability math (see expeditionHelpers.js).
 export const EXPEDITION = {
-  rollCost: { intelligence: 25 },
+  rollCost: { intelligence: 200 },
   printBase: { paper: 20, pp: 150, lucidity: 10 },
   printTiers: [
     { id: 'raw', name: 'Raw Copy', startLevel: 1, extraTrait: false, costMult: 1, research: null },
@@ -1790,6 +1790,7 @@ export const EXPEDITION = {
   mindBase: { resolve: 40, acuity: 5, will: 5 },
   mindGrowth: { resolve: 8, acuity: 1.5, will: 1.5 },
   shellBaseHp: 50,
+  shellBay: 6,                  // max shells that can be kept assembled at once
   // --- Phase B: dispatch + resolution tuning ---
   shellCost: { substrate: 40, core: 'void_fragment', coreQty: 2 },
   surveyCost: { paper: 5, energy: 10 },
