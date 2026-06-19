@@ -436,8 +436,21 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
 
   const renderChart = () => {
     if (!page) return <div style={{ fontSize: '12px', opacity: 0.6 }}>The chart is still forming...</div>;
+    const hasMind = minds.length > 0;
+    const hasShell = (gameState.shells || []).length > 0;
+    const anyDiscovered = page.nodes.some((n) => n.discovered);
+    let guide = null;
+    if (!hasMind) guide = 'Step 1: open the WORKBENCH tab and Print a Mind (costs paper, PP and lucidity). A mind is the copy of yourself you send into the dark.';
+    else if (!hasShell) guide = 'Step 2: in the dispatch panel on the right, press + ASSEMBLE to build a Shell (a body, costs substrate and a core).';
+    else if (!anyDiscovered) guide = 'Step 3: on the right, pick your Mind and Shell, leave no site selected, and Launch Survey. The fogged map charts new sites as it explores (about a minute). Optional: roll and forge a weapon in the BLUEPRINTS tab first.';
     return (
       <div>
+      {guide && (
+        <div style={{ border: '1px solid var(--border-color)', background: 'rgba(159,232,255,0.05)', padding: '12px', marginBottom: '16px', fontSize: '12px', lineHeight: 1.6 }}>
+          <strong style={{ letterSpacing: '1px' }}>GETTING STARTED</strong>
+          <div style={{ marginTop: '4px', opacity: 0.85 }}>{guide}</div>
+        </div>
+      )}
       {brinkExps.length > 0 && (
         <div style={{ marginBottom: '16px' }}>
           {brinkExps.map((e) => {

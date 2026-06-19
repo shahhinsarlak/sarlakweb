@@ -1791,7 +1791,7 @@ export const EXPEDITION = {
   mindGrowth: { resolve: 8, acuity: 1.5, will: 1.5 },
   shellBaseHp: 50,
   // --- Phase B: dispatch + resolution tuning ---
-  shellCost: { substrate: 40, core: 'static_crystal', coreQty: 1 },
+  shellCost: { substrate: 40, core: 'void_fragment', coreQty: 2 },
   surveyCost: { paper: 5, energy: 10 },
   delveCost: { paper: 8, energy: 15 },
   baseDurationSec: 35,          // base wall-clock time of an expedition
