@@ -440,3 +440,29 @@ Observations from the read worth tracking before further work:
 (`SHOW_DEV_TOOLS` in `page.js`). It can set resources, progression, unlocks,
 materials, and load presets — useful for testing late-game systems without a long
 grind. Not shipped to production.
+
+## Expeditions / The Undercroft (Chapter 2 endgame, Phases A-C)
+
+Gated behind a fully-running Construct (all core machines running together ~45s -> the floor
+breaks through). A combat/exploration layer reached from a button in the LOCATIONS section.
+
+- **Unlock + state**: `undercroftUnlocked`, `factoryFullRunSeconds` (page.js tick trigger).
+  All expedition state lives in `constants.js` INITIAL_GAME_STATE: minds, shells, weapons,
+  gearInventory, provisions, weaponBlueprints, chartPages, expeditions, wayOutFragments,
+  loopCount, mindsLost, etc.
+- **Files**: `expeditionChart.js` (seeded page/node/route/threat/loot gen), `expeditionHelpers.js`
+  (kit capabilities, gacha roll, encounters, risk readout, resolution `runExpeditionsTick` +
+  `finalizeExpedition`, leveling), `UndercroftPanel.js` (Chart/Roster/Workbench/Blueprints tabs),
+  `ChartCanvas.js` (128x128 pixel chart canvas), `MindPortrait.js` (procedural portraits),
+  `LoopEnding.js` (loop cinematic). Actions in `gameActions.js` (roll/print/craft/dispatch/
+  resolveBrink/completeLoop).
+- **Loop**: print a MIND (paper+PP+lucidity) + assemble a SHELL (substrate+core), ROLL weapon
+  blueprints (gacha, intelligence; type x rarity, owned forever) and forge them, then Survey
+  (reveal fog) or Delve (exploit a charted node) across multi-tier pixel pages. Resolution is
+  idle; at a BRINK a mind pauses -> spend a Clarity Charge (save) or let it ride (gamble:
+  survive scarred, or PERMANENT loss -> death-marker on the chart). Breaching Gateways/reading
+  Echoes yields "way out" fragments; enough fragments + a final Gateway breach -> loop ending
+  (keeps minds/gear/blueprints, resets chart deeper, banks a windfall).
+- **Key rules**: weapon types have quirks vs 5 foe archetypes (rarity = pure Might multiplier);
+  minds are individuated veterans (no death-proof meta-progression); standard-coloured UI text.
+  Pixel art is procedural (same pipeline as factory sprites).
