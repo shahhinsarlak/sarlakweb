@@ -121,6 +121,27 @@ export const getProvisionCost = (state, p, rates = getIncomeRates(state)) => res
 export const getDispatchCost = (state, kind, tier, rates = getIncomeRates(state)) =>
   resolveCost(rates, kind === 'delve' ? EXPEDITION.cost.delve : EXPEDITION.cost.survey, { secMult: (tier || 0) + 1 });
 
+// Gear requirements to venture somewhere. Returns the unmet reasons (empty = ok),
+// so certain sites/depths simply cannot be attempted without the right gear.
+export const getExpeditionGate = (kit, kind, node, tier) => {
+  const gear = kit.gear || [];
+  const hasStat = (stat) => gear.some((id) => { const g = getGearBlueprint(id); return g && g.stat === stat; });
+  const reasons = [];
+  if ((tier || 0) >= 2 && !hasStat('sight')) {
+    reasons.push('A Lantern or Compass (Sight) to navigate the deep dark.');
+  }
+  if (kind === 'delve' && node) {
+    const corruptHeavy = node.type === 'anomaly' || node.type === 'gateway' || (node.type === 'haunt' && node.archetype === 'corruptor');
+    if (corruptHeavy && !hasStat('wardstrength')) {
+      reasons.push('A Ward against the Corruption that lairs here.');
+    }
+    if (node.type === 'echo' && !hasStat('decode')) {
+      reasons.push('A Decoder Lens to read the Echo.');
+    }
+  }
+  return { ok: reasons.length === 0, reasons };
+};
+
 // ---- Lookups -------------------------------------------------------------
 
 export const getWeaponType = (id) => WEAPON_TYPES.find((w) => w.id === id) || null;

@@ -37,6 +37,8 @@ import {
   getShellCost,
   getGearCraftCost,
   getProvisionCost,
+  getExpeditionGate,
+  getGearBlueprint,
   xpForLevel,
   getMindStats,
   expectedLoot,
@@ -517,6 +519,7 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
   const node = page && selNode ? page.nodes.find((n) => n.id === selNode) : null;
 
   const kit = { mindId: kitMind, shellId: kitShell, weaponId: kitWeapon, gear: kitGear, provisions: prov };
+  const gate = getExpeditionGate({ gear: kitGear }, node ? 'delve' : 'survey', node, pageTier);
   const caps = (kitMind && kitShell) ? getKitCapabilities(gameState, kit) : null;
   let risk = null;
   if (caps) {
@@ -551,9 +554,25 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
     </button>
   );
 
+  const vitalBar = (label, val, max, color) => {
+    const pct = Math.max(0, Math.min(100, Math.round((val / Math.max(1, max)) * 100)));
+    return (
+      <div style={{ flex: 1 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', opacity: 0.6 }}>
+          <span>{label}</span><span>{Math.max(0, Math.round(val))}</span>
+        </div>
+        <div style={{ height: '3px', background: 'var(--bg-color)', border: '1px solid var(--border-color)' }}>
+          <div style={{ height: '100%', width: `${pct}%`, background: color }} />
+        </div>
+      </div>
+    );
+  };
+
   const nodeHint = (n) => {
     const depthPct = Math.round(nodeDepth(n) * 100);
+    const hasDecoder = (kitGear || []).some((id) => (getGearBlueprint(id) || {}).stat === 'decode');
     if (n.type === 'haunt' || n.type === 'anomaly') {
+      if (!hasDecoder) return `Depth ${depthPct}%. Unidentified \u2014 equip a Decoder Lens to read what waits here.`;
       const foe = getFoeArchetype(n.archetype);
       return foe ? `Depth ${depthPct}%. ${foe.foeName} (${foe.name}): ${foe.desc}` : `Depth ${depthPct}%.`;
     }
@@ -561,7 +580,7 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
   };
 
   const launch = () => {
-    if (!kitMind || !page) return;
+    if (!kitMind || !page || !gate.ok) return;
     const shellId = (kitShell && availShells.some((s) => s.id === kitShell)) ? kitShell : (availShells[0] ? availShells[0].id : null);
     if (!shellId) return;
     if (node) actions.dispatchDelve({ mindId: kitMind, shellId, weaponId: kitWeapon, gear: kitGear, provisions: prov, tier: page.tier, nodeId: node.id });
@@ -646,6 +665,13 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
                   <div style={{ height: '4px', background: 'var(--bg-color)', border: '1px solid var(--border-color)', marginTop: '4px' }}>
                     <div style={{ height: '100%', width: `${pct}%`, background: '#9fe8ff' }} />
                   </div>
+                  {e.rs && e.caps && (
+                    <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
+                      {vitalBar('Shell', e.rs.shellHp, e.caps.startShellHp, '#6bd0a0')}
+                      {vitalBar('Resolve', e.rs.resolve, e.caps.startResolve, '#9fe8ff')}
+                      {vitalBar('Corruption', e.rs.corruption, 100, '#c2353c')}
+                    </div>
+                  )}
                   {(e.log || []).slice(-2).map((l, i) => (
                     <div key={i} style={{ fontSize: '10px', opacity: 0.55, marginTop: '3px' }}>{l}</div>
                   ))}
@@ -804,17 +830,31 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
             </div>
           )}
 
+          {!gate.ok && (
+            <div style={{ fontSize: '11px', color: '#ffb454', marginBottom: '10px', border: '1px solid #ffb454', padding: '8px' }}>
+              <strong>Requires:</strong>
+              {gate.reasons.map((rsn, i) => (
+                <div key={i} style={{ opacity: 0.9, marginTop: '2px' }}>{rsn}</div>
+              ))}
+            </div>
+          )}
+
           <div style={{ fontSize: '10px', opacity: 0.55, marginBottom: '8px' }}>
             Dispatch cost: {fmtCost(getDispatchCost(gameState, node ? 'delve' : 'survey', pageTier, income))}
           </div>
 
-          <button
-            onClick={launch}
-            disabled={!kitMind || availShells.length === 0 || (node && (node.cleared || node.looted))}
-            style={{ width: '100%', background: 'none', border: '1px solid var(--border-color)', color: 'var(--text-color)', padding: '12px', cursor: (kitMind && availShells.length > 0 && !(node && (node.cleared || node.looted))) ? 'pointer' : 'not-allowed', fontSize: '12px', fontFamily: 'inherit', letterSpacing: '1px', textTransform: 'uppercase', opacity: (kitMind && availShells.length > 0 && !(node && (node.cleared || node.looted))) ? 1 : 0.4 }}
-          >
-            {node ? 'Launch Delve' : 'Launch Survey'}
-          </button>
+          {(() => {
+            const canGo = kitMind && availShells.length > 0 && gate.ok && !(node && (node.cleared || node.looted));
+            return (
+              <button
+                onClick={launch}
+                disabled={!canGo}
+                style={{ width: '100%', background: 'none', border: '1px solid var(--border-color)', color: 'var(--text-color)', padding: '12px', cursor: canGo ? 'pointer' : 'not-allowed', fontSize: '12px', fontFamily: 'inherit', letterSpacing: '1px', textTransform: 'uppercase', opacity: canGo ? 1 : 0.4 }}
+              >
+                {node ? 'Launch Delve' : 'Launch Survey'}
+              </button>
+            );
+          })()}
         </div>
       </div>
       </div>

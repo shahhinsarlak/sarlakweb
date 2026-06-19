@@ -31,6 +31,7 @@ import {
   getGearCraftCost,
   getProvisionCost,
   getIncomeRates,
+  getExpeditionGate,
   canAffordCost,
   canAffordCraft,
   createExpedition,
@@ -1575,6 +1576,12 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
         if ((prev.expeditions || []).some(e => e.tier === tier && e.nodeId === node.id)) {
           return { ...prev, recentMessages: log(prev, 'A team is already delving that site.') };
         }
+      }
+
+      // Gear gate: certain depths and sites require specific gear in the kit.
+      const gate = getExpeditionGate({ mindId, shellId, weaponId, gear, provisions }, kind, node, tier);
+      if (!gate.ok) {
+        return { ...prev, recentMessages: log(prev, `Cannot set out: ${gate.reasons[0]}`) };
       }
 
       const cost = getDispatchCost(prev, kind, tier);
