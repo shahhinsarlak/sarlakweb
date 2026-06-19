@@ -30,6 +30,7 @@ import {
   getShellCost,
   getGearCraftCost,
   getProvisionCost,
+  getIncomeRates,
   canAffordCost,
   canAffordCraft,
   createExpedition,
@@ -1624,7 +1625,7 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
   // ---- Expeditions: brink + the loop (Phase C) ---------------------------
   const applyOutcomeToState = (prev, exp, outcome) => {
     const r = finalizeExpedition(
-      { minds: prev.minds || [], chartPages: prev.chartPages || [], wayOutFragments: prev.wayOutFragments || 0 },
+      { minds: prev.minds || [], chartPages: prev.chartPages || [], wayOutFragments: prev.wayOutFragments || 0, rates: getIncomeRates(prev) },
       exp,
       outcome,
     );

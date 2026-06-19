@@ -125,39 +125,42 @@ export const getGatewayCore = (tier) => {
   return cores[Math.min(tier + 1, cores.length - 1)];
 };
 
-// Loot from successfully delving a node (resources + dimensional materials).
+// Loot from successfully delving a node. Soft-currency rewards are expressed as
+// SECONDS of the player's income (resolved against current income at finalize
+// time, so they auto-scale like costs); dimensional materials stay absolute
+// (their scarcity is the point).
 export const getNodeLoot = (node, tier, rng) => {
   const depth = nodeDepth(node);
   const mag = (1 + depth) * (1 + tier * 0.8);
   const r = rng || Math.random;
-  const loot = { resources: {}, materials: {} };
-  const addRes = (k, v) => { loot.resources[k] = (loot.resources[k] || 0) + Math.round(v); };
+  const loot = { resourceSec: {}, materials: {} };
+  const addSec = (k, s) => { loot.resourceSec[k] = (loot.resourceSec[k] || 0) + s; };
   const addMat = (id, v) => { loot.materials[id] = (loot.materials[id] || 0) + Math.max(1, Math.round(v)); };
   const cores = EXPEDITION.tierCores;
   const tierMat = cores[Math.min(tier + 1, cores.length - 1)];
 
   switch (node.type) {
     case 'cache':
-      addRes('pp', 400 * mag * (0.7 + r()));
-      addRes('paper', 30 * mag);
+      addSec('pp', 90 * mag * (0.7 + r()));
+      addSec('paper', 60 * mag);
       addMat(tierMat, 1 + Math.floor(r() * 2 * mag));
       break;
     case 'haunt':
       addMat(tierMat, 2 + Math.floor(r() * 3 * mag));
-      addRes('lucidity', 6 * mag);
+      addSec('lucidity', 75 * mag);
       break;
     case 'echo':
-      addRes('intelligence', 20 * mag * (0.8 + r()));
+      addSec('intelligence', 90 * mag * (0.8 + r()));
       break;
     case 'anomaly': {
       const rareMat = cores[Math.min(tier + 2, cores.length - 1)];
       addMat(rareMat, 1 + Math.floor(r() * 2));
-      addRes('lucidity', 14 * mag);
-      addRes('intelligence', 14 * mag);
+      addSec('lucidity', 110 * mag);
+      addSec('intelligence', 110 * mag);
       break;
     }
     case 'gateway':
-      addRes('intelligence', 30 * mag);
+      addSec('intelligence', 90 * mag);
       break;
     default:
       break;

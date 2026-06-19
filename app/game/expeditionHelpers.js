@@ -100,6 +100,17 @@ export const resolveCost = (rates, spec, opts = {}) => {
   return cost;
 };
 
+// Resolve a node's loot (resourceSec = seconds of income) into actual amounts at
+// the player's current income, with a floor income so rewards never hit zero.
+export const resolveLoot = (rates, loot) => {
+  const resources = {};
+  Object.entries(loot.resourceSec || {}).forEach(([k, sec]) => {
+    const rate = Math.max(rates[k] || 0, (EXPEDITION.lootMinRate && EXPEDITION.lootMinRate[k]) || 0);
+    resources[k] = Math.ceil(rate * sec);
+  });
+  return { resources, materials: loot.materials || {} };
+};
+
 export const getRollCost = (state, rates = getIncomeRates(state)) => resolveCost(rates, EXPEDITION.cost.roll);
 export const getShellCost = (state, rates = getIncomeRates(state)) => resolveCost(rates, EXPEDITION.cost.shell);
 export const getGearCraftCost = (state, bp, rates = getIncomeRates(state)) => resolveCost(rates, bp.craft);
@@ -593,6 +604,7 @@ export const finalizeExpedition = (ctx, e2, outcome) => {
   let triggerEnding = false;
   const addRes = (k, v) => { resourceDelta[k] = (resourceDelta[k] || 0) + v; };
   const addMat = (id, v) => { materialDelta[id] = (materialDelta[id] || 0) + v; };
+  const rates = ctx.rates || {};
 
   const mind = minds.find((m) => m.id === e2.mindId) || null;
   const desig = mind ? mind.designation : 'A mind';
@@ -617,7 +629,7 @@ export const finalizeExpedition = (ctx, e2, outcome) => {
       const node = page.nodes.find((n) => n.id === e2.nodeId);
       if (node && !node.cleared && !node.looted) {
         const rng = mulberry32(hashSeed(`${e2.seed}:loot`));
-        const loot = getNodeLoot(node, e2.tier, rng);
+        const loot = resolveLoot(rates, getNodeLoot(node, e2.tier, rng));
         Object.entries(loot.resources).forEach(([k, v]) => addRes(k, v));
         Object.entries(loot.materials).forEach(([id, v]) => addMat(id, v));
         markNode({ discovered: true, cleared: true, looted: true });
@@ -654,8 +666,9 @@ export const finalizeExpedition = (ctx, e2, outcome) => {
           ? { ...p, nodes: p.nodes.map((n) => (toReveal.includes(n.id) ? { ...n, discovered: true } : n)) }
           : p));
       }
-      addRes('intelligence', 5 * (1 + e2.tier));
-      messages.push(`${desig} surveyed deeper. ${toReveal.length} new site(s) charted.`);
+      const surveyIntel = Math.ceil(Math.max(rates.intelligence || 0, (EXPEDITION.lootMinRate && EXPEDITION.lootMinRate.intelligence) || 2) * 20 * (1 + e2.tier));
+      addRes('intelligence', surveyIntel);
+      messages.push(`${desig} surveyed deeper. ${toReveal.length} new site(s) charted (+${surveyIntel} intelligence).`);
     }
     if (mind) {
       const xpGain = (e2.kind === 'delve' ? 60 : 25) * (1 + e2.tier * 0.5) * (1 + e2.depth);
@@ -705,6 +718,7 @@ export const runExpeditionsTick = (state, dt) => {
   let minds = state.minds || [];
   let chartPages = state.chartPages || [];
   let wayOutFragments = state.wayOutFragments || 0;
+  const rates = getIncomeRates(state);
   const resourceDelta = {};
   const materialDelta = {};
   const messages = [];
@@ -749,7 +763,7 @@ export const runExpeditionsTick = (state, dt) => {
       return;
     }
 
-    const r = finalizeExpedition({ minds, chartPages, wayOutFragments }, e2, e2.outcome);
+    const r = finalizeExpedition({ minds, chartPages, wayOutFragments, rates }, e2, e2.outcome);
     minds = r.minds;
     chartPages = r.chartPages;
     wayOutFragments = r.wayOutFragments;

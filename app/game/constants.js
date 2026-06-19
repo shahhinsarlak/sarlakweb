@@ -1791,6 +1791,9 @@ export const EXPEDITION = {
     survey: { sec: { paper: 6, lucidity: 12 }, fixed: { energy: 10 } },
     delve: { sec: { paper: 12, lucidity: 28 }, fixed: { energy: 15 } },
   },
+  // Floor income (per second) used when resolving loot, so soft-currency rewards
+  // are never zero before the factory ramps up.
+  lootMinRate: { pp: 50, paper: 5, lucidity: 2, intelligence: 2 },
   printTiers: [
     { id: 'raw', name: 'Raw Copy', startLevel: 1, extraTrait: false, costMult: 1, research: null },
     { id: 'primed', name: 'Primed Copy', startLevel: 4, extraTrait: false, costMult: 3, research: { intelligence: 1500 } },
