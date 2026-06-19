@@ -284,11 +284,11 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
           {EXPEDITION.printTiers.map(renderPrintTier)}
         </div>
         {minds.length > 0 && (
-          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '12px' }}>
+          <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', marginTop: '18px', justifyContent: 'center' }}>
             {minds.map((m, i) => (
               <div key={m.id} style={{ textAlign: 'center' }}>
-                <MindPortrait mind={m} size={44} building={isBuilding('mind') && i === minds.length - 1} />
-                <div style={{ fontSize: '9px', opacity: 0.6, marginTop: '2px' }}>{m.designation}</div>
+                <MindPortrait mind={m} size={96} building={isBuilding('mind') && i === minds.length - 1} />
+                <div style={{ fontSize: '11px', opacity: 0.75, marginTop: '6px' }}>{m.designation} <span style={{ opacity: 0.55 }}>L{m.level}</span></div>
               </div>
             ))}
           </div>
@@ -296,18 +296,15 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
       </div>
       <div>
         {sectionTitle('Assemble Shells', `Bodies for your minds, from substrate + a core. ${shellCount}/${shellBay} in the bay.`)}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', border: '1px solid var(--border-color)', padding: '12px' }}>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: '11px', opacity: 0.7 }}>
-              Each shell has {EXPEDITION.shellBaseHp} HP and is consumed only on catastrophe or recall. Cost: {fmtCost(EXPEDITION.shellCost)}.
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', border: '1px solid var(--border-color)', padding: '12px' }}>
+          {shellCount > 0 && (
+            <div style={{ textAlign: 'center' }}>
+              <CraftSprite id="shell" size={72} building={isBuilding('shell')} />
+              <div style={{ fontSize: '12px', opacity: 0.8, marginTop: '2px' }}>x{shellCount}</div>
             </div>
-            {shellCount > 0 && (
-              <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginTop: '8px' }}>
-                {(gameState.shells || []).map((s, i) => (
-                  <CraftSprite key={s.id} id="shell" size={28} building={isBuilding('shell') && i === shellCount - 1} />
-                ))}
-              </div>
-            )}
+          )}
+          <div style={{ flex: 1, fontSize: '11px', opacity: 0.7 }}>
+            Each shell has {EXPEDITION.shellBaseHp} HP and is consumed only on catastrophe or recall. Cost: {fmtCost(EXPEDITION.shellCost)}.
           </div>
           {actBtn(shellCount >= shellBay ? 'BAY FULL' : 'ASSEMBLE SHELL', () => { actions.craftShell(); triggerFx('shell'); }, shellCount < shellBay && canAffordCraft(gameState, EXPEDITION.shellCost))}
         </div>
@@ -533,10 +530,15 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
   };
 
   const launch = () => {
-    if (!kitMind || !kitShell || !page) return;
-    if (node) actions.dispatchDelve({ mindId: kitMind, shellId: kitShell, weaponId: kitWeapon, gear: kitGear, provisions: prov, tier: page.tier, nodeId: node.id });
-    else actions.dispatchSurvey({ mindId: kitMind, shellId: kitShell, weaponId: kitWeapon, gear: kitGear, provisions: prov, tier: page.tier, depth: surveyDepth });
+    if (!kitMind || !page) return;
+    const shellId = (kitShell && availShells.some((s) => s.id === kitShell)) ? kitShell : (availShells[0] ? availShells[0].id : null);
+    if (!shellId) return;
+    if (node) actions.dispatchDelve({ mindId: kitMind, shellId, weaponId: kitWeapon, gear: kitGear, provisions: prov, tier: page.tier, nodeId: node.id });
+    else actions.dispatchSurvey({ mindId: kitMind, shellId, weaponId: kitWeapon, gear: kitGear, provisions: prov, tier: page.tier, depth: surveyDepth });
     setProv({});
+    setKitMind(null);
+    setKitShell(null);
+    setKitWeapon(null);
   };
 
   const brinkExps = activeExps.filter((e) => e.awaiting);
@@ -667,14 +669,14 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
             <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6, marginBottom: '4px' }}>Shell</div>
             {availShells.length === 0 && <div style={{ fontSize: '11px', opacity: 0.5 }}>No free shells. Assemble one in the PREPARE tab.</div>}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
-              {availShells.map((s, i) => {
-                const active = kitShell === s.id;
+              {availShells.length > 0 && (() => {
+                const active = !!kitShell && availShells.some((s) => s.id === kitShell);
                 return (
-                  <button key={s.id} onClick={() => setKitShell(s.id)} style={{ display: 'flex', alignItems: 'center', gap: '5px', background: active ? 'var(--text-color)' : 'none', color: active ? 'var(--bg-color)' : 'var(--text-color)', border: `1px solid ${active ? 'var(--text-color)' : 'var(--border-color)'}`, padding: '4px 7px', cursor: 'pointer', fontSize: '11px', fontFamily: 'inherit' }}>
-                    <CraftSprite id="shell" size={18} />Shell {i + 1} ({s.maxHp}hp)
+                  <button onClick={() => setKitShell(active ? null : availShells[0].id)} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: active ? 'var(--text-color)' : 'none', color: active ? 'var(--bg-color)' : 'var(--text-color)', border: `1px solid ${active ? 'var(--text-color)' : 'var(--border-color)'}`, padding: '4px 8px', cursor: 'pointer', fontSize: '11px', fontFamily: 'inherit' }}>
+                    <CraftSprite id="shell" size={20} />Shell{active ? ' (selected)' : ` x${availShells.length}`}
                   </button>
                 );
-              })}
+              })()}
             </div>
           </div>
 
@@ -777,8 +779,8 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
 
           <button
             onClick={launch}
-            disabled={!kitMind || !kitShell || (node && (node.cleared || node.looted))}
-            style={{ width: '100%', background: 'none', border: '1px solid var(--border-color)', color: 'var(--text-color)', padding: '12px', cursor: (kitMind && kitShell && !(node && (node.cleared || node.looted))) ? 'pointer' : 'not-allowed', fontSize: '12px', fontFamily: 'inherit', letterSpacing: '1px', textTransform: 'uppercase', opacity: (kitMind && kitShell && !(node && (node.cleared || node.looted))) ? 1 : 0.4 }}
+            disabled={!kitMind || availShells.length === 0 || (node && (node.cleared || node.looted))}
+            style={{ width: '100%', background: 'none', border: '1px solid var(--border-color)', color: 'var(--text-color)', padding: '12px', cursor: (kitMind && availShells.length > 0 && !(node && (node.cleared || node.looted))) ? 'pointer' : 'not-allowed', fontSize: '12px', fontFamily: 'inherit', letterSpacing: '1px', textTransform: 'uppercase', opacity: (kitMind && availShells.length > 0 && !(node && (node.cleared || node.looted))) ? 1 : 0.4 }}
           >
             {node ? 'Launch Delve' : 'Launch Survey'}
           </button>

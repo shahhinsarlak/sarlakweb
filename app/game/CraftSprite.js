@@ -1,73 +1,18 @@
-import React, { useEffect, useMemo, useRef } from 'react';
-import { getCraftSprite } from './craftSprites';
+import React from 'react';
+import PixelArt from './PixelArt';
+import { paintCraft, paintShell } from './spriteArt';
 
-/**
- * CraftSprite — renders a crafted item's pixel art (gear / provision / shell)
- * on a scaled canvas. When `building` is set it plays the same one-shot
- * "fabrication" reveal as the weapon roll: pixels coalesce out of accent-tinted
- * static into the finished sprite.
- */
-const GRID = 16;
+const ACCENTS = {
+  lantern: '#ffe08a', compass: '#e06b6b', decoder: '#9fe8ff', ward_minor: '#b46bff',
+  ward_major: '#9fe8ff', plating: '#caa66a', rations: '#e8995c', lucid_draught: '#9fe8ff',
+  clarity_charge: '#9fe8ff', shell: '#6bd0a0',
+};
 
+/** CraftSprite - 128x128 procedural art for gear / provisions / shells. */
 function CraftSprite({ id, size = 40, building = false }) {
-  const ref = useRef(null);
-  const data = useMemo(() => getCraftSprite(id), [id]);
-  const startRef = useRef(0);
-  const buildingRef = useRef(building);
-  buildingRef.current = building;
-
-  useEffect(() => { startRef.current = performance.now(); }, [building, id]);
-
-  useEffect(() => {
-    const canvas = ref.current;
-    if (!canvas || !data) return undefined;
-    const ctx = canvas.getContext('2d');
-    ctx.imageSmoothingEnabled = false;
-    const s = size / GRID;
-    const { pixels, palette } = data;
-    const accent = palette.c || '#9fe8ff';
-    const colorFor = (t) => palette[t] || '#cccccc';
-    let raf;
-
-    const draw = () => {
-      const t = performance.now();
-      const elapsed = t - startRef.current;
-      const buildT = buildingRef.current ? Math.min(1, elapsed / 1100) : 1;
-      ctx.clearRect(0, 0, size, size);
-      const reveal = Math.floor(buildT * pixels.length);
-      pixels.forEach((p, i) => {
-        let col;
-        if (i < reveal || !buildingRef.current) {
-          col = colorFor(p.t);
-          if (p.t === 'c') {
-            ctx.globalAlpha = 0.7 + 0.3 * Math.sin(t / 220 + p.x);
-          }
-        } else if (Math.random() > 0.55) {
-          ctx.globalAlpha = 0.5;
-          col = accent;
-        } else {
-          return;
-        }
-        ctx.fillStyle = col;
-        ctx.fillRect(Math.round(p.x * s), Math.round(p.y * s), Math.ceil(s), Math.ceil(s));
-        ctx.globalAlpha = 1;
-      });
-      if (buildingRef.current && buildT < 1) raf = requestAnimationFrame(draw);
-      else if (pixels.some((p) => p.t === 'c')) raf = requestAnimationFrame(draw);
-    };
-
-    draw();
-    return () => cancelAnimationFrame(raf);
-  }, [data, size]);
-
-  if (!data) return null;
+  const paint = id === 'shell' ? ((ctx) => paintShell(ctx)) : ((ctx) => paintCraft(ctx, id));
   return (
-    <canvas
-      ref={ref}
-      width={size}
-      height={size}
-      style={{ width: `${size}px`, height: `${size}px`, imageRendering: 'pixelated', flexShrink: 0 }}
-    />
+    <PixelArt paintKey={`c:${id}`} paint={paint} size={size} building={building} accent={ACCENTS[id] || '#9fe8ff'} />
   );
 }
 
