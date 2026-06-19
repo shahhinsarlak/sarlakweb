@@ -13,8 +13,22 @@
  * - upgrades: Purchase permanent improvements
  * - printer: Paper generation system
  */
-import { LOCATIONS, UPGRADES, DEBUG_CHALLENGES, PRINTER_UPGRADES, DOCUMENT_TYPES, TIER_MASTERY_WEIGHTS, INITIAL_GAME_STATE, LORE_SNIPPETS, INSIGHTS, CLARITY_BUFF, HELP_POPUPS, FACTORY_MACHINES, FACTORY_UPGRADES } from './constants';
+import { LOCATIONS, UPGRADES, DEBUG_CHALLENGES, PRINTER_UPGRADES, DOCUMENT_TYPES, TIER_MASTERY_WEIGHTS, INITIAL_GAME_STATE, LORE_SNIPPETS, INSIGHTS, CLARITY_BUFF, HELP_POPUPS, FACTORY_MACHINES, FACTORY_UPGRADES, EXPEDITION } from './constants';
 import { getUpgradeCost, getMachineLevel, getMaxLevel, isBuilt, getOverclockCap, getTransmutableTargets, MIN_OVERCLOCK } from './factoryHelpers';
+import {
+  performRoll,
+  blueprintKey,
+  getPrintTier,
+  getPrintCost,
+  makeMind,
+  getGearBlueprint,
+  getProvisionType,
+  getWeaponType,
+  getWeaponRarity,
+  getWeaponCraftCost,
+  canAffordCost,
+  canAffordCraft,
+} from './expeditionHelpers';
 import { getInsightEffects } from './insightHelpers';
 import {
   applyEnergyCostReduction,
@@ -1333,6 +1347,181 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
     });
   };
 
+  // ---- Expeditions / The Undercroft (Phase A) ----------------------------
+  const log = (prev, msg) => [msg, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15);
+
+  const openUndercroft = () => setGameState(prev => ({ ...prev, undercroftOpen: true }));
+  const closeUndercroft = () => setGameState(prev => ({ ...prev, undercroftOpen: false }));
+  const switchUndercroftTab = (tab) => setGameState(prev => ({ ...prev, undercroftTab: tab }));
+
+  // Roll a weapon blueprint with intelligence. A new (type x rarity) is owned
+  // forever; a duplicate refunds half the cost. Soft pity guarantees Rare+.
+  const rollBlueprint = () => {
+    setGameState(prev => {
+      const cost = EXPEDITION.rollCost;
+      if (!canAffordCost(prev, cost)) {
+        return { ...prev, recentMessages: log(prev, 'Not enough intelligence to decode a schematic.') };
+      }
+      const result = performRoll(prev.rollPity || 0);
+      const key = blueprintKey(result.typeId, result.rarityId);
+      const owned = (prev.weaponBlueprints || []).includes(key);
+      const newState = { ...prev, rollPity: result.newPity, lastRoll: { ...result, key, dup: owned } };
+      Object.entries(cost).forEach(([r, a]) => { newState[r] = (prev[r] || 0) - a; });
+      if (!owned) {
+        newState.weaponBlueprints = [...(prev.weaponBlueprints || []), key];
+      } else {
+        Object.entries(cost).forEach(([r, a]) => { newState[r] = (newState[r] || 0) + Math.floor(a / 2); });
+      }
+      const type = getWeaponType(result.typeId);
+      const rar = getWeaponRarity(result.rarityId);
+      const label = `${rar ? rar.name : ''} ${type ? type.name : ''}`.trim();
+      newState.recentMessages = log(prev, owned ? `Duplicate schematic: ${label}. Salvaged for parts.` : `New blueprint acquired: ${label}.`);
+      setTimeout(() => checkAchievements(), 50);
+      return newState;
+    });
+  };
+
+  // Print a mind (a copy of yourself) at a chosen tier. Premium tiers require
+  // research first. Limited by free print beds; a mind occupies one slot.
+  const printMind = (tierId = 'raw') => {
+    setGameState(prev => {
+      const tier = getPrintTier(tierId);
+      if (tier.research && !(prev.researchedGear || []).includes(tier.id)) {
+        return { ...prev, recentMessages: log(prev, 'That printing process is not understood yet.') };
+      }
+      if ((prev.minds || []).length >= (prev.printBeds || 3)) {
+        return { ...prev, recentMessages: log(prev, 'No free print bed. Retire or lose a mind first.') };
+      }
+      const cost = getPrintCost(tierId);
+      if (!canAffordCost(prev, cost)) {
+        return { ...prev, recentMessages: log(prev, 'Not enough to print a mind.') };
+      }
+      const serial = (prev.mindCounter || 0) + 1;
+      const mind = makeMind(serial, tierId);
+      const newState = { ...prev, mindCounter: serial, minds: [...(prev.minds || []), mind] };
+      Object.entries(cost).forEach(([r, a]) => { newState[r] = (prev[r] || 0) - a; });
+      newState.recentMessages = log(prev, `Printed ${mind.designation}. A mind, level ${mind.level}.`);
+      setTimeout(() => checkAchievements(), 50);
+      return newState;
+    });
+  };
+
+  // Retire an idle mind, freeing its print bed.
+  const discardMind = (mindId) => {
+    setGameState(prev => {
+      const minds = prev.minds || [];
+      const mind = minds.find(m => m.id === mindId);
+      if (!mind || mind.status !== 'idle') return prev;
+      return {
+        ...prev,
+        minds: minds.filter(m => m.id !== mindId),
+        recentMessages: log(prev, `${mind.designation} retired.`),
+      };
+    });
+  };
+
+  // Research a non-weapon gear blueprint (instrument/ward/plating) with intelligence.
+  const researchGear = (gearId) => {
+    setGameState(prev => {
+      const bp = getGearBlueprint(gearId);
+      if (!bp) return prev;
+      if ((prev.researchedGear || []).includes(gearId)) return prev;
+      const cost = bp.research || {};
+      if (!canAffordCost(prev, cost)) {
+        return { ...prev, recentMessages: log(prev, 'Not enough intelligence to grasp that design.') };
+      }
+      const newState = { ...prev, researchedGear: [...(prev.researchedGear || []), gearId] };
+      Object.entries(cost).forEach(([r, a]) => { newState[r] = (prev[r] || 0) - a; });
+      newState.recentMessages = log(prev, `Design understood: ${bp.name}.`);
+      return newState;
+    });
+  };
+
+  // Research a premium printing tier (Primed / Refined) with intelligence.
+  const researchPrintTier = (tierId) => {
+    setGameState(prev => {
+      const tier = getPrintTier(tierId);
+      if (!tier.research) return prev;
+      if ((prev.researchedGear || []).includes(tier.id)) return prev;
+      if (!canAffordCost(prev, tier.research)) {
+        return { ...prev, recentMessages: log(prev, 'Not enough intelligence for that printing process.') };
+      }
+      const newState = { ...prev, researchedGear: [...(prev.researchedGear || []), tier.id] };
+      Object.entries(tier.research).forEach(([r, a]) => { newState[r] = (prev[r] || 0) - a; });
+      newState.recentMessages = log(prev, `Printing process unlocked: ${tier.name}.`);
+      return newState;
+    });
+  };
+
+  // Craft a researched gear item (PP + a dimensional core) into inventory.
+  const craftGear = (gearId) => {
+    setGameState(prev => {
+      const bp = getGearBlueprint(gearId);
+      if (!bp) return prev;
+      if (!(prev.researchedGear || []).includes(gearId)) {
+        return { ...prev, recentMessages: log(prev, 'Research that design first.') };
+      }
+      if (!canAffordCraft(prev, bp.craft)) {
+        return { ...prev, recentMessages: log(prev, 'Not enough materials to craft that.') };
+      }
+      const newState = {
+        ...prev,
+        gearInventory: { ...(prev.gearInventory || {}), [gearId]: ((prev.gearInventory || {})[gearId] || 0) + 1 },
+      };
+      Object.entries(bp.craft).forEach(([r, a]) => {
+        if (r === 'core' || r === 'coreQty') return;
+        newState[r] = (prev[r] || 0) - a;
+      });
+      if (bp.craft.core) {
+        const inv = { ...(prev.dimensionalInventory || {}) };
+        inv[bp.craft.core] = Math.max(0, (inv[bp.craft.core] || 0) - (bp.craft.coreQty || 1));
+        newState.dimensionalInventory = inv;
+      }
+      newState.recentMessages = log(prev, `Crafted ${bp.name}.`);
+      return newState;
+    });
+  };
+
+  // Forge a physical weapon from an owned blueprint (PP + cores) into inventory.
+  const craftWeapon = (typeId, rarityId) => {
+    setGameState(prev => {
+      const key = blueprintKey(typeId, rarityId);
+      if (!(prev.weaponBlueprints || []).includes(key)) return prev;
+      const cost = getWeaponCraftCost(typeId, rarityId);
+      if (!canAffordCraft(prev, cost)) {
+        return { ...prev, recentMessages: log(prev, 'Not enough materials to forge that weapon.') };
+      }
+      const type = getWeaponType(typeId);
+      const rar = getWeaponRarity(rarityId);
+      const inst = { id: `wpn_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`, typeId, rarityId };
+      const newState = { ...prev, weapons: [...(prev.weapons || []), inst] };
+      newState.pp = (prev.pp || 0) - cost.pp;
+      const inv = { ...(prev.dimensionalInventory || {}) };
+      inv[cost.core] = Math.max(0, (inv[cost.core] || 0) - cost.coreQty);
+      newState.dimensionalInventory = inv;
+      newState.recentMessages = log(prev, `Forged ${rar ? rar.name : ''} ${type ? type.name : ''}.`.replace(/\s+/g, ' ').trim() + '.');
+      return newState;
+    });
+  };
+
+  // Brew a one-shot provision into inventory.
+  const brewProvision = (provId) => {
+    setGameState(prev => {
+      const p = getProvisionType(provId);
+      if (!p) return prev;
+      if (!canAffordCost(prev, p.craft)) {
+        return { ...prev, recentMessages: log(prev, 'Not enough to brew that.') };
+      }
+      const newState = {
+        ...prev,
+        provisions: { ...(prev.provisions || {}), [provId]: ((prev.provisions || {})[provId] || 0) + 1 },
+      };
+      Object.entries(p.craft).forEach(([r, a]) => { newState[r] = (prev[r] || 0) - a; });
+      newState.recentMessages = log(prev, `Brewed ${p.name}.`);
+      return newState;
+    });
+  };
+
   // Return all action handlers
   return {
     sortPapers,
@@ -1386,5 +1575,17 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
     toggleMachinePause,
     setOverclock,
     setTransmuteTarget,
+    // Expeditions / The Undercroft (Phase A)
+    openUndercroft,
+    closeUndercroft,
+    switchUndercroftTab,
+    rollBlueprint,
+    printMind,
+    discardMind,
+    researchGear,
+    researchPrintTier,
+    craftGear,
+    craftWeapon,
+    brewProvision,
   };
 };

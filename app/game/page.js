@@ -20,6 +20,7 @@ import TierUnlockModal from './TierUnlockModal';
 import Chapter2Intro from './Chapter2Intro';
 import InsightsPanel from './InsightsPanel';
 import FactoryPanel from './FactoryPanel';
+import UndercroftPanel from './UndercroftPanel';
 import GameActionsPanel from './GameActionsPanel';
 import GameUpgradesPanel from './GameUpgradesPanel';
 import GameStatsPanel from './GameStatsPanel';
@@ -32,7 +33,7 @@ import { addExperience, purchaseSkill, getActiveSkillEffects, getModifiedPortalC
 import { SKILLS, LEVEL_SYSTEM, XP_REWARDS } from './skillTreeConstants';
 import { DIMENSIONAL_MATERIALS } from './dimensionalConstants';
 import { getSanityTierDisplay, isSanityDrainPaused, calculatePaperQuality, getSanityTier } from './sanityPaperHelpers';
-import { computeFactoryTick } from './factoryHelpers';
+import { computeFactoryTick, isBuilt, isPaused } from './factoryHelpers';
 import { getInsightEffects } from './insightHelpers';
 import {
   INITIAL_GAME_STATE,
@@ -47,7 +48,9 @@ import {
   MECHANICS_ENTRIES,
   PP_MULTIPLIER_TIERS,
   LUCID_ANCHOR_FLOORS,
-  RESOURCE_DISCOVERY_GRANT
+  RESOURCE_DISCOVERY_GRANT,
+  CORE_FACTORY_MACHINE_IDS,
+  UNDERCROFT_BREAKTHROUGH_SECONDS
 } from './constants';
 
 const PORTAL_UNLOCK_ENTRIES = ['glitched', 'maintenance', 'encrypted_lights'];
@@ -625,6 +628,39 @@ export default function Game() {
             });
             newState.dimensionalInventory = inv;
           }
+
+          // Chapter 2, Phase A: when every core machine is built and running at
+          // once (nothing paused or halted) for a sustained window, the Extractor
+          // breaks through the floor and reveals THE UNDERCROFT.
+          if (!prev.undercroftUnlocked) {
+            const status = f.status || {};
+            const core = CORE_FACTORY_MACHINE_IDS;
+            // These consumers running proves power + substrate are balanced. The
+            // Transmuter is excluded from the "running" check because it halts
+            // whenever Void Fragments momentarily hit 0 (a normal oscillation);
+            // it (and the generator/capacitor) need only be built.
+            const mustRun = ['extractor', 'conv_pp', 'conv_paper', 'conv_lucidity', 'conv_intelligence', 'conv_material'];
+            const fullyRunning =
+              core.every((id) => isBuilt(prev, id)) &&
+              core.every((id) => !isPaused(prev, id)) &&
+              mustRun.every((id) => status[id] === 'running');
+            if (fullyRunning) {
+              const secs = (prev.factoryFullRunSeconds || 0) + 0.1;
+              newState.factoryFullRunSeconds = secs;
+              if (secs >= UNDERCROFT_BREAKTHROUGH_SECONDS) {
+                newState.undercroftUnlocked = true;
+                newState.discoveredLocations = (prev.discoveredLocations || []).includes('undercroft')
+                  ? prev.discoveredLocations
+                  : [...(prev.discoveredLocations || []), 'undercroft'];
+                newState.recentMessages = [
+                  'The whole Construct runs as one. The floor gives way. Beneath it: more dark, and a way in. THE UNDERCROFT is open.',
+                  ...(newState.recentMessages || prev.recentMessages),
+                ].slice(0, prev.maxLogMessages || 15);
+              }
+            } else {
+              newState.factoryFullRunSeconds = 0;
+            }
+          }
         }
 
         // PP tier multiplier check
@@ -887,6 +923,18 @@ export default function Game() {
         gameState={gameState}
         actions={actions}
         onClose={actions.closeFactory}
+        notifications={gameState.notifications}
+        onDismissNotification={dismissNotification}
+      />
+    );
+  }
+
+  if (gameState.undercroftOpen) {
+    return (
+      <UndercroftPanel
+        gameState={gameState}
+        actions={actions}
+        onClose={actions.closeUndercroft}
         notifications={gameState.notifications}
         onDismissNotification={dismissNotification}
       />

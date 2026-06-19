@@ -403,6 +403,7 @@ export const computeFactoryTick = (state, dt) => {
     transmuteVoidAcc,
     transmuteOutAcc,
     dimDelta,
+    status: sim.status,
     pp: sim.out.pp,
     paper: sim.out.paper,
     lucidity: sim.out.lucidity,

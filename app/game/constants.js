@@ -125,6 +125,23 @@ export const INITIAL_GAME_STATE = {
   factoryTransmuteTarget: 'static_crystal', // Material Transmuter's chosen output material
   factoryTransmuteVoidAcc: 0,   // Fractional void fragments pending consumption (Transmuter)
   factoryTransmuteOutAcc: 0,    // Fractional target material pending output (Transmuter)
+  // Expeditions / "The Undercroft" (Chapter 2, Phase A)
+  undercroftUnlocked: false,    // Revealed when the running factory breaks through the floor
+  undercroftOpen: false,        // Is the Undercroft panel visible
+  factoryFullRunSeconds: 0,     // Sustained full-operation counter toward the breakthrough
+  undercroftTab: 'roster',      // Active Undercroft tab: roster | workbench | blueprints
+  minds: [],                    // [{ id, designation, level, xp, resolve, acuity, will, traits[], scars[], status }]
+  mindCounter: 0,               // Serial counter for mind designations (Copy I, II, ...)
+  printBeds: 3,                 // Roster cap (max simultaneous minds)
+  shells: [],                   // [{ id, coreId, maxHp }] crafted expedition bodies
+  weapons: [],                  // [{ id, typeId, rarityId }] crafted weapon instances
+  gearInventory: {},            // { gearId: count } crafted instruments / wards / plating
+  provisions: {},               // { provId: count } brewed consumables
+  weaponBlueprints: [],         // Owned weapon blueprints, keyed 'typeId:rarityId' (permanent)
+  researchedGear: [],           // Researched non-weapon gear blueprint ids
+  rollPity: 0,                  // Rolls since the last Rare-or-better (soft pity)
+  lastRoll: null,               // Most recent rolled blueprint { typeId, rarityId, dup } (for reveal)
+  wayOutFragments: 0,           // Reclaimed "pieces of the way out" (Phase C)
 };
 
 
@@ -741,6 +758,10 @@ export const ACHIEVEMENTS = [
   { id: 'master_engineer', name: 'Master Engineer', desc: 'Fully upgrade a factory machine to level 10', check: (state) => Object.values(state.factoryMachines || {}).some((lvl) => lvl >= 10), reward: { type: 'ppMultiplier', value: 0.15 } },
   { id: 'overclocked', name: 'Overclocked', desc: 'Run a machine above 100% power', check: (state) => Object.values(state.factoryOverclock || {}).some((v) => v > 100) },
   { id: 'beyond_limits', name: 'Beyond Limits', desc: 'Overclock a machine past 300% with the Overclock Regulator', check: (state) => Object.values(state.factoryOverclock || {}).some((v) => v > 300), reward: { type: 'ppMultiplier', value: 0.10 } },
+  { id: 'breakthrough', name: 'Breakthrough', desc: 'Run the whole Construct at once until the floor gives way', check: (state) => !!state.undercroftUnlocked },
+  { id: 'first_copy', name: 'First Copy', desc: 'Print your first mind in the Undercroft', check: (state) => (state.mindCounter || 0) >= 1 },
+  { id: 'armoury', name: 'Armoury', desc: 'Roll your first weapon blueprint', check: (state) => (state.weaponBlueprints || []).length >= 1 },
+  { id: 'legendary_find', name: 'Legendary Find', desc: 'Roll a Legendary or Mythic weapon blueprint', check: (state) => (state.weaponBlueprints || []).some((k) => k.endsWith(':legendary') || k.endsWith(':mythic')), reward: { type: 'ppMultiplier', value: 0.10 } },
 ];
 
 /**
@@ -1657,6 +1678,109 @@ export const FACTORY_UPGRADES = {
 export const FACTORY_MATERIAL_OUTPUT = 'void_fragment';
 
 /**
+ * ============================================================================
+ * EXPEDITIONS / THE UNDERCROFT (Chapter 2, Phase A)
+ * Combat & exploration layer gated behind a fully-running factory. The math
+ * lives in expeditionHelpers.js. Weapons are discovered via a gacha-style
+ * blueprint ROLL (type x rarity, owned forever); other gear is deterministic.
+ * ============================================================================
+ */
+
+// Core machines that must ALL be built and running (sustained) for the floor to
+// break through and reveal the Undercroft. The Overclock Regulator is excluded.
+export const CORE_FACTORY_MACHINE_IDS = [
+  'generator', 'capacitor', 'extractor', 'conv_pp', 'conv_paper',
+  'conv_lucidity', 'conv_intelligence', 'conv_material', 'transmuter',
+];
+
+// Seconds the factory must run fully (nothing halted) before the breakthrough.
+export const UNDERCROFT_BREAKTHROUGH_SECONDS = 45;
+
+// Weapon rarity tiers. Rarity is a PURE strength multiplier on a weapon type's
+// base Might. Higher rarity = stronger + flashier pixel art. weight = roll odds.
+export const WEAPON_RARITIES = [
+  { id: 'common', name: 'Common', mult: 1.0, weight: 50, color: '#9aa0a6' },
+  { id: 'uncommon', name: 'Uncommon', mult: 1.6, weight: 27, color: '#5fb878' },
+  { id: 'rare', name: 'Rare', mult: 2.6, weight: 14, color: '#4aa3ff' },
+  { id: 'epic', name: 'Epic', mult: 4.2, weight: 6, color: '#b46bff' },
+  { id: 'legendary', name: 'Legendary', mult: 7.0, weight: 2.5, color: '#ffb454' },
+  { id: 'mythic', name: 'Mythic', mult: 12.0, weight: 0.5, color: '#ff5c5c' },
+];
+
+// Soft pity: a Rare-or-better is guaranteed once this many consecutive rolls
+// have produced nothing rare+.
+export const ROLL_PITY_THRESHOLD = 10;
+
+// Foe archetypes populate Haunt nodes. Each is countered by particular weapon
+// quirks (see WEAPON_TYPES.strongVs / weakVs).
+export const FOE_ARCHETYPES = [
+  { id: 'swarm', name: 'Swarm', foeName: 'Paper Wasps', desc: 'Many weak things at once. Single-target weapons drown; cleave and reach excel.' },
+  { id: 'bulwark', name: 'Bulwark', foeName: 'Filing Golem', desc: 'Slow and armoured. Needs burst or armour-pierce; light fast weapons just bounce.' },
+  { id: 'flicker', name: 'Flicker', foeName: 'Static Hound', desc: 'Fast and evasive. Needs accuracy or binding; heavy weapons swing at nothing.' },
+  { id: 'phantom', name: 'Phantom', foeName: 'Echo-thing', desc: 'Half here. Resists the physical; only lucidity-touched edges bite.' },
+  { id: 'corruptor', name: 'Corruptor', foeName: 'Void Maw', desc: 'Attacks the mind, not the body. Anchoring, corruption-bleeding weapons hold it off.' },
+];
+
+// The eight weapon TYPES. Identity = lore + a combat QUIRK (strong/weak vs an
+// archetype, plus an optional tradeoff). Rarity scales baseMight. craftCore is
+// the dimensional material a physical copy needs (rarer for the special edges).
+export const WEAPON_TYPES = [
+  { id: 'stapler_pike', name: 'Stapler-Pike', baseMight: 10, strongVs: 'bulwark', weakVs: null, craftCore: 'static_crystal', quirk: 'Slight armour-pierce. The balanced all-rounder.', lore: 'The first thing you ever bolted together down here: a curtain rod, an industrial stapler, and a will to not be unmade. It has saved more copies of you than you can count.', color: '#c9cdd2' },
+  { id: 'guillotine_cutter', name: 'Guillotine Cutter', baseMight: 9, strongVs: 'swarm', weakVs: 'bulwark', craftCore: 'static_crystal', quirk: 'Cleaves whole ranks. Wasted on a single armoured foe.', lore: 'The arm of the big paper-cutter from the copy room, still bearing its SAFETY FIRST sticker. It does not feel safe. The blade remembers every ream it ever fed.', color: '#d4b483' },
+  { id: 'letter_opener_fan', name: 'Letter-Opener Fan', baseMight: 8, strongVs: 'flicker', weakVs: 'bulwark', craftCore: 'glitch_shard', quirk: 'Fast multi-hit. Catches what runs; chips at what stands.', lore: 'A fan of brass letter-openers from a hundred desks, bound at the handles. Each one slit envelopes addressed to people who never existed.', color: '#caa66a' },
+  { id: 'cubicle_maul', name: 'Cubicle Maul', baseMight: 18, strongVs: 'bulwark', weakVs: 'swarm', costsEndurance: true, craftCore: 'reality_dust', quirk: 'Enormous burst, but heavy: drains Endurance. Useless against swarms.', lore: 'A slab of cubicle partition wall, grey carpet and all, swung like a headsmans maul. It still has someones motivational postcard pinned to it. HANG IN THERE.', color: '#8a8f94' },
+  { id: 'toner_flail', name: 'Toner Flail', baseMight: 11, strongVs: 'flicker', weakVs: null, applies: 'blind', craftCore: 'glitch_shard', quirk: 'Messy hits that BLIND, cutting a Flickers evasion.', lore: 'A length of chain ending in a punctured toner cartridge. Every swing throws a cloud of black dust that clings to whatever is too quick to see coming.', color: '#3a3a40' },
+  { id: 'cable_lash', name: 'Cable Lash', baseMight: 10, strongVs: 'swarm', weakVs: null, applies: 'bind', craftCore: 'reality_dust', quirk: 'Line-reach that BINDS, pinning a Flicker in place.', lore: 'A braid of server-room ethernet, frayed copper at the tip. It still carries a faint signal. Sometimes, when it strikes, you hear a dial tone.', color: '#6a8caf' },
+  { id: 'lucid_lance', name: 'Lucid Lance', baseMight: 13, strongVs: 'phantom', weakVs: null, bleedsCorruption: true, craftCore: 'temporal_core', quirk: 'Bites the incorporeal and BLEEDS corruption: the answer to Phantoms and Corruptors.', lore: 'A mop handle wound with distiller-tubing, glowing the pale blue of the Lucidity tap. It is more idea than object. Against things that are also more idea than object, that is exactly enough.', color: '#5fd0ff' },
+  { id: 'thermal_censer', name: 'Thermal Censer', baseMight: 9, strongVs: 'bulwark', weakVs: null, applies: 'burn', craftCore: 'glitch_shard', quirk: 'Damage-over-time that GRINDS down armour and clears swarms.', lore: 'The break-room coffee pot, its hotplate rewired to never switch off, swung on a censers chain. It has not held coffee in a long time. It holds something that is always, faintly, screaming.', color: '#e8995c' },
+];
+
+// Non-weapon gear: deterministic. Research with intelligence (one-time), then
+// craft with PP + a dimensional core. family/stat drive which capability it feeds.
+export const GEAR_BLUEPRINTS = [
+  { id: 'lantern', family: 'instrument', name: 'Lantern', stat: 'sight', value: 8, research: { intelligence: 30 }, craft: { pp: 200, core: 'static_crystal', coreQty: 2 }, desc: 'Lights the dark: raises Sight and reveal radius.', lore: 'A desk lamp lashed to a fire-extinguisher harness, running off a stolen battery. Its light falls a little wrong, but it falls far.' },
+  { id: 'compass', family: 'instrument', name: 'Compass', stat: 'sight', value: 5, research: { intelligence: 45 }, craft: { pp: 250, core: 'glitch_shard', coreQty: 2 }, desc: 'Steadier charting: fewer lost routes, better node detection.', lore: 'A staple bent over a magnetised paperclip floating in a coffee lid. It does not point north. It points the way back, which is more useful.' },
+  { id: 'decoder', family: 'instrument', name: 'Decoder Lens', stat: 'decode', value: 1, research: { intelligence: 90 }, craft: { pp: 400, core: 'reality_dust', coreQty: 1 }, desc: 'Reads Echoes and identifies a node before you Delve.', lore: 'A loupe ground from a cracked monitor filter. Hold it to the static and the static holds still, just long enough to be read.' },
+  { id: 'ward_minor', family: 'ward', name: 'Paper Ward', stat: 'wardstrength', value: 6, research: { intelligence: 60 }, craft: { pp: 300, core: 'glitch_shard', coreQty: 3 }, desc: 'A first guard against Corruption.', lore: 'Pages of meeting minutes folded into a chain of charms, each one stamped CONFIDENTIAL. The words mean nothing now. The folding means everything.' },
+  { id: 'ward_major', family: 'ward', name: 'Lucid Ward', stat: 'wardstrength', value: 14, research: { intelligence: 160 }, craft: { pp: 600, core: 'temporal_core', coreQty: 1 }, desc: 'A strong guard: greatly cuts permanent-loss odds.', lore: 'A halo of distiller-glass beaded with condensed lucidity. Worn at the brow, it keeps the mind convinced it is still itself, even when the dark insists otherwise.' },
+  { id: 'plating', family: 'plating', name: 'Shell Plating', stat: 'shellhp', value: 25, research: { intelligence: 50 }, craft: { pp: 350, core: 'static_crystal', coreQty: 4 }, desc: 'Bolt-on armour: raises shell integrity, saving rebuild materials.', lore: 'Filing-cabinet drawers hammered flat and riveted into a carapace. It rattles when the shell walks. The rattle is almost a comfort.' },
+];
+
+// Provisions: one-shot consumables, brewed (no research). Consumed per expedition.
+export const PROVISION_TYPES = [
+  { id: 'rations', name: 'Rations', effect: 'endurance', value: 30, craft: { energy: 25, paper: 10 }, desc: '+Endurance: the expedition reaches deeper before it must turn back.', lore: 'Vending-machine crackers and a thermos of something that was once coffee. It keeps a body moving long after a body should stop.' },
+  { id: 'lucid_draught', name: 'Lucid Draught', effect: 'resolve', value: 20, craft: { lucidity: 8, energy: 15 }, desc: '+Resolve for the run, without spending real sanity.', lore: 'A paper cup of the distillers first run, still faintly luminous. Drink it and the dark feels survivable, which is its own kind of lie.' },
+  { id: 'clarity_charge', name: 'Clarity Charge', effect: 'intervention', value: 1, craft: { lucidity: 20, intelligence: 10 }, desc: 'The intervention save: pull a mind back from the brink, or pre-load it as auto-retreat insurance.', lore: 'A single breath of perfect meditation, pressed into a glass bead. Crack it at the worst moment and, for one instant, you see the way out clearly enough to take it.' },
+];
+
+// Traits earned at milestone mind levels. Each gives a role-shaping bonus.
+export const MIND_TRAITS = [
+  { id: 'cartographer', name: 'Cartographer', desc: 'Surveys reveal more of the chart and grant extra XP.' },
+  { id: 'hunter', name: 'Hunter', desc: 'Greater Might against Haunts.' },
+  { id: 'warded', name: 'Warded', desc: 'Innate resistance to Corruption.' },
+  { id: 'anchored', name: 'Anchored', desc: 'Resolve drains more slowly; resists panic.' },
+  { id: 'scholar', name: 'Scholar', desc: 'Faster decoding and more intelligence from Echoes.' },
+  { id: 'lucid', name: 'Lucid', desc: 'Returns with a trickle of lucidity.' },
+];
+
+// Mind levels at which a new trait slot opens.
+export const MIND_TRAIT_LEVELS = [3, 6, 10, 15];
+
+// Tuning for printing/rolling and the capability math (see expeditionHelpers.js).
+export const EXPEDITION = {
+  rollCost: { intelligence: 25 },
+  printBase: { paper: 20, pp: 150, lucidity: 10 },
+  printTiers: [
+    { id: 'raw', name: 'Raw Copy', startLevel: 1, extraTrait: false, costMult: 1, research: null },
+    { id: 'primed', name: 'Primed Copy', startLevel: 4, extraTrait: false, costMult: 3, research: { intelligence: 120 } },
+    { id: 'refined', name: 'Refined Copy', startLevel: 8, extraTrait: true, costMult: 7, research: { intelligence: 300 } },
+  ],
+  mindBase: { resolve: 40, acuity: 5, will: 5 },
+  mindGrowth: { resolve: 8, acuity: 1.5, will: 1.5 },
+  shellBaseHp: 50,
+};
+
+/**
  * Help Popup Definitions
  * Context-aware tutorial popups that appear at key moments
  */
@@ -1842,6 +1966,18 @@ Generators make POWER. Extractors spend power to mine SUBSTRATE, the raw stuff o
 Balance power against demand, and extraction against conversion. Let it run.`,
     category: 'mechanics'
   },
+  undercroft: {
+    id: 'undercroft',
+    title: 'THE UNDERCROFT',
+    content: `The Extractor has bored too deep. The floor gave way, and beneath the false office there is somewhere else.
+
+This is the UNDERCROFT. From here you do not work, you EXPLORE. Print copies of your own mind, clothe them in scavenged shells and gear, and send them down into the dark to find a way out.
+
+At the WORKBENCH: roll for weapon blueprints with INTELLIGENCE, research and craft gear, and print minds. A printed mind is precious. If one is lost down there, it is lost for good.
+
+Start by printing a mind and rolling a weapon. The way out is further in.`,
+    category: 'mechanics'
+  },
 };
 
 /**
@@ -1868,6 +2004,7 @@ export const HELP_TRIGGERS = {
   lucid: (state) => state.sanity > 100,
   resourcesDiscovered: (state) => !!state.resourcesUnlocked,
   factory: (state) => !!state.factoryUnlocked,
+  undercroft: (state) => !!state.undercroftUnlocked,
 };
 
 /**
@@ -1909,6 +2046,12 @@ export const JOURNAL_ENTRIES = {
       unlockHint: 'Reach 1000% sanity and perceive the machinery beneath the office',
       lore: 'Not a room so much as a thing you built. Generators trickle power into a battery; extractors bore into the grey substance under the floor; converters and a transmuter reshape it into everything you need. It runs on its own, forever, a small factory cobbled from office junk and lucid will. Build it, balance the power, and let it work while you do not.',
       notes: 'The grey goes in. Whatever you ask for comes out.'
+    },
+    undercroft: {
+      name: 'The Undercroft',
+      unlockHint: 'Run every machine of the Construct at once until the floor breaks through',
+      lore: 'Beneath the false office there was never a foundation, only more dark, and things that live in it. The Extractor opened the way. Down here you stop being a worker and start being a cartographer of an impossible place, sending printed copies of yourself out across a chart you paint as you go. Some of them do not come back. The map remembers each one.',
+      notes: 'There has to be a way out. This is where you start looking.'
     }
   },
 
@@ -1921,6 +2064,19 @@ export const JOURNAL_ENTRIES = {
  * (Added 2025-11-01)
  */
 export const MECHANICS_ENTRIES = {
+  undercroft: {
+    id: 'undercroft',
+    title: 'The Undercroft',
+    category: 'Expeditions',
+    summary: 'Explore the dark beneath the office with printed minds.',
+    details: `When every machine of the Construct runs at once, the Extractor breaks through the floor and reveals THE UNDERCROFT.
+
+Here you PRINT MINDS (copies of yourself) from paper, PP and lucidity, equip them with crafted gear and rolled weapons, and send them on expeditions into a chart you uncover as you explore.
+
+Weapons are found by ROLLING blueprints with intelligence: each is a weapon type at a random rarity, and a rolled blueprint is yours forever. A crafted weapon can be lost with the mind that carries it, but you keep the blueprint.
+
+A mind lost on an expedition is lost permanently. Print carefully. Protect your veterans.`
+  },
   welcome: {
     id: 'welcome',
     title: 'Basic Productivity',
