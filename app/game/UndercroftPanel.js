@@ -4,6 +4,7 @@ import NotificationPopup from './NotificationPopup';
 import ChartCanvas from './ChartCanvas';
 import MindPortrait from './MindPortrait';
 import WeaponSprite from './WeaponSprite';
+import CraftSprite from './CraftSprite';
 import { formatPP } from './gameUtils';
 import {
   GEAR_BLUEPRINTS,
@@ -55,6 +56,13 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
   const [confirmRecall, setConfirmRecall] = useState(null);
   const [bpSort, setBpSort] = useState('rarity_desc');
   const [detailBp, setDetailBp] = useState(null);
+  const [craftFx, setCraftFx] = useState(null);
+  const triggerFx = (fxKey) => {
+    const ts = Date.now();
+    setCraftFx({ key: fxKey, ts });
+    setTimeout(() => setCraftFx((c) => (c && c.ts === ts ? null : c)), 1300);
+  };
+  const isBuilding = (fxKey) => !!(craftFx && craftFx.key === fxKey);
   const rawTab = gameState.undercroftTab;
   const tabMap = { chart: 'expedition', roster: 'expedition', workbench: 'prepare', blueprints: 'armory' };
   const tab = ['expedition', 'prepare', 'armory'].includes(rawTab) ? rawTab : (tabMap[rawTab] || 'expedition');
@@ -215,7 +223,7 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
         </div>
         {locked
           ? actBtn(`RESEARCH (${fmtCost(tier.research)})`, () => actions.researchPrintTier(tier.id), canAffordCost(gameState, tier.research))
-          : actBtn(bedsFull ? 'BEDS FULL' : 'PRINT', () => actions.printMind(tier.id), affordable && !bedsFull)}
+          : actBtn(bedsFull ? 'BEDS FULL' : 'PRINT', () => { actions.printMind(tier.id); triggerFx('mind'); }, affordable && !bedsFull)}
       </div>
     );
   };
@@ -226,19 +234,22 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
     return (
       <div key={bp.id} style={{ border: '1px solid var(--border-color)', padding: '12px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
-          <div>
-            <div style={{ fontSize: '13px' }}>
-              <strong>{bp.name}</strong>
-              {owned > 0 && <span style={{ opacity: 0.6, fontSize: '11px' }}> x{owned}</span>}
-              <span style={{ opacity: 0.5, fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1px', marginLeft: '8px' }}>{bp.family}</span>
-            </div>
-            <div style={{ fontSize: '11px', opacity: 0.65, marginTop: '4px' }}>{bp.desc}</div>
-            <div style={{ fontSize: '11px', opacity: 0.5, marginTop: '4px' }}>
-              {isResearched ? `Craft: ${fmtCost(bp.craft)}` : `Research: ${fmtCost(bp.research)}`}
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+            <CraftSprite id={bp.id} size={40} building={isBuilding(`gear:${bp.id}`)} />
+            <div>
+              <div style={{ fontSize: '13px' }}>
+                <strong>{bp.name}</strong>
+                {owned > 0 && <span style={{ opacity: 0.6, fontSize: '11px' }}> x{owned}</span>}
+                <span style={{ opacity: 0.5, fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1px', marginLeft: '8px' }}>{bp.family}</span>
+              </div>
+              <div style={{ fontSize: '11px', opacity: 0.65, marginTop: '4px' }}>{bp.desc}</div>
+              <div style={{ fontSize: '11px', opacity: 0.5, marginTop: '4px' }}>
+                {isResearched ? `Craft: ${fmtCost(bp.craft)}` : `Research: ${fmtCost(bp.research)}`}
+              </div>
             </div>
           </div>
           {isResearched
-            ? actBtn('CRAFT', () => actions.craftGear(bp.id), canAffordCraft(gameState, bp.craft))
+            ? actBtn('CRAFT', () => { actions.craftGear(bp.id); triggerFx(`gear:${bp.id}`); }, canAffordCraft(gameState, bp.craft))
             : actBtn('RESEARCH', () => actions.researchGear(bp.id), canAffordCost(gameState, bp.research))}
         </div>
       </div>
@@ -249,12 +260,15 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
     const owned = (gameState.provisions || {})[p.id] || 0;
     return (
       <div key={p.id} style={{ border: '1px solid var(--border-color)', padding: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
-        <div>
-          <div style={{ fontSize: '13px' }}><strong>{p.name}</strong>{owned > 0 && <span style={{ opacity: 0.6, fontSize: '11px' }}> x{owned}</span>}</div>
-          <div style={{ fontSize: '11px', opacity: 0.65, marginTop: '4px' }}>{p.desc}</div>
-          <div style={{ fontSize: '11px', opacity: 0.5, marginTop: '4px' }}>Brew: {fmtCost(p.craft)}</div>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <CraftSprite id={p.id} size={40} building={isBuilding(`prov:${p.id}`)} />
+          <div>
+            <div style={{ fontSize: '13px' }}><strong>{p.name}</strong>{owned > 0 && <span style={{ opacity: 0.6, fontSize: '11px' }}> x{owned}</span>}</div>
+            <div style={{ fontSize: '11px', opacity: 0.65, marginTop: '4px' }}>{p.desc}</div>
+            <div style={{ fontSize: '11px', opacity: 0.5, marginTop: '4px' }}>Brew: {fmtCost(p.craft)}</div>
+          </div>
         </div>
-        {actBtn('BREW', () => actions.brewProvision(p.id), canAffordCost(gameState, p.craft))}
+        {actBtn('BREW', () => { actions.brewProvision(p.id); triggerFx(`prov:${p.id}`); }, canAffordCost(gameState, p.craft))}
       </div>
     );
   };
@@ -269,14 +283,33 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           {EXPEDITION.printTiers.map(renderPrintTier)}
         </div>
+        {minds.length > 0 && (
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '12px' }}>
+            {minds.map((m, i) => (
+              <div key={m.id} style={{ textAlign: 'center' }}>
+                <MindPortrait mind={m} size={44} building={isBuilding('mind') && i === minds.length - 1} />
+                <div style={{ fontSize: '9px', opacity: 0.6, marginTop: '2px' }}>{m.designation}</div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
       <div>
         {sectionTitle('Assemble Shells', `Bodies for your minds, from substrate + a core. ${shellCount}/${shellBay} in the bay.`)}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', border: '1px solid var(--border-color)', padding: '12px' }}>
-          <div style={{ flex: 1, fontSize: '11px', opacity: 0.7 }}>
-            Each shell has {EXPEDITION.shellBaseHp} HP and is consumed only on catastrophe or recall. Cost: {fmtCost(EXPEDITION.shellCost)}.
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: '11px', opacity: 0.7 }}>
+              Each shell has {EXPEDITION.shellBaseHp} HP and is consumed only on catastrophe or recall. Cost: {fmtCost(EXPEDITION.shellCost)}.
+            </div>
+            {shellCount > 0 && (
+              <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginTop: '8px' }}>
+                {(gameState.shells || []).map((s, i) => (
+                  <CraftSprite key={s.id} id="shell" size={28} building={isBuilding('shell') && i === shellCount - 1} />
+                ))}
+              </div>
+            )}
           </div>
-          {actBtn(shellCount >= shellBay ? 'BAY FULL' : 'ASSEMBLE SHELL', () => actions.craftShell(), shellCount < shellBay && canAffordCraft(gameState, EXPEDITION.shellCost))}
+          {actBtn(shellCount >= shellBay ? 'BAY FULL' : 'ASSEMBLE SHELL', () => { actions.craftShell(); triggerFx('shell'); }, shellCount < shellBay && canAffordCraft(gameState, EXPEDITION.shellCost))}
         </div>
       </div>
       <div>
@@ -634,7 +667,14 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
             <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6, marginBottom: '4px' }}>Shell</div>
             {availShells.length === 0 && <div style={{ fontSize: '11px', opacity: 0.5 }}>No free shells. Assemble one in the PREPARE tab.</div>}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
-              {availShells.map((s, i) => pickChip(`Shell ${i + 1} (${s.maxHp}hp)`, kitShell === s.id, () => setKitShell(s.id)))}
+              {availShells.map((s, i) => {
+                const active = kitShell === s.id;
+                return (
+                  <button key={s.id} onClick={() => setKitShell(s.id)} style={{ display: 'flex', alignItems: 'center', gap: '5px', background: active ? 'var(--text-color)' : 'none', color: active ? 'var(--bg-color)' : 'var(--text-color)', border: `1px solid ${active ? 'var(--text-color)' : 'var(--border-color)'}`, padding: '4px 7px', cursor: 'pointer', fontSize: '11px', fontFamily: 'inherit' }}>
+                    <CraftSprite id="shell" size={18} />Shell {i + 1} ({s.maxHp}hp)
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -666,7 +706,15 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
             <div style={{ marginBottom: '10px' }}>
               <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6, marginBottom: '4px' }}>Gear</div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                {ownedGear.map((id) => pickChip((GEAR_BLUEPRINTS.find((g) => g.id === id) || {}).name || id, kitGear.includes(id), () => toggleGear(id)))}
+                {ownedGear.map((id) => {
+                  const active = kitGear.includes(id);
+                  const g = GEAR_BLUEPRINTS.find((gg) => gg.id === id) || {};
+                  return (
+                    <button key={id} onClick={() => toggleGear(id)} style={{ display: 'flex', alignItems: 'center', gap: '5px', background: active ? 'var(--text-color)' : 'none', color: active ? 'var(--bg-color)' : 'var(--text-color)', border: `1px solid ${active ? 'var(--text-color)' : 'var(--border-color)'}`, padding: '4px 7px', cursor: 'pointer', fontSize: '11px', fontFamily: 'inherit' }}>
+                      <CraftSprite id={id} size={18} />{g.name || id}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}
