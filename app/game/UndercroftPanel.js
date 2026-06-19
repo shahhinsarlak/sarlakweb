@@ -12,6 +12,7 @@ import {
   EXPEDITION,
   ROLL_PITY_THRESHOLD,
   WEAPON_RARITIES,
+  MIND_TRAIT_LEVELS,
 } from './constants';
 import { DIMENSIONAL_MATERIALS } from './dimensionalConstants';
 import { getGatewayCore, nodeDepth } from './expeditionChart';
@@ -36,6 +37,8 @@ import {
   getShellCost,
   getGearCraftCost,
   getProvisionCost,
+  xpForLevel,
+  getMindStats,
   expectedLoot,
   canAffordCost,
   canAffordCraft,
@@ -62,6 +65,8 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
   const [bpSort, setBpSort] = useState('rarity_desc');
   const [detailBp, setDetailBp] = useState(null);
   const [craftFx, setCraftFx] = useState(null);
+  const [mindDetail, setMindDetail] = useState(null);
+  const [renameVal, setRenameVal] = useState('');
   const triggerFx = (fxKey) => {
     const ts = Date.now();
     setCraftFx({ key: fxKey, ts });
@@ -157,7 +162,9 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
         {minds.map((m) => (
           <div key={m.id} style={{ border: '1px solid var(--border-color)', padding: '14px' }}>
             <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-              <MindPortrait mind={m} size={40} />
+              <div onClick={() => { setMindDetail(m.id); setRenameVal(m.designation); }} title="Click for details" style={{ cursor: 'pointer', lineHeight: 0 }}>
+                <MindPortrait mind={m} size={40} />
+              </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flex: 1 }}>
                 <strong style={{ fontSize: '14px', letterSpacing: '1px' }}>{m.designation}</strong>
                 <span style={{ fontSize: '11px', opacity: 0.6 }}>Lv {m.level}</span>
@@ -297,7 +304,12 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
         {minds.length > 0 && (
           <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', marginTop: '18px', justifyContent: 'center' }}>
             {minds.map((m, i) => (
-              <div key={m.id} style={{ textAlign: 'center' }}>
+              <div
+                key={m.id}
+                onClick={() => { setMindDetail(m.id); setRenameVal(m.designation); }}
+                title="Click for details"
+                style={{ textAlign: 'center', cursor: 'pointer' }}
+              >
                 <MindPortrait mind={m} size={96} building={isBuilding('mind') && i === minds.length - 1} />
                 <div style={{ fontSize: '11px', opacity: 0.75, marginTop: '6px' }}>{m.designation} <span style={{ opacity: 0.55 }}>L{m.level}</span></div>
               </div>
@@ -890,6 +902,82 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
                   {actBtn('FORGE', () => actions.craftWeapon(typeId, rarityId), canAffordCraft(gameState, cost))}
                   {actBtn('CLOSE', () => setDetailBp(null), true)}
                 </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+      {mindDetail && (() => {
+        const m = minds.find((mm) => mm.id === mindDetail);
+        if (!m) return null;
+        const busy = (gameState.expeditions || []).some((e) => e.mindId === m.id);
+        const need = xpForLevel(m.level);
+        const xpPct = Math.min(100, Math.round(((m.xp || 0) / need) * 100));
+        const nextStats = getMindStats(m.level + 1);
+        const nextTrait = MIND_TRAIT_LEVELS.find((l) => l > m.level);
+        const statRow = (label, val, desc) => (
+          <div style={{ marginBottom: '8px' }}>
+            <div style={{ fontSize: '13px' }}><strong>{label} {val}</strong></div>
+            <div style={{ fontSize: '11px', opacity: 0.6 }}>{desc}</div>
+          </div>
+        );
+        return (
+          <div onClick={() => setMindDetail(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 2500, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+            <div onClick={(e) => e.stopPropagation()} style={{ maxWidth: '480px', width: '100%', maxHeight: '90vh', overflowY: 'auto', border: '1px solid var(--border-color)', background: 'var(--bg-color)', padding: '24px', fontFamily: 'inherit', color: 'var(--text-color)' }}>
+              <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
+                <MindPortrait mind={m} size={140} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.5, marginBottom: '4px' }}>Designation</div>
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    <input
+                      value={renameVal}
+                      maxLength={24}
+                      onChange={(e) => setRenameVal(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') actions.renameMind(m.id, renameVal); }}
+                      style={{ flex: 1, minWidth: 0, background: 'var(--bg-color)', border: '1px solid var(--border-color)', color: 'var(--text-color)', padding: '6px 8px', fontSize: '13px', fontFamily: 'inherit' }}
+                    />
+                    {actBtn('SAVE', () => actions.renameMind(m.id, renameVal), renameVal.trim().length > 0)}
+                  </div>
+                  <div style={{ fontSize: '12px', marginTop: '10px' }}>Level {m.level} <span style={{ opacity: 0.55 }}>{busy ? '\u2022 On expedition' : '\u2022 Idle'}</span></div>
+                  <div style={{ fontSize: '10px', opacity: 0.55, marginTop: '8px' }}>XP {Math.floor(m.xp || 0)} / {need} to level {m.level + 1}</div>
+                  <div style={{ height: '8px', background: 'var(--bg-color)', border: '1px solid var(--border-color)', marginTop: '3px' }}>
+                    <div style={{ height: '100%', width: `${xpPct}%`, background: '#9fe8ff' }} />
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ borderTop: '1px solid var(--border-color)', marginTop: '18px', paddingTop: '14px' }}>
+                {statRow('Resolve', Math.round(m.resolve), 'Mental stamina: the buffer against Dread, and half of the catastrophe brink. Grows most each level.')}
+                {statRow('Acuity', m.acuity, 'Perception: amplifies Instrument Sight, speeds decoding, and boosts XP and map reveal.')}
+                {statRow('Will', m.will, 'Resolve of spirit: amplifies Ward strength and resists Corruption.')}
+              </div>
+
+              <div style={{ borderTop: '1px solid var(--border-color)', marginTop: '12px', paddingTop: '12px' }}>
+                <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.5, marginBottom: '6px' }}>Traits</div>
+                {(m.traits || []).length === 0 && <div style={{ fontSize: '11px', opacity: 0.55 }}>None yet. The first trait is earned at level 3.</div>}
+                {(m.traits || []).map((tid) => {
+                  const t = getTrait(tid);
+                  if (!t) return null;
+                  return (
+                    <div key={tid} style={{ fontSize: '11px', marginBottom: '4px' }}>
+                      <strong>{t.name}</strong> <span style={{ opacity: 0.6 }}>{t.desc}</span>
+                    </div>
+                  );
+                })}
+                {(m.scars || []).length > 0 && (
+                  <div style={{ fontSize: '11px', marginTop: '6px', color: '#c2353c' }}>Scars: {(m.scars || []).join(', ')}</div>
+                )}
+              </div>
+
+              <div style={{ fontSize: '10px', opacity: 0.55, marginTop: '14px', lineHeight: 1.6 }}>
+                Each level raises Resolve (and a little Acuity and Will) and makes the same gear perform better. New trait slots open at levels 3, 6, 10 and 15.
+                {nextTrait ? ` Next trait at level ${nextTrait}.` : ''}
+                {` Next level: Resolve ${Math.round(nextStats.resolve)} (+${Math.round(nextStats.resolve - m.resolve)}).`}
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '18px' }}>
+                {!busy && actBtn('RETIRE', () => { actions.discardMind(m.id); setMindDetail(null); }, true)}
+                {actBtn('CLOSE', () => setMindDetail(null), true)}
               </div>
             </div>
           </div>

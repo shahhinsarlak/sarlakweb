@@ -1405,6 +1405,18 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
     });
   };
 
+  // Rename a mind (the player's copy). Trimmed + length-capped.
+  const renameMind = (mindId, name) => {
+    setGameState(prev => {
+      const clean = String(name || '').replace(/\s+/g, ' ').trim().slice(0, 24);
+      if (!clean) return prev;
+      return {
+        ...prev,
+        minds: (prev.minds || []).map(m => (m.id === mindId ? { ...m, designation: clean } : m)),
+      };
+    });
+  };
+
   // Research a non-weapon gear blueprint (instrument/ward/plating) with intelligence.
   const researchGear = (gearId) => {
     setGameState(prev => {
@@ -1769,6 +1781,7 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
     rollBlueprint,
     printMind,
     discardMind,
+    renameMind,
     researchGear,
     researchPrintTier,
     craftGear,
