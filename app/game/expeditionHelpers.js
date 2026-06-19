@@ -631,7 +631,6 @@ export const runExpeditionsTick = (state, dt) => {
   const materialDelta = {};
   const messages = [];
   const stillActive = [];
-  let changed = false;
   let triggerEnding = false;
   const mergeDelta = (target, src) => { Object.entries(src).forEach(([k, v]) => { target[k] = (target[k] || 0) + v; }); };
 
@@ -665,7 +664,6 @@ export const runExpeditionsTick = (state, dt) => {
       const m = minds.find((mm) => mm.id === e2.mindId);
       messages.push(`${m ? m.designation : 'A mind'} is at the BRINK. Spend a Clarity Charge to pull them out, or let it ride.`);
       stillActive.push(e2);
-      changed = true;
       return;
     }
     if (!e2.finished) {
@@ -681,10 +679,10 @@ export const runExpeditionsTick = (state, dt) => {
     mergeDelta(materialDelta, r.materialDelta);
     r.messages.forEach((mm) => messages.push(mm));
     if (r.triggerEnding) triggerEnding = true;
-    changed = true;
   });
 
-  if (!changed) return null;
+  // Active expeditions advance every tick, so always return the updated list
+  // (otherwise in-progress survey/delve progress would be discarded).
   const out = { expeditions: stillActive };
   out.minds = minds;
   out.chartPages = chartPages;

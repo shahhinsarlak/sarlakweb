@@ -1705,6 +1705,28 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
     });
   };
 
+  // Recall an active (non-brink) expedition early. The mind comes home safe, but
+  // the shell and weapon it carried are abandoned in the dark. Only a fully
+  // completed trip brings everything (and the loot) back.
+  const recallExpedition = (expId) => {
+    setGameState(prev => {
+      const exp = (prev.expeditions || []).find(e => e.id === expId);
+      if (!exp || exp.awaiting) return prev;
+      const mind = (prev.minds || []).find(m => m.id === exp.mindId);
+      const newState = { ...prev, expeditions: (prev.expeditions || []).filter(e => e.id !== expId) };
+      if (exp.shellId) newState.shells = (prev.shells || []).filter(s => s.id !== exp.shellId);
+      if (exp.weaponId) newState.weapons = (prev.weapons || []).filter(w => w.id !== exp.weaponId);
+      const page = (prev.chartPages || []).find(p => p.tier === exp.tier);
+      if (page) {
+        newState.chartPages = (prev.chartPages || []).map(p => (p.tier === exp.tier
+          ? { ...p, routes: [...(p.routes || []), { seed: exp.seed, target: exp.targetPoint, kind: exp.kind, outcome: 'retreat' }].slice(-40) }
+          : p));
+      }
+      newState.recentMessages = log(prev, `${mind ? mind.designation : 'A mind'} was recalled. The mind is safe; the shell and weapon it carried are lost to the dark.`);
+      return newState;
+    });
+  };
+
   // Return all action handlers
   return {
     sortPapers,
@@ -1777,5 +1799,6 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
     dispatchDelve,
     resolveBrink,
     completeLoop,
+    recallExpedition,
   };
 };

@@ -48,6 +48,7 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
   const [kitGear, setKitGear] = useState([]);
   const [prov, setProv] = useState({});
   const [surveyDepth, setSurveyDepth] = useState(0.5);
+  const [confirmRecall, setConfirmRecall] = useState(null);
   const tab = gameState.undercroftTab || 'chart';
 
   useEffect(() => {
@@ -508,6 +509,23 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
                   {(e.log || []).slice(-2).map((l, i) => (
                     <div key={i} style={{ fontSize: '10px', opacity: 0.55, marginTop: '3px' }}>{l}</div>
                   ))}
+                  {!e.awaiting && (
+                    confirmRecall === e.id ? (
+                      <div style={{ marginTop: '6px' }}>
+                        <div style={{ fontSize: '10px', color: '#ffb454', marginBottom: '4px' }}>
+                          Recall now? The mind returns safe, but the shell and weapon it carries are LOST. Only a completed trip brings everything home.
+                        </div>
+                        <div style={{ display: 'flex', gap: '6px' }}>
+                          {actBtn('CONFIRM RECALL', () => { actions.recallExpedition(e.id); setConfirmRecall(null); }, true)}
+                          {actBtn('CANCEL', () => setConfirmRecall(null), true)}
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ marginTop: '6px' }}>
+                        {actBtn('RECALL', () => setConfirmRecall(e.id), true)}
+                      </div>
+                    )
+                  )}
                 </div>
               );
             })}
