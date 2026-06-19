@@ -1750,19 +1750,19 @@ export const WEAPON_TYPES = [
 // Non-weapon gear: deterministic. Research with intelligence (one-time), then
 // craft with PP + a dimensional core. family/stat drive which capability it feeds.
 export const GEAR_BLUEPRINTS = [
-  { id: 'lantern', family: 'instrument', name: 'Lantern', stat: 'sight', value: 8, research: { intelligence: 30 }, craft: { pp: 200, core: 'static_crystal', coreQty: 2 }, desc: 'Lights the dark: raises Sight and reveal radius.', lore: 'A desk lamp lashed to a fire-extinguisher harness, running off a stolen battery. Its light falls a little wrong, but it falls far.' },
-  { id: 'compass', family: 'instrument', name: 'Compass', stat: 'sight', value: 5, research: { intelligence: 45 }, craft: { pp: 250, core: 'glitch_shard', coreQty: 2 }, desc: 'Steadier charting: fewer lost routes, better node detection.', lore: 'A staple bent over a magnetised paperclip floating in a coffee lid. It does not point north. It points the way back, which is more useful.' },
-  { id: 'decoder', family: 'instrument', name: 'Decoder Lens', stat: 'decode', value: 1, research: { intelligence: 90 }, craft: { pp: 400, core: 'reality_dust', coreQty: 1 }, desc: 'Reads Echoes and identifies a node before you Delve.', lore: 'A loupe ground from a cracked monitor filter. Hold it to the static and the static holds still, just long enough to be read.' },
-  { id: 'ward_minor', family: 'ward', name: 'Paper Ward', stat: 'wardstrength', value: 6, research: { intelligence: 60 }, craft: { pp: 300, core: 'glitch_shard', coreQty: 3 }, desc: 'A first guard against Corruption.', lore: 'Pages of meeting minutes folded into a chain of charms, each one stamped CONFIDENTIAL. The words mean nothing now. The folding means everything.' },
-  { id: 'ward_major', family: 'ward', name: 'Lucid Ward', stat: 'wardstrength', value: 14, research: { intelligence: 160 }, craft: { pp: 600, core: 'temporal_core', coreQty: 1 }, desc: 'A strong guard: greatly cuts permanent-loss odds.', lore: 'A halo of distiller-glass beaded with condensed lucidity. Worn at the brow, it keeps the mind convinced it is still itself, even when the dark insists otherwise.' },
-  { id: 'plating', family: 'plating', name: 'Shell Plating', stat: 'shellhp', value: 25, research: { intelligence: 50 }, craft: { pp: 350, core: 'static_crystal', coreQty: 4 }, desc: 'Bolt-on armour: raises shell integrity, saving rebuild materials.', lore: 'Filing-cabinet drawers hammered flat and riveted into a carapace. It rattles when the shell walks. The rattle is almost a comfort.' },
+  { id: 'lantern', family: 'instrument', name: 'Lantern', stat: 'sight', value: 8, research: { intelligence: 30 }, craft: { sec: { pp: 12 }, floor: { pp: 200 }, core: 'static_crystal', coreQty: 2 }, desc: 'Lights the dark: raises Sight and reveal radius.', lore: 'A desk lamp lashed to a fire-extinguisher harness, running off a stolen battery. Its light falls a little wrong, but it falls far.' },
+  { id: 'compass', family: 'instrument', name: 'Compass', stat: 'sight', value: 5, research: { intelligence: 45 }, craft: { sec: { pp: 14 }, floor: { pp: 250 }, core: 'glitch_shard', coreQty: 2 }, desc: 'Steadier charting: fewer lost routes, better node detection.', lore: 'A staple bent over a magnetised paperclip floating in a coffee lid. It does not point north. It points the way back, which is more useful.' },
+  { id: 'decoder', family: 'instrument', name: 'Decoder Lens', stat: 'decode', value: 1, research: { intelligence: 90 }, craft: { sec: { pp: 20 }, floor: { pp: 400 }, core: 'reality_dust', coreQty: 1 }, desc: 'Reads Echoes and identifies a node before you Delve.', lore: 'A loupe ground from a cracked monitor filter. Hold it to the static and the static holds still, just long enough to be read.' },
+  { id: 'ward_minor', family: 'ward', name: 'Paper Ward', stat: 'wardstrength', value: 6, research: { intelligence: 60 }, craft: { sec: { pp: 16 }, floor: { pp: 300 }, core: 'glitch_shard', coreQty: 3 }, desc: 'A first guard against Corruption.', lore: 'Pages of meeting minutes folded into a chain of charms, each one stamped CONFIDENTIAL. The words mean nothing now. The folding means everything.' },
+  { id: 'ward_major', family: 'ward', name: 'Lucid Ward', stat: 'wardstrength', value: 14, research: { intelligence: 160 }, craft: { sec: { pp: 25 }, floor: { pp: 600 }, core: 'temporal_core', coreQty: 1 }, desc: 'A strong guard: greatly cuts permanent-loss odds.', lore: 'A halo of distiller-glass beaded with condensed lucidity. Worn at the brow, it keeps the mind convinced it is still itself, even when the dark insists otherwise.' },
+  { id: 'plating', family: 'plating', name: 'Shell Plating', stat: 'shellhp', value: 25, research: { intelligence: 50 }, craft: { sec: { pp: 16 }, floor: { pp: 350 }, core: 'static_crystal', coreQty: 4 }, desc: 'Bolt-on armour: raises shell integrity, saving rebuild materials.', lore: 'Filing-cabinet drawers hammered flat and riveted into a carapace. It rattles when the shell walks. The rattle is almost a comfort.' },
 ];
 
 // Provisions: one-shot consumables, brewed (no research). Consumed per expedition.
 export const PROVISION_TYPES = [
-  { id: 'rations', name: 'Rations', effect: 'endurance', value: 30, craft: { energy: 25, paper: 10 }, desc: '+Endurance: the expedition reaches deeper before it must turn back.', lore: 'Vending-machine crackers and a thermos of something that was once coffee. It keeps a body moving long after a body should stop.' },
-  { id: 'lucid_draught', name: 'Lucid Draught', effect: 'resolve', value: 20, craft: { lucidity: 8, energy: 15 }, desc: '+Resolve for the run, without spending real sanity.', lore: 'A paper cup of the distillers first run, still faintly luminous. Drink it and the dark feels survivable, which is its own kind of lie.' },
-  { id: 'clarity_charge', name: 'Clarity Charge', effect: 'intervention', value: 1, craft: { lucidity: 20, intelligence: 10 }, desc: 'The intervention save: pull a mind back from the brink, or pre-load it as auto-retreat insurance.', lore: 'A single breath of perfect meditation, pressed into a glass bead. Crack it at the worst moment and, for one instant, you see the way out clearly enough to take it.' },
+  { id: 'rations', name: 'Rations', effect: 'endurance', value: 30, craft: { fixed: { energy: 25 }, sec: { paper: 4 }, floor: { paper: 10 } }, desc: '+Endurance: the expedition reaches deeper before it must turn back.', lore: 'Vending-machine crackers and a thermos of something that was once coffee. It keeps a body moving long after a body should stop.' },
+  { id: 'lucid_draught', name: 'Lucid Draught', effect: 'resolve', value: 20, craft: { fixed: { energy: 15 }, sec: { lucidity: 6 }, floor: { lucidity: 8 } }, desc: '+Resolve for the run, without spending real sanity.', lore: 'A paper cup of the distillers first run, still faintly luminous. Drink it and the dark feels survivable, which is its own kind of lie.' },
+  { id: 'clarity_charge', name: 'Clarity Charge', effect: 'intervention', value: 1, craft: { sec: { lucidity: 18, intelligence: 8 }, floor: { lucidity: 20, intelligence: 10 } }, desc: 'The intervention save: pull a mind back from the brink, or pre-load it as auto-retreat insurance.', lore: 'A single breath of perfect meditation, pressed into a glass bead. Crack it at the worst moment and, for one instant, you see the way out clearly enough to take it.' },
 ];
 
 // Traits earned at milestone mind levels. Each gives a role-shaping bonus.
@@ -1780,8 +1780,17 @@ export const MIND_TRAIT_LEVELS = [3, 6, 10, 15];
 
 // Tuning for printing/rolling and the capability math (see expeditionHelpers.js).
 export const EXPEDITION = {
-  rollCost: { intelligence: 2500 },
-  printBase: { paper: 300, pp: 5000, lucidity: 120 },
+  // Production-time price specs (see resolveCost in expeditionHelpers): sec = how
+  // many seconds of the player's CURRENT income for that resource; floor = an
+  // early-game minimum; `fixed` (energy) and `core`/`coreQty` (rare materials)
+  // stay flat. This auto-scales costs at any economic magnitude.
+  cost: {
+    roll: { sec: { intelligence: 75 }, floor: { intelligence: 1500 } },
+    print: { sec: { pp: 45, paper: 25, lucidity: 30 }, floor: { pp: 3000, paper: 100, lucidity: 60 } },
+    shell: { sec: { substrate: 30 }, floor: { substrate: 200 }, core: 'void_fragment', coreQty: 3 },
+    survey: { sec: { paper: 6, lucidity: 12 }, fixed: { energy: 10 } },
+    delve: { sec: { paper: 12, lucidity: 28 }, fixed: { energy: 15 } },
+  },
   printTiers: [
     { id: 'raw', name: 'Raw Copy', startLevel: 1, extraTrait: false, costMult: 1, research: null },
     { id: 'primed', name: 'Primed Copy', startLevel: 4, extraTrait: false, costMult: 3, research: { intelligence: 1500 } },
@@ -1792,11 +1801,6 @@ export const EXPEDITION = {
   shellBaseHp: 50,
   shellBay: 6,                  // max shells that can be kept assembled at once
   // --- Phase B: dispatch + resolution tuning ---
-  shellCost: { substrate: 400, core: 'void_fragment', coreQty: 3 },
-  // Dispatch costs; the lucidity portion is multiplied by (tier+1) so deeper
-  // expeditions cost progressively more (see getDispatchCost in expeditionHelpers).
-  surveyCost: { paper: 20, energy: 10, lucidity: 40 },
-  delveCost: { paper: 50, energy: 15, lucidity: 100 },
   baseDurationSec: 35,          // base wall-clock time of an expedition
   distanceDurationSec: 35,      // extra seconds scaled by route distance (0..1)
   xpPerLevel: 100,              // xp needed per level (x current level)

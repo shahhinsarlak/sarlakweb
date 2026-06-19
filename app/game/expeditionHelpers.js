@@ -28,6 +28,9 @@ import {
   createChartPage,
 } from './expeditionChart';
 import { DIMENSIONAL_MATERIALS } from './dimensionalConstants';
+import { getFactoryStats } from './factoryHelpers';
+import { getSanityTier } from './sanityPaperHelpers';
+import { getInsightEffects } from './insightHelpers';
 
 // Human-readable loot summary, e.g. "+412 PP, +30 paper, +2 Reality Dust".
 const matName = (id) => (DIMENSIONAL_MATERIALS.find((m) => m.id === id) || {}).name || id;
@@ -51,14 +54,61 @@ export const expectedLoot = (type) => ({
   gateway: 'a piece of the way out; opens the next tier',
 }[type] || 'the unknown');
 
-// Dispatch cost for a kind at a tier. The lucidity portion scales with depth so
-// deeper expeditions cost progressively more.
-export const getDispatchCost = (kind, tier) => {
-  const base = kind === 'delve' ? EXPEDITION.delveCost : EXPEDITION.surveyCost;
-  const cost = { ...base };
-  if (cost.lucidity) cost.lucidity = cost.lucidity * ((tier || 0) + 1);
+// ---- Production-time pricing -------------------------------------------------
+// Soft-currency costs are priced as `sec` SECONDS of the player's CURRENT income
+// for that resource, so they auto-scale at any magnitude (a roll always costs
+// "about a minute of intelligence" whether you make 10/s or 100,000/s). `fixed`
+// (energy = cadence) and `core`/`coreQty` (rare materials = depth) stay constant.
+// `floor` gives an early-game minimum before income ramps up.
+export const getIncomeRates = (state) => {
+  let out = {};
+  let subNet = 0;
+  if (state.factoryUnlocked) {
+    const f = getFactoryStats(state);
+    out = f.outputs || {};
+    subNet = f.subNetPerSec || 0;
+  }
+  let lucidT = 0;
+  let intelT = 0;
+  if ((state.chapter || 1) >= 2 && state.resourcesUnlocked && (state.sanity || 0) > 100) {
+    const tier = getSanityTier(state.sanity);
+    const ie = getInsightEffects(state);
+    lucidT = (tier.lucidityRate || 0) * (1 + (ie.lucidityRateMult || 0));
+    intelT = (tier.intelRate || 0) * (1 + (ie.intelRateMult || 0));
+  }
+  return {
+    pp: (state.ppPerSecond || 0) + (out.pp || 0),
+    paper: (state.paperPerSecond || 0) + (out.paper || 0),
+    lucidity: (out.lucidity || 0) + lucidT,
+    intelligence: (out.intelligence || 0) + intelT,
+    substrate: Math.max(0, subNet),
+    material: out.material || 0,
+  };
+};
+
+export const resolveCost = (rates, spec, opts = {}) => {
+  const secMult = opts.secMult || 1;
+  const cost = {};
+  if (spec.sec) {
+    Object.entries(spec.sec).forEach(([res, sec]) => {
+      const floor = (spec.floor && spec.floor[res]) || 0;
+      cost[res] = Math.max(Math.round(floor * secMult), Math.ceil((rates[res] || 0) * sec * secMult));
+    });
+  }
+  if (spec.fixed) Object.entries(spec.fixed).forEach(([res, amt]) => { cost[res] = amt; });
+  if (spec.core) { cost.core = spec.core; cost.coreQty = spec.coreQty || 1; }
   return cost;
 };
+
+export const getRollCost = (state, rates = getIncomeRates(state)) => resolveCost(rates, EXPEDITION.cost.roll);
+export const getShellCost = (state, rates = getIncomeRates(state)) => resolveCost(rates, EXPEDITION.cost.shell);
+export const getGearCraftCost = (state, bp, rates = getIncomeRates(state)) => resolveCost(rates, bp.craft);
+export const getProvisionCost = (state, p, rates = getIncomeRates(state)) => resolveCost(rates, p.craft);
+
+// Dispatch cost; the per-second portion scales with depth so deeper expeditions
+// cost progressively more (energy stays fixed).
+export const getDispatchCost = (state, kind, tier, rates = getIncomeRates(state)) =>
+  resolveCost(rates, kind === 'delve' ? EXPEDITION.cost.delve : EXPEDITION.cost.survey, { secMult: (tier || 0) + 1 });
 
 // ---- Lookups -------------------------------------------------------------
 
@@ -118,15 +168,16 @@ export const performRoll = (pity) => {
   };
 };
 
-// PP + core cost to craft a physical copy of an owned weapon blueprint.
-export const getWeaponCraftCost = (typeId, rarityId) => {
+// Production-time cost to craft a physical copy of an owned weapon blueprint.
+export const getWeaponCraftCost = (state, typeId, rarityId, rates = getIncomeRates(state)) => {
   const type = getWeaponType(typeId);
   const ri = Math.max(0, rarityIndex(rarityId));
-  return {
-    pp: 150 + ri * 150,
+  return resolveCost(rates, {
+    sec: { pp: 15 + ri * 15 },
+    floor: { pp: 200 + ri * 200 },
     core: type ? type.craftCore : 'static_crystal',
     coreQty: 1 + ri,
-  };
+  });
 };
 
 // ---- Minds ---------------------------------------------------------------
@@ -164,14 +215,8 @@ export const mindDesignation = (serial) => `Copy ${toRoman(serial)}`;
 export const getPrintTier = (tierId) =>
   EXPEDITION.printTiers.find((t) => t.id === tierId) || EXPEDITION.printTiers[0];
 
-export const getPrintCost = (tierId) => {
-  const tier = getPrintTier(tierId);
-  const cost = {};
-  Object.entries(EXPEDITION.printBase).forEach(([res, amt]) => {
-    cost[res] = Math.round(amt * tier.costMult);
-  });
-  return cost;
-};
+export const getPrintCost = (state, tierId, rates = getIncomeRates(state)) =>
+  resolveCost(rates, EXPEDITION.cost.print, { secMult: getPrintTier(tierId).costMult });
 
 /**
  * Build a fresh mind object for a print tier.

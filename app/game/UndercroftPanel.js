@@ -31,6 +31,11 @@ import {
   computeRisk,
   getLetRideChance,
   getDispatchCost,
+  getIncomeRates,
+  getRollCost,
+  getShellCost,
+  getGearCraftCost,
+  getProvisionCost,
   expectedLoot,
   canAffordCost,
   canAffordCraft,
@@ -88,7 +93,10 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
   const minds = gameState.minds || [];
   const weapons = gameState.weapons || [];
   const blueprints = gameState.weaponBlueprints || [];
-  const rollCost = EXPEDITION.rollCost.intelligence;
+  // Compute the player's current income once; all Undercroft costs are priced as
+  // production-time against it (see resolveCost in expeditionHelpers).
+  const income = getIncomeRates(gameState);
+  const rollCost = getRollCost(gameState, income).intelligence;
   const canRoll = (gameState.intelligence || 0) >= rollCost;
 
   // ---- shared button helpers --------------------------------------------
@@ -211,7 +219,7 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
 
   // ---- WORKBENCH ---------------------------------------------------------
   const renderPrintTier = (tier) => {
-    const cost = getPrintCost(tier.id);
+    const cost = getPrintCost(gameState, tier.id, income);
     const locked = tier.research && !researched.includes(tier.id);
     const bedsFull = minds.length >= (gameState.printBeds || 3);
     const affordable = canAffordCost(gameState, cost);
@@ -231,6 +239,7 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
   const renderGearRow = (bp) => {
     const isResearched = researched.includes(bp.id);
     const owned = (gameState.gearInventory || {})[bp.id] || 0;
+    const craftCost = getGearCraftCost(gameState, bp, income);
     return (
       <div key={bp.id} style={{ border: '1px solid var(--border-color)', padding: '12px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
@@ -244,12 +253,12 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
               </div>
               <div style={{ fontSize: '11px', opacity: 0.65, marginTop: '4px' }}>{bp.desc}</div>
               <div style={{ fontSize: '11px', opacity: 0.5, marginTop: '4px' }}>
-                {isResearched ? `Craft: ${fmtCost(bp.craft)}` : `Research: ${fmtCost(bp.research)}`}
+                {isResearched ? `Craft: ${fmtCost(craftCost)}` : `Research: ${fmtCost(bp.research)}`}
               </div>
             </div>
           </div>
           {isResearched
-            ? actBtn('CRAFT', () => { actions.craftGear(bp.id); triggerFx(`gear:${bp.id}`); }, canAffordCraft(gameState, bp.craft))
+            ? actBtn('CRAFT', () => { actions.craftGear(bp.id); triggerFx(`gear:${bp.id}`); }, canAffordCraft(gameState, craftCost))
             : actBtn('RESEARCH', () => actions.researchGear(bp.id), canAffordCost(gameState, bp.research))}
         </div>
       </div>
@@ -258,6 +267,7 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
 
   const renderProvision = (p) => {
     const owned = (gameState.provisions || {})[p.id] || 0;
+    const brewCost = getProvisionCost(gameState, p, income);
     return (
       <div key={p.id} style={{ border: '1px solid var(--border-color)', padding: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
@@ -265,10 +275,10 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
           <div>
             <div style={{ fontSize: '13px' }}><strong>{p.name}</strong>{owned > 0 && <span style={{ opacity: 0.6, fontSize: '11px' }}> x{owned}</span>}</div>
             <div style={{ fontSize: '11px', opacity: 0.65, marginTop: '4px' }}>{p.desc}</div>
-            <div style={{ fontSize: '11px', opacity: 0.5, marginTop: '4px' }}>Brew: {fmtCost(p.craft)}</div>
+            <div style={{ fontSize: '11px', opacity: 0.5, marginTop: '4px' }}>Brew: {fmtCost(brewCost)}</div>
           </div>
         </div>
-        {actBtn('BREW', () => { actions.brewProvision(p.id); triggerFx(`prov:${p.id}`); }, canAffordCost(gameState, p.craft))}
+        {actBtn('BREW', () => { actions.brewProvision(p.id); triggerFx(`prov:${p.id}`); }, canAffordCost(gameState, brewCost))}
       </div>
     );
   };
@@ -276,6 +286,7 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
   const renderPrepare = () => {
     const shellCount = (gameState.shells || []).length;
     const shellBay = EXPEDITION.shellBay || 6;
+    const shellCostObj = getShellCost(gameState, income);
     return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '26px' }}>
       <div>
@@ -304,9 +315,9 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
             </div>
           )}
           <div style={{ flex: 1, fontSize: '11px', opacity: 0.7 }}>
-            Each shell has {EXPEDITION.shellBaseHp} HP and is consumed only on catastrophe or recall. Cost: {fmtCost(EXPEDITION.shellCost)}.
+            Each shell has {EXPEDITION.shellBaseHp} HP and is consumed only on catastrophe or recall. Cost: {fmtCost(shellCostObj)}.
           </div>
-          {actBtn(shellCount >= shellBay ? 'BAY FULL' : 'ASSEMBLE SHELL', () => { actions.craftShell(); triggerFx('shell'); }, shellCount < shellBay && canAffordCraft(gameState, EXPEDITION.shellCost))}
+          {actBtn(shellCount >= shellBay ? 'BAY FULL' : 'ASSEMBLE SHELL', () => { actions.craftShell(); triggerFx('shell'); }, shellCount < shellBay && canAffordCraft(gameState, shellCostObj))}
         </div>
       </div>
       <div>
@@ -409,7 +420,7 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
             const t = getWeaponType(typeId);
             const r = getWeaponRarity(rarityId);
             if (!t || !r) return null;
-            const craftCost = getWeaponCraftCost(typeId, rarityId);
+            const craftCost = getWeaponCraftCost(gameState, typeId, rarityId, income);
             const owned = weapons.filter((w) => w.typeId === typeId && w.rarityId === rarityId).length;
             return (
               <div
@@ -774,7 +785,7 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
           )}
 
           <div style={{ fontSize: '10px', opacity: 0.55, marginBottom: '8px' }}>
-            Dispatch cost: {fmtCost(getDispatchCost(node ? 'delve' : 'survey', pageTier))}
+            Dispatch cost: {fmtCost(getDispatchCost(gameState, node ? 'delve' : 'survey', pageTier, income))}
           </div>
 
           <button
@@ -849,7 +860,7 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
         const t = getWeaponType(typeId);
         const r = getWeaponRarity(rarityId);
         if (!t || !r) return null;
-        const cost = getWeaponCraftCost(typeId, rarityId);
+        const cost = getWeaponCraftCost(gameState, typeId, rarityId, income);
         const owned = weapons.filter((w) => w.typeId === typeId && w.rarityId === rarityId).length;
         const foeS = getFoeArchetype(t.strongVs);
         const foeW = getFoeArchetype(t.weakVs);

@@ -26,6 +26,10 @@ import {
   getWeaponType,
   getWeaponRarity,
   getWeaponCraftCost,
+  getRollCost,
+  getShellCost,
+  getGearCraftCost,
+  getProvisionCost,
   canAffordCost,
   canAffordCraft,
   createExpedition,
@@ -1335,7 +1339,7 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
   // forever; a duplicate refunds half the cost. Soft pity guarantees Rare+.
   const rollBlueprint = () => {
     setGameState(prev => {
-      const cost = EXPEDITION.rollCost;
+      const cost = getRollCost(prev);
       if (!canAffordCost(prev, cost)) {
         return { ...prev, recentMessages: log(prev, 'Not enough intelligence to decode a schematic.') };
       }
@@ -1369,7 +1373,7 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       if ((prev.minds || []).length >= (prev.printBeds || 3)) {
         return { ...prev, recentMessages: log(prev, 'No free print bed. Retire or lose a mind first.') };
       }
-      const cost = getPrintCost(tierId);
+      const cost = getPrintCost(prev, tierId);
       if (!canAffordCost(prev, cost)) {
         return { ...prev, recentMessages: log(prev, 'Not enough to print a mind.') };
       }
@@ -1442,20 +1446,21 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       if (!(prev.researchedGear || []).includes(gearId)) {
         return { ...prev, recentMessages: log(prev, 'Research that design first.') };
       }
-      if (!canAffordCraft(prev, bp.craft)) {
+      const cost = getGearCraftCost(prev, bp);
+      if (!canAffordCraft(prev, cost)) {
         return { ...prev, recentMessages: log(prev, 'Not enough materials to craft that.') };
       }
       const newState = {
         ...prev,
         gearInventory: { ...(prev.gearInventory || {}), [gearId]: ((prev.gearInventory || {})[gearId] || 0) + 1 },
       };
-      Object.entries(bp.craft).forEach(([r, a]) => {
+      Object.entries(cost).forEach(([r, a]) => {
         if (r === 'core' || r === 'coreQty') return;
         newState[r] = (prev[r] || 0) - a;
       });
-      if (bp.craft.core) {
+      if (cost.core) {
         const inv = { ...(prev.dimensionalInventory || {}) };
-        inv[bp.craft.core] = Math.max(0, (inv[bp.craft.core] || 0) - (bp.craft.coreQty || 1));
+        inv[cost.core] = Math.max(0, (inv[cost.core] || 0) - (cost.coreQty || 1));
         newState.dimensionalInventory = inv;
       }
       newState.recentMessages = log(prev, `Crafted ${bp.name}.`);
@@ -1468,7 +1473,7 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
     setGameState(prev => {
       const key = blueprintKey(typeId, rarityId);
       if (!(prev.weaponBlueprints || []).includes(key)) return prev;
-      const cost = getWeaponCraftCost(typeId, rarityId);
+      const cost = getWeaponCraftCost(prev, typeId, rarityId);
       if (!canAffordCraft(prev, cost)) {
         return { ...prev, recentMessages: log(prev, 'Not enough materials to forge that weapon.') };
       }
@@ -1490,14 +1495,15 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
     setGameState(prev => {
       const p = getProvisionType(provId);
       if (!p) return prev;
-      if (!canAffordCost(prev, p.craft)) {
+      const cost = getProvisionCost(prev, p);
+      if (!canAffordCost(prev, cost)) {
         return { ...prev, recentMessages: log(prev, 'Not enough to brew that.') };
       }
       const newState = {
         ...prev,
         provisions: { ...(prev.provisions || {}), [provId]: ((prev.provisions || {})[provId] || 0) + 1 },
       };
-      Object.entries(p.craft).forEach(([r, a]) => { newState[r] = (prev[r] || 0) - a; });
+      Object.entries(cost).forEach(([r, a]) => { if (r === 'core' || r === 'coreQty') return; newState[r] = (prev[r] || 0) - a; });
       newState.recentMessages = log(prev, `Brewed ${p.name}.`);
       return newState;
     });
@@ -1512,7 +1518,7 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       if ((prev.shells || []).length >= (EXPEDITION.shellBay || 6)) {
         return { ...prev, recentMessages: log(prev, 'The shell bay is full. Send some out, or they just take up space.') };
       }
-      const cost = EXPEDITION.shellCost;
+      const cost = getShellCost(prev);
       if (!canAffordCraft(prev, cost)) {
         return { ...prev, recentMessages: log(prev, 'Not enough substrate or cores to assemble a shell.') };
       }
@@ -1558,7 +1564,7 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
         }
       }
 
-      const cost = getDispatchCost(kind, tier);
+      const cost = getDispatchCost(prev, kind, tier);
       if (!canAffordCost(prev, cost)) {
         return { ...prev, recentMessages: log(prev, 'Not enough paper or energy to set out.') };
       }
