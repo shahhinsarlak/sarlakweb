@@ -463,13 +463,13 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
                 </div>
                 <div style={{ fontSize: '11px', opacity: 0.6, marginTop: '6px', minHeight: '30px' }}>{t.quirk}</div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px' }}>
-                  <span style={{ fontSize: '10px', opacity: 0.5 }}>{fmtCost(craftCost)}</span>
+                  <span style={{ fontSize: '10px', opacity: 0.5 }}>{owned > 0 ? 'Already forged' : fmtCost(craftCost)}</span>
                   <button
-                    onClick={(e) => { e.stopPropagation(); if (canAffordCraft(gameState, craftCost)) actions.craftWeapon(typeId, rarityId); }}
-                    disabled={!canAffordCraft(gameState, craftCost)}
-                    style={{ background: 'none', border: '1px solid var(--border-color)', color: 'var(--text-color)', padding: '8px 12px', cursor: canAffordCraft(gameState, craftCost) ? 'pointer' : 'not-allowed', fontSize: '11px', fontFamily: 'inherit', letterSpacing: '0.5px', opacity: canAffordCraft(gameState, craftCost) ? 1 : 0.4 }}
+                    onClick={(e) => { e.stopPropagation(); if (owned === 0 && canAffordCraft(gameState, craftCost)) actions.craftWeapon(typeId, rarityId); }}
+                    disabled={owned > 0 || !canAffordCraft(gameState, craftCost)}
+                    style={{ background: 'none', border: '1px solid var(--border-color)', color: 'var(--text-color)', padding: '8px 12px', cursor: (owned === 0 && canAffordCraft(gameState, craftCost)) ? 'pointer' : 'not-allowed', fontSize: '11px', fontFamily: 'inherit', letterSpacing: '0.5px', opacity: (owned === 0 && canAffordCraft(gameState, craftCost)) ? 1 : 0.4 }}
                   >
-                    FORGE
+                    {owned > 0 ? 'FORGED' : 'FORGE'}
                   </button>
                 </div>
               </div>
@@ -945,9 +945,9 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
               </div>
               <div style={{ fontSize: '12px', opacity: 0.6, marginTop: '14px', lineHeight: 1.7, textAlign: 'left', fontStyle: 'italic' }}>{t.lore}</div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '20px' }}>
-                <span style={{ fontSize: '11px', opacity: 0.6 }}>{fmtCost(cost)}</span>
+                <span style={{ fontSize: '11px', opacity: 0.6 }}>{owned > 0 ? 'Already forged' : fmtCost(cost)}</span>
                 <div style={{ display: 'flex', gap: '8px' }}>
-                  {actBtn('FORGE', () => actions.craftWeapon(typeId, rarityId), canAffordCraft(gameState, cost))}
+                  {actBtn(owned > 0 ? 'FORGED' : 'FORGE', () => actions.craftWeapon(typeId, rarityId), owned === 0 && canAffordCraft(gameState, cost))}
                   {actBtn('CLOSE', () => setDetailBp(null), true)}
                 </div>
               </div>

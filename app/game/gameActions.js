@@ -1487,6 +1487,9 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
     setGameState(prev => {
       const key = blueprintKey(typeId, rarityId);
       if (!(prev.weaponBlueprints || []).includes(key)) return prev;
+      if ((prev.weapons || []).some((w) => w.typeId === typeId && w.rarityId === rarityId)) {
+        return { ...prev, recentMessages: log(prev, 'That weapon is already forged. Only one can exist until it is lost.') };
+      }
       const cost = getWeaponCraftCost(prev, typeId, rarityId);
       if (!canAffordCraft(prev, cost)) {
         return { ...prev, recentMessages: log(prev, 'Not enough materials to forge that weapon.') };
