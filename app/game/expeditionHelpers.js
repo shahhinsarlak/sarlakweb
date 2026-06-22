@@ -571,6 +571,7 @@ export const createExpedition = (state, { kind, kit, node, tier, depth, serial }
     mindId: kit.mindId,
     shellId: kit.shellId,
     weaponId: kit.weaponId,
+    gear: [...(kit.gear || [])],
     nodeId: node ? node.id : null,
     targetPoint,
     caps: {
@@ -621,6 +622,7 @@ export const finalizeExpedition = (ctx, e2, outcome) => {
   const messages = [];
   const weaponsRemove = [];
   const shellsRemove = [];
+  const gearRemove = [];
   const mindsRemove = [];
   let triggerEnding = false;
   const addRes = (k, v) => { resourceDelta[k] = (resourceDelta[k] || 0) + v; };
@@ -718,12 +720,13 @@ export const finalizeExpedition = (ctx, e2, outcome) => {
     if (mind) mindsRemove.push(mind.id);
     if (e2.weaponId) weaponsRemove.push(e2.weaponId);
     if (e2.shellId) shellsRemove.push(e2.shellId);
+    (e2.gear || []).forEach((id) => gearRemove.push(id));
     if (e2.kind === 'delve') markNode({ discovered: true });
     appendRoute('death');
     messages.push(`${desig} did not return. The dark kept the mind, the shell, and all it carried. A marker remains on the chart.`);
   }
 
-  return { minds, chartPages, wayOutFragments, resourceDelta, materialDelta, weaponsRemove, shellsRemove, mindsRemove, messages, triggerEnding };
+  return { minds, chartPages, wayOutFragments, resourceDelta, materialDelta, weaponsRemove, shellsRemove, gearRemove, mindsRemove, messages, triggerEnding };
 };
 
 /**

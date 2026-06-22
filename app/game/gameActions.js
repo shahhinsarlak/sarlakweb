@@ -1460,6 +1460,9 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       if (!(prev.researchedGear || []).includes(gearId)) {
         return { ...prev, recentMessages: log(prev, 'Research that design first.') };
       }
+      if (((prev.gearInventory || {})[gearId] || 0) >= 1) {
+        return { ...prev, recentMessages: log(prev, `${bp.name} is already crafted. Only one can exist until it is lost.`) };
+      }
       const cost = getGearCraftCost(prev, bp);
       if (!canAffordCraft(prev, cost)) {
         return { ...prev, recentMessages: log(prev, 'Not enough materials to craft that.') };
@@ -1565,6 +1568,18 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       if (busyM.has(mindId) || busyS.has(shellId) || (weaponId && busyW.has(weaponId))) {
         return { ...prev, recentMessages: log(prev, 'That mind, shell or weapon is already out in the dark.') };
       }
+      const busyG = new Set((prev.expeditions || []).flatMap(e => e.gear || []));
+      const gearIds = [...new Set(Array.isArray(gear) ? gear : [])];
+      const missingGear = gearIds.find(id => ((prev.gearInventory || {})[id] || 0) < 1);
+      if (missingGear) {
+        const gbp = getGearBlueprint(missingGear);
+        return { ...prev, recentMessages: log(prev, `${gbp ? gbp.name : 'That gear'} is no longer available.`) };
+      }
+      const gearClash = gearIds.find(id => busyG.has(id));
+      if (gearClash) {
+        const gbp = getGearBlueprint(gearClash);
+        return { ...prev, recentMessages: log(prev, `${gbp ? gbp.name : 'That gear'} is already out with another copy.`) };
+      }
 
       let node = null;
       const page = (prev.chartPages || []).find(p => p.tier === tier);
@@ -1582,7 +1597,7 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       }
 
       // Gear gate: certain depths and sites require specific gear in the kit.
-      const gate = getExpeditionGate({ mindId, shellId, weaponId, gear, provisions }, kind, node, tier);
+      const gate = getExpeditionGate({ mindId, shellId, weaponId, gear: gearIds, provisions }, kind, node, tier);
       if (!gate.ok) {
         return { ...prev, recentMessages: log(prev, `Cannot set out: ${gate.reasons[0]}`) };
       }
@@ -1606,7 +1621,7 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       }
 
       const serial = (prev.expeditionCounter || 0) + 1;
-      const kit = { mindId, shellId, weaponId, gear, provisions };
+      const kit = { mindId, shellId, weaponId, gear: gearIds, provisions };
       const exp = createExpedition(prev, { kind, kit, node, tier, depth, serial });
 
       const newState = { ...prev, expeditionCounter: serial, expeditions: [...(prev.expeditions || []), exp] };
@@ -1645,6 +1660,11 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
     newState.wayOutFragments = r.wayOutFragments;
     if (r.weaponsRemove.length) newState.weapons = (prev.weapons || []).filter((w) => !r.weaponsRemove.includes(w.id));
     if (r.shellsRemove.length) newState.shells = (prev.shells || []).filter((s) => !r.shellsRemove.includes(s.id));
+    if (r.gearRemove && r.gearRemove.length) {
+      const gi = { ...(prev.gearInventory || {}) };
+      r.gearRemove.forEach((id) => { gi[id] = Math.max(0, (gi[id] || 0) - 1); });
+      newState.gearInventory = gi;
+    }
     Object.entries(r.resourceDelta).forEach(([k, v]) => {
       newState[k] = (newState[k] !== undefined ? newState[k] : (prev[k] || 0)) + v;
     });
@@ -1721,13 +1741,18 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       const newState = { ...prev, expeditions: (prev.expeditions || []).filter(e => e.id !== expId) };
       if (exp.shellId) newState.shells = (prev.shells || []).filter(s => s.id !== exp.shellId);
       if (exp.weaponId) newState.weapons = (prev.weapons || []).filter(w => w.id !== exp.weaponId);
+      if ((exp.gear || []).length) {
+        const gi = { ...(prev.gearInventory || {}) };
+        exp.gear.forEach((id) => { gi[id] = Math.max(0, (gi[id] || 0) - 1); });
+        newState.gearInventory = gi;
+      }
       const page = (prev.chartPages || []).find(p => p.tier === exp.tier);
       if (page) {
         newState.chartPages = (prev.chartPages || []).map(p => (p.tier === exp.tier
           ? { ...p, routes: [...(p.routes || []), { seed: exp.seed, target: exp.targetPoint, kind: exp.kind, outcome: 'retreat' }].slice(-40) }
           : p));
       }
-      newState.recentMessages = log(prev, `${mind ? mind.designation : 'A mind'} was recalled. The mind is safe; the shell and weapon it carried are lost to the dark.`);
+      newState.recentMessages = log(prev, `${mind ? mind.designation : 'A mind'} was recalled. The mind is safe; the shell, weapon and gear it carried are lost to the dark.`);
       return newState;
     });
   };

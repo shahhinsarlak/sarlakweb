@@ -275,7 +275,7 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
             </div>
           </div>
           {isResearched
-            ? actBtn('CRAFT', () => { actions.craftGear(bp.id); triggerFx(`gear:${bp.id}`); }, canAffordCraft(gameState, craftCost))
+            ? actBtn(owned > 0 ? 'CRAFTED' : 'CRAFT', () => { actions.craftGear(bp.id); triggerFx(`gear:${bp.id}`); }, owned === 0 && canAffordCraft(gameState, craftCost))
             : actBtn('RESEARCH', () => actions.researchGear(bp.id), canAffordCost(gameState, bp.research))}
         </div>
       </div>
@@ -532,6 +532,7 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
   const bandColor = (b) => ({ Safe: '#5fb878', Risky: '#ffb454', Grave: '#e8995c', Suicidal: '#ff5c5c' }[b] || 'var(--text-color)');
   const axisMark = (p) => (p < 0.15 ? '\u2713 ok' : p < 0.5 ? '\u26a0 weak' : '\u2717 exposed');
   const ownedGear = Object.entries(gameState.gearInventory || {}).filter(([, n]) => n > 0).map(([id]) => id);
+  const busyGear = new Set(activeExps.flatMap((e) => e.gear || []));
   // A pre-loaded Clarity Charge auto-retreats the expedition at its first brink
   // (insurance). You can also keep charges in reserve and spend one reactively
   // when a brink prompt appears.
@@ -589,6 +590,7 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
     setKitMind(null);
     setKitShell(null);
     setKitWeapon(null);
+    setKitGear([]);
   };
 
   const brinkExps = activeExps.filter((e) => e.awaiting);
@@ -679,7 +681,7 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
                     confirmRecall === e.id ? (
                       <div style={{ marginTop: '6px' }}>
                         <div style={{ fontSize: '10px', color: '#ffb454', marginBottom: '4px' }}>
-                          Recall now? The mind returns safe, but the shell and weapon it carries are LOST. Only a completed trip brings everything home.
+                          Recall now? The mind returns safe, but the shell, weapon and gear it carries are LOST. Only a completed trip brings everything home.
                         </div>
                         <div style={{ display: 'flex', gap: '6px' }}>
                           {actBtn('CONFIRM RECALL', () => { actions.recallExpedition(e.id); setConfirmRecall(null); }, true)}
@@ -767,10 +769,11 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                 {ownedGear.map((id) => {
                   const active = kitGear.includes(id);
+                  const out = busyGear.has(id);
                   const g = GEAR_BLUEPRINTS.find((gg) => gg.id === id) || {};
                   return (
-                    <button key={id} onClick={() => toggleGear(id)} style={{ display: 'flex', alignItems: 'center', gap: '5px', background: active ? 'var(--text-color)' : 'none', color: active ? 'var(--bg-color)' : 'var(--text-color)', border: `1px solid ${active ? 'var(--text-color)' : 'var(--border-color)'}`, padding: '4px 7px', cursor: 'pointer', fontSize: '11px', fontFamily: 'inherit' }}>
-                      <CraftSprite id={id} size={18} />{g.name || id}
+                    <button key={id} onClick={() => { if (!out) toggleGear(id); }} disabled={out} title={out ? 'Out with another copy' : ''} style={{ display: 'flex', alignItems: 'center', gap: '5px', background: active ? 'var(--text-color)' : 'none', color: active ? 'var(--bg-color)' : 'var(--text-color)', border: `1px solid ${active ? 'var(--text-color)' : 'var(--border-color)'}`, padding: '4px 7px', cursor: out ? 'not-allowed' : 'pointer', fontSize: '11px', fontFamily: 'inherit', opacity: out ? 0.4 : 1 }}>
+                      <CraftSprite id={id} size={18} />{g.name || id}{out ? ' (out)' : ''}
                     </button>
                   );
                 })}
