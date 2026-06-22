@@ -699,6 +699,16 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
     }));
   };
 
+  // First-run Undercroft guide: shown once, then retired (details live in the Journal).
+  const markUndercroftGuideSeen = () => {
+    setGameState(prev => (prev.undercroftGuideSeen ? prev : { ...prev, undercroftGuideSeen: true }));
+  };
+
+  // Open the Journal directly to the Echo findings tab.
+  const openEchoFindings = () => {
+    setGameState(prev => ({ ...prev, journalTab: 'echoes', journalOpen: true }));
+  };
+
   /**
    * File Drawer System Actions
    * (Added 2025-11-04)
@@ -1650,7 +1660,7 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
   // ---- Expeditions: brink + the loop (Phase C) ---------------------------
   const applyOutcomeToState = (prev, exp, outcome) => {
     const r = finalizeExpedition(
-      { minds: prev.minds || [], chartPages: prev.chartPages || [], wayOutFragments: prev.wayOutFragments || 0, rates: getIncomeRates(prev) },
+      { minds: prev.minds || [], chartPages: prev.chartPages || [], wayOutFragments: prev.wayOutFragments || 0, rates: getIncomeRates(prev), echoCount: (prev.echoFindings || []).length },
       exp,
       outcome,
     );
@@ -1665,6 +1675,7 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
       r.gearRemove.forEach((id) => { gi[id] = Math.max(0, (gi[id] || 0) - 1); });
       newState.gearInventory = gi;
     }
+    if (r.echoFinding) newState.echoFindings = [...(prev.echoFindings || []), r.echoFinding];
     Object.entries(r.resourceDelta).forEach(([k, v]) => {
       newState[k] = (newState[k] !== undefined ? newState[k] : (prev[k] || 0)) + v;
     });
@@ -1795,6 +1806,8 @@ export const createGameActions = (setGameState, addMessage, checkAchievements, g
     openJournal,
     closeJournal,
     switchJournalTab,
+    markUndercroftGuideSeen,
+    openEchoFindings,
     // Chapter 2: A Way Through (Phase 1)
     startChapter2,
     openInsights,

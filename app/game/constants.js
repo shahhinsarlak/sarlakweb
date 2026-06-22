@@ -130,6 +130,8 @@ export const INITIAL_GAME_STATE = {
   undercroftOpen: false,        // Is the Undercroft panel visible
   factoryFullRunSeconds: 0,     // Sustained full-operation counter toward the breakthrough
   undercroftTab: 'expedition',  // Active Undercroft tab: expedition | prepare | armory
+  undercroftGuideSeen: false,   // First-run getting-started banner shown once, then retired to the Journal
+  echoFindings: [],             // Collected lore fragments read from Echo sites [{ n, tier, text }]
   minds: [],                    // [{ id, designation, level, xp, resolve, acuity, will, traits[], scars[], status }]
   mindCounter: 0,               // Serial counter for mind designations (Copy I, II, ...)
   printBeds: 3,                 // Roster cap (max simultaneous minds)
@@ -153,6 +155,22 @@ export const INITIAL_GAME_STATE = {
   mindsLost: 0,                 // Minds lost permanently on expeditions
 };
 
+
+// Lore fragments read from Echo sites in the Undercroft. Each successful Echo
+// delve reveals the next unread fragment (a slowly unfolding account of the
+// dark and the way out). Collected ones are viewable in the Journal.
+export const ECHO_FINDINGS = [
+  'The first copy left a note before it went: the dark is not empty. It is full, and patient, and it has been waiting for someone to come down with a light.',
+  'There are doors here that open onto the office you left. You watched one. On the other side, you were still at the desk, sorting, unaware. You did not wave.',
+  'The echoes are not sounds. They are moments the building could not digest, left to rot in the deep. To read one is to stand inside someone else\u2019s worst afternoon.',
+  'A copy charted a corridor that loops back on itself. It walked it for a subjective year. When it returned its designation was scratched out and rewritten in its own hand.',
+  'Something down here keeps ledgers. Names, hours, failures. Yours is the thickest. It is also unfinished, which means it expects more of you.',
+  'The way out is not a place. It is a quantity. Gather enough of it and a shape forms, like a word you almost remember, like a key cut for a lock you have not found yet.',
+  'One echo was only a child counting. It reached a number that should not exist and then started again, delighted, as if it had all the time that was ever made.',
+  'The deeper pages of the chart are older than the office. The office was built on top of them to keep them quiet. It did not work. It was never going to work.',
+  'A voice that sounded like yours said: every copy you send is a question you are asking the dark. The dark has started asking questions back.',
+  'The final Gateway is not an exit. It is a mirror with depth. What waits beyond it has your face and has been practising your name.',
+];
 
 export const LORE_SNIPPETS = {
   hint: [
@@ -2116,7 +2134,15 @@ Weapons are found by ROLLING blueprints with intelligence: each is a weapon type
 
 A mind lost on an expedition is lost permanently. Print carefully. Protect your veterans.
 
-At the BRINK, a mind pauses and waits: spend a Clarity Charge to pull it out, or let it ride and gamble. Deep in the dark are pieces of the WAY OUT. Gather enough, breach the final Gateway, and step through. It may not lead where you hope.`
+At the BRINK, a mind pauses and waits: spend a Clarity Charge to pull it out, or let it ride and gamble. Deep in the dark are pieces of the WAY OUT. Gather enough, breach the final Gateway, and step through. It may not lead where you hope.
+
+GETTING STARTED:
+1. In the PREPARE tab, Print a Mind (costs paper, PP and lucidity) - a copy of yourself to send into the dark.
+2. In the PREPARE tab, Assemble a Shell (a body, costs substrate and a core).
+3. On the EXPEDITION tab pick your Mind and Shell, leave no site selected, and Launch Survey. The fogged map charts new sites as it explores. Optionally roll and forge a weapon in the ARMORY tab first.
+4. Once sites are charted, click one to plan a Delve. ECHO sites yield intelligence and a fragment of the way out; their findings are recorded in this Journal.
+
+ECHOES: reading an Echo reveals a piece of what happened in the dark. Every fragment you recover is kept under the Echoes tab of this Journal.`
   },
   welcome: {
     id: 'welcome',

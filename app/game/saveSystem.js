@@ -18,7 +18,7 @@ import { INITIAL_GAME_STATE } from './constants';
  * changes in a way that needs migrating, then add a migration keyed by the
  * previous version in MIGRATIONS below.
  */
-export const CURRENT_SAVE_VERSION = 3;
+export const CURRENT_SAVE_VERSION = 4;
 
 /** localStorage key used for autosave persistence. */
 export const LOCAL_KEY = 'sarlak-office-horror-save';
@@ -59,6 +59,14 @@ const MIGRATIONS = {
       if (typeof val === 'number' && val > 0) migrated[id] = 0;
     });
     return { ...state, factoryMachines: migrated };
+  },
+  // 3 -> 4: the first-run Undercroft "getting started" banner is now shown once
+  // then retired. Veterans who have already explored should never see it again.
+  3: (state) => {
+    const explored = (state.expeditionCounter || 0) > 0
+      || (state.wayOutFragments || 0) > 0
+      || (state.chartPages || []).some((p) => (p.nodes || []).some((n) => n.discovered));
+    return { ...state, undercroftGuideSeen: explored ? true : (state.undercroftGuideSeen || false) };
   },
 };
 

@@ -13,7 +13,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { JOURNAL_ENTRIES, MECHANICS_ENTRIES } from './constants';
+import { JOURNAL_ENTRIES, MECHANICS_ENTRIES, ECHO_FINDINGS } from './constants';
 import NotificationPopup from './NotificationPopup';
 
 function JournalModal({ gameState, onClose, onSwitchTab, notifications, onDismissNotification }) {
@@ -178,6 +178,39 @@ function JournalModal({ gameState, onClose, onSwitchTab, notifications, onDismis
     );
   };
 
+  // Render echoes tab: lore fragments recovered from Echo sites in the Undercroft.
+  const renderEchoesTab = () => {
+    const findings = gameState.echoFindings || [];
+    return (
+      <div>
+        <h3 style={{ marginTop: 0, marginBottom: '8px', fontSize: '16px' }}>
+          ECHO FINDINGS ({findings.length}/{ECHO_FINDINGS.length})
+        </h3>
+        <div style={{ fontSize: '13px', opacity: 0.7, fontStyle: 'italic', marginBottom: '20px', lineHeight: 1.6 }}>
+          Pieces of the dark, read from the Echoes scattered through the Undercroft. Each delved Echo gives up one.
+        </div>
+
+        {findings.length === 0 && (
+          <div style={{ padding: '15px', border: '1px dashed var(--border-color)', opacity: 0.4, fontSize: '14px', fontStyle: 'italic' }}>
+            No findings yet. Delve an Echo site in the Undercroft to recover one.
+          </div>
+        )}
+
+        {findings.slice().reverse().map((f, i) => (
+          <div
+            key={`${f.n}-${i}`}
+            style={{ marginBottom: '16px', padding: '15px', border: '1px solid var(--border-color)', backgroundColor: 'rgba(138,160,208,0.05)' }}
+          >
+            <div style={{ fontSize: '12px', opacity: 0.6, letterSpacing: '1px', marginBottom: '8px' }}>
+              FINDING {f.n} &middot; TIER {(f.tier ?? 0) + 1}
+            </div>
+            <div style={{ fontSize: '14px', lineHeight: 1.7 }}>{f.text}</div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   return (
     <>
     <div
@@ -244,7 +277,8 @@ function JournalModal({ gameState, onClose, onSwitchTab, notifications, onDismis
         }}>
           {[
             { id: 'locations', label: 'Locations' },
-            { id: 'mechanics', label: 'Mechanics' }
+            { id: 'mechanics', label: 'Mechanics' },
+            { id: 'echoes', label: 'Echoes' }
           ].map(tab => (
             <button
               key={tab.id}
@@ -276,6 +310,7 @@ function JournalModal({ gameState, onClose, onSwitchTab, notifications, onDismis
         }}>
           {currentTab === 'locations' && renderLocationsTab()}
           {currentTab === 'mechanics' && renderMechanicsTab()}
+          {currentTab === 'echoes' && renderEchoesTab()}
         </div>
       </div>
     </div>

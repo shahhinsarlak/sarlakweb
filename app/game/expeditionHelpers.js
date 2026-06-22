@@ -17,6 +17,7 @@ import {
   MIND_TRAIT_LEVELS,
   EXPEDITION,
   ROLL_PITY_THRESHOLD,
+  ECHO_FINDINGS,
 } from './constants';
 import {
   ENTRY,
@@ -624,6 +625,7 @@ export const finalizeExpedition = (ctx, e2, outcome) => {
   const shellsRemove = [];
   const gearRemove = [];
   const mindsRemove = [];
+  let echoFinding = null;
   let triggerEnding = false;
   const addRes = (k, v) => { resourceDelta[k] = (resourceDelta[k] || 0) + v; };
   const addMat = (id, v) => { materialDelta[id] = (materialDelta[id] || 0) + v; };
@@ -659,7 +661,12 @@ export const finalizeExpedition = (ctx, e2, outcome) => {
         const lootStr = formatLoot(loot);
         if (node.type === 'echo') {
           wayOutFragments += 1;
-          messages.push(`${desig} read the Echo${lootStr ? ` (${lootStr})` : ''}. A piece of the way out comes loose (${wayOutFragments}/${EXPEDITION.exitFragments}).`);
+          const idx = ctx.echoCount || 0;
+          const text = idx < ECHO_FINDINGS.length
+            ? ECHO_FINDINGS[idx]
+            : 'The echo repeats something you have already heard, fainter now, like the dark is running out of new ways to frighten you.';
+          echoFinding = { n: idx + 1, tier: e2.tier, text };
+          messages.push(`${desig} read the Echo${lootStr ? ` (${lootStr})` : ''}. A piece of the way out comes loose (${wayOutFragments}/${EXPEDITION.exitFragments}). A finding was recorded in the Journal.`);
         } else if (node.type === 'gateway') {
           chartPages = chartPages.map((p) => (p.tier === e2.tier ? { ...p, breached: true } : p));
           wayOutFragments += 1;
@@ -726,7 +733,7 @@ export const finalizeExpedition = (ctx, e2, outcome) => {
     messages.push(`${desig} did not return. The dark kept the mind, the shell, and all it carried. A marker remains on the chart.`);
   }
 
-  return { minds, chartPages, wayOutFragments, resourceDelta, materialDelta, weaponsRemove, shellsRemove, gearRemove, mindsRemove, messages, triggerEnding };
+  return { minds, chartPages, wayOutFragments, resourceDelta, materialDelta, weaponsRemove, shellsRemove, gearRemove, mindsRemove, echoFinding, messages, triggerEnding };
 };
 
 /**
@@ -747,6 +754,8 @@ export const runExpeditionsTick = (state, dt) => {
   const materialDelta = {};
   const messages = [];
   const stillActive = [];
+  const echoFindings = [];
+  let echoCount = (state.echoFindings || []).length;
   let triggerEnding = false;
   const mergeDelta = (target, src) => { Object.entries(src).forEach(([k, v]) => { target[k] = (target[k] || 0) + v; }); };
 
@@ -787,12 +796,13 @@ export const runExpeditionsTick = (state, dt) => {
       return;
     }
 
-    const r = finalizeExpedition({ minds, chartPages, wayOutFragments, rates }, e2, e2.outcome);
+    const r = finalizeExpedition({ minds, chartPages, wayOutFragments, rates, echoCount }, e2, e2.outcome);
     minds = r.minds;
     chartPages = r.chartPages;
     wayOutFragments = r.wayOutFragments;
     mergeDelta(resourceDelta, r.resourceDelta);
     mergeDelta(materialDelta, r.materialDelta);
+    if (r.echoFinding) { echoFindings.push(r.echoFinding); echoCount += 1; }
     r.messages.forEach((mm) => messages.push(mm));
     if (r.triggerEnding) triggerEnding = true;
   });
@@ -806,6 +816,7 @@ export const runExpeditionsTick = (state, dt) => {
   if (triggerEnding) out.triggerEnding = true;
   if (Object.keys(resourceDelta).length) out.resourceDelta = resourceDelta;
   if (Object.keys(materialDelta).length) out.materialDelta = materialDelta;
+  if (echoFindings.length) out.echoFindings = echoFindings;
   if (messages.length) out.messages = messages;
   return out;
 };

@@ -701,6 +701,9 @@ export default function Game() {
               if (r.minds) newState.minds = r.minds;
               if (r.chartPages) newState.chartPages = r.chartPages;
               if (r.wayOutFragments !== undefined) newState.wayOutFragments = r.wayOutFragments;
+              if (r.echoFindings && r.echoFindings.length) {
+                newState.echoFindings = [...(newState.echoFindings || prev.echoFindings || []), ...r.echoFindings];
+              }
               if (r.triggerEnding) newState.loopEndingActive = true;
               if (r.resourceDelta) {
                 Object.entries(r.resourceDelta).forEach(([k, v]) => {

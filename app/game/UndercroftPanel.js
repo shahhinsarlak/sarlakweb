@@ -86,6 +86,17 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
     return () => window.removeEventListener('keydown', handleKey);
   }, [onClose]);
 
+  // The getting-started banner is a first-run aid only. Once the player has a
+  // mind, a shell, and has charted at least one site, retire it for good (the
+  // full guidance lives on in the Journal).
+  useEffect(() => {
+    if (gameState.undercroftGuideSeen) return;
+    const hasMind = (gameState.minds || []).length > 0;
+    const hasShell = (gameState.shells || []).length > 0;
+    const anyDiscovered = (gameState.chartPages || []).some((p) => (p.nodes || []).some((n) => n.discovered));
+    if (hasMind && hasShell && anyDiscovered) actions.markUndercroftGuideSeen();
+  }, [gameState.undercroftGuideSeen, gameState.minds, gameState.shells, gameState.chartPages, actions]);
+
   const matName = (id) => (DIMENSIONAL_MATERIALS.find((m) => m.id === id) || {}).name || id;
   const fmtCost = (cost) => {
     const parts = [];
@@ -602,15 +613,18 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
     const hasShell = (gameState.shells || []).length > 0;
     const anyDiscovered = page.nodes.some((n) => n.discovered);
     let guide = null;
-    if (!hasMind) guide = 'Step 1: open the PREPARE tab and Print a Mind (costs paper, PP and lucidity). A mind is the copy of yourself you send into the dark.';
-    else if (!hasShell) guide = 'Step 2: in the PREPARE tab, Assemble a Shell (a body, costs substrate and a core).';
-    else if (!anyDiscovered) guide = 'Step 3: below, pick your Mind and Shell, leave no site selected, and Launch Survey. The fogged map charts new sites as it explores (about a minute). Optional: roll and forge a weapon in the ARMORY tab first.';
+    if (!gameState.undercroftGuideSeen) {
+      if (!hasMind) guide = 'Step 1: open the PREPARE tab and Print a Mind (costs paper, PP and lucidity). A mind is the copy of yourself you send into the dark.';
+      else if (!hasShell) guide = 'Step 2: in the PREPARE tab, Assemble a Shell (a body, costs substrate and a core).';
+      else if (!anyDiscovered) guide = 'Step 3: below, pick your Mind and Shell, leave no site selected, and Launch Survey. The fogged map charts new sites as it explores (about a minute). Optional: roll and forge a weapon in the ARMORY tab first.';
+    }
     return (
       <div>
       {guide && (
         <div style={{ border: '1px solid var(--border-color)', background: 'rgba(159,232,255,0.05)', padding: '12px', marginBottom: '16px', fontSize: '12px', lineHeight: 1.6 }}>
           <strong style={{ letterSpacing: '1px' }}>GETTING STARTED</strong>
           <div style={{ marginTop: '4px', opacity: 0.85 }}>{guide}</div>
+          <div style={{ marginTop: '6px', opacity: 0.5, fontSize: '11px' }}>This guide retires once you are underway. Full guidance always lives in the Journal (press J).</div>
         </div>
       )}
       {brinkExps.length > 0 && (
@@ -652,6 +666,14 @@ function UndercroftPanel({ gameState, actions, onClose, notifications, onDismiss
           <ChartCanvas page={page} expeditions={activeExps.filter((e) => e.tier === pageTier)} selectedNodeId={selNode} onSelectNode={setSelNode} size={384} />
           <div style={{ fontSize: '10px', opacity: 0.5, marginTop: '6px' }}>
             Click a charted site to plan a Delve. Click empty dark to plan a Survey.
+          </div>
+          <div style={{ marginTop: '10px' }}>
+            <button
+              onClick={() => actions.openEchoFindings()}
+              style={{ background: 'none', border: '1px solid var(--border-color)', color: 'var(--text-color)', padding: '6px 10px', cursor: 'pointer', fontSize: '11px', fontFamily: 'inherit', letterSpacing: '0.5px', opacity: (gameState.echoFindings || []).length ? 1 : 0.55 }}
+            >
+              ECHO FINDINGS ({(gameState.echoFindings || []).length})
+            </button>
           </div>
           <div style={{ marginTop: '16px' }}>
             {sectionTitle('In the dark', activeExps.length === 0 ? 'No active expeditions.' : null)}
