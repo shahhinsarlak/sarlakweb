@@ -8,7 +8,7 @@
  * index = y * width + x
  */
 
-import { emptyCell, createCell, isEmptyCell } from './pxlsModel';
+import { emptyCell, createCell, isEmptyCell, instanceEffect } from './pxlsModel';
 
 /**
  * @param {number} x
@@ -77,10 +77,15 @@ export const applyBrush = (cells, dims, cx, cy, brush) => {
           next[idx] = {
             color: existing.color,
             alpha: existing.alpha,
-            effect: brush.effect ? { ...brush.effect } : null,
+            effect: instanceEffect(brush.effect),
           };
         } else {
-          next[idx] = { color: value.color, alpha: value.alpha, effect: value.effect };
+          // Fresh per-cell effect so each painted noise pixel gets its own grain.
+          next[idx] = {
+            color: value.color,
+            alpha: value.alpha,
+            effect: brush.tool === 'eraser' ? null : instanceEffect(brush.effect),
+          };
         }
       }
     }
@@ -124,7 +129,11 @@ export const floodFill = (cells, dims, sx, sy, brush) => {
     if (seen.has(idx)) continue;
     if (!sameAsTarget(next[idx])) continue;
     seen.add(idx);
-    next[idx] = { color: value.color, alpha: value.alpha, effect: value.effect };
+    next[idx] = {
+      color: value.color,
+      alpha: value.alpha,
+      effect: brush.tool === 'eraser' ? null : instanceEffect(brush.effect),
+    };
     stack.push([x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]);
   }
   return next;

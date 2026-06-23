@@ -32,16 +32,56 @@ export const makeId = () => {
 export const emptyCell = () => ({ color: null, alpha: 0, effect: null });
 
 /**
+ * Generates a random 32 bit unsigned seed for per-cell noise grain.
+ * @returns {number}
+ */
+export const makeNoiseSeed = () => Math.floor(Math.random() * 0xffffffff);
+
+/**
+ * Normalises an effect to a plain stored shape. Noise carries a per-cell random
+ * seed so its grain belongs to the pixel and travels with it when moved; an
+ * existing seed is preserved, otherwise a fresh one is generated.
+ * @param {Object|null} effect - { type, intensity, seed? } or null
+ * @returns {Object|null}
+ */
+export const normalizeEffect = (effect) => {
+  if (!effect) return null;
+  if (effect.type === 'noise') {
+    return {
+      type: 'noise',
+      intensity: effect.intensity,
+      seed: typeof effect.seed === 'number' ? effect.seed : makeNoiseSeed(),
+    };
+  }
+  return { type: effect.type, intensity: effect.intensity };
+};
+
+/**
+ * Builds a fresh effect instance for a newly painted cell. Like normalizeEffect
+ * but always assigns a NEW random seed to noise, so each painted pixel gets its
+ * own grain rather than sharing one value across a stroke.
+ * @param {Object|null} effect
+ * @returns {Object|null}
+ */
+export const instanceEffect = (effect) => {
+  if (!effect) return null;
+  if (effect.type === 'noise') {
+    return { type: 'noise', intensity: effect.intensity, seed: makeNoiseSeed() };
+  }
+  return { type: effect.type, intensity: effect.intensity };
+};
+
+/**
  * Creates a painted cell.
  * @param {string} color - hex colour string
  * @param {number} alpha - 0..1
- * @param {Object|null} effect - { type, intensity } or null
+ * @param {Object|null} effect - { type, intensity, seed? } or null
  * @returns {Object}
  */
 export const createCell = (color, alpha = 1, effect = null) => ({
   color,
   alpha,
-  effect: effect ? { type: effect.type, intensity: effect.intensity } : null,
+  effect: normalizeEffect(effect),
 });
 
 /**
@@ -136,7 +176,13 @@ export const createProject = ({ name = 'Untitled', size = DEFAULT_CANVAS_SIZE } 
 export const cloneCells = (cells) => cells.map((c) => ({
   color: c.color,
   alpha: c.alpha,
-  effect: c.effect ? { type: c.effect.type, intensity: c.effect.intensity } : null,
+  effect: c.effect
+    ? {
+      type: c.effect.type,
+      intensity: c.effect.intensity,
+      ...(typeof c.effect.seed === 'number' ? { seed: c.effect.seed } : {}),
+    }
+    : null,
 }));
 
 /**

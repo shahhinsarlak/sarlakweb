@@ -21,7 +21,7 @@ exists so any future session has full context without re-reading every file.
 ## Data model (single source of truth)
 
 ```
-Cell    = { color: '#rrggbb' | null, alpha: 0..1, effect: null | { type, intensity } }
+Cell    = { color: '#rrggbb' | null, alpha: 0..1, effect: null | { type, intensity, seed? } }
 Layer   = { id, name, visible, opacity, cells: Cell[] }   // cells row-major, index = y*width + x
 Project = { id, name, width, height, layers[], activeLayerId, palette[], seed,
             createdAt, updatedAt, version }                // square canvas (width === height)
@@ -50,7 +50,8 @@ Project = { id, name, width, height, layers[], activeLayerId, palette[], seed,
 - `drawHelpers.js` — pure cell ops: applyBrush, floodFill, line/rect/ellipse points,
   stampPoints, mirrorPoints, collectSelectedPixels, removePixelsAt, pastePixelsAt.
 - `renderHelpers.js` — compositeToCanvas (used for editor + PNG export), effects
-  (glow pre-pass, dither cross-cell checkerboard, per-layer seeded noise), resolveRgb, drawCheckerboard.
+  (glow pre-pass, dither cross-cell checkerboard, per-cell seeded noise), resolveRgb, drawCheckerboard.
+  Noise: each cell stores its own random seed (`effect.seed`) baked at paint time, so grain follows the pixel when moved.
 - `exportHelpers.js` — exportPNG (native + integer nearest-neighbour scale), buildSVG/
   exportSVG (rect-per-pixel, crispEdges), exportJSON. User types full filename.
 - `imageHelpers.js` — loadImageFile, imageToCells (downsample any-size image,
