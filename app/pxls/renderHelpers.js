@@ -6,8 +6,9 @@
  * dither, noise) are applied here so the editor preview matches the export.
  *
  * Rendering is deterministic: noise uses a seeded PRNG keyed by the project
- * seed plus the cell's own colour, so noise belongs to the pixel (it follows
- * the pixel and an exported frame matches what is on screen).
+ * seed, a per-layer salt, the cell position and the cell's colour, so noise
+ * varies pixel to pixel yet belongs to the layer (not the shared canvas grid)
+ * and an exported frame matches what is on screen.
  */
 
 import { isEmptyCell } from './pxlsModel';
@@ -44,6 +45,21 @@ const hash01 = (a) => {
 };
 
 /**
+ * FNV-1a hash of a string to a 32 bit unsigned int. Used to derive a per-layer
+ * salt so noise belongs to a specific layer rather than the shared canvas grid.
+ * @param {string} str
+ * @returns {number}
+ */
+export const strHash = (str) => {
+  let h = 2166136261;
+  for (let i = 0; i < str.length; i += 1) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+};
+
+/**
  * Resolves a cell's effective rgb after noise + dither effects. The result is
  * always a single solid colour (one cell holds one value). Dither is applied as
  * a cross cell checkerboard: on alternating cells the colour shifts toward the
@@ -54,17 +70,19 @@ const hash01 = (a) => {
  * @param {number} seed
  * @param {number} idx - cell flat index
  * @param {number} width - canvas width (for checkerboard parity)
+ * @param {number} layerSalt - per-layer salt so noise is unique to this layer
  * @returns {{ r: number, g: number, b: number }}
  */
-const effectiveRgb = (cell, rightCell, seed, idx, width) => {
+const effectiveRgb = (cell, rightCell, seed, idx, width, layerSalt = 0) => {
   let { r, g, b } = hexToRgb(cell.color);
   if (cell.effect && cell.effect.type === 'noise') {
     const amount = 60 * cell.effect.intensity;
-    // Key the jitter on the cell's own colour so noise belongs to the pixel:
-    // it follows the pixel when moved and is identical for identical cells,
-    // rather than being tied to the global canvas position.
+    // Per-pixel grain (idx) keyed to this layer (layerSalt) and the cell's own
+    // colour, so noise belongs to the layer's pixel rather than the shared
+    // global canvas grid, while still varying pixel to pixel.
     const colorKey = (r << 16) | (g << 8) | b;
-    const j = (hash01(seed + colorKey * 2654435761) - 0.5) * 2 * amount;
+    const j = (hash01(seed + layerSalt + idx * 2654435761 + colorKey * 40503) - 0.5)
+      * 2 * amount;
     r = clamp255(r + j);
     g = clamp255(g + j);
     b = clamp255(b + j);
@@ -93,10 +111,13 @@ const effectiveRgb = (cell, rightCell, seed, idx, width) => {
  * @param {number} idx
  * @param {number} width
  * @param {boolean} includeEffects
+ * @param {number} [layerSalt=0]
  * @returns {{ r: number, g: number, b: number }}
  */
-export const resolveRgb = (cell, rightCell, seed, idx, width, includeEffects) =>
-  (includeEffects ? effectiveRgb(cell, rightCell, seed, idx, width) : hexToRgb(cell.color));
+export const resolveRgb = (cell, rightCell, seed, idx, width, includeEffects, layerSalt = 0) =>
+  (includeEffects
+    ? effectiveRgb(cell, rightCell, seed, idx, width, layerSalt)
+    : hexToRgb(cell.color));
 
 /**
  * Draws a single layer onto a 2d context.
@@ -110,6 +131,7 @@ export const resolveRgb = (cell, rightCell, seed, idx, width, includeEffects) =>
 const drawLayer = (ctx, layer, dims, cellSize, seed, includeEffects) => {
   const { width, height } = dims;
   const { cells, opacity } = layer;
+  const layerSalt = strHash(layer.id || '');
 
   // Glow pre pass (additive) so halos sit behind solid pixels.
   if (includeEffects) {
@@ -144,7 +166,7 @@ const drawLayer = (ctx, layer, dims, cellSize, seed, includeEffects) => {
       const a = cell.alpha * opacity;
       const right = x + 1 < width ? cells[idx + 1] : null;
       const { r, g, b } = includeEffects
-        ? effectiveRgb(cell, right, seed, idx, width)
+        ? effectiveRgb(cell, right, seed, idx, width, layerSalt)
         : hexToRgb(cell.color);
       ctx.fillStyle = `rgba(${r},${g},${b},${a})`;
       ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);

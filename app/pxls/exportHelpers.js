@@ -10,7 +10,7 @@
  * when it is missing.
  */
 
-import { compositeToCanvas, resolveRgb, hexToRgb } from './renderHelpers';
+import { compositeToCanvas, resolveRgb, hexToRgb, strHash } from './renderHelpers';
 import { isEmptyCell } from './pxlsModel';
 import { EXPORT_FORMATS } from './constants';
 
@@ -82,13 +82,14 @@ export const buildSVG = (project, opts) => {
   for (const layer of layers) {
     if (!layer.visible) continue;
     const { cells, opacity } = layer;
+    const layerSalt = strHash(layer.id || '');
     for (let y = 0; y < height; y += 1) {
       for (let x = 0; x < width; x += 1) {
         const idx = y * width + x;
         const cell = cells[idx];
         if (isEmptyCell(cell)) continue;
         const right = x + 1 < width ? cells[idx + 1] : null;
-        const { r, g, b } = resolveRgb(cell, right, seed, idx, width, includeEffects);
+        const { r, g, b } = resolveRgb(cell, right, seed, idx, width, includeEffects, layerSalt);
         const a = +(cell.alpha * opacity).toFixed(3);
         rects.push(
           `<rect x="${x * scale}" y="${y * scale}" width="${scale}" height="${scale}" `

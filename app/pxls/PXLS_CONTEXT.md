@@ -50,7 +50,7 @@ Project = { id, name, width, height, layers[], activeLayerId, palette[], seed,
 - `drawHelpers.js` — pure cell ops: applyBrush, floodFill, line/rect/ellipse points,
   stampPoints, mirrorPoints, collectSelectedPixels, removePixelsAt, pastePixelsAt.
 - `renderHelpers.js` — compositeToCanvas (used for editor + PNG export), effects
-  (glow pre-pass, dither cross-cell checkerboard, colour-keyed seeded noise), resolveRgb, drawCheckerboard.
+  (glow pre-pass, dither cross-cell checkerboard, per-layer seeded noise), resolveRgb, drawCheckerboard.
 - `exportHelpers.js` — exportPNG (native + integer nearest-neighbour scale), buildSVG/
   exportSVG (rect-per-pixel, crispEdges), exportJSON. User types full filename.
 - `imageHelpers.js` — loadImageFile, imageToCells (downsample any-size image,
