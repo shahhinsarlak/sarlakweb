@@ -1,7 +1,10 @@
 # Office Horror — Game Context
 
 Single source of truth for the `/game` route. Written from a full read of the
-source on 2026-06-11. Replaces the old ARCHITECTURE.md, DEBUG_SYSTEM.md,
+source on 2026-06-11; the Expeditions/Undercroft section, file map, and save
+version refreshed 2026-06-24 to cover the 128px art overhaul, production-time
+pricing, single-instance gear/weapons, gear gating, Echo findings, and the
+first-run guide. Replaces the old ARCHITECTURE.md, DEBUG_SYSTEM.md,
 RECOMMENDATIONS.md and PLAYTIME_AND_BALANCE.md.
 
 For coding conventions (state rules, naming, ESLint, git workflow) see the
@@ -42,6 +45,9 @@ variables.
 | `journalHelpers.js` | Location discovery tracking (tiny). |
 | `gameUtils.js` | Visual/text helpers: distortion, clock, particles, screen shake, `formatPP`. |
 | `saveSystem.js` | Versioned save/load (file, clipboard, localStorage autosave), migrations, offline progress. |
+| `expeditionChart.js` | Undercroft chart: seeded page/node/route/threat generation, `getNodeLoot` (resourceSec). |
+| `expeditionHelpers.js` | Undercroft math: `getIncomeRates`/`resolveCost`/`resolveLoot` + cost getters, kit capabilities, gacha roll, encounters, risk, `getExpeditionGate`, `runExpeditionsTick`, `finalizeExpedition`, leveling. |
+| `spriteArt.js` | Procedural 128px painters (`paintWeapon`/`paintCraft`/`paintShell`/`paintMind`). |
 
 ### UI — page.js, panels, modals
 | File | Role |
@@ -59,7 +65,12 @@ variables.
 | `MeditationModal.js` | Hold-to-breathe minigame to restore sanity. |
 | `DebugModal.js` | Fix-the-code minigame for PP. |
 | `ArchiveModal.js` / `ExamineModal.js` | Browse Archive bookshelf / read a single item. |
-| `JournalModal.js` | Discovered locations + learned mechanics. |
+| `JournalModal.js` | Discovered locations + learned mechanics + recovered Echo findings (3 tabs). |
+| `UndercroftPanel.js` | Full-screen Undercroft console: EXPEDITION/PREPARE/ARMORY tabs (chart+dispatch+live vitals+recall, mind/shell/gear prep, gacha roll+sortable blueprint library, mind/blueprint detail modals). |
+| `ChartCanvas.js` | 128px pixel chart canvas (nodes, routes, death-markers, active expeditions). |
+| `PixelArt.js` | 128px render engine (scales crisp, plays a dissolve "materialise" on craft). |
+| `WeaponSprite.js` / `CraftSprite.js` / `MindPortrait.js` | Thin wrappers over PixelArt + spriteArt for weapons / gear+provisions+shells / minds. |
+| `LoopEnding.js` | Full-screen loop-ending cinematic. |
 | `AchievementsModal.js` | All achievements + active bonus summary. |
 | `HelpPopup.js` / `NotificationPopup.js` | Tutorial popups / top-left toast stack. |
 | `BuffReplacementModal.js` | Choose a buff to replace when at the buff cap. |
@@ -221,7 +232,10 @@ true into `discoveredMechanics` directly, so mechanics are "learned by
 experiencing them" even when help is disabled or the popup window is missed (this
 is what reliably surfaces the low-sanity / low-quality mechanics). `J` toggles the
 journal. Notifications are a top-left auto-fading toast stack mirrored from event
-messages.
+messages: a single `useEffect` in `page.js` diffs new leading entries of
+`recentMessages` and pushes them to `notifications`. Message sources must therefore
+write to `recentMessages` ONLY (never create notifications directly) — every logged
+message becomes a toast regardless of which screen is open (incl. the Undercroft).
 
 ### Focus Mode and offline progress
 - **Focus Mode (Phase 20):** 20+ Sort clicks within 30 s sets
@@ -401,7 +415,7 @@ rendered alongside.
 | Power model | battery; consumers run in priority order, halt (binary) if battery can't cover full draw; machines can be paused; consumers can be overclocked 50-300% |
 | Machine build cost | one-time lucidity; upgrades lucidity (+substrate L4, +intelligence L7) |
 | Factory sprites | 128x128 office-junk, 4-frame base + attachments at L3/6/10, RLE JSON via PXLS renderer |
-| Save version | 3 (factory machine counts -> built level 0) |
+| Save version | 4 (v2->3 factory machine counts -> built level 0; v3->4 sets `undercroftGuideSeen` for veterans) |
 
 ---
 
@@ -449,20 +463,54 @@ breaks through). A combat/exploration layer reached from a button in the LOCATIO
 - **Unlock + state**: `undercroftUnlocked`, `factoryFullRunSeconds` (page.js tick trigger).
   All expedition state lives in `constants.js` INITIAL_GAME_STATE: minds, shells, weapons,
   gearInventory, provisions, weaponBlueprints, chartPages, expeditions, wayOutFragments,
-  loopCount, mindsLost, etc.
-- **Files**: `expeditionChart.js` (seeded page/node/route/threat/loot gen), `expeditionHelpers.js`
-  (kit capabilities, gacha roll, encounters, risk readout, resolution `runExpeditionsTick` +
-  `finalizeExpedition`, leveling), `UndercroftPanel.js` (Chart/Roster/Workbench/Blueprints tabs),
-  `ChartCanvas.js` (128x128 pixel chart canvas), `MindPortrait.js` (procedural portraits),
-  `LoopEnding.js` (loop cinematic). Actions in `gameActions.js` (roll/print/craft/dispatch/
-  resolveBrink/completeLoop).
+  loopCount, mindsLost, plus `undercroftGuideSeen` (first-run banner flag) and `echoFindings`
+  (collected Echo lore fragments).
+- **Files**: `expeditionChart.js` (seeded page/node/route/threat/loot gen; `getNodeLoot` emits
+  `resourceSec`), `expeditionHelpers.js` (income/pricing/loot math, kit capabilities, gacha roll,
+  encounters, risk, gate, resolution `runExpeditionsTick` + `finalizeExpedition`, leveling),
+  `UndercroftPanel.js` (the giant panel; 3 tabs EXPEDITION/PREPARE/ARMORY), `ChartCanvas.js`
+  (128px pixel chart canvas), `LoopEnding.js` (loop cinematic). **Pixel-art stack**:
+  `PixelArt.js` (128px render engine with a dissolve "materialise" effect), `spriteArt.js`
+  (procedural painters: `paintWeapon`/`paintCraft`/`paintShell`/`paintMind` — minds roll random
+  eyes/nose/mouth/etc.), and thin wrappers `WeaponSprite.js` / `CraftSprite.js` / `MindPortrait.js`.
+  Actions in `gameActions.js` (roll/print/discardMind/renameMind/researchGear/craftGear/
+  craftWeapon/brewProvision/craftShell/dispatch/resolveBrink/recallExpedition/completeLoop).
 - **Loop**: print a MIND (paper+PP+lucidity) + assemble a SHELL (substrate+core), ROLL weapon
   blueprints (gacha, intelligence; type x rarity, owned forever) and forge them, then Survey
   (reveal fog) or Delve (exploit a charted node) across multi-tier pixel pages. Resolution is
   idle; at a BRINK a mind pauses -> spend a Clarity Charge (save) or let it ride (gamble:
   survive scarred, or PERMANENT loss -> death-marker on the chart). Breaching Gateways/reading
   Echoes yields "way out" fragments; enough fragments + a final Gateway breach -> loop ending
-  (keeps minds/gear/blueprints, resets chart deeper, banks a windfall).
+  (keeps minds/gear/blueprints, resets chart deeper, banks a windfall). `recallExpedition`
+  pulls a mind home early but abandons its shell/weapon/gear in the dark.
+- **Production-time pricing (the economy model)**: soft-currency costs AND rewards are expressed
+  as "N seconds of the player's current income". `getIncomeRates(state)` sums factory outputs +
+  ppPerSecond/paperPerSecond + lucid trickle; `resolveCost(rates, spec, opts)` / `resolveLoot`
+  turn `{ sec, floor, fixed, core, coreQty }` specs into concrete amounts that auto-scale.
+  `fixed` (energy) and `core`/`coreQty` (rare materials) stay constant — they are the depth gate.
+  Cost getters: `getRollCost`/`getShellCost`/`getPrintCost`/`getDispatchCost`/`getWeaponCraftCost`/
+  `getGearCraftCost`/`getProvisionCost`. The panel computes `income` once and threads it to all.
+  EXPEDITION.cost specs + gear/provision craft specs live in `constants.js`; `lootMinRate` floors
+  early loot. Tune balance by changing a single `sec`/`addSec(...)` number.
+- **Single-instance gear & weapons**: a forged WEAPON or crafted GEAR exists at most once until
+  it is lost. Re-craft is blocked while owned (button shows FORGED/CRAFTED). Each expedition
+  records the `gear` it carries; gear out with one copy is busy-locked (cannot be equipped by
+  another, shown "(out)"). Both weapon and gear are removed from inventory only on `death` or
+  `recall`; on success/retreat the item returns and the lock auto-clears. Shell bay capped at
+  `EXPEDITION.shellBay`.
+- **Gear gating + live vitals**: `getExpeditionGate(kit, kind, node, tier)` requires specific
+  gear to venture — tier>=2 needs a light (sight), corruptor-haunt/anomaly/gateway delves need a
+  ward, echoes need a Decoder. Enforced in the dispatch action AND the panel (requirements box +
+  disabled Launch). Active expeditions show live Shell/Resolve/Corruption vital bars per tick.
+- **Echo findings**: a successful Echo delve reveals the next unread `ECHO_FINDINGS` fragment
+  (sequential by collected count, no dupes; threaded via `ctx.echoCount` -> `out.echoFindings` in
+  the tick -> appended in page.js). Viewable in the Journal's new **Echoes** tab; an "ECHO
+  FINDINGS (n)" button in the EXPEDITION tab opens it (`openEchoFindings`).
+- **First-run guide**: the GETTING STARTED banner shows only while `!undercroftGuideSeen`; a
+  useEffect retires it once the player has a mind, a shell, and a charted site. Full guidance is
+  preserved in the Journal (MECHANICS_ENTRIES.undercroft). Save migration v3->v4 sets the flag
+  true for veterans who already explored (see `saveSystem.js` MIGRATIONS).
 - **Key rules**: weapon types have quirks vs 5 foe archetypes (rarity = pure Might multiplier);
   minds are individuated veterans (no death-proof meta-progression); standard-coloured UI text.
-  Pixel art is procedural (same pipeline as factory sprites).
+  All assets are 128x128 procedural pixel art. The tick's `runExpeditionsTick` MUST always return
+  the updated expeditions list (never null) or in-progress progress is discarded.
