@@ -457,6 +457,9 @@ grind. Not shipped to production.
 
 ## Expeditions / The Undercroft (Chapter 2 endgame, Phases A-C)
 
+> Design rationale and the locked design forks live in `EXPEDITIONS_DESIGN.md`
+> (original pre-build design doc, kept for intent; this file is the current truth).
+
 Gated behind a fully-running Construct (all core machines running together ~45s -> the floor
 breaks through). A combat/exploration layer reached from a button in the LOCATIONS section.
 
