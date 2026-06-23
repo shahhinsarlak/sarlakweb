@@ -6,7 +6,8 @@
  * dither, noise) are applied here so the editor preview matches the export.
  *
  * Rendering is deterministic: noise uses a seeded PRNG keyed by the project
- * seed plus cell position, so an exported frame matches what is on screen.
+ * seed plus the cell's own colour, so noise belongs to the pixel (it follows
+ * the pixel and an exported frame matches what is on screen).
  */
 
 import { isEmptyCell } from './pxlsModel';
@@ -59,7 +60,11 @@ const effectiveRgb = (cell, rightCell, seed, idx, width) => {
   let { r, g, b } = hexToRgb(cell.color);
   if (cell.effect && cell.effect.type === 'noise') {
     const amount = 60 * cell.effect.intensity;
-    const j = (hash01(seed + idx * 2654435761) - 0.5) * 2 * amount;
+    // Key the jitter on the cell's own colour so noise belongs to the pixel:
+    // it follows the pixel when moved and is identical for identical cells,
+    // rather than being tied to the global canvas position.
+    const colorKey = (r << 16) | (g << 8) | b;
+    const j = (hash01(seed + colorKey * 2654435761) - 0.5) * 2 * amount;
     r = clamp255(r + j);
     g = clamp255(g + j);
     b = clamp255(b + j);
