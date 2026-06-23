@@ -24,6 +24,7 @@ import {
 } from './historyHelpers';
 import {
   createProject, createLayer, createLayerFromCells, getActiveLayer, validateProject, cloneCells,
+  duplicateLayer, makeEmptyCells, isEmptyCell,
 } from './pxlsModel';
 import { saveProject, getLastOpenId, listProjects } from './storageHelpers';
 import { applyShading } from './shadingHelpers';
@@ -129,6 +130,26 @@ export default function PxlsEditor() {
       const layer = createLayer(p.width, p.height, `Layer ${p.layers.length + 1}`);
       return { ...p, layers: [...p.layers, layer], activeLayerId: layer.id };
     }),
+    onDuplicate: (id) => setProject((p) => {
+      const source = p.layers.find((l) => l.id === id);
+      if (!source) return p;
+      const copy = duplicateLayer(source);
+      const index = p.layers.findIndex((l) => l.id === id);
+      const layers = [...p.layers];
+      layers.splice(index + 1, 0, copy);
+      return { ...p, layers, activeLayerId: copy.id };
+    }),
+    onClear: () => {
+      const p = projectRef.current;
+      const layer = getActiveLayer(p);
+      if (!layer || layer.cells.every(isEmptyCell)) return;
+      if (typeof window !== 'undefined'
+        && !window.confirm('Clear this layer? You can undo this afterwards.')) {
+        return;
+      }
+      pushHistory();
+      applyCellsToLayer(layer.id, makeEmptyCells(p.width, p.height));
+    },
     onDelete: (id) => setProject((p) => {
       if (p.layers.length <= 1) return p;
       const layers = p.layers.filter((l) => l.id !== id);

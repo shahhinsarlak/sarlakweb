@@ -3,7 +3,7 @@
  *
  * Pure factory and transform helpers for the PXLS data model:
  * - createCell / emptyCell
- * - createLayer
+ * - createLayer / duplicateLayer / makeEmptyCells
  * - createProject
  * - cloneCells / resizeProject helpers
  * - validateProject for JSON import
@@ -79,6 +79,29 @@ export const createLayerFromCells = (name, cells) => ({
   opacity: 1,
   cells,
 });
+
+/**
+ * Duplicates a layer, deep cloning its cells and assigning a fresh id.
+ * @param {Object} layer
+ * @param {string} [name] - name for the copy (defaults to "<name> copy")
+ * @returns {Object}
+ */
+export const duplicateLayer = (layer, name) => ({
+  id: makeId(),
+  name: name || `${layer.name} copy`,
+  visible: layer.visible,
+  opacity: layer.opacity,
+  cells: cloneCells(layer.cells),
+});
+
+/**
+ * Builds a fresh array of empty (transparent) cells for a width*height canvas.
+ * @param {number} width
+ * @param {number} height
+ * @returns {Object[]}
+ */
+export const makeEmptyCells = (width, height) =>
+  Array.from({ length: width * height }, emptyCell);
 
 /**
  * Creates a new project with a single blank layer.

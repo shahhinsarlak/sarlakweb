@@ -42,6 +42,7 @@ Project = { id, name, width, height, layers[], activeLayerId, palette[], seed,
   transformed viewport (pan/zoom). Translates pointer input into draw-helper calls.
 - `Toolbar.js`, `ColorPanel.js`, `LayersPanel.js`, `EffectsPanel.js`,
   `ShadePanel.js`, `ExportModal.js`, `ImageImportModal.js`, `ProjectGallery.js` — UI.
+  LayersPanel actions: add, duplicate, delete, clear (active layer, undoable, confirmed).
 - `constants.js` — SCHEMA_VERSION, HISTORY_CAP, STORAGE_KEYS, CANVAS_SIZES,
   DEFAULT_PALETTE, TOOLS, TOOL_ORDER, MIRROR_MODES, EFFECTS, EXPORT_* , brush limits.
 - `pxlsModel.js` — factories/validation: createCell/emptyCell/createLayer/

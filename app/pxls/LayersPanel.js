@@ -3,8 +3,9 @@
 /**
  * PXLS Layers Panel
  *
- * Lists layers top to bottom, lets the user add, delete, reorder, rename,
- * toggle visibility, set the active layer, and adjust the active layer opacity.
+ * Lists layers top to bottom, lets the user add, duplicate, delete, reorder,
+ * rename, toggle visibility, clear the active layer, set the active layer, and
+ * adjust the active layer opacity.
  *
  * @param {Object} props
  * @param {Object[]} props.layers
@@ -17,7 +18,8 @@ import styles from './page.module.css';
 
 export default function LayersPanel({ layers, activeLayerId, handlers }) {
   const {
-    onSelect, onToggleVisible, onRename, onAdd, onDelete, onMoveUp, onMoveDown, onOpacity, onReorder,
+    onSelect, onToggleVisible, onRename, onAdd, onDelete, onDuplicate, onClear,
+    onMoveUp, onMoveDown, onOpacity, onReorder,
   } = handlers;
 
   const [dragIndex, setDragIndex] = useState(null);
@@ -103,11 +105,19 @@ export default function LayersPanel({ layers, activeLayerId, handlers }) {
         <button
           type="button"
           className={styles.iconBtn}
+          onClick={() => onDuplicate(activeLayerId)}
+        >
+          duplicate
+        </button>
+        <button
+          type="button"
+          className={styles.iconBtn}
           onClick={() => onDelete(activeLayerId)}
           disabled={layers.length <= 1}
         >
           delete
         </button>
+        <button type="button" className={styles.iconBtn} onClick={onClear}>clear</button>
       </div>
 
       {active && (
