@@ -15,6 +15,7 @@ export const HISTORY_CAP = 100;
 export const STORAGE_KEYS = {
   projects: 'pxls:projects',
   lastOpenId: 'pxls:lastOpenId',
+  swatches: 'pxls:swatches',
 };
 
 // Square presets only in v1. Model stores width/height separately so non-square

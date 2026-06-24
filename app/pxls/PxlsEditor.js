@@ -19,6 +19,7 @@ import ShadePanel from './ShadePanel';
 import ExportModal from './ExportModal';
 import ImageImportModal from './ImageImportModal';
 import ProjectGallery from './ProjectGallery';
+import SwatchesModal from './SwatchesModal';
 import {
   createHistory, pushHistory as pushHist, undo as undoHist, redo as redoHist,
   canUndo, canRedo,
@@ -55,6 +56,7 @@ export default function PxlsEditor() {
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [imageOpen, setImageOpen] = useState(false);
+  const [swatchesOpen, setSwatchesOpen] = useState(false);
   const [hover, setHover] = useState({ x: -1, y: -1 });
   const [playing, setPlaying] = useState(false);
   const [previewFrameId, setPreviewFrameId] = useState(null);
@@ -299,6 +301,19 @@ export default function PxlsEditor() {
     p.palette.includes(c) ? p : { ...p, palette: [...p.palette, c].slice(-16) }
   ));
 
+  // Merge colours from the global swatch library into the project palette.
+  const handleImportSwatches = (colors) => {
+    setProject((p) => {
+      const merged = [...p.palette];
+      for (const c of colors) {
+        const hex = typeof c === 'string' ? c.toLowerCase() : null;
+        if (hex && !merged.includes(hex)) merged.push(hex);
+      }
+      return { ...p, palette: merged.slice(-32) };
+    });
+    setSwatchesOpen(false);
+  };
+
   const handleEyedrop = (cell) => {
     if (cell && cell.color) {
       setColor(cell.color);
@@ -362,7 +377,7 @@ export default function PxlsEditor() {
   useEffect(() => {
     const onKey = (e) => {
       const tag = e.target.tagName;
-      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || exportOpen || galleryOpen || imageOpen) {
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || exportOpen || galleryOpen || imageOpen || swatchesOpen) {
         return;
       }
       const key = e.key.toLowerCase();
@@ -398,7 +413,7 @@ export default function PxlsEditor() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [handleUndo, handleRedo, exportOpen, galleryOpen, imageOpen]);
+  }, [handleUndo, handleRedo, exportOpen, galleryOpen, imageOpen, swatchesOpen]);
 
   if (!project) {
     return <div className={styles.pxls}><p className={styles.emptyNote}>Loading editor…</p></div>;
@@ -429,6 +444,9 @@ export default function PxlsEditor() {
         </button>
         <button type="button" className={styles.barBtn} onClick={() => setImageOpen(true)}>
           Image
+        </button>
+        <button type="button" className={styles.barBtn} onClick={() => setSwatchesOpen(true)}>
+          Swatches
         </button>
         <button type="button" className={styles.barBtn} onClick={() => setGalleryOpen(true)}>
           Projects
@@ -527,6 +545,15 @@ export default function PxlsEditor() {
           project={project}
           onAddLayer={handleAddImageLayer}
           onClose={() => setImageOpen(false)}
+        />
+      )}
+      {swatchesOpen && (
+        <SwatchesModal
+          color={color}
+          projectSwatches={project.palette}
+          onColor={setColor}
+          onImportToProject={handleImportSwatches}
+          onClose={() => setSwatchesOpen(false)}
         />
       )}
     </div>

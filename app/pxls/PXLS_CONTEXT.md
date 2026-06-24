@@ -68,7 +68,11 @@ Project = { id, name, width, height, frames[], activeFrameId, fps, palette[], se
 - `shadingHelpers.js` — shadeColor, applyShading (whole layer), computeShadeRange +
   shadeShiftAt (per-cell brushed shading). Distance-based: near light lighter, far darker.
 - `historyHelpers.js` — undo/redo stack (cap 100), per-stroke snapshots of a layer.
-- `storageHelpers.js` — localStorage multi-project gallery (`pxls:projects`, `pxls:lastOpenId`).
+- `storageHelpers.js` — localStorage multi-project gallery (`pxls:projects`, `pxls:lastOpenId`)
+  and the global swatch library (`pxls:swatches`): getGlobalSwatches / addGlobalSwatches /
+  removeGlobalSwatch / setGlobalSwatches (deduped, lowercased hex, shared across all projects).
+- `SwatchesModal.js` — top-bar "Swatches" modal: save current colour or whole project palette
+  into the global library, import the library into the current project, select or delete swatches.
 - `page.module.css` — all layout + scoped accent vars.
 
 ## Tools (TOOL_ORDER in constants.js)

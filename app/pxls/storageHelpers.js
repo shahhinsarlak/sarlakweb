@@ -103,3 +103,65 @@ export const getLastOpenId = () => {
     return null;
   }
 };
+
+const HEX_RE = /^#[0-9a-f]{6}$/;
+
+/**
+ * Reads the global swatch library: a flat list of hex colours shared across all
+ * projects. Invalid entries are dropped.
+ * @returns {string[]}
+ */
+export const getGlobalSwatches = () => {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEYS.swatches);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((c) => typeof c === 'string' && HEX_RE.test(c.toLowerCase()));
+  } catch {
+    return [];
+  }
+};
+
+/**
+ * Overwrites the global swatch library.
+ * @param {string[]} swatches
+ * @returns {boolean} true on success
+ */
+export const setGlobalSwatches = (swatches) => {
+  if (typeof window === 'undefined') return false;
+  try {
+    window.localStorage.setItem(STORAGE_KEYS.swatches, JSON.stringify(swatches));
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+/**
+ * Adds colours to the global library (lowercased, deduplicated, order kept).
+ * @param {string[]} colors
+ * @returns {string[]} the updated library
+ */
+export const addGlobalSwatches = (colors) => {
+  const next = getGlobalSwatches();
+  for (const c of colors) {
+    if (typeof c !== 'string') continue;
+    const hex = c.toLowerCase();
+    if (HEX_RE.test(hex) && !next.includes(hex)) next.push(hex);
+  }
+  setGlobalSwatches(next);
+  return next;
+};
+
+/**
+ * Removes a colour from the global library.
+ * @param {string} color
+ * @returns {string[]} the updated library
+ */
+export const removeGlobalSwatch = (color) => {
+  const next = getGlobalSwatches().filter((c) => c !== color.toLowerCase());
+  setGlobalSwatches(next);
+  return next;
+};
