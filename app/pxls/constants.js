@@ -70,6 +70,7 @@ export const EXPORT_BACKGROUNDS = {
 
 export const EXPORT_FORMATS = {
   png: { id: 'png', name: 'PNG', ext: 'png' },
+  gif: { id: 'gif', name: 'GIF', ext: 'gif' },
   svg: { id: 'svg', name: 'SVG', ext: 'svg' },
   json: { id: 'json', name: 'JSON', ext: 'json' },
 };
@@ -78,3 +79,8 @@ export const EXPORT_SCALES = [1, 2, 4, 8, 16, 32];
 
 export const MIN_BRUSH = 1;
 export const MAX_BRUSH = 8;
+
+// Animation playback. fps is stored per project; frames advance at 1000/fps ms.
+export const DEFAULT_FPS = 8;
+export const MIN_FPS = 1;
+export const MAX_FPS = 30;

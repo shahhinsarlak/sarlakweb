@@ -11,6 +11,8 @@
  *
  * @param {Object} props
  * @param {Object} props.project
+ * @param {Object|null} [props.onionProject] - previous frame view drawn faintly behind the art
+ * @param {boolean} [props.interactive] - when false (e.g. during playback) drawing is disabled
  * @param {Object} props.brush - { tool, color, alpha, effect, size, mirror }
  * @param {Function} props.onPushHistory - snapshot active layer before a change
  * @param {Function} props.onSetCells - replace active layer cells (no history)
@@ -31,10 +33,12 @@ import styles from './page.module.css';
 const TARGET_PX = 512;
 
 export default function Canvas({
-  project, brush, light, onLightMove, shadeLocked, shadeStrength,
+  project, onionProject = null, interactive = true,
+  brush, light, onLightMove, shadeLocked, shadeStrength,
   onPushHistory, onSetCells, onEyedrop, onHover,
 }) {
   const bgRef = useRef(null);
+  const onionRef = useRef(null);
   const artRef = useRef(null);
   const overlayRef = useRef(null);
   const stageRef = useRef(null);
@@ -77,6 +81,19 @@ export default function Canvas({
   useEffect(() => {
     compositeToCanvas(artRef.current, project, internalCell, { includeEffects: true });
   }, [project, internalCell]);
+
+  // Render the onion-skin ghost (previous frame) when provided, else clear it.
+  useEffect(() => {
+    const c = onionRef.current;
+    if (!c) return;
+    if (c.width !== pxW) c.width = pxW;
+    if (c.height !== pxH) c.height = pxH;
+    if (onionProject) {
+      compositeToCanvas(c, onionProject, internalCell, { includeEffects: true });
+    } else {
+      c.getContext('2d').clearRect(0, 0, pxW, pxH);
+    }
+  }, [onionProject, internalCell, pxW, pxH]);
 
   // Draws grid, mirror axes, brush cursor, selection, and an optional preview.
   const renderOverlay = useCallback((previewPoints) => {
@@ -296,6 +313,7 @@ export default function Canvas({
       return;
     }
     if (e.button !== 0) return;
+    if (!interactive) return;
     try { e.target.setPointerCapture(e.pointerId); } catch { /* synthetic / inactive pointer */ }
 
     // Shade tool: unlocked light is dragged; locked light brushes shading on.
@@ -489,6 +507,13 @@ export default function Canvas({
           }}
         >
           <canvas ref={bgRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} />
+          <canvas
+            ref={onionRef}
+            style={{
+              position: 'absolute', inset: 0, width: '100%', height: '100%',
+              opacity: 0.35, pointerEvents: 'none',
+            }}
+          />
           <canvas ref={artRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} />
           <canvas
             ref={overlayRef}

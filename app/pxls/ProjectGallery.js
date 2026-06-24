@@ -15,16 +15,16 @@
 import { useEffect, useRef, useState } from 'react';
 import { CANVAS_SIZES, DEFAULT_CANVAS_SIZE } from './constants';
 import { listProjects, deleteProject } from './storageHelpers';
-import { createProject } from './pxlsModel';
+import { createProject, getActiveFrame, frameView } from './pxlsModel';
 import { compositeToCanvas } from './renderHelpers';
 import styles from './page.module.css';
 
-/** Small canvas that renders a project preview. */
+/** Small canvas that renders a project preview (its active frame). */
 function Thumb({ project }) {
   const ref = useRef(null);
   useEffect(() => {
     const cell = Math.max(1, Math.floor(96 / project.width));
-    compositeToCanvas(ref.current, project, cell, { includeEffects: true });
+    compositeToCanvas(ref.current, frameView(project, getActiveFrame(project)), cell, { includeEffects: true });
   }, [project]);
   return (
     <canvas

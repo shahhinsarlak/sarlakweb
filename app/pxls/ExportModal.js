@@ -15,9 +15,10 @@
 
 import { useEffect, useState } from 'react';
 import {
-  EXPORT_FORMATS, EXPORT_SCALES, EXPORT_BACKGROUNDS,
+  EXPORT_FORMATS, EXPORT_SCALES, EXPORT_BACKGROUNDS, MIN_FPS, MAX_FPS,
 } from './constants';
 import { exportPNG, exportSVG, exportJSON } from './exportHelpers';
+import { exportGIF } from './animationHelpers';
 import styles from './page.module.css';
 
 export default function ExportModal({ project, onClose }) {
@@ -26,6 +27,7 @@ export default function ExportModal({ project, onClose }) {
   const [scale, setScale] = useState(8);
   const [background, setBackground] = useState('transparent');
   const [includeEffects, setIncludeEffects] = useState(true);
+  const [fps, setFps] = useState(project.fps || 8);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
@@ -36,6 +38,7 @@ export default function ExportModal({ project, onClose }) {
   }, [onClose]);
 
   const bgColor = EXPORT_BACKGROUNDS[background].color;
+  const frameCount = project.frames.length;
 
   const handleExport = async () => {
     setError('');
@@ -43,6 +46,10 @@ export default function ExportModal({ project, onClose }) {
     try {
       if (format === 'png') {
         await exportPNG(project, { scale, background: bgColor, includeEffects, filename });
+      } else if (format === 'gif') {
+        exportGIF(project, {
+          scale, background: bgColor, includeEffects, fps, filename,
+        });
       } else if (format === 'svg') {
         exportSVG(project, { scale, background: bgColor, includeEffects, filename });
       } else {
@@ -133,6 +140,30 @@ export default function ExportModal({ project, onClose }) {
               />
               Bake cell effects into the export
             </label>
+
+            {format === 'gif' && (
+              <div className={styles.field}>
+                <label htmlFor="pxls-export-fps">
+                  Speed ({fps} fps, {frameCount} frame{frameCount === 1 ? '' : 's'})
+                </label>
+                <input
+                  id="pxls-export-fps"
+                  type="number"
+                  min={MIN_FPS}
+                  max={MAX_FPS}
+                  value={fps}
+                  onChange={(e) => setFps(Math.max(
+                    MIN_FPS,
+                    Math.min(MAX_FPS, Number(e.target.value) || MIN_FPS),
+                  ))}
+                />
+                {frameCount === 1 && (
+                  <p className={styles.effectDesc}>
+                    This project has a single frame. Add frames in the timeline for animation.
+                  </p>
+                )}
+              </div>
+            )}
           </>
         )}
 

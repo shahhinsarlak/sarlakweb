@@ -726,3 +726,124 @@
   opacity: 0.6;
   margin: 1rem 0;
 }
+
+/* Timeline (animation frames) */
+.timeline {
+  width: min(512px, 92vw);
+  max-width: 100%;
+  border: 1px solid var(--border-color);
+  padding: 0.7rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.timelineHead {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.timelineHead .panelTitle {
+  margin-bottom: 0;
+}
+
+.fpsRow {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.7rem;
+}
+
+.fpsInput {
+  width: 3.2rem;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-color);
+  font-family: inherit;
+  font-size: 0.72rem;
+  padding: 0.2rem 0.35rem;
+}
+
+.iconBtnOn {
+  border-color: var(--pxls-active);
+  background: var(--pxls-active-soft);
+  color: var(--pxls-active);
+}
+
+.timelineStrip {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  overflow-x: auto;
+  padding-bottom: 0.35rem;
+}
+
+.frameCard {
+  position: relative;
+  flex: 0 0 auto;
+  width: 64px;
+  height: 64px;
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  background:
+    linear-gradient(45deg, #bdbdbd 25%, transparent 25%),
+    linear-gradient(-45deg, #bdbdbd 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #bdbdbd 75%),
+    linear-gradient(-45deg, transparent 75%, #bdbdbd 75%);
+  background-size: 10px 10px;
+  background-position: 0 0, 0 5px, 5px -5px, -5px 0;
+}
+
+.frameCardActive {
+  border-color: var(--pxls-active);
+  box-shadow: 0 0 0 1px var(--pxls-active);
+}
+
+.frameCardDragOver {
+  border-color: var(--pxls-active);
+  border-style: dashed;
+}
+
+.framePreview {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+}
+
+.frameIndex {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  font-size: 0.6rem;
+  line-height: 1;
+  padding: 1px 3px;
+  background: var(--bg-color);
+  border-top: 1px solid var(--border-color);
+  border-left: 1px solid var(--border-color);
+  opacity: 0.85;
+}
+
+.frameAdd {
+  flex: 0 0 auto;
+  width: 36px;
+  height: 64px;
+  border: 1px dashed var(--border-color);
+  background: transparent;
+  color: var(--text-color);
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+.frameAdd:hover {
+  border-color: var(--pxls-active);
+  color: var(--pxls-active);
+}
+
+.timelineActions {
+  display: flex;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+}

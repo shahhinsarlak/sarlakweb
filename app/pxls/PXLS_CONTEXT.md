@@ -23,12 +23,16 @@ exists so any future session has full context without re-reading every file.
 ```
 Cell    = { color: '#rrggbb' | null, alpha: 0..1, effect: null | { type, intensity, seed? } }
 Layer   = { id, name, visible, opacity, cells: Cell[] }   // cells row-major, index = y*width + x
-Project = { id, name, width, height, layers[], activeLayerId, palette[], seed,
+Frame   = { id, name, layers: Layer[], activeLayerId }    // each frame has its own layer stack
+Project = { id, name, width, height, frames[], activeFrameId, fps, palette[], seed,
             createdAt, updatedAt, version }                // square canvas (width === height)
 ```
 
 - One cell holds exactly one colour. Effects (`glow`, `dither`, `noise`) are baked
   at render time, never split a cell. Empty cell = `{ color:null, alpha:0, effect:null }`.
+- Animation: a project is a list of `frames`, each with its own full layer stack.
+  `validateProject` migrates legacy single-layer projects into one frame. Rendering
+  stays frame-agnostic via `frameView(project, frame)` -> `{ ...project, layers }`.
 - Canvas sizes: 16/32/64/128 (square only; width/height stored separately so
   non-square is an easy later addition).
 
@@ -43,6 +47,11 @@ Project = { id, name, width, height, layers[], activeLayerId, palette[], seed,
 - `Toolbar.js`, `ColorPanel.js`, `LayersPanel.js`, `EffectsPanel.js`,
   `ShadePanel.js`, `ExportModal.js`, `ImageImportModal.js`, `ProjectGallery.js` — UI.
   LayersPanel actions: add, duplicate, delete, clear (active layer, undoable, confirmed).
+- `Timeline.js` — animation frame strip: frame thumbnails (each composited via
+  `frameView`), select/add/duplicate/delete/reorder frames, play/pause loop preview,
+  fps input, onion-skin toggle. Renders under the canvas.
+- `animationHelpers.js` — buildGIF/exportGIF: composites each frame at scale,
+  quantizes (gifenc), writes frames with per-frame delay from fps, loops forever.
 - `constants.js` — SCHEMA_VERSION, HISTORY_CAP, STORAGE_KEYS, CANVAS_SIZES,
   DEFAULT_PALETTE, TOOLS, TOOL_ORDER, MIRROR_MODES, EFFECTS, EXPORT_* , brush limits.
 - `pxlsModel.js` — factories/validation: createCell/emptyCell/createLayer/
@@ -81,10 +90,22 @@ lines on canvas). Undo Ctrl+Z, redo Ctrl+Y/Ctrl+Shift+Z, export Ctrl+S, `[`/`]` 
   getBoundingClientRect so it stays correct at any zoom/pan.
 - No grey grid (removed; it obscured large canvases). Brush outline follows the cursor.
 
+## Animation
+
+- A project holds `frames[]`; each frame is an independent layer stack. The
+  timeline (under the canvas) selects/adds/duplicates/deletes/reorders frames,
+  sets `fps`, and plays a looping preview. Onion skin shows the previous frame
+  faintly behind the art (off while playing). Drawing is disabled during playback.
+- The editor edits the active frame; layer ops target `getActiveFrame(project)`.
+  History snapshots are keyed by `frameId + layerId` so undo targets the right
+  frame after switching. Playback cycles a `previewFrameId` on an interval.
+
 ## Export
 
-PNG (lossless, integer nearest-neighbour upscale; effects optionally baked), SVG,
-JSON (re-importable). Backgrounds: white / black / transparent. Verified pixel-perfect.
+PNG (lossless, integer nearest-neighbour upscale; effects optionally baked), GIF
+(animated, all frames, per-frame delay from fps, loops; gifenc-encoded), SVG,
+JSON (re-importable). Backgrounds: white / black / transparent. GIF transparency
+is 1-bit (empty pixels stay clear; partial alpha flattens). Verified pixel-perfect.
 
 ## Testing approach used so far
 
@@ -92,7 +113,9 @@ No test framework in the repo. Features were verified with a throwaway headless
 Puppeteer script (`npm install puppeteer --no-save`, drive `/pxls`, assert canvas
 pixels / DOM), then removed. Note: synthetic pointer events need small delays
 between them (React re-renders between real events) and `setPointerCapture` is
-wrapped in try/catch for synthetic pointers.
+wrapped in try/catch for synthetic pointers. GIF/model logic can also be checked
+headless by bundling helpers with esbuild and shimming `document.createElement`
+with `@napi-rs/canvas` (install `--no-save`, remove after).
 
 ## Status
 

@@ -8,11 +8,12 @@
  * operations, localStorage autosave, and the gallery / export modals.
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import Canvas from './Canvas';
 import Toolbar from './Toolbar';
 import ColorPanel from './ColorPanel';
 import LayersPanel from './LayersPanel';
+import Timeline from './Timeline';
 import EffectsPanel from './EffectsPanel';
 import ShadePanel from './ShadePanel';
 import ExportModal from './ExportModal';
@@ -23,12 +24,15 @@ import {
   canUndo, canRedo,
 } from './historyHelpers';
 import {
-  createProject, createLayer, createLayerFromCells, getActiveLayer, validateProject, cloneCells,
-  duplicateLayer, makeEmptyCells, isEmptyCell,
+  createProject, createLayer, createLayerFromCells, getActiveFrame, getActiveFrameLayer,
+  frameView, createFrame, duplicateFrame, duplicateLayer, makeEmptyCells, isEmptyCell,
+  validateProject, cloneCells,
 } from './pxlsModel';
 import { saveProject, getLastOpenId, listProjects } from './storageHelpers';
 import { applyShading } from './shadingHelpers';
-import { TOOLS, TOOL_ORDER, MIRROR_MODES, MIN_BRUSH, MAX_BRUSH } from './constants';
+import {
+  TOOLS, TOOL_ORDER, MIRROR_MODES, MIN_BRUSH, MAX_BRUSH, MIN_FPS, MAX_FPS,
+} from './constants';
 import styles from './page.module.css';
 
 const SHORTCUT_TOOLS = TOOL_ORDER.reduce((map, id) => {
@@ -52,9 +56,13 @@ export default function PxlsEditor() {
   const [exportOpen, setExportOpen] = useState(false);
   const [imageOpen, setImageOpen] = useState(false);
   const [hover, setHover] = useState({ x: -1, y: -1 });
+  const [playing, setPlaying] = useState(false);
+  const [previewFrameId, setPreviewFrameId] = useState(null);
+  const [onion, setOnion] = useState(false);
 
   const projectRef = useRef(project);
   projectRef.current = project;
+  const playIndexRef = useRef(0);
 
   // Load the last project or create a fresh one on mount.
   useEffect(() => {
@@ -75,33 +83,42 @@ export default function PxlsEditor() {
 
   const pushHistory = useCallback(() => {
     const p = projectRef.current;
-    const layer = getActiveLayer(p);
-    if (layer) setHistory((h) => pushHist(h, layer.id, layer.cells));
+    const frame = getActiveFrame(p);
+    const layer = frame && frame.layers.find((l) => l.id === frame.activeLayerId);
+    if (frame && layer) setHistory((h) => pushHist(h, frame.id, layer.id, layer.cells));
   }, []);
 
-  const applyCellsToLayer = useCallback((layerId, cells) => {
+  const applyCellsToLayer = useCallback((frameId, layerId, cells) => {
     setProject((prev) => ({
       ...prev,
-      layers: prev.layers.map((l) => (l.id === layerId ? { ...l, cells } : l)),
+      frames: prev.frames.map((f) => (f.id === frameId
+        ? { ...f, layers: f.layers.map((l) => (l.id === layerId ? { ...l, cells } : l)) }
+        : f)),
     }));
   }, []);
 
   const setActiveCells = useCallback((cells) => {
-    setProject((prev) => ({
-      ...prev,
-      layers: prev.layers.map((l) => (l.id === prev.activeLayerId ? { ...l, cells } : l)),
-    }));
+    setProject((prev) => {
+      const fId = prev.activeFrameId;
+      return {
+        ...prev,
+        frames: prev.frames.map((f) => (f.id === fId
+          ? { ...f, layers: f.layers.map((l) => (l.id === f.activeLayerId ? { ...l, cells } : l)) }
+          : f)),
+      };
+    });
   }, []);
 
-  const getCellsByLayer = useCallback((layerId) => {
-    const layer = projectRef.current.layers.find((l) => l.id === layerId);
+  const getCellsByLayer = useCallback((frameId, layerId) => {
+    const frame = projectRef.current.frames.find((f) => f.id === frameId);
+    const layer = frame && frame.layers.find((l) => l.id === layerId);
     return layer ? layer.cells : null;
   }, []);
 
   const handleUndo = useCallback(() => {
     setHistory((h) => {
       const { snapshot, history: next } = undoHist(h, getCellsByLayer);
-      if (snapshot) applyCellsToLayer(snapshot.layerId, cloneCells(snapshot.cells));
+      if (snapshot) applyCellsToLayer(snapshot.frameId, snapshot.layerId, cloneCells(snapshot.cells));
       return next;
     });
   }, [getCellsByLayer, applyCellsToLayer]);
@@ -109,77 +126,172 @@ export default function PxlsEditor() {
   const handleRedo = useCallback(() => {
     setHistory((h) => {
       const { snapshot, history: next } = redoHist(h, getCellsByLayer);
-      if (snapshot) applyCellsToLayer(snapshot.layerId, cloneCells(snapshot.cells));
+      if (snapshot) applyCellsToLayer(snapshot.frameId, snapshot.layerId, cloneCells(snapshot.cells));
       return next;
     });
   }, [getCellsByLayer, applyCellsToLayer]);
 
+  // Updates the active frame via an updater function (frame -> frame).
+  const setActiveFrame = useCallback((updater) => {
+    setProject((prev) => {
+      const fId = prev.activeFrameId;
+      return { ...prev, frames: prev.frames.map((f) => (f.id === fId ? updater(f) : f)) };
+    });
+  }, []);
+
   // --- Layer operations ------------------------------------------------------
 
   const layerHandlers = {
-    onSelect: (id) => setProject((p) => ({ ...p, activeLayerId: id })),
-    onToggleVisible: (id) => setProject((p) => ({
-      ...p,
-      layers: p.layers.map((l) => (l.id === id ? { ...l, visible: !l.visible } : l)),
+    onSelect: (id) => setActiveFrame((f) => ({ ...f, activeLayerId: id })),
+    onToggleVisible: (id) => setActiveFrame((f) => ({
+      ...f,
+      layers: f.layers.map((l) => (l.id === id ? { ...l, visible: !l.visible } : l)),
     })),
-    onRename: (id, name) => setProject((p) => ({
-      ...p,
-      layers: p.layers.map((l) => (l.id === id ? { ...l, name } : l)),
+    onRename: (id, name) => setActiveFrame((f) => ({
+      ...f,
+      layers: f.layers.map((l) => (l.id === id ? { ...l, name } : l)),
     })),
-    onAdd: () => setProject((p) => {
-      const layer = createLayer(p.width, p.height, `Layer ${p.layers.length + 1}`);
-      return { ...p, layers: [...p.layers, layer], activeLayerId: layer.id };
+    onAdd: () => setActiveFrame((f) => {
+      const layer = createLayer(projectRef.current.width, projectRef.current.height, `Layer ${f.layers.length + 1}`);
+      return { ...f, layers: [...f.layers, layer], activeLayerId: layer.id };
     }),
-    onDuplicate: (id) => setProject((p) => {
-      const source = p.layers.find((l) => l.id === id);
-      if (!source) return p;
+    onDuplicate: (id) => setActiveFrame((f) => {
+      const source = f.layers.find((l) => l.id === id);
+      if (!source) return f;
       const copy = duplicateLayer(source);
-      const index = p.layers.findIndex((l) => l.id === id);
-      const layers = [...p.layers];
+      const index = f.layers.findIndex((l) => l.id === id);
+      const layers = [...f.layers];
       layers.splice(index + 1, 0, copy);
-      return { ...p, layers, activeLayerId: copy.id };
+      return { ...f, layers, activeLayerId: copy.id };
     }),
     onClear: () => {
       const p = projectRef.current;
-      const layer = getActiveLayer(p);
+      const frame = getActiveFrame(p);
+      const layer = frame && frame.layers.find((l) => l.id === frame.activeLayerId);
       if (!layer || layer.cells.every(isEmptyCell)) return;
       if (typeof window !== 'undefined'
         && !window.confirm('Clear this layer? You can undo this afterwards.')) {
         return;
       }
       pushHistory();
-      applyCellsToLayer(layer.id, makeEmptyCells(p.width, p.height));
+      applyCellsToLayer(frame.id, layer.id, makeEmptyCells(p.width, p.height));
     },
-    onDelete: (id) => setProject((p) => {
-      if (p.layers.length <= 1) return p;
-      const layers = p.layers.filter((l) => l.id !== id);
-      const activeLayerId = p.activeLayerId === id ? layers[layers.length - 1].id : p.activeLayerId;
-      return { ...p, layers, activeLayerId };
+    onDelete: (id) => setActiveFrame((f) => {
+      if (f.layers.length <= 1) return f;
+      const layers = f.layers.filter((l) => l.id !== id);
+      const activeLayerId = f.activeLayerId === id ? layers[layers.length - 1].id : f.activeLayerId;
+      return { ...f, layers, activeLayerId };
     }),
-    onMoveUp: (index) => setProject((p) => {
-      if (index >= p.layers.length - 1) return p;
-      const layers = [...p.layers];
+    onMoveUp: (index) => setActiveFrame((f) => {
+      if (index >= f.layers.length - 1) return f;
+      const layers = [...f.layers];
       [layers[index], layers[index + 1]] = [layers[index + 1], layers[index]];
-      return { ...p, layers };
+      return { ...f, layers };
     }),
-    onMoveDown: (index) => setProject((p) => {
-      if (index <= 0) return p;
-      const layers = [...p.layers];
+    onMoveDown: (index) => setActiveFrame((f) => {
+      if (index <= 0) return f;
+      const layers = [...f.layers];
       [layers[index], layers[index - 1]] = [layers[index - 1], layers[index]];
-      return { ...p, layers };
+      return { ...f, layers };
     }),
-    onReorder: (from, to) => setProject((p) => {
-      if (from === to || from == null || to == null) return p;
-      const layers = [...p.layers];
+    onReorder: (from, to) => setActiveFrame((f) => {
+      if (from === to || from == null || to == null) return f;
+      const layers = [...f.layers];
       const [moved] = layers.splice(from, 1);
       layers.splice(to, 0, moved);
-      return { ...p, layers };
+      return { ...f, layers };
     }),
-    onOpacity: (id, opacity) => setProject((p) => ({
-      ...p,
-      layers: p.layers.map((l) => (l.id === id ? { ...l, opacity } : l)),
+    onOpacity: (id, opacity) => setActiveFrame((f) => ({
+      ...f,
+      layers: f.layers.map((l) => (l.id === id ? { ...l, opacity } : l)),
     })),
   };
+
+  // --- Frame operations ------------------------------------------------------
+
+  const frameHandlers = {
+    onSelectFrame: (id) => { setPlaying(false); setProject((p) => ({ ...p, activeFrameId: id })); },
+    onAddFrame: () => { setPlaying(false); setProject((p) => {
+      const frame = createFrame(p.width, p.height, `Frame ${p.frames.length + 1}`);
+      const idx = p.frames.findIndex((f) => f.id === p.activeFrameId);
+      const frames = [...p.frames];
+      frames.splice(idx + 1, 0, frame);
+      return { ...p, frames, activeFrameId: frame.id };
+    }); },
+    onDuplicateFrame: (id) => { setPlaying(false); setProject((p) => {
+      const source = p.frames.find((f) => f.id === id);
+      if (!source) return p;
+      const copy = duplicateFrame(source);
+      const idx = p.frames.findIndex((f) => f.id === id);
+      const frames = [...p.frames];
+      frames.splice(idx + 1, 0, copy);
+      return { ...p, frames, activeFrameId: copy.id };
+    }); },
+    onDeleteFrame: (id) => { setPlaying(false); setProject((p) => {
+      if (p.frames.length <= 1) return p;
+      const idx = p.frames.findIndex((f) => f.id === id);
+      const frames = p.frames.filter((f) => f.id !== id);
+      const activeFrameId = p.activeFrameId === id
+        ? frames[Math.max(0, idx - 1)].id
+        : p.activeFrameId;
+      return { ...p, frames, activeFrameId };
+    }); },
+    onReorderFrame: (from, to) => { setPlaying(false); setProject((p) => {
+      if (from === to || from == null || to == null) return p;
+      const frames = [...p.frames];
+      const [moved] = frames.splice(from, 1);
+      frames.splice(to, 0, moved);
+      return { ...p, frames };
+    }); },
+    onSetFps: (fps) => setProject((p) => ({
+      ...p, fps: Math.max(MIN_FPS, Math.min(MAX_FPS, Math.round(fps) || MIN_FPS)),
+    })),
+    onTogglePlay: () => setPlaying((pl) => !pl),
+    onToggleOnion: () => setOnion((o) => !o),
+  };
+
+  // --- Playback --------------------------------------------------------------
+
+  // Cycle the previewed frame while playing. Restarts on play toggle, fps change
+  // or frame count change. previewFrameId stays null when stopped.
+  useEffect(() => {
+    if (!playing || !project || project.frames.length < 2) {
+      setPreviewFrameId(null);
+      return undefined;
+    }
+    playIndexRef.current = Math.max(0, project.frames.findIndex((f) => f.id === project.activeFrameId));
+    setPreviewFrameId(project.frames[playIndexRef.current].id);
+    const interval = setInterval(() => {
+      const cur = projectRef.current;
+      playIndexRef.current = (playIndexRef.current + 1) % cur.frames.length;
+      setPreviewFrameId(cur.frames[playIndexRef.current].id);
+    }, 1000 / project.fps);
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [playing, project?.fps, project?.frames.length]);
+
+  // Frame-scoped views for the canvas + onion skin (memoised so the art canvas
+  // does not redraw on unrelated re-renders such as hover).
+  const activeFrameSafe = project ? getActiveFrame(project) : null;
+  const displayFrameSafe = project
+    ? ((playing && previewFrameId && project.frames.find((f) => f.id === previewFrameId))
+      || activeFrameSafe)
+    : null;
+  const canvasProject = useMemo(
+    () => (project && displayFrameSafe ? frameView(project, displayFrameSafe) : null),
+    [project, displayFrameSafe],
+  );
+  const activeIndexSafe = project
+    ? project.frames.findIndex((f) => f.id === project.activeFrameId)
+    : -1;
+  const onionFrameSafe = (project && onion && !playing
+    && project.frames.length > 1 && activeIndexSafe > 0)
+    ? project.frames[activeIndexSafe - 1]
+    : null;
+  const onionProject = useMemo(
+    () => (project && onionFrameSafe ? frameView(project, onionFrameSafe) : null),
+    [project, onionFrameSafe],
+  );
 
   // --- Colour / swatches -----------------------------------------------------
 
@@ -198,6 +310,7 @@ export default function PxlsEditor() {
   // --- Project open / import -------------------------------------------------
 
   const openProject = (next) => {
+    setPlaying(false);
     setProject(next);
     setHistory(createHistory());
     saveProject(next);
@@ -219,13 +332,19 @@ export default function PxlsEditor() {
 
   const handleAddImageLayer = (name, cells) => {
     setProject((prev) => {
+      const fId = prev.activeFrameId;
       const layer = createLayerFromCells(name, cells);
-      return { ...prev, layers: [...prev.layers, layer], activeLayerId: layer.id };
+      return {
+        ...prev,
+        frames: prev.frames.map((f) => (f.id === fId
+          ? { ...f, layers: [...f.layers, layer], activeLayerId: layer.id }
+          : f)),
+      };
     });
   };
 
   const handleApplyShading = () => {
-    const layer = getActiveLayer(projectRef.current);
+    const layer = getActiveFrameLayer(projectRef.current);
     if (!layer) return;
     pushHistory();
     const shaded = applyShading(
@@ -287,6 +406,8 @@ export default function PxlsEditor() {
 
   const brush = { tool: activeTool, color, alpha, effect, size: brushSize, mirror };
 
+  const activeFrame = getActiveFrame(project);
+
   return (
     <div className={styles.pxls}>
       <div className={styles.topBar}>
@@ -333,7 +454,9 @@ export default function PxlsEditor() {
 
         <div className={styles.canvasArea}>
           <Canvas
-            project={project}
+            project={canvasProject}
+            onionProject={onionProject}
+            interactive={!playing}
             brush={brush}
             light={light}
             onLightMove={(fx, fy) => setLight({ fx, fy })}
@@ -349,6 +472,15 @@ export default function PxlsEditor() {
             <span>{TOOLS[activeTool].name}</span>
             <span>{hover.x >= 0 ? `${hover.x}, ${hover.y}` : '—'}</span>
           </div>
+          <Timeline
+            project={project}
+            activeFrameId={project.activeFrameId}
+            previewFrameId={playing ? previewFrameId : null}
+            fps={project.fps}
+            playing={playing}
+            onion={onion}
+            handlers={frameHandlers}
+          />
         </div>
 
         <div className={styles.panels}>
@@ -373,8 +505,8 @@ export default function PxlsEditor() {
             />
           )}
           <LayersPanel
-            layers={project.layers}
-            activeLayerId={project.activeLayerId}
+            layers={activeFrame.layers}
+            activeLayerId={activeFrame.activeLayerId}
             handlers={layerHandlers}
           />
         </div>
