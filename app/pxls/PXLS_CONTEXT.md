@@ -50,6 +50,8 @@ Project = { id, name, width, height, frames[], activeFrameId, fps, palette[], se
 - `Timeline.js` — animation frame strip: frame thumbnails (each composited via
   `frameView`), select/add/duplicate/delete/reorder frames, play/pause loop preview,
   fps input, onion-skin toggle. Renders under the canvas.
+- LayersPanel rows: click anywhere on a row to select; double-click the name to rename.
+  Eyedropper samples the topmost visible pixel across all layers (`pickTopCell`).
 - `animationHelpers.js` — buildGIF/exportGIF: composites each frame at scale,
   quantizes (gifenc), writes frames with per-frame delay from fps, loops forever.
 - `constants.js` — SCHEMA_VERSION, HISTORY_CAP, STORAGE_KEYS, CANVAS_SIZES,

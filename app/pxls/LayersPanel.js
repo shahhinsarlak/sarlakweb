@@ -24,6 +24,7 @@ export default function LayersPanel({ layers, activeLayerId, handlers }) {
 
   const [dragIndex, setDragIndex] = useState(null);
   const [overIndex, setOverIndex] = useState(null);
+  const [editingId, setEditingId] = useState(null);
 
   // Display top layer first (last in array renders on top).
   const ordered = [...layers].map((l, i) => ({ layer: l, index: i })).reverse();
@@ -71,13 +72,32 @@ export default function LayersPanel({ layers, activeLayerId, handlers }) {
             >
               {layer.visible ? '[o]' : '[ ]'}
             </button>
-            <input
-              className={styles.layerNameInput}
-              value={layer.name}
-              onChange={(e) => onRename(layer.id, e.target.value)}
-              onClick={(e) => e.stopPropagation()}
-              aria-label="Layer name"
-            />
+            {editingId === layer.id ? (
+              <input
+                className={styles.layerNameInput}
+                value={layer.name}
+                onChange={(e) => onRename(layer.id, e.target.value)}
+                onClick={(e) => e.stopPropagation()}
+                onBlur={() => setEditingId(null)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === 'Escape') {
+                    e.preventDefault();
+                    setEditingId(null);
+                  }
+                }}
+                // eslint-disable-next-line jsx-a11y/no-autofocus
+                autoFocus
+                aria-label="Layer name"
+              />
+            ) : (
+              <span
+                className={styles.layerName}
+                onDoubleClick={(e) => { e.stopPropagation(); setEditingId(layer.id); }}
+                title={`${layer.name} (double-click to rename)`}
+              >
+                {layer.name}
+              </span>
+            )}
             <button
               type="button"
               className={styles.layerVis}

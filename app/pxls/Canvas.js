@@ -26,7 +26,7 @@ import {
   collectSelectedPixels, removePixelsAt, pastePixelsAt, mirrorPoints,
 } from './drawHelpers';
 import { compositeToCanvas, drawCheckerboard } from './renderHelpers';
-import { getActiveLayer, cloneCells, isEmptyCell } from './pxlsModel';
+import { getActiveLayer, cloneCells, isEmptyCell, pickTopCell } from './pxlsModel';
 import { computeShadeRange, shadeShiftAt, shadeColor } from './shadingHelpers';
 import styles from './page.module.css';
 
@@ -344,7 +344,8 @@ export default function Canvas({
     const tool = brush.tool;
 
     if (tool === 'eyedropper') {
-      onEyedrop(activeLayer.cells[y * width + x]);
+      // Sample the topmost visible pixel across all layers, not just the active one.
+      onEyedrop(pickTopCell(project, x, y));
       return;
     }
 
