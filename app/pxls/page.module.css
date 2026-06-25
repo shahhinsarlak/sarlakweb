@@ -882,11 +882,11 @@
 
 .swatchDelete {
   position: absolute;
-  top: -5px;
-  right: -5px;
-  width: 15px;
-  height: 15px;
-  line-height: 13px;
+  top: 1px;
+  right: 1px;
+  width: 14px;
+  height: 14px;
+  line-height: 12px;
   padding: 0;
   border: 1px solid var(--border-color);
   border-radius: 50%;
