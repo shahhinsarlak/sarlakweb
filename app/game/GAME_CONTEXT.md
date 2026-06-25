@@ -8,7 +8,7 @@ first-run guide. Replaces the old ARCHITECTURE.md, DEBUG_SYSTEM.md,
 RECOMMENDATIONS.md and PLAYTIME_AND_BALANCE.md.
 
 For coding conventions (state rules, naming, ESLint, git workflow) see the
-repo-root `CLAUDE.md` and `GEMINI.md`. This file documents what the game *is*
+repo-root `CLAUDE.md`. This file documents what the game *is*
 and how its systems actually behave in code.
 
 ---

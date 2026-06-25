@@ -169,14 +169,22 @@ Avoid for: repeated patterns (use CSS classes), animations (use @keyframes).
 
 ---
 
-## Game Systems (read source for authoritative detail)
+## Game Systems (read `app/game/GAME_CONTEXT.md` for authoritative detail)
 
-- **Sanity-Paper**: 4 tiers, quality formula — see `sanityPaperHelpers.js` + `constants.js`
-- **Loot**: rarities, prefixes, void imbuements — see `lootConstants.js`, `lootGenerationHelpers.js`
-- **Skill Tree**: 5 branches, 21 skills — see `skillTreeConstants.js`, `skillSystemHelpers.js`
+- **Sanity-Paper & Documents**: 4 sanity tiers; 4 doc types (memo/report/contract/prophecy)
+  x 5 tiers unlocked by print count; quality-outcome rolls — see `sanityPaperHelpers.js` + `constants.js`
+- **Skill Tree**: 8 flat standalone skills, no branches or prerequisites — see
+  `skillTreeConstants.js`, `skillSystemHelpers.js`
 - **Buffs**: max 3 active, `activeReportBuffs` array — see `gameActions.js`
-- **Journal**: auto-discovery tracking — see `journalHelpers.js`
-- **File Drawer**: `storedDocuments` array — see `FileDrawer.js`, `gameActions.js`
+- **Journal**: discovered locations + learned mechanics + Echo findings — see `journalHelpers.js`, `JournalModal.js`
+- **File Drawer**: `storedDocuments` array (consume / shred / star) — see `FileDrawer.js`, `gameActions.js`
+- **Dimensional portal**: collect material nodes within capacity — see `dimensionalConstants.js`, `DimensionalArea.js`
+- **Chapter 2** (begins once every upgrade is owned): Insights / "Lucid Mind"
+  (`insightHelpers.js`, `InsightsPanel.js`), Factory (`factoryHelpers.js`, `FactoryPanel.js`),
+  Expeditions / The Undercroft (`expeditionHelpers.js`, `expeditionChart.js`, `UndercroftPanel.js`)
+
+There is no combat, loot-generation, or equipment/armory system — ignore any older
+references to them.
 
 ---
 
