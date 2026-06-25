@@ -336,7 +336,6 @@ upgrades each) in constants; cost formula `getUpgradeCost` in `factoryHelpers`.
   `scripts/generateFactorySprites.mjs`), decoded to PXLS projects
   (`factorySpriteHelpers.js`: base layer + active attachment layers) and drawn by
   `FactorySprite.js` (takes a `level` prop) via the PXLS `compositeToCanvas`.
-  `spriteToPxlsProject` exports a machine (frames + attachments as layers) into `/pxls`.
 - New state: `factoryUnlocked`, `factoryOpen`, `power`, `substrate`,
   `factoryMachines{}` (level map), `factoryBlueprints[]`, `factoryMaterialAcc`. UI:
   `FactoryPanel.js` (carousel: one machine + lore + status + 10-upgrade track),
@@ -429,19 +428,15 @@ Observations from the read worth tracking before further work:
 2. **Legacy skill-effect keys.** `getActiveSkillEffects` initializes ~20 effect
    keys (paperQualityBonus, doubleChance, attackDamage, etc.) that the 8 live
    skills never set. Harmless but misleading.
-3. **Stale `canPrintDocument`.** `sanityPaperHelpers.canPrintDocument` reads
-   `docData.minPrinterQuality` / top-level `docData.cost` / `docData.maxSanity`,
-   which no longer exist on `DOCUMENT_TYPES` (costs/limits moved per-tier). The
-   live path is `canPrintDocumentTier`; the old function is superseded.
-4. **Outdated tutorial text.** `HELP_POPUPS.paperQuality` states Reports need 30%
+3. **Outdated tutorial text.** `HELP_POPUPS.paperQuality` states Reports need 30%
    and Contracts 60% paper quality, but the tier system gates by mastery (and
    contracts by sanity cost, prophecies by `maxSanity`). The popup is inaccurate.
-5. **Emojis in `MECHANICS_ENTRIES.sanityTiers`** (colored circles) contradict the
+4. **Emojis in `MECHANICS_ENTRIES.sanityTiers`** (colored circles) contradict the
    project-wide no-emoji rule.
-6. **Help-text vs math framing.** `HELP_POPUPS.sanityTiers` frames HIGH sanity as
+5. **Help-text vs math framing.** `HELP_POPUPS.sanityTiers` frames HIGH sanity as
    "-15% PP/XP"; in code HIGH is the 1.0× baseline and MEDIUM is 1.15×. Same
    ratios, confusing wording.
-7. **Planning docs were stale.** The deleted `.planning` roadmap listed Phase 17
+6. **Planning docs were stale.** The deleted `.planning` roadmap listed Phase 17
    (PP tiers, achievement rewards) as not-done, but both are implemented in code
    (3-tier PP system, achievement `reward` fields, `getAchievementBonuses`,
    `TierUnlockModal`). Trust the code over old plans.

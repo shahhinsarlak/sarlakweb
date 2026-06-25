@@ -85,31 +85,3 @@ export const spriteFrameToProject = (machineId, frameIndex, level = 0, accentCol
   });
   return { width: sprite.size, height: sprite.size, seed: 1, layers };
 };
-
-/**
- * Build a full PXLS project (base frames + every attachment as layers) for editing
- * a sprite in the /pxls editor.
- * @returns {Object|null}
- */
-export const spriteToPxlsProject = (machineId) => {
-  const sprite = FACTORY_SPRITES[machineId];
-  if (!sprite) return null;
-  const layers = sprite.baseFrames.map((frame, i) => ({
-    ...makeLayer(`${machineId}_frame_${i}`, `Frame ${i + 1}`, frame, sprite),
-    visible: i === 0,
-  }));
-  (sprite.attachments || []).forEach((att, i) => {
-    layers.push(makeLayer(`${machineId}_att_${i}`, `Attachment L${att.atLevel}`, att.cells, sprite));
-  });
-  return {
-    id: `factory_${machineId}`,
-    name: `Factory ${machineId}`,
-    width: sprite.size,
-    height: sprite.size,
-    layers,
-    activeLayerId: layers[0].id,
-    palette: sprite.palette.filter(Boolean),
-    seed: 1,
-    version: 1,
-  };
-};

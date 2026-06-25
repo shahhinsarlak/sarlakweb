@@ -312,29 +312,3 @@ export function loadFromLocalStorage() {
     return null;
   }
 }
-
-/**
- * Returns whether a local autosave exists.
- *
- * @returns {boolean}
- */
-export function hasLocalSave() {
-  if (typeof window === 'undefined') return false;
-  try {
-    return window.localStorage.getItem(LOCAL_KEY) !== null;
-  } catch (error) {
-    return false;
-  }
-}
-
-/**
- * Removes the local autosave.
- */
-export function clearLocalSave() {
-  if (typeof window === 'undefined') return;
-  try {
-    window.localStorage.removeItem(LOCAL_KEY);
-  } catch (error) {
-    // ignore
-  }
-}

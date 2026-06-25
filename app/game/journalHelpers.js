@@ -9,7 +9,3 @@ export const discoverLocation = (gameState, locationId) => {
   if (discovered.includes(locationId)) return discovered;
   return [...discovered, locationId];
 };
-
-export const isLocationDiscovered = (gameState, locationId) => {
-  return (gameState.discoveredLocations || []).includes(locationId);
-};

@@ -53,7 +53,6 @@ import {
   applySanityXPModifier,
   applyEnergyCostModifier,
   calculatePaperQuality,
-  canPrintDocument,
   getRandomDimensionalMaterial,
   cleanExpiredBuffs,
   getTierData,

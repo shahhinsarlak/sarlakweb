@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react';
 import { DOCUMENT_TYPES, TIER_MASTERY_WEIGHTS } from './constants';
 import {
   calculatePaperQuality,
-  canPrintDocument,
   getSanityTier,
   getUnlockedTiers,
   getTierProgress,

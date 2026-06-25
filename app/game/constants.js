@@ -1703,10 +1703,6 @@ export const FACTORY_UPGRADES = {
   ],
 };
 
-// Extraction/conversion base rates are read from FACTORY_MACHINES above; this is
-// the dimensional material the Material Condenser yields (commonest tier).
-export const FACTORY_MATERIAL_OUTPUT = 'void_fragment';
-
 /**
  * ============================================================================
  * EXPEDITIONS / THE UNDERCROFT (Chapter 2, Phase A)

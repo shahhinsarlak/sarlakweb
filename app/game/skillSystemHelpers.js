@@ -304,44 +304,6 @@ export const applyEnergyCostReduction = (baseCost, gameState) => {
 };
 
 /**
- * Applies meditation skill bonuses to sanity restoration
- *
- * @param {number} baseSanity - Base sanity restoration amount
- * @param {Object} gameState - Current game state
- * @returns {number} Final sanity amount with bonuses
- */
-export const applyMeditationBonus = (baseSanity, gameState) => {
-  const effects = getActiveSkillEffects(gameState);
-  return baseSanity * (1 + effects.meditationBonus);  // Return decimal value
-};
-
-// Modify material spawn rates based on luck skills
-export const getModifiedMaterialRarity = (baseMaterial, gameState) => {
-  const effects = getActiveSkillEffects(gameState);
-  
-  return {
-    ...baseMaterial,
-    rarity: baseMaterial.rarity * (1 + effects.rarityBonus)
-  };
-};
-
-/**
- * Get sanity loss modifier
- *
- * @param {number} baseLoss - Base sanity loss amount
- * @param {Object} gameState - Current game state
- * @returns {number} Modified sanity loss
- */
-export const getModifiedSanityLoss = (baseLoss, gameState) => {
-  const effects = getActiveSkillEffects(gameState);
-  // Use new sanityLossReduction, fallback to legacy sanityResistance
-  const reduction = effects.sanityLossReduction || effects.sanityResistance || 0;
-  // Also apply sanityLossIncrease from forbidden skills
-  const increase = effects.sanityLossIncrease || 0;
-  return Math.ceil(baseLoss * (1 - reduction + increase));
-};
-
-/**
  * Get modified rest cooldown
  *
  * @param {number} baseCooldown - Base rest cooldown in seconds

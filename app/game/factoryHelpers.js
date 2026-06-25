@@ -245,17 +245,6 @@ export const getEffectiveMachineStats = (state, machine) => {
   return { powerGen, powerUse, powerCapacity, substrate, output };
 };
 
-/** Total battery capacity = base floor + all built (non-paused) capacitors. */
-export const getPowerCapacity = (state) => {
-  let cap = FACTORY_BASE_POWER_CAPACITY;
-  Object.keys(state.factoryMachines || {}).forEach((id) => {
-    if (isPaused(state, id)) return;
-    const m = getMachine(id);
-    if (m) cap += getEffectiveMachineStats(state, m).powerCapacity || 0;
-  });
-  return cap;
-};
-
 /**
  * Simulate one tick of dt seconds. Shared by computeFactoryTick (authoritative)
  * and getFactoryStats (UI). Returns power/substrate after the tick, per-machine

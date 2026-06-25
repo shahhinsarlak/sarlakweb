@@ -123,49 +123,6 @@ export const calculatePaperQuality = (gameState) => {
 };
 
 /**
- * Check if a document type can be printed
- * @param {string} docType - Document type ID
- * @param {Object} gameState - Current game state
- * @returns {Object} { canPrint: boolean, reason: string }
- */
-export const canPrintDocument = (docType, gameState) => {
-  const docData = DOCUMENT_TYPES[docType];
-  if (!docData) return { canPrint: false, reason: 'Invalid document type' };
-
-  const paperQuality = calculatePaperQuality(gameState);
-
-  // Check printer quality requirement
-  if (paperQuality < docData.minPrinterQuality) {
-    return {
-      canPrint: false,
-      reason: `Requires ${docData.minPrinterQuality}% paper quality. Current: ${paperQuality}%`
-    };
-  }
-
-  // Check sanity requirement for prophecies
-  if (docData.maxSanity && gameState.sanity > docData.maxSanity) {
-    return {
-      canPrint: false,
-      reason: `Requires sanity ≤ ${docData.maxSanity}%. Current: ${Math.floor(gameState.sanity)}%`
-    };
-  }
-
-  // Check resource costs
-  const costs = docData.cost;
-  if (costs.paper && gameState.paper < costs.paper) {
-    return { canPrint: false, reason: `Need ${costs.paper} paper` };
-  }
-  if (costs.energy && gameState.energy < costs.energy) {
-    return { canPrint: false, reason: `Need ${costs.energy} energy` };
-  }
-  if (costs.sanity && gameState.sanity < costs.sanity) {
-    return { canPrint: false, reason: `Need ${costs.sanity} sanity` };
-  }
-
-  return { canPrint: true, reason: '' };
-};
-
-/**
  * Get a random dimensional material for essence clause contract
  * @returns {string} Material ID
  */
@@ -213,17 +170,6 @@ export const countActiveBuffs = (gameState) => {
 };
 
 /**
- * Check if player can add more buffs without replacement
- * @param {Object} gameState - Current game state
- * @returns {boolean} True if player can add more buffs
- */
-export const canAddMoreBuffs = (gameState) => {
-  const activeCount = countActiveBuffs(gameState);
-  const maxBuffs = gameState.maxActiveBuffs || 3;
-  return activeCount < maxBuffs;
-};
-
-/**
  * Get the current PP multiplier from active buffs
  * @param {Object} gameState - Current game state
  * @returns {number} Stacked PP multiplier from active buffs (1.0 if none)
@@ -235,34 +181,6 @@ export const getActiveBuffPPMultiplier = (gameState) => {
   // Stack buffs additively
   const totalBonus = ppBuffs.reduce((sum, b) => sum + (b.ppMult - 1), 0);
   return 1 + totalBonus;
-};
-
-/**
- * Get the current XP multiplier from active buffs
- * @param {Object} gameState - Current game state
- * @returns {number} Stacked XP multiplier from active buffs (1.0 if none)
- */
-export const getActiveBuffXPMultiplier = (gameState) => {
-  const activeBuffs = gameState.activeReportBuffs || [];
-  const now = Date.now();
-  const xpBuffs = activeBuffs.filter(b => b.expiresAt > now && b.xpMult);
-  // Stack buffs additively
-  const totalBonus = xpBuffs.reduce((sum, b) => sum + (b.xpMult - 1), 0);
-  return 1 + totalBonus;
-};
-
-/**
- * Get the current energy cost multiplier from active buffs
- * @param {Object} gameState - Current game state
- * @returns {number} Stacked energy cost multiplier from active buffs (1.0 if none)
- */
-export const getActiveBuffEnergyCostMultiplier = (gameState) => {
-  const activeBuffs = gameState.activeReportBuffs || [];
-  const now = Date.now();
-  const energyBuffs = activeBuffs.filter(b => b.expiresAt > now && b.energyCostMult);
-  // Stack cost reductions additively
-  const totalReduction = energyBuffs.reduce((sum, b) => sum + (1 - b.energyCostMult), 0);
-  return 1 - totalReduction;
 };
 
 /**
@@ -332,30 +250,6 @@ export const getTierData = (docType, tierNumber) => {
   if (!docData || !docData.tiers) return null;
 
   return docData.tiers.find(t => t.tier === tierNumber) || null;
-};
-
-/**
- * Build a stored-document object for a printed tier, rolling its quality
- * outcome. Shared by manual printing and auto-print so they stay consistent.
- * @returns {Object|null} The document, or null if the tier is invalid.
- */
-export const buildPrintedDocument = (docType, tierNumber, gameState) => {
-  const tierData = getTierData(docType, tierNumber);
-  if (!tierData) return null;
-
-  const paperQuality = calculatePaperQuality(gameState);
-  const qualityOutcome = rollQualityOutcome(paperQuality);
-
-  return {
-    id: `${docType}_${tierNumber}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-    type: docType,
-    tier: tierNumber,
-    tierName: tierData.name,
-    quality: qualityOutcome,
-    outcome: tierData.outcomes[qualityOutcome],
-    createdAt: Date.now(),
-    important: false,
-  };
 };
 
 /**

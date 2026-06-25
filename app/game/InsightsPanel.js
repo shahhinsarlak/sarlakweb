@@ -7,7 +7,6 @@ import {
   isInsightResearched,
   insightRequirementsMet,
   canAffordInsight,
-  canResearchInsight,
   getInsightEffects,
   insightEffectText,
   getInsightBonusSummary,

@@ -22,11 +22,6 @@ export const canAffordInsight = (insight, state) =>
   (state.intelligence || 0) >= (insight.cost.intelligence || 0) &&
   (state.lucidity || 0) >= (insight.cost.lucidity || 0);
 
-export const canResearchInsight = (insight, state) =>
-  !isInsightResearched(state, insight.id) &&
-  insightRequirementsMet(insight, state) &&
-  canAffordInsight(insight, state);
-
 /**
  * Sum all passive insight effects the player has researched.
  * @returns {Object} effect bag (all default 0)
