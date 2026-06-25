@@ -13,6 +13,7 @@
  * @param {Function} props.onAlpha
  * @param {string[]} props.swatches - project custom swatches
  * @param {Function} props.onAddSwatch
+ * @param {Function} props.onRemoveSwatch - (index) => void, drop a project swatch
  */
 
 import { useState } from 'react';
@@ -21,7 +22,9 @@ import styles from './page.module.css';
 
 const isValidHex = (v) => /^#?[0-9a-fA-F]{6}$/.test(v);
 
-export default function ColorPanel({ color, onColor, alpha, onAlpha, swatches, onAddSwatch }) {
+export default function ColorPanel({
+  color, onColor, alpha, onAlpha, swatches, onAddSwatch, onRemoveSwatch,
+}) {
   const [hexDraft, setHexDraft] = useState(color);
 
   const commitHex = (value) => {
@@ -105,15 +108,25 @@ export default function ColorPanel({ color, onColor, alpha, onAlpha, swatches, o
           </span>
         )}
         {swatches.map((c, i) => (
-          <button
-            key={`${c}-${i}`}
-            type="button"
-            className={`${styles.swatch} ${color === c ? styles.swatchActive : ''}`}
-            style={{ backgroundColor: c }}
-            onClick={() => { onColor(c); setHexDraft(c); }}
-            title={c}
-            aria-label={`Saved colour ${c}`}
-          />
+          <span key={`${c}-${i}`} className={styles.swatchLibCell}>
+            <button
+              type="button"
+              className={`${styles.swatch} ${color === c ? styles.swatchActive : ''}`}
+              style={{ backgroundColor: c }}
+              onClick={() => { onColor(c); setHexDraft(c); }}
+              title={c}
+              aria-label={`Saved colour ${c}`}
+            />
+            <button
+              type="button"
+              className={styles.swatchDelete}
+              onClick={() => onRemoveSwatch(i)}
+              title="Remove swatch"
+              aria-label={`Remove swatch ${c}`}
+            >
+              ×
+            </button>
+          </span>
         ))}
       </div>
     </div>

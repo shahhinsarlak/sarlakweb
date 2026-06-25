@@ -301,6 +301,12 @@ export default function PxlsEditor() {
     p.palette.includes(c) ? p : { ...p, palette: [...p.palette, c].slice(-16) }
   ));
 
+  // Removes a single swatch from the current project's palette by index.
+  const handleRemoveSwatch = (index) => setProject((p) => ({
+    ...p,
+    palette: p.palette.filter((_, i) => i !== index),
+  }));
+
   // Merge colours from the global swatch library into the project palette.
   const handleImportSwatches = (colors) => {
     setProject((p) => {
@@ -509,6 +515,7 @@ export default function PxlsEditor() {
             onAlpha={setAlpha}
             swatches={project.palette}
             onAddSwatch={handleAddSwatch}
+            onRemoveSwatch={handleRemoveSwatch}
           />
           <EffectsPanel effect={effect} onEffect={setEffect} />
           {activeTool === 'shade' && (
