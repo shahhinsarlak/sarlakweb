@@ -55,7 +55,8 @@ Project = { id, name, width, height, frames[], activeFrameId, fps, palette[], se
 - `animationHelpers.js` — buildGIF/exportGIF: composites each frame at scale,
   quantizes (gifenc), writes frames with per-frame delay from fps, loops forever.
 - `constants.js` — SCHEMA_VERSION, HISTORY_CAP, STORAGE_KEYS, CANVAS_SIZES,
-  DEFAULT_PALETTE, TOOLS, TOOL_ORDER, MIRROR_MODES, EFFECTS, EXPORT_* , brush limits.
+  DEFAULT_PALETTE, PREMADE_SWATCH_GROUPS (locked preset palettes), TOOLS, TOOL_ORDER,
+  MIRROR_MODES, EFFECTS, EXPORT_* , brush limits.
 - `pxlsModel.js` — factories/validation: createCell/emptyCell/createLayer/
   createLayerFromCells/createProject, cloneCells, getActiveLayer, validateProject, makeId.
 - `drawHelpers.js` — pure cell ops: applyBrush, floodFill, line/rect/ellipse points,
@@ -72,11 +73,17 @@ Project = { id, name, width, height, frames[], activeFrameId, fps, palette[], se
 - `shadingHelpers.js` — shadeColor, applyShading (whole layer), computeShadeRange +
   shadeShiftAt (per-cell brushed shading). Distance-based: near light lighter, far darker.
 - `historyHelpers.js` — undo/redo stack (cap 100), per-stroke snapshots of a layer.
-- `storageHelpers.js` — localStorage multi-project gallery (`pxls:projects`, `pxls:lastOpenId`)
-  and the global swatch library (`pxls:swatches`): getGlobalSwatches / addGlobalSwatches /
-  removeGlobalSwatch / setGlobalSwatches (deduped, lowercased hex, shared across all projects).
-- `SwatchesModal.js` — top-bar "Swatches" modal: save current colour or whole project palette
-  into the global library, import the library into the current project, select or delete swatches.
+- `storageHelpers.js` — localStorage multi-project gallery (`pxls:projects`, `pxls:lastOpenId`),
+  the legacy flat swatch library (`pxls:swatches`: getGlobalSwatches / addGlobalSwatches /
+  removeGlobalSwatch / setGlobalSwatches), and the custom swatch library
+  (`pxls:customSwatches`, shape `{ folders: [{ id, name, swatches: [{ id, hex, name }] }] }`):
+  getCustomSwatches (migrates the legacy flat list into an "Imported" folder),
+  add/rename/deleteSwatchFolder, add/rename/delete/moveCustomSwatch.
+- `SwatchesModal.js` — top-bar "Swatches" modal with two tabs. Presets: locked,
+  categorised starter palettes from PREMADE_SWATCH_GROUPS (constants) — click a colour
+  to use, or "Use in project" to merge a group into the palette. My Swatches: user
+  folders of named swatches (create/rename/delete folders, save current colour or whole
+  project palette with a name, rename/delete/move swatches between folders, import to project).
 - `page.module.css` — all layout + scoped accent vars.
 
 ## Tools (TOOL_ORDER in constants.js)

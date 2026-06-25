@@ -905,3 +905,196 @@
   border-color: var(--pxls-active);
   color: var(--pxls-active);
 }
+
+/* Swatches modal: tabs, preset groups, custom folders. */
+.swTabs {
+  display: flex;
+  gap: 0.3rem;
+  margin-bottom: 1rem;
+}
+
+.swTab {
+  flex: 1;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-color);
+  font-family: inherit;
+  font-size: 0.75rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 0.5rem 0;
+  cursor: pointer;
+}
+
+.swTab:hover {
+  border-color: var(--accent-color);
+}
+
+.swTabActive {
+  border-color: var(--pxls-active) !important;
+  color: var(--pxls-active);
+  background: var(--pxls-active-soft);
+}
+
+.presetGroup {
+  margin-bottom: 1.1rem;
+}
+
+.presetHead {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.82rem;
+}
+
+.lockTag {
+  font-size: 0.58rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  opacity: 0.55;
+  border: 1px solid var(--border-color);
+  padding: 0.05rem 0.3rem;
+}
+
+.chipWrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.chip {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-color);
+  font-family: inherit;
+  font-size: 0.72rem;
+  padding: 0.25rem 0.45rem 0.25rem 0.3rem;
+  cursor: pointer;
+}
+
+.chip:hover {
+  border-color: var(--accent-color);
+}
+
+.chipActive {
+  outline: 2px solid var(--pxls-active);
+  outline-offset: -1px;
+}
+
+.chipColor {
+  width: 16px;
+  height: 16px;
+  border: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.folderBlock {
+  border: 1px solid var(--border-color);
+  padding: 0.6rem;
+  margin-bottom: 0.7rem;
+}
+
+.folderHead {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.5rem;
+}
+
+.folderNameInput {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-color);
+  font-family: inherit;
+  font-size: 0.85rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 0.25rem 0.3rem;
+}
+
+.folderNameInput:hover {
+  border-color: var(--border-color);
+}
+
+.folderNameInput:focus {
+  outline: none;
+  border-color: var(--accent-color);
+}
+
+.folderCount {
+  font-size: 0.68rem;
+  opacity: 0.55;
+  min-width: 1.2rem;
+  text-align: center;
+}
+
+.swatchRow {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 4px;
+}
+
+.swatchRowColor {
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--border-color);
+  flex-shrink: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+.swatchRowName {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-color);
+  font-family: inherit;
+  font-size: 0.78rem;
+  padding: 0.25rem 0.3rem;
+}
+
+.swatchRowName:hover {
+  border-color: var(--border-color);
+}
+
+.swatchRowName:focus {
+  outline: none;
+  border-color: var(--accent-color);
+}
+
+.swatchMove {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-color);
+  font-family: inherit;
+  font-size: 0.7rem;
+  padding: 0.25rem;
+  max-width: 7rem;
+  cursor: pointer;
+}
+
+.rowDelete {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  line-height: 1;
+  padding: 0;
+  border: 1px solid var(--border-color);
+  background: var(--bg-color);
+  color: var(--text-color);
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.rowDelete:hover {
+  border-color: var(--pxls-active);
+  color: var(--pxls-active);
+}
