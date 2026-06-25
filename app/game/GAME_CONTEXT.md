@@ -134,7 +134,6 @@ All PP routes through `ppHelpers.js` so click, passive tick, and display agree.
 → skill multipliers (`ppPerClickMultiplier`, overall `ppMultiplier`)
 → sanity tier × active PP buffs (`applySanityPPModifier`)
 → PP tier multiplier (2× / 5× / 25×)
-→ chaos bonus (only if a `sanityChaosBonus` skill is present — see findings)
 → achievement PP bonus
 → Focus Mode ×1.5 if active.
 
@@ -422,21 +421,15 @@ rendered alongside.
 
 Observations from the read worth tracking before further work:
 
-1. **Dead chaos-bonus path.** `computeClickPP` applies `getChaosBonus`, but it
-   depends on a `sanityChaosBonus` skill effect that no current skill in
-   `SKILLS` produces. The bonus is effectively always 0.
-2. **Legacy skill-effect keys.** `getActiveSkillEffects` initializes ~20 effect
-   keys (paperQualityBonus, doubleChance, attackDamage, etc.) that the 8 live
-   skills never set. Harmless but misleading.
-3. **Outdated tutorial text.** `HELP_POPUPS.paperQuality` states Reports need 30%
+1. **Outdated tutorial text.** `HELP_POPUPS.paperQuality` states Reports need 30%
    and Contracts 60% paper quality, but the tier system gates by mastery (and
    contracts by sanity cost, prophecies by `maxSanity`). The popup is inaccurate.
-4. **Emojis in `MECHANICS_ENTRIES.sanityTiers`** (colored circles) contradict the
+2. **Emojis in `MECHANICS_ENTRIES.sanityTiers`** (colored circles) contradict the
    project-wide no-emoji rule.
-5. **Help-text vs math framing.** `HELP_POPUPS.sanityTiers` frames HIGH sanity as
+3. **Help-text vs math framing.** `HELP_POPUPS.sanityTiers` frames HIGH sanity as
    "-15% PP/XP"; in code HIGH is the 1.0× baseline and MEDIUM is 1.15×. Same
    ratios, confusing wording.
-6. **Planning docs were stale.** The deleted `.planning` roadmap listed Phase 17
+4. **Planning docs were stale.** The deleted `.planning` roadmap listed Phase 17
    (PP tiers, achievement rewards) as not-done, but both are implemented in code
    (3-tier PP system, achievement `reward` fields, `getAchievementBonuses`,
    `TierUnlockModal`). Trust the code over old plans.

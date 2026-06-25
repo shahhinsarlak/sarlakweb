@@ -124,46 +124,26 @@ export const purchaseSkill = (gameState, skillId, addMessage) => {
 export const getActiveSkillEffects = (gameState) => {
   const skills = gameState.skills || {};
   const effects = {
-    // Efficiency Branch
+    // PP (set by efficient_sorting, passive_systems, cross_synergy)
     ppPerClickMultiplier: 0,
     ppPerSecondMultiplier: 0,
     ppMultiplier: 0,
 
-    // Admin Branch
-    paperQualityBonus: 0,
-    documentDurationMultiplier: 0,
-    documentEffectMultiplier: 0,
-    documentCostReduction: 0,
-    maxStoredDocuments: 0,
-
-    // Survival Branch
+    // Resource & survival (energy_conservation, mental_fortitude, power_napping)
     energyCostReduction: 0,
     sanityLossReduction: 0,
     restCooldownReduction: 0,
-    meditationBonus: 0,
     maxSanity: 0,
 
-    // Occult Branch
-    dimensionalMaterialBonus: 0,
+    // The Other Office (portal_attunement, temporal_distortion). rarityBonus is
+    // applied by the dimensional portal context, not by a skill.
     portalCooldownReduction: 0,
-    rareMaterialChance: 0,
-    portalDurationBonus: 0,
-
-    // Forbidden Branch
-    sanityChaosBonus: 0,
     freeActionChance: 0,
-    sanityLossIncrease: 0,
-
-    // Legacy effects (kept for compatibility)
-    capacityBonus: 0,
     rarityBonus: 0,
-    doubleChance: 0,
-    attackDamage: 0,
-    sanityResistance: 0,
-    maxHealth: 0,
-    critChance: 0,
-    energyEfficiency: 0,
-    upgradeEfficiency: 0
+
+    // Dormant document hooks: read with `|| 0`, no skill grants them yet.
+    documentDurationMultiplier: 0,
+    maxStoredDocuments: 0,
   };
 
   Object.entries(skills).forEach(([skillId, level]) => {
@@ -197,7 +177,7 @@ export const applySkillsToMaterialCollection = (materialId, baseAmount, gameStat
   let amount = baseAmount;
   
   // Check for double yield
-  if (Math.random() < effects.doubleChance) {
+  if (Math.random() < (effects.doubleChance || 0)) {
     amount *= 2;
   }
   
@@ -250,11 +230,11 @@ export const getModifiedPortalCooldown = (baseCooldown, gameState) => {
  */
 export const getModifiedCapacity = (baseCapacity, gameState) => {
   const effects = getActiveSkillEffects(gameState);
-  let capacity = baseCapacity + effects.capacityBonus;
+  let capacity = baseCapacity + (effects.capacityBonus || 0);
 
   // Reality Stabilizer sets capacity to 40
   if (gameState.dimensionalUpgrades?.reality_stabilizer) {
-    capacity = 40 + effects.capacityBonus;
+    capacity = 40 + (effects.capacityBonus || 0);
   }
 
   return capacity;
@@ -296,8 +276,7 @@ export const applyPPSMultiplier = (basePPS, gameState) => {
  */
 export const applyEnergyCostReduction = (baseCost, gameState) => {
   const effects = getActiveSkillEffects(gameState);
-  // Use new energyCostReduction, fallback to legacy energyEfficiency
-  const reduction = effects.energyCostReduction || effects.energyEfficiency || 0;
+  const reduction = effects.energyCostReduction || 0;
   // Cap at 0.9 (90% reduction max) to prevent gaining energy
   const cappedReduction = Math.min(reduction, 0.9);
   return baseCost * (1 - cappedReduction);
@@ -338,21 +317,6 @@ export const checkFreeAction = (gameState) => {
   const effects = getActiveSkillEffects(gameState);
   const chance = effects.freeActionChance || 0;
   return Math.random() < chance;
-};
-
-/**
- * Get chaos bonus from low sanity (sanity sacrifice skill)
- *
- * @param {Object} gameState - Current game state
- * @returns {number} PP multiplier from chaos (0 to max based on sanity lost)
- */
-export const getChaosBonus = (gameState) => {
-  const effects = getActiveSkillEffects(gameState);
-  const chaosRate = effects.sanityChaosBonus || 0;
-  if (chaosRate === 0) return 0;
-
-  const sanityLost = 100 - (gameState.sanity || 100);
-  return (Math.floor(sanityLost / 10) * chaosRate);
 };
 
 /**

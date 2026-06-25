@@ -11,7 +11,6 @@ import { PP_MULTIPLIER_TIERS } from './constants';
 import {
   applyPPMultiplier,
   applyPPSMultiplier,
-  getChaosBonus,
   getAchievementBonuses,
 } from './skillSystemHelpers';
 import { applySanityPPModifier } from './sanityPaperHelpers';
@@ -29,9 +28,6 @@ export const computeClickPP = (gameState) => {
   let pp = applyPPMultiplier(gameState.ppPerClick || 0, gameState); // skills (per-click + overall)
   pp = applySanityPPModifier(pp, gameState); // sanity tier x ppMult buffs
   pp *= getPPTierMultiplier(gameState); // PP tier (2x/5x/25x)
-
-  const chaos = getChaosBonus(gameState); // Sanity Sacrifice skill
-  if (chaos > 0) pp *= 1 + chaos;
 
   const ach = getAchievementBonuses(gameState);
   if (ach.ppMultiplier > 0) pp *= 1 + ach.ppMultiplier;
