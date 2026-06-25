@@ -344,6 +344,7 @@
 
 .swatch {
   aspect-ratio: 1;
+  position: relative;
   border: 1px solid var(--border-color);
   cursor: pointer;
   padding: 0;
@@ -370,6 +371,40 @@
   text-transform: uppercase;
   opacity: 0.5;
   margin: 0.75rem 0 0.35rem;
+}
+
+/* Swatches sub-header with edit / add actions. */
+.swatchSubLabel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.62rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin: 0.75rem 0 0.35rem;
+}
+
+.swatchSubTitle {
+  opacity: 0.5;
+}
+
+.swatchSubActions {
+  display: flex;
+  gap: 0.3rem;
+}
+
+/* Edit-mode X overlay shown on each removable swatch. */
+.swatchX {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  font-size: 0.85rem;
+  line-height: 1;
+  pointer-events: none;
 }
 
 /* Layers panel */
@@ -868,42 +903,6 @@
   align-items: center;
   gap: 0.5rem;
   flex-wrap: wrap;
-}
-
-.swatchLibCell {
-  position: relative;
-  aspect-ratio: 1;
-}
-
-.swatchLibCell .swatch {
-  width: 100%;
-  height: 100%;
-}
-
-.swatchDelete {
-  position: absolute;
-  top: 1px;
-  right: 1px;
-  width: 14px;
-  height: 14px;
-  line-height: 12px;
-  padding: 0;
-  border: 1px solid var(--border-color);
-  border-radius: 50%;
-  background: var(--bg-color);
-  color: var(--text-color);
-  font-size: 0.7rem;
-  cursor: pointer;
-  display: none;
-}
-
-.swatchLibCell:hover .swatchDelete {
-  display: block;
-}
-
-.swatchDelete:hover {
-  border-color: var(--pxls-active);
-  color: var(--pxls-active);
 }
 
 /* Swatches modal: tabs, preset groups, custom folders. */

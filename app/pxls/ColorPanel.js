@@ -16,7 +16,7 @@
  * @param {Function} props.onRemoveSwatch - (index) => void, drop a project swatch
  */
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { DEFAULT_PALETTE } from './constants';
 import styles from './page.module.css';
 
@@ -26,6 +26,26 @@ export default function ColorPanel({
   color, onColor, alpha, onAlpha, swatches, onAddSwatch, onRemoveSwatch,
 }) {
   const [hexDraft, setHexDraft] = useState(color);
+  const [editingSwatches, setEditingSwatches] = useState(false);
+  const swatchSectionRef = useRef(null);
+
+  // While editing swatches, clicking anywhere outside the swatches section
+  // exits edit mode.
+  useEffect(() => {
+    if (!editingSwatches) return undefined;
+    const onDown = (e) => {
+      if (swatchSectionRef.current && !swatchSectionRef.current.contains(e.target)) {
+        setEditingSwatches(false);
+      }
+    };
+    document.addEventListener('pointerdown', onDown);
+    return () => document.removeEventListener('pointerdown', onDown);
+  }, [editingSwatches]);
+
+  // Leaving edit mode automatically once there is nothing left to remove.
+  useEffect(() => {
+    if (editingSwatches && swatches.length === 0) setEditingSwatches(false);
+  }, [editingSwatches, swatches.length]);
 
   const commitHex = (value) => {
     if (isValidHex(value)) {
@@ -89,45 +109,57 @@ export default function ColorPanel({
         ))}
       </div>
 
-      <div className={styles.subLabel}>
-        Swatches
-        <button
-          type="button"
-          className={styles.iconBtn}
-          style={{ float: 'right', marginTop: '-3px' }}
-          onClick={() => onAddSwatch(color)}
-          title="Save current colour"
-        >
-          + add
-        </button>
-      </div>
-      <div className={styles.swatchGrid}>
-        {swatches.length === 0 && (
-          <span style={{ gridColumn: '1 / -1', fontSize: '0.65rem', opacity: 0.5 }}>
-            No saved swatches yet.
-          </span>
-        )}
-        {swatches.map((c, i) => (
-          <span key={`${c}-${i}`} className={styles.swatchLibCell}>
+      <div ref={swatchSectionRef}>
+        <div className={styles.swatchSubLabel}>
+          <span className={styles.swatchSubTitle}>Swatches</span>
+          <span className={styles.swatchSubActions}>
+            {swatches.length > 0 && (
+              <button
+                type="button"
+                className={`${styles.iconBtn} ${editingSwatches ? styles.iconBtnOn : ''}`}
+                onClick={() => setEditingSwatches((v) => !v)}
+                title={editingSwatches ? 'Finish editing' : 'Edit swatches'}
+              >
+                {editingSwatches ? 'done' : 'edit'}
+              </button>
+            )}
             <button
               type="button"
-              className={`${styles.swatch} ${color === c ? styles.swatchActive : ''}`}
-              style={{ backgroundColor: c }}
-              onClick={() => { onColor(c); setHexDraft(c); }}
-              title={c}
-              aria-label={`Saved colour ${c}`}
-            />
-            <button
-              type="button"
-              className={styles.swatchDelete}
-              onClick={() => onRemoveSwatch(i)}
-              title="Remove swatch"
-              aria-label={`Remove swatch ${c}`}
+              className={styles.iconBtn}
+              onClick={() => onAddSwatch(color)}
+              title="Save current colour"
             >
-              ×
+              + add
             </button>
           </span>
-        ))}
+        </div>
+        <div className={styles.swatchGrid}>
+          {swatches.length === 0 && (
+            <span style={{ gridColumn: '1 / -1', fontSize: '0.65rem', opacity: 0.5 }}>
+              No saved swatches yet.
+            </span>
+          )}
+          {swatches.map((c, i) => (
+            <button
+              key={`${c}-${i}`}
+              type="button"
+              className={`${styles.swatch} ${!editingSwatches && color === c ? styles.swatchActive : ''}`}
+              style={{ backgroundColor: c }}
+              onClick={() => {
+                if (editingSwatches) {
+                  onRemoveSwatch(i);
+                } else {
+                  onColor(c);
+                  setHexDraft(c);
+                }
+              }}
+              title={editingSwatches ? `Remove ${c}` : c}
+              aria-label={editingSwatches ? `Remove swatch ${c}` : `Saved colour ${c}`}
+            >
+              {editingSwatches && <span className={styles.swatchX} aria-hidden="true">×</span>}
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );
