@@ -23,7 +23,8 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import {
   applyBrush, floodFill, linePoints, rectPoints, ellipsePoints, stampPoints,
-  collectSelectedPixels, removePixelsAt, pastePixelsAt, mirrorPoints,
+  collectSelectedPixels, removePixelsAt, mirrorPoints, footprintCells,
+  buildSrcGrid, pasteTransformed,
 } from './drawHelpers';
 import { compositeToCanvas, drawCheckerboard } from './renderHelpers';
 import { getActiveLayer, cloneCells, isEmptyCell, pickTopCell } from './pxlsModel';
@@ -31,6 +32,58 @@ import { computeShadeRange, shadeShiftAt, shadeColor } from './shadingHelpers';
 import styles from './page.module.css';
 
 const TARGET_PX = 512;
+
+// Extra distance (in cells) the rotate handle sits above the selection's top edge.
+const ROTATE_GAP = 2;
+
+/**
+ * Computes a floating selection's transformed quad corners and rotate-handle
+ * position in cell coordinates. Corners are ordered TL, TR, BR, BL.
+ * @param {Object} s - selection { w, h, cx, cy, scaleX, scaleY, angle }
+ * @returns {{ corners: Array<[number, number]>, rot: [number, number] }}
+ */
+const selQuad = (s) => {
+  const hw = (s.w / 2) * s.scaleX;
+  const hh = (s.h / 2) * s.scaleY;
+  const cos = Math.cos(s.angle);
+  const sin = Math.sin(s.angle);
+  const toWorld = (lx, ly) => [s.cx + lx * cos - ly * sin, s.cy + lx * sin + ly * cos];
+  const corners = [
+    toWorld(-hw, -hh), toWorld(hw, -hh), toWorld(hw, hh), toWorld(-hw, hh),
+  ];
+  const rot = toWorld(0, -(hh + ROTATE_GAP));
+  return { corners, rot };
+};
+
+/**
+ * True when a cell-space point lies inside the selection's rotated rectangle.
+ * @param {number} fx
+ * @param {number} fy
+ * @param {Object} s - selection
+ * @returns {boolean}
+ */
+const pointInQuad = (fx, fy, s) => {
+  const cos = Math.cos(s.angle);
+  const sin = Math.sin(s.angle);
+  const dx = fx - s.cx;
+  const dy = fy - s.cy;
+  const lx = dx * cos + dy * sin;
+  const ly = -dx * sin + dy * cos;
+  return Math.abs(lx) <= (s.w / 2) * s.scaleX && Math.abs(ly) <= (s.h / 2) * s.scaleY;
+};
+
+/**
+ * Clamps a cell-space point into the canvas so transform handles stay grabbable
+ * and visible even when the selection extends past an edge.
+ * @param {[number, number]} p
+ * @param {number} width
+ * @param {number} height
+ * @returns {[number, number]}
+ */
+const clampCell = (p, width, height) => [
+  Math.max(0, Math.min(width, p[0])),
+  Math.max(0, Math.min(height, p[1])),
+];
 
 export default function Canvas({
   project, onionProject = null, interactive = true,
@@ -52,7 +105,7 @@ export default function Canvas({
   // Interaction state held in a ref so pointer handlers see fresh values.
   const drag = useRef(null);
   const [marquee, setMarquee] = useState(null); // { x, y, w, h } while dragging a rect
-  const [sel, setSel] = useState(null); // floating selection { pixels, ax, ay, w, h, baseCells }
+  const [sel, setSel] = useState(null); // floating selection: { pixels, srcGrid, w, h, ax0, ay0, cx, cy, scaleX, scaleY, angle, baseCells }
   const hoverRef = useRef({ x: -1, y: -1 });
   const shadeStroke = useRef(null); // { source, working, lx, ly, dmin, dmax, last }
   // Pan / zoom of the canvas viewport. transformOrigin is the top left corner.
@@ -66,6 +119,14 @@ export default function Canvas({
     const x = Math.floor(((e.clientX - rect.left) / rect.width) * width);
     const y = Math.floor(((e.clientY - rect.top) / rect.height) * height);
     return { x, y };
+  }, [width, height]);
+
+  /** Maps a pointer event to fractional cell coordinates (for transform handles). */
+  const eventToCellF = useCallback((e) => {
+    const rect = artRef.current.getBoundingClientRect();
+    const fx = ((e.clientX - rect.left) / rect.width) * width;
+    const fy = ((e.clientY - rect.top) / rect.height) * height;
+    return { fx, fy };
   }, [width, height]);
 
   // Render transparency backdrop once per size change.
@@ -124,8 +185,11 @@ export default function Canvas({
     }
 
     if (previewPoints) {
+      // Expand the outline to the actual brush footprint (+ mirror) so the
+      // preview thickness matches what will be stamped on release.
       ctx.fillStyle = 'rgba(255,0,77,0.6)';
-      for (const [x, y] of previewPoints) {
+      const fp = footprintCells(previewPoints, { width, height }, { size: brush.size, mirror: brush.mirror });
+      for (const [x, y] of fp) {
         ctx.fillRect(x * internalCell, y * internalCell, internalCell, internalCell);
       }
     }
@@ -171,33 +235,55 @@ export default function Canvas({
       ctx.setLineDash([]);
     }
 
-    // Floating selection: outline the silhouette of the selected pixels.
+    // Floating selection: transform box with corner (scale) and rotate handles.
     if (sel) {
-      const has = new Set(sel.pixels.map((p) => `${sel.ax + p.dx},${sel.ay + p.dy}`));
       const ic = internalCell;
-      const trace = () => {
+      const { corners, rot } = selQuad(sel);
+      const pts = corners.map(([cxx, cyy]) => [cxx * ic, cyy * ic]);
+      const topMid = [(pts[0][0] + pts[1][0]) / 2, (pts[0][1] + pts[1][1]) / 2];
+      // Handle markers are clamped into the canvas so they stay grabbable/visible.
+      const handlePts = corners.map((c) => clampCell(c, width, height)).map(([cxx, cyy]) => [cxx * ic, cyy * ic]);
+      const rotHandle = clampCell(rot, width, height).map((v, i) => v * ic);
+
+      const traceBox = () => {
         ctx.beginPath();
-        for (const p of sel.pixels) {
-          const x = sel.ax + p.dx;
-          const y = sel.ay + p.dy;
-          const px = x * ic;
-          const py = y * ic;
-          if (!has.has(`${x},${y - 1}`)) { ctx.moveTo(px, py); ctx.lineTo(px + ic, py); }
-          if (!has.has(`${x},${y + 1}`)) { ctx.moveTo(px, py + ic); ctx.lineTo(px + ic, py + ic); }
-          if (!has.has(`${x - 1},${y}`)) { ctx.moveTo(px, py); ctx.lineTo(px, py + ic); }
-          if (!has.has(`${x + 1},${y}`)) { ctx.moveTo(px + ic, py); ctx.lineTo(px + ic, py + ic); }
-        }
+        ctx.moveTo(pts[0][0], pts[0][1]);
+        for (let i = 1; i < 4; i += 1) ctx.lineTo(pts[i][0], pts[i][1]);
+        ctx.closePath();
       };
+
+      ctx.save();
+      // Box outline (dark under, dashed white over) plus the rotate stem.
       ctx.lineWidth = 2;
       ctx.strokeStyle = 'rgba(0,0,0,0.8)';
-      trace();
+      traceBox();
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(topMid[0], topMid[1]);
+      ctx.lineTo(rotHandle[0], rotHandle[1]);
       ctx.stroke();
       ctx.lineWidth = 1;
-      ctx.setLineDash([3, 3]);
+      ctx.setLineDash([4, 3]);
       ctx.strokeStyle = 'rgba(255,255,255,0.95)';
-      trace();
+      traceBox();
       ctx.stroke();
       ctx.setLineDash([]);
+
+      // Handles: square corners (scale), round top (rotate).
+      const hs = Math.max(6, ic * 0.7);
+      const drawHandle = (x, y, round) => {
+        ctx.beginPath();
+        if (round) ctx.arc(x, y, hs / 2, 0, Math.PI * 2);
+        else ctx.rect(x - hs / 2, y - hs / 2, hs, hs);
+        ctx.fillStyle = 'rgba(255,255,255,0.95)';
+        ctx.fill();
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'rgba(0,0,0,0.85)';
+        ctx.stroke();
+      };
+      for (const [x, y] of handlePts) drawHandle(x, y, false);
+      drawHandle(rotHandle[0], rotHandle[1], true);
+      ctx.restore();
     }
 
     // Light source marker (Shade tool only).
@@ -283,7 +369,15 @@ export default function Canvas({
   const freehand = (x, y) => {
     const dims = { width, height };
     if (brush.tool === 'fill') {
-      onSetCells(floodFill(activeLayer.cells, dims, x, y, brush));
+      // Fill the clicked region plus each mirrored seed so symmetry applies.
+      const seeds = brush.mirror === 'none'
+        ? [[x, y]]
+        : mirrorPoints(x, y, width, height, brush.mirror);
+      let cells = activeLayer.cells;
+      for (const [sx, sy] of seeds) {
+        cells = floodFill(cells, dims, sx, sy, brush);
+      }
+      onSetCells(cells);
       return;
     }
     let cells = activeLayer.cells;
@@ -339,6 +433,61 @@ export default function Canvas({
       return;
     }
 
+    // Select tool: interacting with an existing floating selection. The rotate
+    // handle can sit above the canvas, so this runs before the in-bounds guard.
+    if (brush.tool === 'select' && sel) {
+      const dims = { width, height };
+      const rect = artRef.current.getBoundingClientRect();
+      const { corners, rot } = selQuad(sel);
+      const toClient = ([ccx, ccy]) => [
+        rect.left + (ccx / width) * rect.width,
+        rect.top + (ccy / height) * rect.height,
+      ];
+      const near = (cl) => Math.hypot(e.clientX - cl[0], e.clientY - cl[1]) <= 11;
+      // Lift the selection out of the layer on first manipulation (undoable).
+      const startManip = (data) => {
+        let base = sel.baseCells;
+        if (!base) {
+          onPushHistory();
+          base = removePixelsAt(activeLayer.cells, dims, sel.pixels, sel.ax0, sel.ay0);
+          setSel({ ...sel, baseCells: base });
+          onSetCells(pasteTransformed(base, dims, sel));
+        }
+        drag.current = { ...data, base };
+      };
+
+      if (near(toClient(clampCell(rot, width, height)))) {
+        startManip({
+          mode: 'selRotate', cx: sel.cx, cy: sel.cy, srcGrid: sel.srcGrid,
+          w: sel.w, h: sel.h, scaleX: sel.scaleX, scaleY: sel.scaleY,
+        });
+        return;
+      }
+      for (let i = 0; i < 4; i += 1) {
+        if (near(toClient(clampCell(corners[i], width, height)))) {
+          startManip({
+            mode: 'selScale', anchor: corners[(i + 2) % 4], angle: sel.angle,
+            w: sel.w, h: sel.h, srcGrid: sel.srcGrid,
+          });
+          return;
+        }
+      }
+      const { fx, fy } = eventToCellF(e);
+      if (pointInQuad(fx, fy, sel)) {
+        startManip({
+          mode: 'selMove', grabFx: fx, grabFy: fy, cx0: sel.cx, cy0: sel.cy,
+          t: {
+            srcGrid: sel.srcGrid, w: sel.w, h: sel.h,
+            scaleX: sel.scaleX, scaleY: sel.scaleY, angle: sel.angle,
+          },
+        });
+        return;
+      }
+      // Clicked away: commit the selection (already baked) then start a fresh
+      // marquee via the in-bounds path below.
+      setSel(null);
+    }
+
     const { x, y } = eventToCell(e);
     if (x < 0 || y < 0 || x >= width || y >= height) return;
     const tool = brush.tool;
@@ -350,26 +499,7 @@ export default function Canvas({
     }
 
     if (tool === 'select') {
-      const dims = { width, height };
-      // Grabbing inside an existing selection starts moving it (lifting it the
-      // first time, which cuts it from the layer until the user clicks off).
-      if (sel && x >= sel.ax && x < sel.ax + sel.w && y >= sel.ay && y < sel.ay + sel.h) {
-        let base = sel.baseCells;
-        if (!base) {
-          onPushHistory();
-          base = removePixelsAt(activeLayer.cells, dims, sel.pixels, sel.ax, sel.ay);
-          onSetCells(pastePixelsAt(base, dims, sel.pixels, sel.ax, sel.ay));
-          setSel({ ...sel, baseCells: base });
-        }
-        drag.current = {
-          mode: 'selMove', pixels: sel.pixels, baseCells: base,
-          ax0: sel.ax, ay0: sel.ay, grabX: x, grabY: y,
-        };
-        return;
-      }
-      // Clicking off an existing selection commits it (it is already baked into
-      // the layer at its current position) and begins a fresh marquee.
-      if (sel) setSel(null);
+      // Start a new rectangular marquee (existing-selection handled above).
       drag.current = { mode: 'marquee', start: { x, y } };
       setMarquee({ x, y, w: 1, h: 1 });
       return;
@@ -439,10 +569,41 @@ export default function Canvas({
       setMarquee({ x: sx, y: sy, w: Math.abs(nx - d.start.x) + 1, h: Math.abs(ny - d.start.y) + 1 });
     } else if (d.mode === 'selMove') {
       const dims = { width, height };
-      const nax = d.ax0 + (x - d.grabX);
-      const nay = d.ay0 + (y - d.grabY);
-      onSetCells(pastePixelsAt(d.baseCells, dims, d.pixels, nax, nay));
-      setSel((s) => (s ? { ...s, ax: nax, ay: nay } : s));
+      const { fx, fy } = eventToCellF(e);
+      const ncx = d.cx0 + (fx - d.grabFx);
+      const ncy = d.cy0 + (fy - d.grabFy);
+      onSetCells(pasteTransformed(d.base, dims, { ...d.t, cx: ncx, cy: ncy }));
+      setSel((s) => (s ? { ...s, cx: ncx, cy: ncy } : s));
+    } else if (d.mode === 'selScale') {
+      const dims = { width, height };
+      const { fx, fy } = eventToCellF(e);
+      const cos = Math.cos(d.angle);
+      const sin = Math.sin(d.angle);
+      const dx = fx - d.anchor[0];
+      const dy = fy - d.anchor[1];
+      // Project anchor->pointer onto the selection's rotated axes for new extents.
+      const du = dx * cos + dy * sin;
+      const dv = -dx * sin + dy * cos;
+      const nScaleX = Math.max(0.03, Math.abs(du) / d.w);
+      const nScaleY = Math.max(0.03, Math.abs(dv) / d.h);
+      const ncx = d.anchor[0] + dx / 2;
+      const ncy = d.anchor[1] + dy / 2;
+      const t = {
+        srcGrid: d.srcGrid, w: d.w, h: d.h,
+        scaleX: nScaleX, scaleY: nScaleY, angle: d.angle, cx: ncx, cy: ncy,
+      };
+      onSetCells(pasteTransformed(d.base, dims, t));
+      setSel((s) => (s ? { ...s, scaleX: nScaleX, scaleY: nScaleY, cx: ncx, cy: ncy } : s));
+    } else if (d.mode === 'selRotate') {
+      const dims = { width, height };
+      const { fx, fy } = eventToCellF(e);
+      const nAngle = Math.atan2(fx - d.cx, -(fy - d.cy));
+      const t = {
+        srcGrid: d.srcGrid, w: d.w, h: d.h,
+        scaleX: d.scaleX, scaleY: d.scaleY, angle: nAngle, cx: d.cx, cy: d.cy,
+      };
+      onSetCells(pasteTransformed(d.base, dims, t));
+      setSel((s) => (s ? { ...s, angle: nAngle } : s));
     }
   };
 
@@ -469,7 +630,7 @@ export default function Canvas({
       renderOverlay(null);
     } else if (d.mode === 'marquee') {
       // Finalise the selection: only the active (non-empty) pixels inside the
-      // rectangle become a movable selection.
+      // rectangle become a movable / transformable floating selection.
       setMarquee(null);
       const nx = Math.max(0, Math.min(x, width - 1));
       const ny = Math.max(0, Math.min(y, height - 1));
@@ -477,9 +638,28 @@ export default function Canvas({
       const ry = Math.min(d.start.y, ny);
       const rw = Math.abs(nx - d.start.x) + 1;
       const rh = Math.abs(ny - d.start.y) + 1;
-      setSel(collectSelectedPixels(activeLayer.cells, { width, height }, rx, ry, rw, rh));
+      const picked = collectSelectedPixels(activeLayer.cells, { width, height }, rx, ry, rw, rh);
+      if (picked) {
+        setSel({
+          pixels: picked.pixels,
+          srcGrid: buildSrcGrid(picked.pixels, picked.w, picked.h),
+          w: picked.w,
+          h: picked.h,
+          ax0: picked.ax,
+          ay0: picked.ay,
+          cx: picked.ax + picked.w / 2,
+          cy: picked.ay + picked.h / 2,
+          scaleX: 1,
+          scaleY: 1,
+          angle: 0,
+          baseCells: null,
+        });
+      } else {
+        setSel(null);
+      }
     }
-    // selMove just ends here: the selection stays floating until clicked off.
+    // Transform modes (selMove/selScale/selRotate) just end here: the selection
+    // stays floating (already baked into the layer) until clicked off.
     drag.current = null;
   };
 

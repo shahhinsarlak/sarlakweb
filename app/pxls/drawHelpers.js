@@ -224,6 +224,40 @@ export const stampPoints = (cells, dims, points, brush) => {
 };
 
 /**
+ * Expands a set of outline points into every cell a brush would actually paint:
+ * the square footprint of brush.size around each point plus its mirror images,
+ * deduped and clipped to the canvas. Used so shape previews match the stamped
+ * result (line thickness grows with brush size, mirroring is shown).
+ * @param {Array<[number, number]>} points
+ * @param {Object} dims - { width, height }
+ * @param {Object} brush - { size, mirror }
+ * @returns {Array<[number, number]>}
+ */
+export const footprintCells = (points, dims, brush) => {
+  const { width, height } = dims;
+  const size = brush.size || 1;
+  const half = Math.floor((size - 1) / 2);
+  const seen = new Set();
+  const out = [];
+  for (const [cx, cy] of points) {
+    for (let dy = -half; dy <= size - 1 - half; dy += 1) {
+      for (let dx = -half; dx <= size - 1 - half; dx += 1) {
+        const px = cx + dx;
+        const py = cy + dy;
+        for (const [mx, my] of mirrorPoints(px, py, width, height, brush.mirror)) {
+          if (!inBounds(mx, my, width, height)) continue;
+          const key = my * width + mx;
+          if (seen.has(key)) continue;
+          seen.add(key);
+          out.push([mx, my]);
+        }
+      }
+    }
+  }
+  return out;
+};
+
+/**
  * Extracts a rectangular block of cells (for Move). Cells outside bounds are empty.
  * @returns {Object[]} block cells row major of w*h
  */
@@ -332,6 +366,81 @@ export const pastePixelsAt = (cells, dims, pixels, ax, ay) => {
     const x = ax + p.dx;
     const y = ay + p.dy;
     if (inBounds(x, y, width, height)) next[y * width + x] = { ...p.cell };
+  }
+  return next;
+};
+
+/**
+ * Builds a dense w*h grid (row major) of cells (or null) from a sparse list of
+ * selection pixels. Used as the immutable source for transformed rasterising.
+ * @param {Array<{dx:number,dy:number,cell:Object}>} pixels
+ * @param {number} w
+ * @param {number} h
+ * @returns {Array<Object|null>}
+ */
+export const buildSrcGrid = (pixels, w, h) => {
+  const grid = new Array(w * h).fill(null);
+  for (const p of pixels) {
+    if (p.dx < 0 || p.dy < 0 || p.dx >= w || p.dy >= h) continue;
+    grid[p.dy * w + p.dx] = p.cell;
+  }
+  return grid;
+};
+
+/**
+ * Rasterises a transformed floating selection onto a backdrop using inverse
+ * nearest-neighbour sampling, so scaling up and free rotation leave no holes.
+ * The selection's source rectangle (w x h) is scaled, rotated about its centre
+ * and placed at (cx, cy) in cell coordinates.
+ * @param {Object[]} baseCells - backdrop (layer with the selection removed)
+ * @param {Object} dims - { width, height }
+ * @param {Object} t - { srcGrid, w, h, cx, cy, scaleX, scaleY, angle }
+ * @returns {Object[]} new cells
+ */
+export const pasteTransformed = (baseCells, dims, t) => {
+  const { width, height } = dims;
+  const { srcGrid, w, h, cx, cy, angle } = t;
+  const scaleX = Math.abs(t.scaleX) < 1e-4 ? 1e-4 : t.scaleX;
+  const scaleY = Math.abs(t.scaleY) < 1e-4 ? 1e-4 : t.scaleY;
+  const next = baseCells.slice();
+  const cos = Math.cos(angle);
+  const sin = Math.sin(angle);
+
+  // Transformed-rectangle bounding box (in cell space) to bound the scan.
+  const hw = (w / 2) * Math.abs(scaleX);
+  const hh = (h / 2) * Math.abs(scaleY);
+  const corners = [[-hw, -hh], [hw, -hh], [hw, hh], [-hw, hh]];
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const [lx, ly] of corners) {
+    const wx = cx + lx * cos - ly * sin;
+    const wy = cy + lx * sin + ly * cos;
+    if (wx < minX) minX = wx;
+    if (wx > maxX) maxX = wx;
+    if (wy < minY) minY = wy;
+    if (wy > maxY) maxY = wy;
+  }
+  const x0 = Math.max(0, Math.floor(minX));
+  const x1 = Math.min(width - 1, Math.ceil(maxX));
+  const y0 = Math.max(0, Math.floor(minY));
+  const y1 = Math.min(height - 1, Math.ceil(maxY));
+
+  for (let ty = y0; ty <= y1; ty += 1) {
+    for (let tx = x0; tx <= x1; tx += 1) {
+      const wx = tx + 0.5 - cx;
+      const wy = ty + 0.5 - cy;
+      // Inverse rotate then inverse scale into source-centred coordinates.
+      const rx = (wx * cos + wy * sin) / scaleX;
+      const ry = (-wx * sin + wy * cos) / scaleY;
+      const su = Math.floor(rx + w / 2);
+      const sv = Math.floor(ry + h / 2);
+      if (su < 0 || sv < 0 || su >= w || sv >= h) continue;
+      const cell = srcGrid[sv * w + su];
+      if (!cell || isEmptyCell(cell)) continue;
+      next[ty * width + tx] = { ...cell };
+    }
   }
   return next;
 };

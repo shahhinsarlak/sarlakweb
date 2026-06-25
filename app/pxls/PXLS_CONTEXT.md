@@ -28,7 +28,7 @@ Project = { id, name, width, height, frames[], activeFrameId, fps, palette[], se
             createdAt, updatedAt, version }                // square canvas (width === height)
 ```
 
-- One cell holds exactly one colour. Effects (`glow`, `dither`, `noise`) are baked
+- One cell holds exactly one colour. Effects (`dither`, `noise`) are baked
   at render time, never split a cell. Empty cell = `{ color:null, alpha:0, effect:null }`.
 - Animation: a project is a list of `frames`, each with its own full layer stack.
   `validateProject` migrates legacy single-layer projects into one frame. Rendering
@@ -59,9 +59,11 @@ Project = { id, name, width, height, frames[], activeFrameId, fps, palette[], se
 - `pxlsModel.js` — factories/validation: createCell/emptyCell/createLayer/
   createLayerFromCells/createProject, cloneCells, getActiveLayer, validateProject, makeId.
 - `drawHelpers.js` — pure cell ops: applyBrush, floodFill, line/rect/ellipse points,
-  stampPoints, mirrorPoints, collectSelectedPixels, removePixelsAt, pastePixelsAt.
+  stampPoints, footprintCells (expand outline to brush footprint + mirror, used by
+  shape previews), mirrorPoints, collectSelectedPixels, removePixelsAt, pastePixelsAt,
+  buildSrcGrid + pasteTransformed (inverse nearest-neighbour raster for scale/rotate selections).
 - `renderHelpers.js` — compositeToCanvas (used for editor + PNG export), effects
-  (glow pre-pass, dither cross-cell checkerboard, per-cell seeded noise), resolveRgb, drawCheckerboard.
+  (dither cross-cell checkerboard, per-cell seeded noise), resolveRgb, drawCheckerboard.
   Noise: each cell stores its own random seed (`effect.seed`) baked at paint time, so grain follows the pixel when moved.
 - `exportHelpers.js` — exportPNG (native + integer nearest-neighbour scale), buildSVG/
   exportSVG (rect-per-pixel, crispEdges), exportJSON. User types full filename.
@@ -83,8 +85,15 @@ pencil(B), eraser(E), eyedropper(I), fill(G), line(L), rect(R), ellipse(O),
 select(V), effects(F), shade(S). Brush size 1-8, mirror none/x/y/both (green axis
 lines on canvas). Undo Ctrl+Z, redo Ctrl+Y/Ctrl+Shift+Z, export Ctrl+S, `[`/`]` size.
 
-- Select: marquee selects only active pixels (silhouette outline); grab to float +
-  move; commits to the layer only when you click off (or switch tools).
+- Select: marquee selects only active pixels. The floating selection shows a
+  transform box: drag inside to move, drag a corner handle to scale, drag the round
+  top handle to rotate (free angle, nearest-neighbour resample via pasteTransformed).
+  Lifts from the layer on first manipulation (undoable); commits when you click off
+  or switch tools. Handle positions clamp into the canvas so they stay grabbable.
+- Shape tools (line/rect/ellipse) preview the real brush footprint: line thickness
+  grows with brush size and mirrored copies are shown (footprintCells).
+- Fill (bucket) respects the mirror setting: it floods the clicked region and each
+  mirrored seed.
 - Shade: draggable on-canvas light source. Unlocked = drag the light. Lock light =
   brush shading onto pixels. "Apply to layer" bakes whole-layer shading. Baked into
   cell colours, undoable.

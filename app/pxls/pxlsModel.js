@@ -46,6 +46,8 @@ export const makeNoiseSeed = () => Math.floor(Math.random() * 0xffffffff);
  */
 export const normalizeEffect = (effect) => {
   if (!effect) return null;
+  // Glow was removed as an effect; drop it from any older saved project.
+  if (effect.type === 'glow') return null;
   if (effect.type === 'noise') {
     return {
       type: 'noise',
@@ -65,6 +67,7 @@ export const normalizeEffect = (effect) => {
  */
 export const instanceEffect = (effect) => {
   if (!effect) return null;
+  if (effect.type === 'glow') return null;
   if (effect.type === 'noise') {
     return { type: 'noise', intensity: effect.intensity, seed: makeNoiseSeed() };
   }

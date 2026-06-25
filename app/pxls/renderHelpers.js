@@ -115,29 +115,6 @@ const drawLayer = (ctx, layer, dims, cellSize, seed, includeEffects) => {
   const { width, height } = dims;
   const { cells, opacity } = layer;
 
-  // Glow pre pass (additive) so halos sit behind solid pixels.
-  if (includeEffects) {
-    ctx.save();
-    ctx.globalCompositeOperation = 'lighter';
-    for (let y = 0; y < height; y += 1) {
-      for (let x = 0; x < width; x += 1) {
-        const cell = cells[y * width + x];
-        if (isEmptyCell(cell) || !cell.effect || cell.effect.type !== 'glow') continue;
-        const { r, g, b } = hexToRgb(cell.color);
-        const radius = cellSize * (0.6 + cell.effect.intensity * 1.4);
-        const px = x * cellSize + cellSize / 2;
-        const py = y * cellSize + cellSize / 2;
-        const grad = ctx.createRadialGradient(px, py, 0, px, py, radius);
-        const a = 0.55 * cell.effect.intensity * cell.alpha * opacity;
-        grad.addColorStop(0, `rgba(${r},${g},${b},${a})`);
-        grad.addColorStop(1, `rgba(${r},${g},${b},0)`);
-        ctx.fillStyle = grad;
-        ctx.fillRect(px - radius, py - radius, radius * 2, radius * 2);
-      }
-    }
-    ctx.restore();
-  }
-
   // Solid cells. Every cell resolves to a single colour (one cell, one value)
   // and is drawn as one integer aligned rect so edges stay perfectly sharp.
   for (let y = 0; y < height; y += 1) {

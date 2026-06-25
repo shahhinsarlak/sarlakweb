@@ -10,7 +10,7 @@
  * when it is missing.
  */
 
-import { compositeToCanvas, resolveRgb, hexToRgb } from './renderHelpers';
+import { compositeToCanvas, resolveRgb } from './renderHelpers';
 import { isEmptyCell } from './pxlsModel';
 import { EXPORT_FORMATS } from './constants';
 
@@ -76,8 +76,6 @@ export const buildSVG = (project, opts) => {
   const h = height * scale;
 
   const rects = [];
-  const glows = [];
-  let hasGlow = false;
 
   for (const layer of layers) {
     if (!layer.visible) continue;
@@ -94,17 +92,6 @@ export const buildSVG = (project, opts) => {
           `<rect x="${x * scale}" y="${y * scale}" width="${scale}" height="${scale}" `
           + `fill="rgb(${r},${g},${b})"${a < 1 ? ` fill-opacity="${a}"` : ''}/>`,
         );
-        if (includeEffects && cell.effect && cell.effect.type === 'glow') {
-          hasGlow = true;
-          const base = hexToRgb(cell.color);
-          const ga = +(0.6 * cell.effect.intensity * a).toFixed(3);
-          const pad = scale * cell.effect.intensity;
-          glows.push(
-            `<rect x="${x * scale - pad}" y="${y * scale - pad}" `
-            + `width="${scale + pad * 2}" height="${scale + pad * 2}" `
-            + `fill="rgb(${base.r},${base.g},${base.b})" fill-opacity="${ga}" filter="url(#pxlsGlow)"/>`,
-          );
-        }
       }
     }
   }
@@ -112,14 +99,10 @@ export const buildSVG = (project, opts) => {
   const bg = background
     ? `<rect x="0" y="0" width="${w}" height="${h}" fill="${background}"/>`
     : '';
-  const defs = hasGlow
-    ? `<defs><filter id="pxlsGlow" x="-50%" y="-50%" width="200%" height="200%">`
-      + `<feGaussianBlur stdDeviation="${scale * 0.6}"/></filter></defs>`
-    : '';
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" `
     + `viewBox="0 0 ${w} ${h}" shape-rendering="crispEdges">`
-    + `${defs}${bg}${glows.join('')}${rects.join('')}</svg>`;
+    + `${bg}${rects.join('')}</svg>`;
 };
 
 /**

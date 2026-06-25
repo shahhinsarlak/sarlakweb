@@ -56,12 +56,11 @@ export const TOOL_ORDER = [
 export const MIRROR_MODES = ['none', 'x', 'y', 'both'];
 
 export const EFFECTS = {
-  glow: { id: 'glow', name: 'Glow', desc: 'A soft luminance halo around the cell.' },
   dither: { id: 'dither', name: 'Dither', desc: 'Checker blend with the neighbour cell.' },
   noise: { id: 'noise', name: 'Noise', desc: 'Subtle per render colour jitter.' },
 };
 
-export const EFFECT_ORDER = ['glow', 'dither', 'noise'];
+export const EFFECT_ORDER = ['dither', 'noise'];
 
 export const EXPORT_BACKGROUNDS = {
   transparent: { id: 'transparent', name: 'Transparent', color: null },
