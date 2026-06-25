@@ -26,7 +26,7 @@ import {
   collectSelectedPixels, removePixelsAt, mirrorPoints, footprintCells,
   buildSrcGrid, pasteTransformed,
 } from './drawHelpers';
-import { compositeToCanvas, drawCheckerboard } from './renderHelpers';
+import { compositeToCanvas, drawCheckerboard, hexToRgb } from './renderHelpers';
 import { getActiveLayer, cloneCells, isEmptyCell, pickTopCell } from './pxlsModel';
 import { computeShadeRange, shadeShiftAt, shadeColor } from './shadingHelpers';
 import styles from './page.module.css';
@@ -113,6 +113,18 @@ export default function Canvas({
 
   const activeLayer = getActiveLayer(project);
 
+  /** Reads the site accent colour (sage) so canvas overlays match the UI/theme. */
+  const accentRgb = useCallback(() => {
+    try {
+      const el = overlayRef.current || stageRef.current;
+      const raw = getComputedStyle(el).getPropertyValue('--accent-color').trim();
+      if (raw) return hexToRgb(raw);
+    } catch {
+      /* ignore and fall back */
+    }
+    return { r: 120, g: 134, b: 107 };
+  }, []);
+
   /** Maps a pointer event to integer cell coordinates. */
   const eventToCell = useCallback((e) => {
     const rect = artRef.current.getBoundingClientRect();
@@ -163,6 +175,7 @@ export default function Canvas({
     if (overlay.height !== pxH) overlay.height = pxH;
     const ctx = overlay.getContext('2d');
     ctx.clearRect(0, 0, pxW, pxH);
+    const ac = accentRgb();
 
     // Mirror / symmetry axes: green lines showing where reflection happens.
     if (brush.mirror !== 'none') {
@@ -187,7 +200,7 @@ export default function Canvas({
     if (previewPoints) {
       // Expand the outline to the actual brush footprint (+ mirror) so the
       // preview thickness matches what will be stamped on release.
-      ctx.fillStyle = 'rgba(255,0,77,0.6)';
+      ctx.fillStyle = `rgba(${ac.r},${ac.g},${ac.b},0.6)`;
       const fp = footprintCells(previewPoints, { width, height }, { size: brush.size, mirror: brush.mirror });
       for (const [x, y] of fp) {
         ctx.fillRect(x * internalCell, y * internalCell, internalCell, internalCell);
@@ -223,7 +236,7 @@ export default function Canvas({
 
     // Selection marquee while dragging the rectangle.
     if (marquee) {
-      ctx.strokeStyle = 'rgba(255,0,77,0.9)';
+      ctx.strokeStyle = `rgba(${ac.r},${ac.g},${ac.b},0.9)`;
       ctx.lineWidth = 1;
       ctx.setLineDash([4, 3]);
       ctx.strokeRect(
@@ -310,7 +323,7 @@ export default function Canvas({
       ctx.restore();
     }
   }, [pxW, pxH, internalCell, width, height, marquee, sel,
-    brush.mirror, brush.size, brush.tool, light, shadeLocked]);
+    brush.mirror, brush.size, brush.tool, light, shadeLocked, accentRgb]);
 
   useEffect(() => {
     renderOverlay(null);

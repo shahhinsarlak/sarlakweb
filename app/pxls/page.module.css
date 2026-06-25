@@ -22,8 +22,8 @@
 }
 
 .pxls {
-  --pxls-active: #ff004d;
-  --pxls-active-soft: rgba(255, 0, 77, 0.14);
+  --pxls-active: var(--accent-color);
+  --pxls-active-soft: var(--accent-glow);
   --pxls-grid: rgba(127, 127, 127, 0.28);
   --pxls-panel: var(--bg-color);
   font-family: var(--font-mono), 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;

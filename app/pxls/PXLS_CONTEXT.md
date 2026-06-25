@@ -13,7 +13,9 @@ exists so any future session has full context without re-reading every file.
   (`react/no-unescaped-entities`). Run `npm run build` before pushing.
 - No emojis in UI. Match the site theme via CSS vars (`--bg-color`, `--text-color`,
   `--border-color`, `--accent-color`, `--hover-color`); monospace `--font-mono`.
-  PXLS scoped accents live in `page.module.css` (`--pxls-active`, etc.).
+  PXLS scoped accents live in `page.module.css` (`--pxls-active`, etc.); the accent
+  now follows the site brand (`--pxls-active: var(--accent-color)`, sage, theme-aware).
+  Canvas overlays (shape preview fill, marquee) read `--accent-color` via getComputedStyle.
 - Build: `npm run build` (Turbopack). Dev: `npm run dev` (localhost:3000).
 - Git workflow is mandatory: commit + push after changes. Pushing needs a PAT
   with write access to shahhinsarlak/sarlakweb (the default credentials lack it).
