@@ -1877,9 +1877,9 @@ The choice is yours.`,
     title: 'REALITY PERCEPTION',
     content: `Your sanity level affects how you perceive reality:
 
-HIGH (80-100%): Safe but slow. -15% PP/XP gains.
-MEDIUM (40-79%): Normal. Standard gameplay.
-LOW (10-39%): Dangerous. +25% PP/XP gains.
+HIGH (80-100%): Stable. Baseline PP/XP gains.
+MEDIUM (40-79%): Fractured. +15% PP/XP gains.
+LOW (10-39%): Unraveling. +35% PP/XP gains.
 CRITICAL (0-9%): Void-touched. +50% PP/XP gains.
 
 Lower sanity = higher rewards, but paper quality degrades.
@@ -1918,15 +1918,16 @@ Each one reveals something... unsettling.`,
     title: 'PAPER QUALITY WARNING',
     content: `Your paper quality has dropped below 50%.
 
-As sanity decreases, printed documents become corrupted.
-Higher-tier documents require minimum quality thresholds:
+Paper quality does not lock documents. Every print rolls a quality
+outcome, and lower quality means more corrupted results:
 
-• Memos: No requirement
-• Reports: 30% quality
-• Contracts: 60% quality
-• Prophecies: No requirement (madness required)
+• Corrupted: negative effects
+• Standard / Pristine / Perfect: progressively better effects
 
-Restore sanity or improve printer quality to stabilize output.`,
+Sanity drags quality down, so prints corrupt more often at low sanity.
+Document tiers unlock by how many you have printed, not by quality.
+
+Restore sanity or improve printer quality to stabilise output.`,
     category: 'warning'
   },
   debug: {
@@ -2176,10 +2177,10 @@ Cost: 10 energy per session.`
     summary: 'Madness magnifies productivity.',
     details: `Your sanity level affects PP and XP generation:
 
-🟢 HIGH (80-100%): 1.0x multiplier
-🟡 MEDIUM (40-79%): 1.15x multiplier
-🟠 LOW (10-39%): 1.35x multiplier
-🔴 CRITICAL (0-9%): 1.5x multiplier
+HIGH (80-100%): 1.0x multiplier
+MEDIUM (40-79%): 1.15x multiplier
+LOW (10-39%): 1.35x multiplier
+CRITICAL (0-9%): 1.5x multiplier
 
 Lower sanity also degrades paper quality, affecting document creation.`
   },
@@ -2227,10 +2228,10 @@ Paper is used for:
 • Tier 5: 30 prints
 
 Every print ROLLS for QUALITY OUTCOME:
-💀 Corrupted (0-30%): Negative effects
-📄 Standard (31-60%): Base effect
-✨ Pristine (61-90%): Enhanced effect
-⭐ Perfect (91-100%): Exceptional effect
+Corrupted (0-30%): Negative effects
+Standard (31-60%): Base effect
+Pristine (61-90%): Enhanced effect
+Perfect (91-100%): Exceptional effect
 
 Higher tiers = higher stakes. Tier 5 Perfect outcomes grant permanent upgrades.
 

@@ -65,6 +65,9 @@ function ExamineModal({ item, closeExamine, notifications, onDismissNotification
                 border: '1px solid var(--border-color)',
                 boxShadow: '0 10px 30px rgba(0,0,0,0.6)'
               }}>
+                {/* Dynamic archive scan; <img> is intentional here (graceful
+                    onError fallback, no optimisation needed for local PNGs). */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={`/archive/${item.id}.png`}
                   alt={item.name}
