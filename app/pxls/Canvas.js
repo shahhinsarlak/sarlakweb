@@ -26,8 +26,8 @@ import {
   collectSelectedPixels, removePixelsAt, mirrorPoints, footprintCells,
   buildSrcGrid, pasteTransformed,
 } from './drawHelpers';
-import { compositeToCanvas, drawCheckerboard, hexToRgb } from './renderHelpers';
-import { getActiveLayer, cloneCells, isEmptyCell, pickTopCell } from './pxlsModel';
+import { compositeToCanvas, drawCheckerboard, hexToRgb, sampleResolvedCell } from './renderHelpers';
+import { getActiveLayer, cloneCells, isEmptyCell } from './pxlsModel';
 import { computeShadeRange, shadeShiftAt, shadeColor } from './shadingHelpers';
 import styles from './page.module.css';
 
@@ -506,8 +506,10 @@ export default function Canvas({
     const tool = brush.tool;
 
     if (tool === 'eyedropper') {
-      // Sample the topmost visible pixel across all layers, not just the active one.
-      onEyedrop(pickTopCell(project, x, y));
+      // Sample the topmost visible pixel across all layers (not just the active
+      // one) and resolve its on-screen colour after noise/dither, so picking a
+      // pixel with an effect yields the colour you actually see, not the base.
+      onEyedrop(sampleResolvedCell(project, x, y));
       return;
     }
 

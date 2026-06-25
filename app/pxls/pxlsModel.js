@@ -267,26 +267,6 @@ export const frameView = (project, frame) => ({
 });
 
 /**
- * Picks the topmost visible, non-empty cell at (x, y) across all of a
- * frame-scoped project's layers (top layer wins). Used by the eyedropper so it
- * samples the composited art, not just the active layer.
- * @param {Object} project - a frame view (has `layers`)
- * @param {number} x
- * @param {number} y
- * @returns {Object|null}
- */
-export const pickTopCell = (project, x, y) => {
-  const idx = y * project.width + x;
-  for (let i = project.layers.length - 1; i >= 0; i -= 1) {
-    const layer = project.layers[i];
-    if (!layer.visible) continue;
-    const cell = layer.cells[idx];
-    if (!isEmptyCell(cell)) return cell;
-  }
-  return null;
-};
-
-/**
  * Validates and normalises a single layer against a cell count.
  * @param {Object} layer
  * @param {number} i - index for error messages

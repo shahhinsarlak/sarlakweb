@@ -25,6 +25,18 @@ export const hexToRgb = (hex) => {
 };
 
 /**
+ * Parses rgb components into a '#rrggbb' hex string (inverse of hexToRgb).
+ * @param {number} r
+ * @param {number} g
+ * @param {number} b
+ * @returns {string}
+ */
+export const rgbToHex = (r, g, b) => {
+  const h = (v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0');
+  return `#${h(r)}${h(g)}${h(b)}`;
+};
+
+/**
  * Clamps a number to 0..255 and rounds.
  * @param {number} v
  * @returns {number}
@@ -101,6 +113,34 @@ export const resolveRgb = (cell, rightCell, seed, idx, width, includeEffects) =>
   (includeEffects
     ? effectiveRgb(cell, rightCell, seed, idx, width)
     : hexToRgb(cell.color));
+
+/**
+ * Samples the topmost visible pixel at (x, y) and resolves the colour actually
+ * shown after per-cell effects (noise + dither) are baked, so the eyedropper
+ * picks up exactly what is on screen. The grain/shift is already part of the
+ * sampled colour, so it is returned as a flat colour with no live effect
+ * (re-applying noise on top would compound it). Mirrors drawLayer's per-layer
+ * right-neighbour lookup so dither resolves against the same cell it renders
+ * against. Uses the project seed, which matches the on-screen composite.
+ * @param {Object} project - a frame view (has `layers` and `seed`)
+ * @param {number} x
+ * @param {number} y
+ * @returns {{ color: string, alpha: number, effect: null }|null}
+ */
+export const sampleResolvedCell = (project, x, y) => {
+  const { width, layers, seed } = project;
+  const idx = y * width + x;
+  for (let i = layers.length - 1; i >= 0; i -= 1) {
+    const layer = layers[i];
+    if (!layer.visible) continue;
+    const cell = layer.cells[idx];
+    if (isEmptyCell(cell)) continue;
+    const right = x + 1 < width ? layer.cells[idx + 1] : null;
+    const { r, g, b } = effectiveRgb(cell, right, seed, idx, width);
+    return { color: rgbToHex(r, g, b), alpha: cell.alpha, effect: null };
+  }
+  return null;
+};
 
 /**
  * Draws a single layer onto a 2d context.

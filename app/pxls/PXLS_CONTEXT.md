@@ -53,7 +53,8 @@ Project = { id, name, width, height, frames[], activeFrameId, fps, palette[], se
   `frameView`), select/add/duplicate/delete/reorder frames, play/pause loop preview,
   fps input, onion-skin toggle. Renders under the canvas.
 - LayersPanel rows: click anywhere on a row to select; double-click the name to rename.
-  Eyedropper samples the topmost visible pixel across all layers (`pickTopCell`).
+  Eyedropper samples the topmost visible pixel across all layers and resolves its
+  on-screen colour after noise/dither (`sampleResolvedCell`), applied as a flat colour.
 - `animationHelpers.js` — buildGIF/exportGIF: composites each frame at scale,
   quantizes (gifenc), writes frames with per-frame delay from fps, loops forever.
 - `constants.js` — SCHEMA_VERSION, HISTORY_CAP, STORAGE_KEYS, CANVAS_SIZES,
@@ -66,7 +67,8 @@ Project = { id, name, width, height, frames[], activeFrameId, fps, palette[], se
   shape previews), mirrorPoints, collectSelectedPixels, removePixelsAt, pastePixelsAt,
   buildSrcGrid + pasteTransformed (inverse nearest-neighbour raster for scale/rotate selections).
 - `renderHelpers.js` — compositeToCanvas (used for editor + PNG export), effects
-  (dither cross-cell checkerboard, per-cell seeded noise), resolveRgb, drawCheckerboard.
+  (dither cross-cell checkerboard, per-cell seeded noise), resolveRgb, sampleResolvedCell
+  (eyedropper: topmost pixel's colour post noise/dither), drawCheckerboard.
   Noise: each cell stores its own random seed (`effect.seed`) baked at paint time, so grain follows the pixel when moved.
 - `exportHelpers.js` — exportPNG (native + integer nearest-neighbour scale), buildSVG/
   exportSVG (rect-per-pixel, crispEdges), exportJSON. User types full filename.
