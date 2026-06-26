@@ -123,18 +123,23 @@ Keep the README in the first person and in the dev log voice described below.
 
 ## Dev Log Writing Voice (`content/posts/`)
 
-When writing any dev log post, follow Shahhin's voice exactly:
+When writing any dev log post, match Shahhin's voice. Write the way he talks: first
+person, relaxed and conversational, like he is explaining what happened to someone sitting
+next to him. Let the sentences breathe and run on a little. Join clauses with commas and
+with "and", "but" and "so" rather than chopping everything into short clipped lines. Set
+the context first and then get to the point, use parentheses for small asides, keep the
+words plain over impressive, and finish by tying it back to why it matters to him.
 
-- State context before action
-- Specific humanising details over generic phrases
-- No action-verb bullet openers
-- Short declarative sentences for results
-- Simple vocabulary over impressive
-- Stop when the point lands
-- No hyphenated words
-- No em dashes
-- No Oxford commas
-- Close the loop back to the role explicitly
+Hold to these:
+
+- First person, casual and relaxed.
+- Flowing, connected sentences. Do not force short, truncated, staccato lines.
+- Context before the point.
+- Specific, humanising details over generic phrases.
+- Plain vocabulary over impressive.
+- No hyphenated words.
+- No em dashes.
+- No Oxford commas.
 
 ---
 
