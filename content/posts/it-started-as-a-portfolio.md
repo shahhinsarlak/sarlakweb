@@ -4,10 +4,10 @@ date: '2026-06-26'
 tags: [meta, site, ai]
 ---
 
-I started this site in 2025 as a portfolio. I had some HTML behind me and I wanted to build web apps.
+This site started in 2025 as a personal portfolio. I had a bit of HTML behind me and I wanted to make web apps, so I started putting one together.
 
-A couple of weeks in I found Claude. This was back when you pasted chunks of code into the chat and asked it to review them, before Claude Code could reach into a directory on its own. It was slower than what I have now. It was also the thing that changed my mind about what the site was for.
+Only a couple of weeks in I found Claude, and this was back when you still had to paste chunks of code into the chat and ask it to review them, before Claude Code could reach into a directory on its own. It was slower and clumsier than what I have now, but it was also the thing that changed my mind about what the site was even for.
 
-I stopped trying to showcase my coding. I started learning as much as I could about building with AI instead. The apps here came out of that. Some of them are bigger than anything I would have written by hand in the time I had.
+I stopped trying to showcase my coding and started learning as much as I could about building with AI instead, and the apps here all came out of that. Some of them are bigger than anything I would have written by hand in the time I had, which is sort of the point.
 
-So this is not really a portfolio of what I can type out on my own. It is a record of how I use AI to make things. That is the part I care about now.
+So this is not really a portfolio of what I can type out on my own, it is more a record of how I use AI to make different things, and that is the part I actually care about now.

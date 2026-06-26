@@ -86,13 +86,14 @@ export default function Home() {
               <span className={styles.rule} />
             </div>
             <p className={styles.lede}>
-              I started this site in 2025 as a portfolio. I had some HTML behind me and I
-              wanted to build web apps. A couple of weeks in I found Claude, back when you
-              pasted chunks of code into the chat for review and Claude Code could not reach
-              a directory yet. That changed what I wanted from it. I stopped trying to
-              showcase my coding and started learning as much as I could about building with
-              AI. So this is less a portfolio of what I can write by hand and more a record
-              of how I use AI to make things.
+              It started in 2025 as a personal portfolio. I had a bit of HTML behind me and
+              I wanted to make web apps, but only a couple of weeks in I found Claude, and
+              this was back when you still pasted chunks of code into the chat for review and
+              Claude Code could not reach a directory yet. That shifted what I wanted from it,
+              so I stopped trying to showcase my coding and started learning as much as I
+              could about building with AI instead, and what is here now is less a portfolio
+              of what I can write by hand and more a record of how I use AI to make different
+              things.
             </p>
           </section>
 
