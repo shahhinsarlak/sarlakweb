@@ -3,11 +3,16 @@
 This is my site. I am Shahhin Sarlak. I study Computing Science (Honours) at the
 University of Technology Sydney and I work as a data centre technician at Microsoft.
 
-It is part portfolio and part workshop. It holds a few browser apps, an incremental
-horror game and a dev log. I built the whole thing as one Next.js site and it runs on
-AWS Amplify.
+I started it in 2025 as a portfolio. I had some HTML behind me and I wanted to build web
+apps. A couple of weeks in I found Claude. This was back when you pasted chunks of code
+into the chat and asked it to review them, before Claude Code could reach into a directory
+on its own. That changed what I wanted from the site. I stopped trying to showcase my
+coding and started learning as much as I could about building with AI. So this is less a
+portfolio of what I can write by hand and more a record of how I use AI to make things.
 
-Everything runs in the browser. You open a page and it works. Nothing to install.
+It holds a few browser apps, an incremental horror game and a dev log, built as one Next.js
+site and running on AWS Amplify. Everything runs in the browser. You open a page and it
+works. Nothing to install.
 
 ![Home page](docs/screenshots/home.png)
 *Home, June 2026.*

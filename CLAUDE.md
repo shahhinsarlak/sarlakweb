@@ -3,6 +3,10 @@
 **Project:** SarlakWeb, the personal site of Shahhin Sarlak.
 **Stack:** Next.js 15.5.6, React 19.1.0, plain JavaScript (ES6+). Deployed on AWS Amplify.
 
+**What this project is:** the site began in 2025 as a coding portfolio and pivoted into a
+record of how Shahhin uses AI to build software. It is not a showcase of hand-written code.
+Frame copy, dev log posts and docs around the AI-assisted process, not raw coding skill.
+
 This is the single coding ruleset for the whole repo. It covers conventions and
 workflow. It does **not** re-document app internals. For deep, app-specific context
 read the dedicated docs and treat them as authoritative (do not duplicate them here):

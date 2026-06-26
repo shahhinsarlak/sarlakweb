@@ -79,6 +79,23 @@ export default function Home() {
             </aside>
           </section>
 
+          {/* About — why this site exists */}
+          <section>
+            <div className={styles.sectionHead}>
+              <span className={styles.label}>About</span>
+              <span className={styles.rule} />
+            </div>
+            <p className={styles.lede}>
+              I started this site in 2025 as a portfolio. I had some HTML behind me and I
+              wanted to build web apps. A couple of weeks in I found Claude, back when you
+              pasted chunks of code into the chat for review and Claude Code could not reach
+              a directory yet. That changed what I wanted from it. I stopped trying to
+              showcase my coding and started learning as much as I could about building with
+              AI. So this is less a portfolio of what I can write by hand and more a record
+              of how I use AI to make things.
+            </p>
+          </section>
+
           {/* Selected work */}
           <section>
             <div className={styles.sectionHead}>
