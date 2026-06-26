@@ -1,13 +1,109 @@
-# CLAUDE.md - Development Ruleset
+# CLAUDE.md — Development Ruleset
 
-**Project:** SarlakWeb
-**Stack:** Next.js 15.5.6, React 19.1.0, JavaScript (ES6+)
+**Project:** SarlakWeb, the personal site of Shahhin Sarlak.
+**Stack:** Next.js 15.5.6, React 19.1.0, plain JavaScript (ES6+). Deployed on AWS Amplify.
+
+This is the single coding ruleset for the whole repo. It covers conventions and
+workflow. It does **not** re-document app internals. For deep, app-specific context
+read the dedicated docs and treat them as authoritative (do not duplicate them here):
+
+- **Game:** `app/game/GAME_CONTEXT.md` — authoritative for every game system and state property.
+- **PXLS:** `app/pxls/PXLS_CONTEXT.md` — authoritative for the pixel art editor.
 
 ---
 
-## Writing Voice (Dev Log Posts)
+## Commands
 
-When writing any dev log post in `content/posts/`, follow Shahhin's voice exactly:
+- `npm run dev` — dev server (Turbopack) on http://localhost:3000
+- `npm run build` — production build and ESLint. This is what Amplify runs. Run it before committing.
+- `npm run lint` — ESLint only
+- `npm run generate:archive` — regenerate the game's archive images
+
+---
+
+## Git Workflow (MANDATORY)
+
+- Commit per logical change with a short, descriptive message. Run `npm run build`
+  first and make sure it passes.
+- Push to `main` after committing, unless I have said to hold. If I ask you to hold,
+  commit locally and wait for review before pushing.
+- **Never list any AI as an author or co-author.** No `Co-authored-by: Claude`,
+  `Co-authored-by: Copilot`, `Generated with ...` or similar trailers, ever.
+- **Sub-agents must never commit or push.** If you delegate work to a sub-agent, you
+  make the commit yourself after reviewing the result.
+- Do not rewrite published history (force-push) without asking first.
+
+---
+
+## Repository map
+
+```
+app/
+  page.js, layout.js   Editorial home and root layout (fonts, theme bootstrap)
+  game/                Office Horror incremental game   (see app/game/GAME_CONTEXT.md)
+  pxls/                PXLS pixel art editor            (see app/pxls/PXLS_CONTEXT.md)
+  log/                 Dev log, renders content/posts/ via lib/posts.js
+  apps/                Directory page listing the apps
+  wheel/               Spin wheel app
+  survival/            Survival prototype
+  zayaani/             Zayaani game
+  rayan/               Rayan page
+  api/                 Server routes (Anthropic backed: wheel, rayan)
+components/            Header.js, Footer.js, ThemeToggle.js, BootSequence.js
+lib/posts.js           Markdown pipeline (gray-matter + remark)
+content/posts/         Markdown source for the dev log
+```
+
+Each app under `app/<name>/` is self-contained: it owns its components, helpers and
+state. Do not cross-import between apps. Share only through `components/` or `lib/`.
+
+---
+
+## Conventions (whole repo)
+
+### Formatting
+- 2-space indent, semicolons always, single quotes (double in JSX attributes).
+- Max ~100 char lines (flexible for JSX). Trailing commas in multiline arrays/objects.
+
+### Naming
+- `camelCase` variables/functions, `UPPER_SNAKE_CASE` constants, `PascalCase` components.
+- Boolean prefixes `is`/`has`/`should`. Handler prefix `handle`.
+- Files: `camelCase.js` for utilities/helpers, `PascalCase.js` for components.
+
+### Import order
+1. React / Next.js
+2. Third-party packages
+3. Local components
+4. Local helpers/utilities
+5. Constants (last)
+
+### ESLint / JSX (enforced by the Amplify build)
+- Escape special characters in JSX text: `'` -> `&apos;`, `"` -> `&quot;`,
+  `<` -> `&lt;`, `>` -> `&gt;`. The `react/no-unescaped-entities` rule is active and a
+  raw `'` or `"` inside JSX **fails the build**.
+- Run `npm run build` before pushing to catch this before Amplify does.
+
+### Styling and theme
+- Dark and light theme via CSS variables and `data-theme` (remembered in localStorage).
+  Always support both.
+- Use the font variables, not hardcoded families: `--font-display` (Fraunces),
+  `--font-body` (Hanken Grotesk), `--font-mono` (IBM Plex Mono).
+- **No emojis anywhere in the product** (UI or content). Monochrome terminal glyphs
+  (for example a box-drawing character or a check mark in the game's terminal art) are fine.
+- Prefer CSS Modules / classes for repeated patterns. Use inline styles for dynamic
+  values, component-specific layout and modal overlays.
+
+### React patterns
+- Always use functional `setState`: `setState(prev => ({ ...prev, ...changes }))`.
+  Never read current state inside a `setState` updater (it is stale).
+- Prefer pure helper functions that take state and return values, not mutations.
+- Reach for `useCallback` / `useMemo` only when it addresses a real cost.
+
+---
+
+## Dev Log Writing Voice (`content/posts/`)
+
+When writing any dev log post, follow Shahhin's voice exactly:
 
 - State context before action
 - Specific humanising details over generic phrases
@@ -22,193 +118,17 @@ When writing any dev log post in `content/posts/`, follow Shahhin's voice exactl
 
 ---
 
-## Git Workflow (MANDATORY)
+## Working on the game or PXLS
 
-Automatically commit and push ALL changes immediately after making them. No exceptions.
+Read the relevant context doc first (`app/game/GAME_CONTEXT.md` or
+`app/pxls/PXLS_CONTEXT.md`). They are the source of truth for systems and state, and
+this file deliberately does not repeat them. A few game conventions worth stating here:
 
-```
-git add [changed files] && git commit -m "descriptive message" && git push
-```
-
----
-
-## Architecture
-
-```
-app/game/         — incremental game (constants, helpers, modals — see source files)
-app/wheel/        — spin wheel app (SpinWheel.js, wheelCache.js, API route)
-app/log/          — dev log (markdown posts in content/posts/, rendered via lib/posts.js)
-app/apps/         — apps directory page
-app/pxls/         — PXLS pixel art editor (see app/pxls/PXLS_CONTEXT.md for full context)
-app/survival/     — survival game
-app/zayaani/      — Zayaani game
-app/rayan/        — Rayan page
-components/       — Header.js, Footer.js, CursorShadow.js, ConwaysGameOfLife.js
-lib/posts.js      — gray-matter + remark markdown pipeline
-content/posts/    — markdown source for dev log entries
-```
-
-### Core Principles
-1. **Separation of concerns**: UI in components, logic in helpers, data in constants
-2. **Single source of truth**: All game state in `INITIAL_GAME_STATE` (constants.js)
-3. **Functional state updates**: Always use `setGameState(prev => ({...prev, ...changes}))`
-4. **Event-driven**: No game loop — user actions trigger state updates
-5. **Modal-based UI**: Each feature gets a dedicated modal component
-6. **No emojis**: Minimalist horror aesthetic
-7. **Cascading changes**: When modifying ANY system, update all related files (see checklist below)
-
----
-
-## Critical Patterns
-
-### State Updates (MUST follow)
-```javascript
-// ALWAYS functional setState - prevents race conditions
-setGameState(prev => ({
-  ...prev,
-  pp: prev.pp + ppGain,
-  energy: Math.max(0, prev.energy - cost),
-  recentMessages: [msg, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)
-}));
-
-// NEVER direct state reference in setState
-setGameState({ ...gameState, pp: gameState.pp + 10 }); // WRONG - stale state
-```
-
-### Action Handlers (gameActions.js)
-All actions go through the factory pattern. Never create standalone action functions.
-```javascript
-// Actions follow: validate -> calculate -> build state -> side effects
-const actions = createGameActions(setGameState, addMessage, checkAchievements, grantXP);
-actions.sortPapers();
-```
-
-Action structure inside factory:
-```javascript
-const someAction = () => {
-  setGameState(prev => {
-    if (prev.energy < cost) {                    // 1. Validate
-      return { ...prev, recentMessages: ['Too exhausted.', ...prev.recentMessages].slice(0, 15) };
-    }
-    const gain = prev.ppPerClick;                // 2. Calculate
-    const newState = { ...prev, pp: prev.pp + gain, energy: prev.energy - cost }; // 3. Build
-    grantXP(XP_REWARDS.sortPapers);              // 4. Side effects
-    setTimeout(() => checkAchievements(), 50);
-    return newState;
-  });
-};
-```
-
-### Helper Functions
-Pure functions. Take gameState as parameter, return values (not mutations).
-```javascript
-export const applyPPMultiplier = (basePP, gameState) => {
-  const effects = getActiveSkillEffects(gameState);
-  return basePP * (1 + effects.ppMultiplier);
-};
-```
-
-### Adding New State Properties
-1. Add to `INITIAL_GAME_STATE` in constants.js with comment and correct type
-2. Update save system compatibility if needed
-3. Use exact property names — reference `INITIAL_GAME_STATE` for canonical names
-
-Key property naming (DO NOT rename):
-- `pp` (not productivityPoints), `location` (not currentLocation)
-- `playerLevel` (not level), `playerXP` (not xp)
-- `upgrades` / `printerUpgrades` / `dimensionalUpgrades` = `{ id: true }` objects
-- `achievements` / `unlockedLocations` / `discoveredEvents` = arrays
-- `recentMessages` = array, always `.slice(0, maxLogMessages || 15)` after prepend
-
----
-
-## Coding Standards
-
-### Formatting
-- 2-space indent, semicolons always, single quotes (double in JSX attributes)
-- Max 100 char line length (flexible for JSX)
-- Trailing commas in multiline arrays/objects
-
-### Naming
-- `camelCase` variables/functions, `UPPER_SNAKE_CASE` constants, `PascalCase` components
-- Boolean prefixes: `is`, `has`, `should` (`isUnlocked`, `hasUpgrade`)
-- Handler prefixes: `handle` (`handleSaveGame`, `handlePurchaseSkill`)
-- Files: `camelCase.js` for utilities, `PascalCase.js` for components
-
-### Import Order
-```javascript
-import { useState, useEffect } from 'react';    // 1. React/Next.js
-// 2. Third-party (currently: three.js only)
-import SkillTreeModal from './SkillTreeModal';    // 3. Local components
-import { createGameActions } from './gameActions'; // 4. Local helpers
-import { INITIAL_GAME_STATE } from './constants';  // 5. Constants (last)
-```
-
-### Component Pattern
-```javascript
-export default function ExampleModal({ gameState, onClose, onAction }) {
-  // Minimal local state, prefer props
-  // ESC key handler via useEffect
-  // CSS variables for theming: var(--bg-color), var(--text-color), var(--border-color)
-  // Font: "'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace"
-  // Modal overlay: position fixed, z-index 1000, rgba(0,0,0,0.8) backdrop
-}
-```
-
-### Inline Styles
-Use for: dynamic values, component-specific layout, modal overlays.
-Avoid for: repeated patterns (use CSS classes), animations (use @keyframes).
-
-### ESLint / JSX Compliance (enforced by AWS Amplify build)
-- **Always escape special characters in JSX text.** Unescaped `'`, `"`, `>`, `}` cause build failures.
-  - Apostrophes: use `&apos;`
-  - Quotes: use `&quot;`
-  - Left/right single quotes: use `&lsquo;` / `&rsquo;`
-- Run `npm run build` locally before pushing to catch ESLint errors before Amplify does.
-- The `react/no-unescaped-entities` rule is active — any raw `'` or `"` inside JSX elements will fail the build.
-
----
-
-## Game Systems (read `app/game/GAME_CONTEXT.md` for authoritative detail)
-
-- **Sanity-Paper & Documents**: 4 sanity tiers; 4 doc types (memo/report/contract/prophecy)
-  x 5 tiers unlocked by print count; quality-outcome rolls — see `sanityPaperHelpers.js` + `constants.js`
-- **Skill Tree**: 8 flat standalone skills, no branches or prerequisites — see
-  `skillTreeConstants.js`, `skillSystemHelpers.js`
-- **Buffs**: max 3 active, `activeReportBuffs` array — see `gameActions.js`
-- **Journal**: discovered locations + learned mechanics + Echo findings — see `journalHelpers.js`, `JournalModal.js`
-- **File Drawer**: `storedDocuments` array (consume / shred / star) — see `FileDrawer.js`, `gameActions.js`
-- **Dimensional portal**: collect material nodes within capacity — see `dimensionalConstants.js`, `DimensionalArea.js`
-- **Chapter 2** (begins once every upgrade is owned): Insights / "Lucid Mind"
-  (`insightHelpers.js`, `InsightsPanel.js`), Factory (`factoryHelpers.js`, `FactoryPanel.js`),
-  Expeditions / The Undercroft (`expeditionHelpers.js`, `expeditionChart.js`, `UndercroftPanel.js`)
-
-There is no combat, loot-generation, or equipment/armory system — ignore any older
-references to them.
-
----
-
-## Cascading Change Checklist
-
-When modifying ANY game system, verify ALL of these:
-
-**Always check:**
-- [ ] `INITIAL_GAME_STATE` if new/changed state properties
-- [ ] `HELP_POPUPS` and `HELP_TRIGGERS` in constants.js
-- [ ] `MECHANICS_ENTRIES` in constants.js (journal mechanic docs)
-- [ ] `ACHIEVEMENTS` check functions in constants.js
-- [ ] Action handlers in `gameActions.js`
-- [ ] UI displays showing affected values
-- [ ] Both light and dark theme rendering
-
-**When adding features:**
-- [ ] State properties + initialization
-- [ ] Help popup explaining the feature
-- [ ] Journal mechanic entry
-- [ ] Achievement(s) tied to the feature
-- [ ] Modal component + trigger button + close handler
-
-**When removing features:**
-- [ ] Remove state properties, achievements, help popups, journal entries
-- [ ] Remove UI components and action handlers
-- [ ] Search codebase for remaining references (`grep -r "featureName"`)
+- All game state lives in `INITIAL_GAME_STATE` (`constants.js`); it is the canonical
+  source of property names. Add new properties there first, with the correct type.
+- Game actions go through the `createGameActions(...)` factory in `gameActions.js`.
+  Never create standalone action functions.
+- Cap the event log after prepending: `recentMessages: [msg, ...prev.recentMessages].slice(0, prev.maxLogMessages || 15)`.
+- When you change a game system, propagate the change everywhere it appears: state
+  init, `HELP_POPUPS` / `HELP_TRIGGERS`, `MECHANICS_ENTRIES`, `ACHIEVEMENTS`, action
+  handlers, UI displays and both themes. After removing anything, grep for leftover references.
