@@ -1,54 +1,60 @@
 # SARLAK
 
-Personal site and web playground of Shahhin Sarlak, a Computing Science (Honours)
-student at the University of Technology Sydney and a data centre technician at
-Microsoft. It is part portfolio and part workshop. A small set of interactive
-browser apps, an incremental horror game and a dev log, built as one Next.js site
-and deployed on AWS Amplify.
+This is my site. I am Shahhin Sarlak. I study Computing Science (Honours) at the
+University of Technology Sydney and I work as a data centre technician at Microsoft.
 
-Everything runs client side. Open a page and it works straight away, nothing to install.
+It is part portfolio and part workshop. It holds a few browser apps, an incremental
+horror game and a dev log. I built the whole thing as one Next.js site and it runs on
+AWS Amplify.
+
+Everything runs in the browser. You open a page and it works. Nothing to install.
 
 ![Home page](docs/screenshots/home.png)
+*Home, June 2026.*
 
 ## What is inside
 
 ### Office Horror (`/game`)
 
-An incremental office horror game. You sort papers for Productivity Points, manage
-Energy and Sanity and slowly uncover that the office is a loop you cannot leave. It
-has a flat skill tree, a printer and document system, a dimensional portal and a
-Chapter 2 endgame with Insights, a Factory and Expeditions. Progress saves to
-localStorage. Full system notes live in `app/game/GAME_CONTEXT.md`.
+An incremental office horror game I have been building for a while. You sort papers for
+Productivity Points and manage Energy and Sanity while the office turns out to be a loop
+you cannot leave. It has a flat skill tree, a printer and document system, a dimensional
+portal and a Chapter 2 endgame with Insights, a Factory and Expeditions. Progress saves
+to your browser. I keep the full system notes in `app/game/GAME_CONTEXT.md`.
 
 ![Office Horror](docs/screenshots/office-horror.png)
+*Office Horror, June 2026.*
 
 ### PXLS (`/pxls`)
 
-A pixel art editor that runs entirely in the browser. Layers, per cell effects
-(dither, noise, shade) and frame based animation with GIF export. Projects are JSON
-backed and export to PNG, SVG and JSON. Full context lives in `app/pxls/PXLS_CONTEXT.md`.
+A pixel art editor I wrote that runs entirely in the browser. It has layers, per cell
+effects (dither, noise and shade) and frame based animation with GIF export. Projects are
+JSON backed and export to PNG, SVG and JSON. I keep the full context in
+`app/pxls/PXLS_CONTEXT.md`.
 
 ![PXLS pixel editor](docs/screenshots/pxls.png)
+*PXLS, June 2026.*
 
 ### Dev log (`/log`)
 
-Short working notes on what gets built and what gets learned doing it. Markdown posts
-in `content/posts/`, rendered through a gray-matter and remark pipeline (`lib/posts.js`).
+Short notes on what I make and what I learn making it. No schedule. They go up when
+something is worth writing down. Posts are markdown in `content/posts/`, rendered through
+a gray-matter and remark pipeline (`lib/posts.js`).
 
 ![Dev log](docs/screenshots/dev-log.png)
+*Dev log, June 2026.*
 
-There are a few more routes too, including a spin wheel and a survival prototype. The
-full directory lives at `/apps`.
+There are a few more routes too, a spin wheel and a survival prototype among them. The
+full list is at `/apps`.
 
 ## Tech stack
 
 - Next.js 15 (App Router) and React 19, plain JavaScript, no TypeScript.
-- Self hosted fonts via `next/font/local`: Fraunces for display, Hanken Grotesk for
-  body and IBM Plex Mono for UI and code.
-- CSS Modules plus CSS variables for a dark and light theme (`data-theme`, remembered
-  in localStorage).
-- Client side games and tools. The game and PXLS keep their state in localStorage with
-  no backend.
+- Self hosted fonts via `next/font/local`: Fraunces for display, Hanken Grotesk for body
+  and IBM Plex Mono for UI and code.
+- CSS Modules plus CSS variables for a dark and light theme (`data-theme`, remembered in
+  localStorage).
+- The game and PXLS keep their state in localStorage. No backend for them.
 - A couple of API routes backed by the Anthropic API (`@anthropic-ai/sdk`).
 - three.js for the particle experiment, gifenc for PXLS GIF export, gray-matter and
   remark for the dev log.
@@ -83,15 +89,15 @@ npm run build    # production build, the same one AWS Amplify runs
 npm run lint     # ESLint
 ```
 
-The build runs ESLint and fails on unescaped JSX entities, so run `npm run build`
-before pushing.
+The build runs ESLint and fails on unescaped JSX entities, so I run `npm run build`
+before I push.
 
 ## Notes
 
-- Screenshots in `docs/screenshots/` were captured with Playwright against a
-  production build.
-- Coding conventions and workflow live in `CLAUDE.md`. Deeper context for the two
-  largest apps lives in `app/game/GAME_CONTEXT.md` and `app/pxls/PXLS_CONTEXT.md`.
+- I captured the screenshots in `docs/screenshots/` with Playwright against a production
+  build. The date next to each one says when.
+- My conventions and workflow live in `CLAUDE.md`. The deeper context for the two largest
+  apps lives in `app/game/GAME_CONTEXT.md` and `app/pxls/PXLS_CONTEXT.md`.
 
 ## Connect
 

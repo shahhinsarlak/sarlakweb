@@ -59,6 +59,22 @@ state. Do not cross-import between apps. Share only through `components/` or `li
 
 ---
 
+## Keeping the README current
+
+`README.md` is the front door and it uses real screenshots. When a change affects what
+it shows, update it in the same commit:
+
+- A new, removed or renamed app or route: update the intro, the "What is inside" section
+  and the repository map.
+- A visible UI change to a screenshotted page (home, game, PXLS, dev log): recapture that
+  screenshot into `docs/screenshots/` with Playwright against a production build and
+  update its date caption.
+- A change to the tech stack or the commands: update those sections.
+
+Keep the README in the first person and in the dev log voice described below.
+
+---
+
 ## Conventions (whole repo)
 
 ### Formatting
