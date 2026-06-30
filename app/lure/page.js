@@ -1,4 +1,5 @@
 import LureClient from './LureClient';
+import { AuthProvider } from './auth/AuthProvider';
 
 export const metadata = {
   title: 'Lure — SARLAK',
@@ -8,5 +9,9 @@ export const metadata = {
 };
 
 export default function LurePage() {
-  return <LureClient />;
+  return (
+    <AuthProvider>
+      <LureClient />
+    </AuthProvider>
+  );
 }

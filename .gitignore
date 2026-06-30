@@ -137,3 +137,9 @@ dist
 
 # macOS
 .DS_Store
+
+# Amplify Gen 2 (generated config + local sandbox state, never commit)
+.amplify
+amplify_outputs*
+amplifyconfiguration*
+.amplify/**

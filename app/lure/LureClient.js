@@ -7,11 +7,14 @@ import StartGate from './components/StartGate';
 import CategoryBar from './components/CategoryBar';
 import TranscriptSheet from './components/TranscriptSheet';
 import CreatorSheet from './components/CreatorSheet';
+import AuthSheet from './components/AuthSheet';
 import { ChevronUpIcon, ChevronDownIcon } from './components/Icons';
 import ThemeToggle from '../../components/ThemeToggle';
 
 import { useAudioController } from './hooks/useAudioController';
 import { useLocalStorage } from './hooks/useLocalStorage';
+import { useLikesSaves } from './hooks/useLikesSaves';
+import { useAuth } from './auth/AuthProvider';
 import { buildFeed, applySignal } from './lib/feedAlgorithm';
 import { CATEGORIES, CATEGORY_MAP } from './data/categories';
 import { CREATOR_MAP } from './data/creators';
@@ -30,8 +33,10 @@ export default function LureClient() {
   const [toast, setToast] = useState(null);
 
   const [signals, setSignals] = useLocalStorage('lure_signals_v1', {});
-  const [likes, setLikes] = useLocalStorage('lure_likes_v1', []);
-  const [saves, setSaves] = useLocalStorage('lure_saves_v1', []);
+  const [authOpen, setAuthOpen] = useState(false);
+
+  const { user, isBackendConfigured, signOut } = useAuth();
+  const { likes, saves, toggleLike, toggleSave } = useLikesSaves(user);
 
   const feedRef = useRef(null);
   const activeIndexRef = useRef(0);
@@ -43,10 +48,12 @@ export default function LureClient() {
   const pendingScrollRef = useRef(null);
   const toastTimerRef = useRef(null);
   const didInit = useRef(false);
+  const likesRef = useRef(likes);
 
   useEffect(() => { activeIndexRef.current = activeIndex; }, [activeIndex]);
   useEffect(() => { orderRef.current = order; }, [order]);
   useEffect(() => { signalsRef.current = signals; }, [signals]);
+  useEffect(() => { likesRef.current = likes; }, [likes]);
 
   const recordSignal = useCallback((cat, kind) => {
     setSignals((prev) => applySignal(prev, cat, kind));
@@ -194,19 +201,17 @@ export default function LureClient() {
   }, [started, loadAndPlay]);
 
   const handleLike = useCallback((postId) => {
-    setLikes((prev) => {
-      if (prev.includes(postId)) return prev.filter((id) => id !== postId);
+    const wasLiked = likesRef.current.includes(postId);
+    toggleLike(postId);
+    if (!wasLiked) {
       const post = POST_MAP[postId];
       if (post) recordSignal(post.category, 'like');
-      return [...prev, postId];
-    });
-  }, [setLikes, recordSignal]);
+    }
+  }, [toggleLike, recordSignal]);
 
   const handleSave = useCallback((postId) => {
-    setSaves((prev) => (
-      prev.includes(postId) ? prev.filter((id) => id !== postId) : [...prev, postId]
-    ));
-  }, [setSaves]);
+    toggleSave(postId);
+  }, [toggleSave]);
 
   const handleShare = useCallback((postId) => {
     const post = POST_MAP[postId];
@@ -257,7 +262,29 @@ export default function LureClient() {
             LURE
             <span className={styles.wordmarkBracket}>]</span>
           </div>
-          <ThemeToggle />
+          <div className={styles.topRight}>
+            {isBackendConfigured && (
+              user ? (
+                <button
+                  type="button"
+                  className={styles.accountBtn}
+                  onClick={signOut}
+                  title={user.email || 'Sign out'}
+                >
+                  Sign out
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className={styles.accountBtn}
+                  onClick={() => setAuthOpen(true)}
+                >
+                  Sign in
+                </button>
+              )
+            )}
+            <ThemeToggle />
+          </div>
         </div>
         <CategoryBar
           categories={CATEGORIES}
@@ -314,6 +341,8 @@ export default function LureClient() {
           onClose={() => setOverlay(null)}
         />
       )}
+
+      {authOpen && <AuthSheet onClose={() => setAuthOpen(false)} />}
 
       {!started && <StartGate onStart={handleStart} />}
     </div>

@@ -8,10 +8,13 @@
     "start": "next start",
     "lint": "eslint",
     "generate:archive": "node scripts/generate-archive-images.mjs",
-    "generate:lure-audio": "node scripts/generate-lure-audio.mjs"
+    "generate:lure-audio": "node scripts/generate-lure-audio.mjs",
+    "sync:lure-env": "node scripts/lure-env-from-outputs.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
+    "@aws-amplify/adapter-nextjs": "^1.7.3",
+    "aws-amplify": "^6.18.0",
     "gifenc": "^1.0.3",
     "gray-matter": "^4.0.3",
     "next": "^15.5.6",
@@ -22,9 +25,12 @@
     "three": "^0.181.2"
   },
   "devDependencies": {
+    "@aws-amplify/backend": "^1.23.0",
+    "@aws-amplify/backend-cli": "^1.8.3",
     "@breezystack/lamejs": "^1.2.7",
     "@eslint/eslintrc": "^3",
     "eslint": "^9",
-    "eslint-config-next": "15.5.0"
+    "eslint-config-next": "15.5.0",
+    "typescript": "^5.9.3"
   }
 }
