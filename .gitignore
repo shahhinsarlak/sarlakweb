@@ -138,8 +138,9 @@ dist
 # macOS
 .DS_Store
 
-# Amplify Gen 2 (generated config + local sandbox state, never commit)
+# Amplify Gen 2 local sandbox state (never commit)
 .amplify
-amplify_outputs*
-amplifyconfiguration*
 .amplify/**
+# amplify_outputs.json IS committed: public config (pool ids, API url, schema),
+# no secrets. It connects the deployed site to the backend. .env.local stays out.
+.env.local

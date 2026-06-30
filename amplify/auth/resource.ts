@@ -13,7 +13,7 @@ export const auth = defineAuth({
   loginWith: {
     email: {
       verificationEmailSubject: 'Your Lure verification code',
-      verificationEmailBody: (createCode) =>
+      verificationEmailBody: (createCode: () => string) =>
         `Welcome to Lure. Your verification code is ${createCode()}.`,
     },
   },

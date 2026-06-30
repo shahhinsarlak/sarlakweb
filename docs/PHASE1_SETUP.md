@@ -19,27 +19,34 @@ From the repo root:
 
     npx ampx sandbox
 
-This provisions a throwaway Cognito user pool, AppSync API and DynamoDB tables tied to your
-machine, and writes `amplify_outputs.json` (gitignored). Leave it running; it redeploys on
-change.
+This provisions a Cognito user pool, AppSync API and DynamoDB tables in your account, and
+writes `amplify_outputs.json` at the repo root. Leave it running; it redeploys on change. The
+backend resources persist after you stop the watcher; only `npx ampx sandbox delete` tears
+them down.
 
-## 3. Point the app at the sandbox
-The Lure client reads its config from `NEXT_PUBLIC_*` env vars. Generate a `.env.local` from
-the outputs, then run the dev server:
+## 3. Run the app
+The Lure client reads `amplify_outputs.json` directly (it holds public config only: pool ids,
+the AppSync URL and the schema, the same values that ship to the browser, no secrets). That
+file is committed, so the app is already wired. Just run:
 
-    npm run sync:lure-env
     npm run dev
 
-Open http://localhost:3000/lure. A "Sign in" button now appears in the top bar. Create an
-account, verify with the emailed code, and your likes and saves persist to the account. Any
-you made while signed out are merged up on first sign-in.
+Open http://localhost:3000/lure. A "Sign in" button appears in the top bar. Create an account,
+verify with the emailed code, and your likes and saves persist to the account. Any you made
+while signed out are merged up on first sign-in.
 
-> `NEXT_PUBLIC_*` vars are inlined at build time, so they must be set before `npm run build`,
-> not only at runtime.
+> After any schema change and redeploy, commit the updated `amplify_outputs.json` so the
+> deployed site picks it up. (`npm run sync:lure-env` still exists if you prefer env vars, but
+> the client no longer needs them.)
 
 ## 4. Deploy to Amplify Hosting (production)
-In the Amplify console, enable this branch's backend. Then update `amplify.yml` so the build
-provisions the backend and wires the env vars before the Next build:
+The simplest path, used now: the committed `amplify_outputs.json` connects the deployed site to
+this backend, so the existing frontend-only `amplify.yml` just works, no extra console setup.
+
+> Tradeoff: the deployed site talks to the sandbox backend. Fine for a prototype. For a real
+> per-branch backend (so production does not depend on a personal sandbox), enable the branch
+> backend in the Amplify console with a deploy service role and add a backend phase to
+> `amplify.yml`:
 
 ```yaml
 version: 1
@@ -56,7 +63,6 @@ frontend:
         - npm ci --cache .npm --prefer-offline
     build:
       commands:
-        - node scripts/lure-env-from-outputs.mjs
         - npm run build
   artifacts:
     baseDirectory: .next
@@ -68,8 +74,8 @@ frontend:
       - node_modules/**/*
 ```
 
-`amplify_outputs.json` is produced by `ampx pipeline-deploy` in the build environment, then
-the sync script turns it into the `NEXT_PUBLIC_*` vars the client reads.
+With that, `ampx pipeline-deploy` regenerates `amplify_outputs.json` in the build environment
+before the Next build, overriding the committed one with the branch backend.
 
 ## Security notes (how this maps to the plan)
 - Passwords are handled entirely by Cognito: salted hash, and with the SRP flow they never

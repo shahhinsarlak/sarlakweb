@@ -49,6 +49,7 @@ export default function RootLayout({ children }) {
     <html
       lang="en"
       className={`${fraunces.variable} ${hankenGrotesk.variable} ${ibmPlexMono.variable}`}
+      suppressHydrationWarning
     >
       <head>
         <script
