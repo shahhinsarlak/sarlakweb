@@ -11,14 +11,27 @@ I stopped trying to showcase my coding and started learning as much as I could a
 building with AI instead. What is here now is less a portfolio of what I can write by hand
 and more a record of how I use AI to make different things.
 
-It holds a few browser apps, an incremental horror game and a dev log, all built as one
-Next.js site and running on AWS Amplify. Everything runs in the browser, so you just open a
-page and it works with nothing to install.
+It holds a few browser apps, a short form audio feed, an incremental horror game and a dev
+log, all built as one Next.js site and running on AWS Amplify. Everything runs in the
+browser, so you just open a page and it works with nothing to install.
 
 ![Home page](docs/screenshots/home.png)
 *Home, June 2026.*
 
 ## What is inside
+
+### Lure (`/lure`)
+
+Lure is the newest thing here and it is a take on short form audio, basically a feed you
+swipe through like TikTok but for things you listen to instead of watch. Every post opens
+with an eight second preview that is built to hook you, and if it lands you just let it run
+and it flows straight into the full piece, but if it does not grab you then you swipe up and
+the next one starts. There are categories for all sorts of moods like horror and explainers
+and book openings and poems and self help and calm, and for now the whole thing runs on
+seeded audio with the sample voices generated locally, so there is no backend yet. It is a
+prototype and the plan is to grow it into a real platform later, but the first slice was
+getting that hook and swipe loop to feel right in the browser. The audio is regenerated with
+`npm run generate:lure-audio`.
 
 ### Office Horror (`/game`)
 
@@ -74,6 +87,7 @@ app/
   layout.js          Root layout, fonts and theme bootstrap
   game/              Office Horror incremental game (see GAME_CONTEXT.md)
   pxls/              PXLS pixel art editor (see PXLS_CONTEXT.md)
+  lure/              Lure short form audio feed prototype
   log/               Dev log, reads content/posts/
   apps/              Directory of apps and experiments
   wheel/             Spin wheel app and API route

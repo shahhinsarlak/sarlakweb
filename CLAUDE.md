@@ -46,6 +46,7 @@ app/
   page.js, layout.js   Editorial home and root layout (fonts, theme bootstrap)
   game/                Office Horror incremental game   (see app/game/GAME_CONTEXT.md)
   pxls/                PXLS pixel art editor            (see app/pxls/PXLS_CONTEXT.md)
+  lure/                Lure short form audio feed prototype (seeded audio, swipe + autoplay)
   log/                 Dev log, renders content/posts/ via lib/posts.js
   apps/                Directory page listing the apps
   wheel/               Spin wheel app

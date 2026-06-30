@@ -10,6 +10,12 @@ export const metadata = {
 
 const APPS = [
   {
+    title: 'Lure',
+    kind: 'A swipeable feed of short audio. Eight second previews built to hook you, then they play on into the full piece',
+    tags: ['Next.js', 'Web Audio'],
+    href: '/lure',
+  },
+  {
     title: 'Office Horror',
     kind: 'Incremental game with loot drops, a skill tree and sanity mechanics',
     tags: ['Next.js', 'React'],

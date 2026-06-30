@@ -7,7 +7,8 @@
     "build": "next build --turbopack",
     "start": "next start",
     "lint": "eslint",
-    "generate:archive": "node scripts/generate-archive-images.mjs"
+    "generate:archive": "node scripts/generate-archive-images.mjs",
+    "generate:lure-audio": "node scripts/generate-lure-audio.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
@@ -21,6 +22,7 @@
     "three": "^0.181.2"
   },
   "devDependencies": {
+    "@breezystack/lamejs": "^1.2.7",
     "@eslint/eslintrc": "^3",
     "eslint": "^9",
     "eslint-config-next": "15.5.0"
