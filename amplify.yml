@@ -7,6 +7,7 @@ frontend:
     build:
       commands:
         - echo "ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY" >> .env.production
+        - echo "AMPLIFY_APP_ORIGIN=$AMPLIFY_APP_ORIGIN" >> .env.production
         - npm run build
   artifacts:
     baseDirectory: .next
