@@ -812,6 +812,47 @@
   box-shadow: 0 0 0 3px var(--accent-glow);
 }
 
+.authTextarea {
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--text-color);
+  background: var(--bg-color);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 11px 13px;
+  resize: vertical;
+  min-height: 68px;
+  transition: var(--transition);
+}
+
+.authTextarea:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.sheetSignOut {
+  display: inline-block;
+  margin-top: 20px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  text-decoration: underline;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.sheetSignOut:hover {
+  color: var(--accent-color);
+}
+
+.accountBtnNudge {
+  color: var(--accent-color);
+  border-color: var(--accent-color);
+}
+
 .authError {
   color: #ef4444;
   font-size: 13px;

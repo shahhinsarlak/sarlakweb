@@ -4,6 +4,7 @@ import { getCurrentUser } from 'aws-amplify/auth/server';
 import LureClient from './LureClient';
 import { AuthProvider } from './auth/AuthProvider';
 import { runWithAmplifyServerContext, isAuthConfigured } from './lib/amplifyServerUtils';
+import { getProfile } from './actions/profile';
 
 export const metadata = {
   title: 'Lure — SARLAK',
@@ -32,8 +33,13 @@ async function getInitialUser() {
 
 export default async function LurePage() {
   const initialUser = await getInitialUser();
+  const initialProfile = initialUser ? await getProfile() : null;
   return (
-    <AuthProvider initialUser={initialUser} authEnabled={isAuthConfigured}>
+    <AuthProvider
+      initialUser={initialUser}
+      initialProfile={initialProfile}
+      authEnabled={isAuthConfigured}
+    >
       <LureClient />
     </AuthProvider>
   );

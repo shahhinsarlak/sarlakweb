@@ -1,5 +1,5 @@
 'use client';
-import { createContext, useContext } from 'react';
+import { createContext, useContext, useState } from 'react';
 
 // Auth state for Lure, server-driven.
 //
@@ -11,9 +11,12 @@ import { createContext, useContext } from 'react';
 
 const AuthContext = createContext(null);
 
-export function AuthProvider({ initialUser, authEnabled, children }) {
+export function AuthProvider({ initialUser, initialProfile, authEnabled, children }) {
+  const [profile, setProfile] = useState(initialProfile || null);
   const value = {
     user: initialUser || null,
+    profile,
+    setProfile,
     isBackendConfigured: Boolean(authEnabled),
     signInHref: '/api/auth/sign-in',
     signUpHref: '/api/auth/sign-up',

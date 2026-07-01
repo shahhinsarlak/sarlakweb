@@ -7,6 +7,7 @@ import StartGate from './components/StartGate';
 import CategoryBar from './components/CategoryBar';
 import TranscriptSheet from './components/TranscriptSheet';
 import CreatorSheet from './components/CreatorSheet';
+import ProfileSheet from './components/ProfileSheet';
 import { ChevronUpIcon, ChevronDownIcon } from './components/Icons';
 import ThemeToggle from '../../components/ThemeToggle';
 
@@ -32,8 +33,9 @@ export default function LureClient() {
   const [toast, setToast] = useState(null);
 
   const [signals, setSignals] = useLocalStorage('lure_signals_v1', {});
+  const [profileOpen, setProfileOpen] = useState(false);
 
-  const { user, isBackendConfigured, signInHref, signOutHref } = useAuth();
+  const { user, profile, isBackendConfigured, signInHref } = useAuth();
   const { likes, saves, toggleLike, toggleSave } = useLikesSaves(user);
 
   const feedRef = useRef(null);
@@ -263,9 +265,13 @@ export default function LureClient() {
           <div className={styles.topRight}>
             {isBackendConfigured && (
               user ? (
-                <a className={styles.accountBtn} href={signOutHref} title="Sign out">
-                  Sign out
-                </a>
+                <button
+                  type="button"
+                  className={`${styles.accountBtn} ${profile ? '' : styles.accountBtnNudge}`}
+                  onClick={() => setProfileOpen(true)}
+                >
+                  {profile ? `@${profile.handle}` : 'Set up profile'}
+                </button>
               ) : (
                 <a className={styles.accountBtn} href={signInHref}>
                   Sign in
@@ -330,6 +336,8 @@ export default function LureClient() {
           onClose={() => setOverlay(null)}
         />
       )}
+
+      {profileOpen && <ProfileSheet onClose={() => setProfileOpen(false)} />}
 
       {!started && <StartGate onStart={handleStart} />}
     </div>
