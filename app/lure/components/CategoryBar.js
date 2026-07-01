@@ -16,6 +16,16 @@ export default function CategoryBar({ categories, active, onSelect }) {
       >
         For You
       </button>
+      <button
+        type="button"
+        role="tab"
+        aria-selected={active === 'following'}
+        className={`${styles.categoryChip} ${active === 'following' ? styles.categoryChipActive : ''}`}
+        onClick={() => onSelect('following')}
+      >
+        <span className={styles.categoryChipGlyph} aria-hidden="true">+</span>
+        Following
+      </button>
       {categories.map((category) => (
         <button
           key={category.id}

@@ -24,6 +24,7 @@ const FeedCard = forwardRef(function FeedCard(
     duration,
     liked,
     saved,
+    isFollowing,
     muted,
     onTogglePlay,
     onLike,
@@ -32,6 +33,7 @@ const FeedCard = forwardRef(function FeedCard(
     onToggleMute,
     onTranscript,
     onCreator,
+    onToggleFollow,
     onSeek,
   },
   ref,
@@ -46,6 +48,7 @@ const FeedCard = forwardRef(function FeedCard(
   const handleShare = () => onShare(post.id);
   const handleTranscript = () => onTranscript(post.id);
   const handleCreator = () => onCreator(post.id);
+  const handleFollow = () => onToggleFollow(post.creatorId);
 
   const handleSeek = (event) => {
     if (!isActive || !duration) return;
@@ -93,9 +96,19 @@ const FeedCard = forwardRef(function FeedCard(
 
         <h2 className={styles.cardTitle}>{post.title}</h2>
         <p className={styles.cardCaption}>{post.caption}</p>
-        <button type="button" className={styles.cardCreator} onClick={handleCreator}>
-          {creator.name} <span className={styles.cardHandle}>{creator.handle}</span>
-        </button>
+        <div className={styles.creatorRow}>
+          <button type="button" className={styles.cardCreator} onClick={handleCreator}>
+            {creator.name} <span className={styles.cardHandle}>{creator.handle}</span>
+          </button>
+          <button
+            type="button"
+            className={`${styles.followPill} ${isFollowing ? styles.followPillActive : ''}`}
+            onClick={handleFollow}
+            aria-pressed={isFollowing}
+          >
+            {isFollowing ? 'Following' : 'Follow'}
+          </button>
+        </div>
 
         <div className={styles.controlRow}>
           <button

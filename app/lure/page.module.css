@@ -356,6 +356,78 @@
   color: var(--text-muted);
 }
 
+.creatorRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.followPill {
+  flex: 0 0 auto;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: var(--bg-color);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.followPill:hover {
+  filter: brightness(1.08);
+}
+
+.followPillActive {
+  background: transparent;
+  color: var(--accent);
+}
+
+.emptyState {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 24px;
+  gap: 10px;
+}
+
+.emptyTitle {
+  font-family: var(--font-display);
+  font-size: 26px;
+}
+
+.emptyText {
+  font-size: 15px;
+  color: var(--text-muted);
+  max-width: 34ch;
+}
+
+.emptyButton {
+  margin-top: 10px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  color: var(--bg-color);
+  background: var(--accent-color);
+  border: none;
+  border-radius: 999px;
+  padding: 10px 24px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.emptyButton:hover {
+  background: var(--accent-bright);
+}
+
 /* ---- Controls ---- */
 
 .controlRow {
@@ -669,6 +741,30 @@
   line-height: 1.55;
   color: var(--text-muted);
   margin-bottom: 22px;
+}
+
+.followButton {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  padding: 9px 22px;
+  border-radius: 999px;
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: var(--bg-color);
+  cursor: pointer;
+  transition: var(--transition);
+  margin-bottom: 22px;
+}
+
+.followButton:hover {
+  filter: brightness(1.08);
+}
+
+.followButtonActive {
+  background: transparent;
+  color: var(--accent);
 }
 
 .creatorListLabel {

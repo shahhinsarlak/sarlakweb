@@ -7,7 +7,7 @@ import { CloseIcon } from './Icons';
 // Lightweight creator profile. Read-only in the prototype: it shows the
 // creator and their other posts, and tapping one jumps to it in the feed.
 
-export default function CreatorSheet({ creator, category, posts, onSelectPost, onClose }) {
+export default function CreatorSheet({ creator, category, posts, isFollowing, onToggleFollow, onSelectPost, onClose }) {
   useEffect(() => {
     const handleKey = (event) => {
       if (event.key === 'Escape') onClose();
@@ -33,6 +33,14 @@ export default function CreatorSheet({ creator, category, posts, onSelectPost, o
           </button>
         </div>
         <p className={styles.creatorBio}>{creator.bio}</p>
+        <button
+          type="button"
+          className={`${styles.followButton} ${isFollowing ? styles.followButtonActive : ''}`}
+          onClick={() => onToggleFollow(creator.id)}
+          aria-pressed={isFollowing}
+        >
+          {isFollowing ? 'Following' : 'Follow'}
+        </button>
         <div className={styles.creatorListLabel}>Posts</div>
         <ul className={styles.creatorList}>
           {posts.map((post) => (

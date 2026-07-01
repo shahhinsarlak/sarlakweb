@@ -15,6 +15,7 @@ const Feed = forwardRef(function Feed(
     playback,
     likes,
     saves,
+    follows,
     muted,
     onActiveChange,
     onTogglePlay,
@@ -25,6 +26,7 @@ const Feed = forwardRef(function Feed(
     onShare,
     onTranscript,
     onCreator,
+    onToggleFollow,
   },
   ref,
 ) {
@@ -92,6 +94,7 @@ const Feed = forwardRef(function Feed(
             duration={active ? playback.duration : 0}
             liked={likes.includes(entry.post.id)}
             saved={saves.includes(entry.post.id)}
+            isFollowing={follows.includes(entry.post.creatorId)}
             muted={muted}
             onTogglePlay={onTogglePlay}
             onToggleMute={onToggleMute}
@@ -101,6 +104,7 @@ const Feed = forwardRef(function Feed(
             onShare={onShare}
             onTranscript={onTranscript}
             onCreator={onCreator}
+            onToggleFollow={onToggleFollow}
           />
         );
       })}

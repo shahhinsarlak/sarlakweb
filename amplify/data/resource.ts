@@ -32,6 +32,14 @@ const schema = a.schema({
     })
     .authorization((allow) => [allow.owner()]),
 
+  // Which creators a user follows, one row per (user, creator). Drives the
+  // Following feed. Owner auth scopes rows to the signed-in user.
+  Follow: a
+    .model({
+      creatorId: a.string().required(),
+    })
+    .authorization((allow) => [allow.owner()]),
+
   // Enforces globally unique handles. `handle` is the primary key, so
   // HandleClaim.create fails atomically (DynamoDB conditional write) when a
   // handle is already taken. Owner auth lets a user read/release only their own

@@ -14,6 +14,7 @@ import ThemeToggle from '../../components/ThemeToggle';
 import { useAudioController } from './hooks/useAudioController';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { useLikesSaves } from './hooks/useLikesSaves';
+import { useFollows } from './hooks/useFollows';
 import { useAuth } from './auth/AuthProvider';
 import { buildFeed, applySignal } from './lib/feedAlgorithm';
 import { CATEGORIES, CATEGORY_MAP } from './data/categories';
@@ -37,6 +38,7 @@ export default function LureClient() {
 
   const { user, profile, isBackendConfigured, signInHref } = useAuth();
   const { likes, saves, toggleLike, toggleSave } = useLikesSaves(user);
+  const { follows, toggleFollow } = useFollows(user);
 
   const feedRef = useRef(null);
   const activeIndexRef = useRef(0);
@@ -49,11 +51,13 @@ export default function LureClient() {
   const toastTimerRef = useRef(null);
   const didInit = useRef(false);
   const likesRef = useRef(likes);
+  const followsRef = useRef(follows);
 
   useEffect(() => { activeIndexRef.current = activeIndex; }, [activeIndex]);
   useEffect(() => { orderRef.current = order; }, [order]);
   useEffect(() => { signalsRef.current = signals; }, [signals]);
   useEffect(() => { likesRef.current = likes; }, [likes]);
+  useEffect(() => { followsRef.current = follows; }, [follows]);
 
   const recordSignal = useCallback((cat, kind) => {
     setSignals((prev) => applySignal(prev, cat, kind));
@@ -82,7 +86,7 @@ export default function LureClient() {
   }, [recordSignal, goNext]);
 
   const controller = useAudioController({ onHook: handleHook, onEnded: handleEnded });
-  const { audioRef, isPlaying, phase, currentTime, duration, muted, loadAndPlay, togglePlay, toggleMute, seekTo } = controller;
+  const { audioRef, isPlaying, phase, currentTime, duration, muted, loadAndPlay, pause, togglePlay, toggleMute, seekTo } = controller;
 
   // Shuffle once after mount. The first render matches the server (declared
   // order), avoiding a hydration mismatch, then we reorder client-side.
@@ -166,18 +170,30 @@ export default function LureClient() {
     setActiveIndex(index);
   }, []);
 
+  const handleFollow = useCallback((creatorId) => {
+    toggleFollow(creatorId);
+  }, [toggleFollow]);
+
   const handleSelectCategory = useCallback((nextCategory) => {
-    const nextOrder = buildFeed(POSTS, { category: nextCategory, signals: signalsRef.current });
+    const nextOrder = buildFeed(POSTS, {
+      category: nextCategory,
+      signals: signalsRef.current,
+      followedCreatorIds: followsRef.current,
+    });
     setCategory(nextCategory);
     setOrder(nextOrder);
     setActiveIndex(0);
     const post = nextOrder[0];
     currentPostRef.current = post || null;
     hookedRef.current = false;
-    lastLoadedIndexRef.current = 0;
+    lastLoadedIndexRef.current = post ? 0 : -1;
     if (feedRef.current) feedRef.current.scrollToTop();
-    if (started && post) loadAndPlay(post);
-  }, [started, loadAndPlay]);
+    if (started && post) {
+      loadAndPlay(post);
+    } else if (started) {
+      pause();
+    }
+  }, [started, loadAndPlay, pause]);
 
   const handleSelectPost = useCallback((postId) => {
     setOverlay(null);
@@ -295,6 +311,7 @@ export default function LureClient() {
         playback={playback}
         likes={likes}
         saves={saves}
+        follows={follows}
         muted={muted}
         onActiveChange={handleActiveChange}
         onTogglePlay={togglePlay}
@@ -305,7 +322,26 @@ export default function LureClient() {
         onShare={handleShare}
         onTranscript={handleTranscript}
         onCreator={handleCreator}
+        onToggleFollow={handleFollow}
       />
+
+      {entries.length === 0 && (
+        <div className={styles.emptyState}>
+          <p className={styles.emptyTitle}>Nothing here yet</p>
+          <p className={styles.emptyText}>
+            {category === 'following'
+              ? 'Follow a few creators and their posts land here.'
+              : 'No posts in this category yet.'}
+          </p>
+          <button
+            type="button"
+            className={styles.emptyButton}
+            onClick={() => handleSelectCategory('all')}
+          >
+            Back to For You
+          </button>
+        </div>
+      )}
 
       <div className={styles.navButtons}>
         <button type="button" className={styles.navButton} onClick={goPrev} aria-label="Previous">
@@ -332,6 +368,8 @@ export default function LureClient() {
           creator={overlayCreator}
           category={CATEGORY_MAP[overlayCreator.category]}
           posts={POSTS.filter((post) => post.creatorId === overlayCreator.id)}
+          isFollowing={follows.includes(overlayCreator.id)}
+          onToggleFollow={handleFollow}
           onSelectPost={handleSelectPost}
           onClose={() => setOverlay(null)}
         />

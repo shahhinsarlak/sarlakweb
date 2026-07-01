@@ -35,7 +35,12 @@ function spreadCategories(list) {
   return result;
 }
 
-export function buildFeed(posts, { category = 'all', signals = {} } = {}) {
+export function buildFeed(posts, { category = 'all', signals = {}, followedCreatorIds = [] } = {}) {
+  if (category === 'following') {
+    const followed = new Set(followedCreatorIds);
+    return weightedOrder(posts.filter((post) => followed.has(post.creatorId)), {});
+  }
+
   const pool = category === 'all'
     ? posts.slice()
     : posts.filter((post) => post.category === category);
