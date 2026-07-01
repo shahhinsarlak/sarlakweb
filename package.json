@@ -8,8 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "generate:archive": "node scripts/generate-archive-images.mjs",
-    "generate:lure-audio": "node scripts/generate-lure-audio.mjs",
-    "sync:lure-env": "node scripts/lure-env-from-outputs.mjs"
+    "generate:lure-audio": "node scripts/generate-lure-audio.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",

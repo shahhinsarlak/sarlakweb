@@ -1,100 +1,24 @@
 'use client';
-import { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import {
-  signIn as amplifySignIn,
-  signUp as amplifySignUp,
-  confirmSignUp as amplifyConfirmSignUp,
-  resendSignUpCode,
-  signOut as amplifySignOut,
-  getCurrentUser,
-  fetchUserAttributes,
-} from 'aws-amplify/auth';
-import { Hub } from 'aws-amplify/utils';
+import { createContext, useContext } from 'react';
 
-import { configureAmplify, isBackendConfigured } from '../lib/amplifyConfig';
-
-// Auth state for Lure. Wraps the Amplify Cognito calls and exposes a small,
-// stable surface. When the backend is not configured it stays quietly in
-// anonymous mode, so the rest of the app keeps working untouched.
+// Auth state for Lure, server-driven.
+//
+// With the httpOnly server-side flow the browser cannot read tokens, so the
+// signed-in user is resolved on the server (in page.js) and passed in as
+// `initialUser`. Sign-in and sign-out are plain navigations to the /api/auth
+// routes, which run the hosted-UI OAuth flow and set or clear the httpOnly
+// cookies. This provider holds no tokens and makes no Amplify calls.
 
 const AuthContext = createContext(null);
 
-export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
-  const [ready, setReady] = useState(false);
-
-  const refresh = useCallback(async () => {
-    if (!isBackendConfigured) {
-      setUser(null);
-      setReady(true);
-      return;
-    }
-    try {
-      const current = await getCurrentUser();
-      let attributes = {};
-      try {
-        attributes = await fetchUserAttributes();
-      } catch (e) {
-        // attributes are best-effort
-      }
-      setUser({ userId: current.userId, username: current.username, email: attributes.email });
-    } catch (e) {
-      setUser(null);
-    } finally {
-      setReady(true);
-    }
-  }, []);
-
-  useEffect(() => {
-    configureAmplify();
-    refresh();
-    if (!isBackendConfigured) return undefined;
-    const stop = Hub.listen('auth', ({ payload }) => {
-      if (payload.event === 'signedIn' || payload.event === 'signedOut' || payload.event === 'tokenRefresh') {
-        refresh();
-      }
-    });
-    return () => stop();
-  }, [refresh]);
-
-  const signUp = useCallback(
-    (email, password) => amplifySignUp({
-      username: email,
-      password,
-      options: { userAttributes: { email } },
-    }),
-    [],
-  );
-
-  const confirmSignUp = useCallback(
-    (email, code) => amplifyConfirmSignUp({ username: email, confirmationCode: code }),
-    [],
-  );
-
-  const resendCode = useCallback((email) => resendSignUpCode({ username: email }), []);
-
-  const signIn = useCallback(async (email, password) => {
-    const result = await amplifySignIn({ username: email, password });
-    await refresh();
-    return result;
-  }, [refresh]);
-
-  const signOut = useCallback(async () => {
-    await amplifySignOut();
-    setUser(null);
-  }, []);
-
+export function AuthProvider({ initialUser, authEnabled, children }) {
   const value = {
-    user,
-    ready,
-    isBackendConfigured,
-    signUp,
-    confirmSignUp,
-    resendCode,
-    signIn,
-    signOut,
+    user: initialUser || null,
+    isBackendConfigured: Boolean(authEnabled),
+    signInHref: '/api/auth/sign-in',
+    signUpHref: '/api/auth/sign-up',
+    signOutHref: '/api/auth/sign-out',
   };
-
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

@@ -1,5 +1,9 @@
+import { cookies } from 'next/headers';
+import { getCurrentUser } from 'aws-amplify/auth/server';
+
 import LureClient from './LureClient';
 import { AuthProvider } from './auth/AuthProvider';
+import { runWithAmplifyServerContext, isAuthConfigured } from './lib/amplifyServerUtils';
 
 export const metadata = {
   title: 'Lure — SARLAK',
@@ -8,9 +12,28 @@ export const metadata = {
     + 'then they play straight on into the full piece.',
 };
 
-export default function LurePage() {
+// Resolve the signed-in user on the server by reading the httpOnly session
+// cookies. Runs on every request (cookies() makes the page dynamic), so after a
+// hosted-UI sign-in or sign-out redirect the feed renders with the right state.
+async function getInitialUser() {
+  if (!isAuthConfigured) return null;
+  try {
+    return await runWithAmplifyServerContext({
+      nextServerContext: { cookies },
+      operation: async (contextSpec) => {
+        const current = await getCurrentUser(contextSpec);
+        return { userId: current.userId, username: current.username };
+      },
+    });
+  } catch (error) {
+    return null;
+  }
+}
+
+export default async function LurePage() {
+  const initialUser = await getInitialUser();
   return (
-    <AuthProvider>
+    <AuthProvider initialUser={initialUser} authEnabled={isAuthConfigured}>
       <LureClient />
     </AuthProvider>
   );

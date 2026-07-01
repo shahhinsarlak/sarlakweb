@@ -7,7 +7,6 @@ import StartGate from './components/StartGate';
 import CategoryBar from './components/CategoryBar';
 import TranscriptSheet from './components/TranscriptSheet';
 import CreatorSheet from './components/CreatorSheet';
-import AuthSheet from './components/AuthSheet';
 import { ChevronUpIcon, ChevronDownIcon } from './components/Icons';
 import ThemeToggle from '../../components/ThemeToggle';
 
@@ -33,9 +32,8 @@ export default function LureClient() {
   const [toast, setToast] = useState(null);
 
   const [signals, setSignals] = useLocalStorage('lure_signals_v1', {});
-  const [authOpen, setAuthOpen] = useState(false);
 
-  const { user, isBackendConfigured, signOut } = useAuth();
+  const { user, isBackendConfigured, signInHref, signOutHref } = useAuth();
   const { likes, saves, toggleLike, toggleSave } = useLikesSaves(user);
 
   const feedRef = useRef(null);
@@ -265,22 +263,13 @@ export default function LureClient() {
           <div className={styles.topRight}>
             {isBackendConfigured && (
               user ? (
-                <button
-                  type="button"
-                  className={styles.accountBtn}
-                  onClick={signOut}
-                  title={user.email || 'Sign out'}
-                >
+                <a className={styles.accountBtn} href={signOutHref} title="Sign out">
                   Sign out
-                </button>
+                </a>
               ) : (
-                <button
-                  type="button"
-                  className={styles.accountBtn}
-                  onClick={() => setAuthOpen(true)}
-                >
+                <a className={styles.accountBtn} href={signInHref}>
                   Sign in
-                </button>
+                </a>
               )
             )}
             <ThemeToggle />
@@ -341,8 +330,6 @@ export default function LureClient() {
           onClose={() => setOverlay(null)}
         />
       )}
-
-      {authOpen && <AuthSheet onClose={() => setAuthOpen(false)} />}
 
       {!started && <StartGate onStart={handleStart} />}
     </div>

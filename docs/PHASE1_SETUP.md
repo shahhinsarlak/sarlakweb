@@ -24,28 +24,41 @@ writes `amplify_outputs.json` at the repo root. Leave it running; it redeploys o
 backend resources persist after you stop the watcher; only `npx ampx sandbox delete` tears
 them down.
 
-## 3. Run the app
-The Lure client reads `amplify_outputs.json` directly (it holds public config only: pool ids,
-the AppSync URL and the schema, the same values that ship to the browser, no secrets). That
-file is committed, so the app is already wired. Just run:
+## 3. Run the app locally
+The app reads its backend config from the committed `amplify_outputs.json` (public config only:
+pool ids, the AppSync URL, the hosted-UI OAuth domain and the schema, the same values that ship
+to the browser, no secrets). Sign-in runs server-side through Cognito's hosted UI, which needs
+one environment variable: the app's own origin. For local dev, `.env.local` already sets it:
+
+    AMPLIFY_APP_ORIGIN=http://localhost:3000
+
+Then:
 
     npm run dev
 
-Open http://localhost:3000/lure. A "Sign in" button appears in the top bar. Create an account,
-verify with the emailed code, and your likes and saves persist to the account. Any you made
-while signed out are merged up on first sign-in.
+Open http://localhost:3000/lure and click "Sign in". You are redirected to the Cognito hosted
+page (email/password), then back to the app, where the server exchanges the code and sets the
+httpOnly session cookies. Likes and saves made while signed out are merged into the account on
+first sign-in.
 
-> After any schema change and redeploy, commit the updated `amplify_outputs.json` so the
-> deployed site picks it up. (`npm run sync:lure-env` still exists if you prefer env vars, but
-> the client no longer needs them.)
+> After any auth or schema change and redeploy, commit the updated `amplify_outputs.json` so the
+> deployed site picks it up.
 
 ## 4. Deploy to Amplify Hosting (production)
-The simplest path, used now: the committed `amplify_outputs.json` connects the deployed site to
-this backend, so the existing frontend-only `amplify.yml` just works, no extra console setup.
+The committed `amplify_outputs.json` connects the deployed site to this backend, so the existing
+frontend-only `amplify.yml` builds it with no backend phase.
 
-> Tradeoff: the deployed site talks to the sandbox backend. Fine for a prototype. For a real
-> per-branch backend (so production does not depend on a personal sandbox), enable the branch
-> backend in the Amplify console with a deploy service role and add a backend phase to
+**Required once:** in the Amplify console, App settings -> Environment variables, add
+
+    AMPLIFY_APP_ORIGIN = https://sarlak.au
+
+The server-side auth route reads it at build and at runtime; without it the Amplify build fails
+at page-data collection. Use the canonical domain (`sarlak.au`); Cognito already allows the
+sign-in/out callbacks for `sarlak.au`, `www.sarlak.au`, the amplifyapp default and localhost.
+
+> Tradeoff: the deployed site talks to the personal sandbox backend. Fine for a prototype. For a
+> real per-branch backend (so production does not depend on a personal sandbox), enable the
+> branch backend in the Amplify console with a deploy service role and add a backend phase to
 > `amplify.yml`:
 
 ```yaml
@@ -78,13 +91,16 @@ With that, `ampx pipeline-deploy` regenerates `amplify_outputs.json` in the buil
 before the Next build, overriding the committed one with the branch backend.
 
 ## Security notes (how this maps to the plan)
-- Passwords are handled entirely by Cognito: salted hash, and with the SRP flow they never
-  cross the network.
-- Cognito, DynamoDB and the API are encrypted at rest (KMS) and in transit (TLS).
-- Every data model uses owner-based authorization, so a user can only read and write their own
-  rows.
-- Tokens are kept in cookies (`ssr: true`), not localStorage. For full httpOnly hardening,
-  move to the `@aws-amplify/adapter-nextjs` server runner with middleware. This is the next
-  hardening step before a public launch.
-- Turn on Cognito threat protection (compromised-credential blocking + adaptive MFA) in the
-  console before launch; it is a paid add-on, so it is left off for now.
+- Sign-in uses Cognito's hosted UI over the OAuth authorization-code + PKCE flow. The token
+  exchange happens server-side in `/api/auth/sign-in-callback`, which sets the id, access and
+  refresh tokens as httpOnly, Secure cookies the browser JS can never read (closes the XSS
+  token-theft hole).
+- All authenticated data access (likes, saves) runs in server actions against the httpOnly
+  session; the browser never holds a token. This is the BFF pattern, and the same shape future
+  metrics capture and feed ranking will use.
+- `middleware.js` refreshes the session (rotating the httpOnly cookies) so logins survive access
+  token expiry.
+- Passwords are handled entirely by Cognito (salted hash). Cognito, DynamoDB and the API are
+  encrypted at rest (KMS) and in transit (TLS). Every data model uses owner-based authorization.
+- Still to do before a public launch: turn on Cognito threat protection (compromised-credential
+  blocking + adaptive MFA, a paid add-on) and require MFA.
