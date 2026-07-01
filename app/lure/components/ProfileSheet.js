@@ -9,7 +9,7 @@ import { saveProfile } from '../actions/profile';
 // action (httpOnly session, owner auth); the browser never touches a token.
 // Sign out lives here so the top bar can just show the handle.
 
-export default function ProfileSheet({ onClose }) {
+export default function ProfileSheet({ followingCount, followersCount, onOpenConnections, onClose }) {
   const { profile, setProfile, signOutHref } = useAuth();
   const [handle, setHandle] = useState(profile ? profile.handle : '');
   const [displayName, setDisplayName] = useState(profile ? profile.displayName : '');
@@ -49,6 +49,11 @@ export default function ProfileSheet({ onClose }) {
             <CloseIcon size={20} />
           </button>
         </div>
+
+        <button type="button" className={styles.connSummary} onClick={onOpenConnections}>
+          <span><strong>{followingCount}</strong> Following</span>
+          <span><strong>{followersCount}</strong> Followers</span>
+        </button>
 
         <p className={styles.authIntro}>
           This is how you show up on Lure. You can change it anytime.

@@ -11,6 +11,7 @@ export const CREATORS = [
     category: 'horror',
     bio: 'Bedtime stories for people who sleep with the lights on.',
     voice: { name: 'Microsoft Zira Desktop', pitch: '-25%', rate: '-8%' },
+    followers: 48200,
   },
   {
     id: 'cr_quill',
@@ -19,6 +20,7 @@ export const CREATORS = [
     category: 'stories',
     bio: 'Small stories with a turn at the end.',
     voice: { name: 'Microsoft Hazel Desktop', pitch: '-6%', rate: '-4%' },
+    followers: 22100,
   },
   {
     id: 'cr_byte',
@@ -27,6 +29,7 @@ export const CREATORS = [
     category: 'explainers',
     bio: 'One surprising true thing a day.',
     voice: { name: 'Microsoft Zira Desktop', pitch: '+12%', rate: '+9%' },
+    followers: 63400,
   },
   {
     id: 'cr_margin',
@@ -35,6 +38,7 @@ export const CREATORS = [
     category: 'books',
     bio: 'First pages of books worth finishing.',
     voice: { name: 'Microsoft Hazel Desktop', pitch: '-2%', rate: '-6%' },
+    followers: 15800,
   },
   {
     id: 'cr_meter',
@@ -43,6 +47,7 @@ export const CREATORS = [
     category: 'poetry',
     bio: 'A poem to say out loud.',
     voice: { name: 'Microsoft Hazel Desktop', pitch: '+4%', rate: '-14%' },
+    followers: 19300,
   },
   {
     id: 'cr_north',
@@ -51,6 +56,7 @@ export const CREATORS = [
     category: 'selfhelp',
     bio: 'Small pushes, no shouting.',
     voice: { name: 'Microsoft Zira Desktop', pitch: '+6%', rate: '+4%' },
+    followers: 71600,
   },
   {
     id: 'cr_still',
@@ -59,6 +65,7 @@ export const CREATORS = [
     category: 'calm',
     bio: 'Soft landings for loud days.',
     voice: { name: 'Microsoft Hazel Desktop', pitch: '-12%', rate: '-22%' },
+    followers: 33900,
   },
   {
     id: 'cr_dryden',
@@ -67,6 +74,7 @@ export const CREATORS = [
     category: 'comedy',
     bio: 'Mildly defeated by everyday objects.',
     voice: { name: 'Microsoft Zira Desktop', pitch: '-6%', rate: '+2%' },
+    followers: 58700,
   },
 ];
 

@@ -25,7 +25,9 @@ export default function CreatorSheet({ creator, category, posts, isFollowing, on
             <span className={styles.creatorAvatar} aria-hidden="true">{creator.name.charAt(0)}</span>
             <div>
               <h2 className={styles.sheetTitle}>{creator.name}</h2>
-              <div className={styles.sheetCreator}>{creator.handle}</div>
+              <div className={styles.sheetCreator}>
+                {creator.handle} · {formatCount(creator.followers || 0)} followers
+              </div>
             </div>
           </div>
           <button type="button" className={styles.sheetClose} onClick={onClose} aria-label="Close">

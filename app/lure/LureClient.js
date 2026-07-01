@@ -8,7 +8,9 @@ import CategoryBar from './components/CategoryBar';
 import TranscriptSheet from './components/TranscriptSheet';
 import CreatorSheet from './components/CreatorSheet';
 import ProfileSheet from './components/ProfileSheet';
-import { ChevronUpIcon, ChevronDownIcon } from './components/Icons';
+import SearchSheet from './components/SearchSheet';
+import ConnectionsSheet from './components/ConnectionsSheet';
+import { ChevronUpIcon, ChevronDownIcon, SearchIcon } from './components/Icons';
 import ThemeToggle from '../../components/ThemeToggle';
 
 import { useAudioController } from './hooks/useAudioController';
@@ -19,6 +21,7 @@ import { useAuth } from './auth/AuthProvider';
 import { buildFeed, applySignal } from './lib/feedAlgorithm';
 import { CATEGORIES, CATEGORY_MAP } from './data/categories';
 import { CREATOR_MAP } from './data/creators';
+import { FOLLOWERS } from './data/followers';
 import { POSTS } from './data/posts';
 
 import styles from './page.module.css';
@@ -35,6 +38,8 @@ export default function LureClient() {
 
   const [signals, setSignals] = useLocalStorage('lure_signals_v1', {});
   const [profileOpen, setProfileOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [connectionsOpen, setConnectionsOpen] = useState(false);
 
   const { user, profile, isBackendConfigured, signInHref } = useAuth();
   const { likes, saves, toggleLike, toggleSave } = useLikesSaves(user);
@@ -248,8 +253,38 @@ export default function LureClient() {
   }, []);
 
   const handleCreator = useCallback((postId) => {
-    setOverlay({ type: 'creator', postId });
+    const post = POST_MAP[postId];
+    if (post) setOverlay({ type: 'creator', creatorId: post.creatorId });
   }, []);
+
+  const openCreator = useCallback((creatorId) => {
+    setOverlay({ type: 'creator', creatorId });
+  }, []);
+
+  const handleSearchPost = useCallback((postId) => {
+    setSearchOpen(false);
+    handleSelectPost(postId);
+  }, [handleSelectPost]);
+
+  const handleSearchCreator = useCallback((creatorId) => {
+    setSearchOpen(false);
+    openCreator(creatorId);
+  }, [openCreator]);
+
+  const handleSearchCategory = useCallback((categoryId) => {
+    setSearchOpen(false);
+    handleSelectCategory(categoryId);
+  }, [handleSelectCategory]);
+
+  const handleOpenConnections = useCallback(() => {
+    setProfileOpen(false);
+    setConnectionsOpen(true);
+  }, []);
+
+  const handleConnectionsCreator = useCallback((creatorId) => {
+    setConnectionsOpen(false);
+    openCreator(creatorId);
+  }, [openCreator]);
 
   const entries = useMemo(() => order.map((post) => ({
     post,
@@ -265,8 +300,8 @@ export default function LureClient() {
     duration,
   }), [audioRef, isPlaying, phase, currentTime, duration]);
 
-  const overlayPost = overlay ? POST_MAP[overlay.postId] : null;
-  const overlayCreator = overlayPost ? CREATOR_MAP[overlayPost.creatorId] : null;
+  const overlayPost = overlay && overlay.type === 'transcript' ? POST_MAP[overlay.postId] : null;
+  const overlayCreator = overlay && overlay.type === 'creator' ? CREATOR_MAP[overlay.creatorId] : null;
 
   return (
     <div className={styles.root}>
@@ -279,6 +314,14 @@ export default function LureClient() {
             <span className={styles.wordmarkBracket}>]</span>
           </div>
           <div className={styles.topRight}>
+            <button
+              type="button"
+              className={styles.iconBtn}
+              onClick={() => setSearchOpen(true)}
+              aria-label="Search"
+            >
+              <SearchIcon size={18} />
+            </button>
             {isBackendConfigured && (
               user ? (
                 <button
@@ -357,7 +400,7 @@ export default function LureClient() {
       {overlay && overlay.type === 'transcript' && overlayPost && (
         <TranscriptSheet
           post={overlayPost}
-          creator={overlayCreator}
+          creator={CREATOR_MAP[overlayPost.creatorId]}
           category={CATEGORY_MAP[overlayPost.category]}
           onClose={() => setOverlay(null)}
         />
@@ -375,7 +418,32 @@ export default function LureClient() {
         />
       )}
 
-      {profileOpen && <ProfileSheet onClose={() => setProfileOpen(false)} />}
+      {profileOpen && (
+        <ProfileSheet
+          followingCount={follows.length}
+          followersCount={FOLLOWERS.length}
+          onOpenConnections={handleOpenConnections}
+          onClose={() => setProfileOpen(false)}
+        />
+      )}
+
+      {searchOpen && (
+        <SearchSheet
+          onSelectPost={handleSearchPost}
+          onSelectCreator={handleSearchCreator}
+          onSelectCategory={handleSearchCategory}
+          onClose={() => setSearchOpen(false)}
+        />
+      )}
+
+      {connectionsOpen && (
+        <ConnectionsSheet
+          following={follows.map((id) => CREATOR_MAP[id]).filter(Boolean)}
+          followers={FOLLOWERS}
+          onOpenCreator={handleConnectionsCreator}
+          onClose={() => setConnectionsOpen(false)}
+        />
+      )}
 
       {!started && <StartGate onStart={handleStart} />}
     </div>
